@@ -4,6 +4,7 @@ namespace Database\Seeders;
 use App\Models\Jadwal;
 use App\Models\Shuttle;
 use App\Models\Rute;
+use App\Models\MLayanan;
 use App\Models\RuteJadwal;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
@@ -15,81 +16,104 @@ class JadwalSeeder extends Seeder
     {
         DB::table('jadwals')->truncate();
         DB::table('rute_jadwals')->truncate();
-        
-        $shuttles = Shuttle::all();
-        $rutes = Rute::all();
 
-        if ($shuttles->isEmpty() || $rutes->isEmpty()) {
+        // 1. Cari LAYANAN Smart Shuttle
+        $smartShuttleService = MLayanan::where('kode_layanan', 'SMARTSHUTTLE')->first();
+
+        if (!$smartShuttleService) {
+            $this->command->error('Layanan Smart Shuttle tidak ditemukan! Jalankan MLayananSeeder dulu.');
             return;
         }
 
-        // Buat jadwal untuk setiap rute
-        foreach ($rutes as $rute) {
-            // Ambil 3 shuttle pertama untuk setiap rute (agar tidak terlalu banyak)
-            $shuttlesToUse = $shuttles->take(3);
-            
-            foreach ($shuttlesToUse as $shuttle) {
-                // Buat jadwal untuk 14 hari ke depan
-                for ($i = 1; $i <= 14; $i++) {
-                    // Generate waktu keberangkatan pagi (06:00 - 10:00) atau sore (14:00 - 18:00)
-                    $isMorning = rand(0, 1);
-                    $hour = $isMorning ? rand(6, 10) : rand(14, 18);
-                    $minute = rand(0, 3) * 15; // 0, 15, 30, atau 45
-                    
-                    $waktuKeberangkatan = Carbon::now()
-                        ->addDays($i)
-                        ->setTime($hour, $minute);
-                    
-                    // Parse durasi rute
+        // 2. Hanya ambil SHUTTLE untuk layanan Smart Shuttle
+        $shuttles = Shuttle::where('layanan_id', $smartShuttleService->id_layanan)->get();
+
+        // 3. Hanya ambil RUTE untuk layanan Smart Shuttle
+        $rutes = Rute::where('layanan_id', $smartShuttleService->id_layanan)->get();
+
+        if ($shuttles->isEmpty() || $rutes->isEmpty()) {
+            $this->command->error('Shuttle atau Rute kosong! Jalankan seeder Shuttle dan Rute dulu.');
+            return;
+        }
+
+        $this->command->info('Membuat jadwal untuk ' . $shuttles->count() . ' shuttle dan ' . $rutes->count() . ' rute...');
+
+        // 4. Buat jadwal untuk 30 hari ke depan HANYA untuk shuttle Smart Shuttle
+        $jadwalCreated = 0;
+        for ($i = 0; $i <= 30; $i++) {
+            foreach ($rutes as $rute) {
+                foreach ($shuttles as $shuttle) {
+                    // Skip 50% chance untuk variasi (agar tidak terlalu padat)
+                    if (rand(0, 1) === 0) continue;
+
+                    // Waktu keberangkatan (pagi: 6-9, siang: 12-15, malam: 18-21)
+                    $period = rand(1, 3);
+                    switch ($period) {
+                        case 1: $hour = rand(6, 9); break;  // Pagi
+                        case 2: $hour = rand(12, 15); break; // Siang
+                        case 3: $hour = rand(18, 21); break; // Malam
+                    }
+                    $minute = rand(0, 1) ? 0 : 30;
+
+                    $tanggal = Carbon::now()->addDays($i);
+                    $waktuKeberangkatan = $tanggal->copy()->setTime($hour, $minute);
+
+                    // Parse durasi dari string "HH:MM"
                     $durasiParts = explode(':', $rute->durasi);
-                    $totalDurasi = ((int)$durasiParts[0] * 60) + ((int)($durasiParts[1] ?? 0));
-                    
-                    // Tambahkan waktu singgah di setiap pemberhentian
+                    $jam = (int)($durasiParts[0] ?? 0);
+                    $menit = (int)($durasiParts[1] ?? 0);
+                    $totalMenit = ($jam * 60) + $menit;
+
+                    // Tambah waktu singgah
                     $pemberhentian = json_decode($rute->rute_pemberhentian, true);
                     if (is_array($pemberhentian)) {
                         foreach ($pemberhentian as $stop) {
-                            $totalDurasi += ($stop['durasi_singgah'] ?? 10);
+                            $totalMenit += ($stop['durasi_singgah'] ?? 10);
                         }
                     }
-                    
-                    $waktuKedatangan = $waktuKeberangkatan->copy()->addMinutes($totalDurasi);
-                    
-                    // Tentukan kapasitas kursi tersedia (70-100% dari kapasitas)
-                    $kapasitasShuttle = $shuttle->kapasitas_kursi;
-                    $kursiTersedia = rand(floor($kapasitasShuttle * 0.7), $kapasitasShuttle);
-                    
-                    // Cek apakah jadwal sudah ada untuk menghindari duplikasi
-                    $existingJadwal = Jadwal::where([
+
+                    $waktuKedatangan = $waktuKeberangkatan->copy()->addMinutes($totalMenit);
+
+                    // Kapasitas kursi = semua kursi tersedia (karena baru dibuat, belum ada booking)
+                    $kapasitas = $shuttle->kapasitas_kursi ?? $shuttle->total_kursi ?? 9;
+                    $kursiTersedia = $kapasitas; // Semua kursi tersedia di awal
+
+                    // Cek duplikat (jangan buat jadwal yang sama persis)
+                    $existing = Jadwal::where([
                         'shuttle_id' => $shuttle->id,
                         'tanggal_keberangkatan' => $waktuKeberangkatan->format('Y-m-d'),
-                        'waktu_keberangkatan' => $waktuKeberangkatan->format('H:i'),
+                        'waktu_keberangkatan' => $waktuKeberangkatan->format('H:i:s')
                     ])->exists();
-                    
-                    if ($existingJadwal) {
-                        continue;
-                    }
-                    
+
+                    if ($existing) continue;
+
                     // Buat jadwal
                     $jadwal = Jadwal::create([
                         'shuttle_id' => $shuttle->id,
                         'tanggal_keberangkatan' => $waktuKeberangkatan->format('Y-m-d'),
-                        'waktu_keberangkatan' => $waktuKeberangkatan->format('H:i'),
-                        'waktu_kedatangan' => $waktuKedatangan->format('H:i'),
-                        'harga_total' => $rute->harga_dasar,
+                        'waktu_keberangkatan' => $waktuKeberangkatan->format('H:i:s'),
+                        'waktu_kedatangan' => $waktuKedatangan->format('H:i:s'),
+                        'harga_total' => $rute->harga_dasar + rand(10000, 50000),
                         'kursi_tersedia' => $kursiTersedia,
-                        'status' => $kursiTersedia > 0 ? 'tersedia' : 'penuh',
+                        'status' => 'tersedia',
                     ]);
-                    
-                    // Hubungkan jadwal dengan rute
+
+                    // Hubungkan dengan rute
                     RuteJadwal::create([
                         'jadwal_id' => $jadwal->id,
                         'rute_id' => $rute->id,
                         'urutan' => 1,
-                        'durasi_segment' => $totalDurasi,
+                        'durasi_segment' => $totalMenit,
                         'harga_segment' => $rute->harga_dasar,
                     ]);
+
+                    $jadwalCreated++;
                 }
             }
         }
+
+        $this->command->info('JadwalSeeder berhasil! Total: ' . $jadwalCreated . ' jadwal dibuat.');
+        $this->command->info('Hanya shuttle Smart Shuttle yang dijadwalkan.');
+        $this->command->info('Hanya rute Smart Shuttle yang digunakan.');
     }
 }

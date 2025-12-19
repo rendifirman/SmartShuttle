@@ -119,11 +119,11 @@ class AuthController extends Controller
     // Hanya angka (0-9) dan huruf kapital (A-Z) - TIDAK ada huruf kecil
     $chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     $token = '';
-    
+
     for ($i = 0; $i < $length; $i++) {
         $token .= $chars[random_int(0, strlen($chars) - 1)];
     }
-    
+
     return $token;
 }
 
@@ -165,7 +165,7 @@ class AuthController extends Controller
 
     // token valid - simpan email dan token di session
     session(['email' => $email, 'token' => $tokenInput]);
-    
+
     \Log::info('Token verified successfully', ['email' => $email]);
 
     // redirect ke reset password dengan token dan email
@@ -179,7 +179,7 @@ public function showResetForm(Request $request)
     // Ambil token dan email dari URL parameters ATAU dari session
     $token = $request->token ?: session('token');
     $email = $request->email ?: session('email');
-    
+
     // DEBUG: Log untuk memastikan data tersedia
     \Log::info('showResetForm - Data:', [
         'token_from_request' => $request->token,
@@ -189,7 +189,7 @@ public function showResetForm(Request $request)
         'final_token' => $token,
         'final_email' => $email
     ]);
-    
+
     return view('auth.reset-password', [
         'token' => $token,
         'email' => $email
@@ -245,7 +245,7 @@ public function reset(Request $request)
 public function performRegistration(array $data)
 {
     \Log::info('AuthController::performRegistration - Starting', ['data' => array_keys($data)]);
-    
+
     try {
         // Validasi data
         $validator = Validator::make($data, [
@@ -292,11 +292,354 @@ public function performRegistration(array $data)
             'message' => $e->getMessage(),
             'trace' => $e->getTraceAsString()
         ]);
-        
+
         return [
             'success' => false,
             'errors' => ['message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()]
         ];
+    }
+}
+// API REGISTER METHOD
+public function register(Request $request)
+{
+    \Log::info('AuthController::register API - Starting', $request->all());
+
+    try {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $result = $this->performRegistration($request->all());
+
+        if (!$result['success']) {
+            return response()->json($result, 422);
+        }
+
+        // Generate token untuk response API
+        $user = User::find($result['user']->id);
+        $token = $user->createToken('SmartShuttle-API')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'user' => $user->load('roles'),
+            'token' => $token,
+            'role' => $user->getRoleNames()->first(),
+            'message' => 'Registrasi berhasil'
+        ], 201);
+
+    } catch (\Exception $e) {
+        \Log::error('AuthController::register API - Exception', [
+            'message' => $e->getMessage()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan sistem'
+        ], 500);
+    }
+}
+
+// API LOGIN METHOD
+public function login(Request $request)
+{
+    \Log::info('AuthController::login API - Starting', $request->all());
+
+    try {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $result = $this->performLogin($request->all());
+
+        if (!$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message']
+            ], 401);
+        }
+
+        return response()->json([
+            'success' => true,
+            'user' => $result['user'],
+            'token' => $result['token'],
+            'role' => $result['role']
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('AuthController::login API - Exception', [
+            'message' => $e->getMessage()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan sistem'
+        ], 500);
+    }
+}
+
+// LOGOUT METHOD
+public function logout(Request $request)
+{
+    try {
+        $user = $request->user();
+
+        if ($user) {
+            $user->currentAccessToken()->delete();
+            return response()->json([
+                'success' => true,
+                'message' => 'Logout berhasil'
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'User tidak ditemukan'
+        ], 401);
+
+    } catch (\Exception $e) {
+        \Log::error('AuthController::logout - Exception', [
+            'message' => $e->getMessage()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan sistem'
+        ], 500);
+    }
+}
+
+// LOGOUT ALL METHOD (logout dari semua device)
+public function logoutAll(Request $request)
+{
+    try {
+        $user = $request->user();
+
+        if ($user) {
+            $user->tokens()->delete();
+            return response()->json([
+                'success' => true,
+                'message' => 'Logout dari semua device berhasil'
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'User tidak ditemukan'
+        ], 401);
+
+    } catch (\Exception $e) {
+        \Log::error('AuthController::logoutAll - Exception', [
+            'message' => $e->getMessage()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan sistem'
+        ], 500);
+    }
+}
+
+// GET SESSIONS METHOD
+public function getSessions(Request $request)
+{
+    try {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak ditemukan'
+            ], 401);
+        }
+
+        $tokens = $user->tokens()->get()->map(function ($token) {
+            return [
+                'id' => $token->id,
+                'name' => $token->name,
+                'last_used_at' => $token->last_used_at,
+                'created_at' => $token->created_at,
+                'expires_at' => $token->expires_at,
+                'is_current' => $token->id === request()->user()->currentAccessToken()->id
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'sessions' => $tokens
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('AuthController::getSessions - Exception', [
+            'message' => $e->getMessage()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan sistem'
+        ], 500);
+    }
+}
+
+// REVOKE SESSION METHOD
+public function revokeSession(Request $request, $tokenId)
+{
+    try {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak ditemukan'
+            ], 401);
+        }
+
+        $token = $user->tokens()->where('id', $tokenId)->first();
+
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token tidak ditemukan'
+            ], 404);
+        }
+
+        $token->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Session berhasil dihapus'
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('AuthController::revokeSession - Exception', [
+            'message' => $e->getMessage()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan sistem'
+        ], 500);
+    }
+}
+
+// CHANGE PASSWORD METHOD
+public function changePassword(Request $request)
+{
+    try {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak ditemukan'
+            ], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'current_password' => 'required',
+            'password' => 'required|string|min:8|confirmed'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Cek password saat ini
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Password saat ini salah'
+            ], 422);
+        }
+
+        // Update password
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        // Optional: logout dari semua device setelah ganti password
+        // $user->tokens()->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password berhasil diubah'
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('AuthController::changePassword - Exception', [
+            'message' => $e->getMessage()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan sistem'
+        ], 500);
+    }
+}
+
+// CREATE USER WITH ROLE (untuk admin)
+public function createUserWithRole(Request $request)
+{
+    try {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+            'role' => 'required|string|exists:roles,name'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Buat user
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'status' => 'active',
+            'email_verified_at' => now(),
+        ]);
+
+        // Berikan role
+        $user->assignRole($request->role);
+
+        return response()->json([
+            'success' => true,
+            'user' => $user->load('roles'),
+            'message' => 'User berhasil dibuat dengan role ' . $request->role
+        ], 201);
+
+    } catch (\Exception $e) {
+        \Log::error('AuthController::createUserWithRole - Exception', [
+            'message' => $e->getMessage()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan sistem'
+        ], 500);
     }
 }
 }

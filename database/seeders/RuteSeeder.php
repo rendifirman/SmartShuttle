@@ -4,6 +4,7 @@
 namespace Database\Seeders;
 
 use App\Models\Rute;
+use App\Models\MLayanan;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -16,8 +17,17 @@ class RuteSeeder extends Seeder
     {
         DB::table('rutes')->truncate();
 
+        // Cari layanan Smart Shuttle
+        $smartShuttleService = MLayanan::where('kode_layanan', 'SMARTSHUTTLE')->first();
+
+        if (!$smartShuttleService) {
+            $this->command->error('Layanan Smart Shuttle tidak ditemukan! Jalankan MLayananSeeder dulu.');
+            return;
+        }
+
         $rutes = [
             [
+                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
                 'kode_rute' => 'JKT-BAL-001',
                 'nama_rute' => 'Jakarta - Bali Via Yogyakarta',
                 'kota_asal' => 'Jakarta',
@@ -50,6 +60,7 @@ class RuteSeeder extends Seeder
                 'status' => 'aktif'
             ],
             [
+                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
                 'kode_rute' => 'BDG-JKT-001',
                 'nama_rute' => 'Bandung - Jakarta Via Bekasi',
                 'kota_asal' => 'Bandung',
@@ -72,6 +83,7 @@ class RuteSeeder extends Seeder
                 'status' => 'aktif'
             ],
             [
+                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
                 'kode_rute' => 'JKT-YOG-001',
                 'nama_rute' => 'Jakarta - Yogyakarta Via Semarang',
                 'kota_asal' => 'Jakarta',
@@ -99,6 +111,7 @@ class RuteSeeder extends Seeder
                 'status' => 'aktif'
             ],
             [
+                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
                 'kode_rute' => 'TGR-DPK-001',
                 'nama_rute' => 'Tangerang - Depok Via Jakarta',
                 'kota_asal' => 'Tangerang',
@@ -121,6 +134,7 @@ class RuteSeeder extends Seeder
                 'status' => 'aktif'
             ],
             [
+                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
                 'kode_rute' => 'BAL-SMG-001',
                 'nama_rute' => 'Bali - Semarang Via Yogyakarta',
                 'kota_asal' => 'Bali',
@@ -143,6 +157,7 @@ class RuteSeeder extends Seeder
                 'status' => 'aktif'
             ],
             [
+                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
                 'kode_rute' => 'BKS-BDG-002',
                 'nama_rute' => 'Bekasi - Bandung Express',
                 'kota_asal' => 'Bekasi',
@@ -160,6 +175,7 @@ class RuteSeeder extends Seeder
                 'status' => 'aktif'
             ],
             [
+                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
                 'kode_rute' => 'YOG-BAL-001',
                 'nama_rute' => 'Yogyakarta - Bali Direct',
                 'kota_asal' => 'Yogyakarta',
@@ -182,6 +198,7 @@ class RuteSeeder extends Seeder
                 'status' => 'aktif'
             ],
             [
+                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
                 'kode_rute' => 'DPK-BKS-001',
                 'nama_rute' => 'Depok - Bekasi Via Jakarta',
                 'kota_asal' => 'Depok',
@@ -208,5 +225,8 @@ class RuteSeeder extends Seeder
         foreach ($rutes as $rute) {
             Rute::create($rute);
         }
+
+        $this->command->info('RuteSeeder berhasil! Total: ' . count($rutes) . ' rute dibuat.');
+        $this->command->info('Semua rute dikaitkan dengan layanan Smart Shuttle.');
     }
 }

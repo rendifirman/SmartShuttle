@@ -14,7 +14,9 @@ use App\Http\Controllers\ETicketController;
 | Web Routes
 |--------------------------------------------------------------------------
 */
-
+Route::get('/', function () {
+    return redirect()->route('customer.beranda');
+});
 // Halaman beranda (bisa diakses tamu)
 Route::get('/customer/beranda', [CustomerController::class, 'beranda'])->name('customer.beranda');
 
@@ -63,7 +65,7 @@ Route::middleware(['auth.customer'])->group(function () {
 });
 
 // Route untuk pencarian - bisa diakses tamu
-Route::get('/customer/search', [CustomerController::class, 'search'])->name('customer.search');
+Route::get('/customer/search', [CustomerController::class, 'showSearch'])->name('customer.search');
 Route::post('/customer/search', [CustomerController::class, 'search'])->name('customer.search.post');
 
 // ★★★ TAMBAHKAN ROUTE KIRIM PAKET DI SINI ★★★

@@ -10,14 +10,11 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
         $this->call([
-    RoleSeeder::class,
-]);
+            RoleSeeder::class,
+        ]);
 
         User::firstOrCreate(
             ['email' => 'test@example.com'],
@@ -27,20 +24,21 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // ✅ URUTAN YANG BENAR:
         $this->call([
-            BranchSeeder::class,
-            OutletSeeder::class,
-            ShuttleSeeder::class,
-            RuteSeeder::class,
-            JadwalSeeder::class,
-            KursiSeeder::class,
+            BranchSeeder::class,          // 1. Infrastruktur
+            OutletSeeder::class,          // 2. Outlet (butuh Branch)
+            MLayananSeeder::class,        // 3. Jenis Layanan - HARUS PERTAMA untuk layanan
+            RuteSeeder::class,            // 4. Rute (butuh MLayanan) ← SEBELUM SHUTTLE!
+            ShuttleSeeder::class,         // 5. Shuttle (butuh MLayanan)
+            KursiSeeder::class,           // 6. Kursi (butuh Shuttle)
             KebijakanPrivasiSeeder::class,
             SyaratKetentuanSeeder::class,
             MProfilePerusahaanSeeder::class,
-            MLayananSeeder::class,
             PromoSeeder::class,
             MasterKontakSeeder::class,
             MetodePembayaranSeeder::class,
+            JadwalSeeder::class,          // TERAKHIR! (butuh Rute & Shuttle)
         ]);
     }
 }

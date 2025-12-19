@@ -1,5 +1,4 @@
 <?php
-// File: app/Models/Jadwal.php
 
 namespace App\Models;
 
@@ -21,22 +20,30 @@ class Jadwal extends Model
     ];
 
     // Relasi ke shuttle
-   public function shuttle()
-{
-    return $this->belongsTo(Shuttle::class);
-}
+    public function shuttle()
+    {
+        return $this->belongsTo(Shuttle::class);
+    }
 
-public function rutes()
-{
-    return $this->belongsToMany(Rute::class, 'rute_jadwals', 'jadwal_id', 'rute_id')
-                ->withPivot(['urutan', 'durasi_segment', 'harga_segment'])
-                ->withTimestamps();
-}
-    // Method untuk mendapatkan semua pemberhentian dari rute
+    // Relasi ke rutes (many-to-many)
+    public function rutes()
+    {
+        return $this->belongsToMany(Rute::class, 'rute_jadwals', 'jadwal_id', 'rute_id')
+                    ->withPivot('urutan', 'durasi_segment', 'harga_segment')
+                    ->withTimestamps();
+    }
+
+    // Relasi ke rute_jadwals
+    public function ruteJadwals()
+    {
+        return $this->hasMany(RuteJadwal::class, 'jadwal_id');
+    }
+
+    // Method untuk mendapatkan semua pemberhentian
     public function getAllPemberhentian()
     {
         $pemberhentianList = [];
-        
+
         foreach ($this->rutes as $rute) {
             $stops = json_decode($rute->rute_pemberhentian, true);
             if (is_array($stops)) {
@@ -49,11 +56,11 @@ public function rutes()
                 }
             }
         }
-        
+
         return $pemberhentianList;
     }
 
-    // Method untuk mendapatkan string rute
+    // Accessor untuk string rute
     public function getRuteStringAttribute()
     {
         if ($this->rutes->isNotEmpty()) {
@@ -61,5 +68,13 @@ public function rutes()
             return $rute->nama_rute ?? 'Rute Tidak Diketahui';
         }
         return 'Rute Tidak Diketahui';
+    }
+
+    // Scope untuk jadwal aktif
+    public function scopeAktif($query)
+    {
+        return $query->where('status', 'tersedia')
+                    ->where('kursi_tersedia', '>', 0)
+                    ->whereDate('tanggal_keberangkatan', '>=', now());
     }
 }
