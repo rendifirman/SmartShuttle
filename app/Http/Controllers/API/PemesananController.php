@@ -188,7 +188,7 @@ class PemesananController extends Controller
 
             // Tambah poin member jika user adalah member aktif
             $user = $request->user();
-            if ($user && method_exists($user, 'isMemberActive') && $user->isMemberActive()) {
+            if ($user && $user->isMemberActive()) {
                 // Tambah member points (100 per pembelian)
                 $user->addMemberPoints(100);
 
@@ -231,7 +231,9 @@ class PemesananController extends Controller
             $pemesanan = Pemesanan::with([
                 'jadwal.shuttle',
                 'detailPenumpang',
-                'transaksi'
+                'transaksi',
+                'outletAsal',
+                'outletTujuan'
             ])
             ->where('kode_booking', $kode_booking)
             ->where('customer_id', $user->id)
@@ -292,7 +294,7 @@ class PemesananController extends Controller
             $jadwal = $pemesanan->jadwal;
             $jadwal->kursi_tersedia += $pemesanan->jumlah_penumpang;
 
-            // Jika status sebelumnya penuh, ubah jadi tersedia
+            // Jika status sebelumnya tidak tersedia, ubah jadi tersedia
             if ($jadwal->status === 'penuh') {
                 $jadwal->status = 'tersedia';
             }
@@ -365,20 +367,13 @@ class PemesananController extends Controller
      */
     public function pilihKursi(Request $request, $kode_booking)
     {
-        // Debug log
-        Log::info('API Pilih Kursi Request:', [
-            'kode_booking' => $kode_booking,
-            'data' => $request->all()
-        ]);
-
         $validator = Validator::make($request->all(), [
-            'kursi' => 'required|array|min:1',
+            'kursi' => 'required|array',
             'kursi.*.penumpang_id' => 'required|exists:detail_penumpang,id',
             'kursi.*.nomor_kursi' => 'required|string|max:10'
         ]);
 
         if ($validator->fails()) {
-            Log::warning('API Pilih Kursi Validation Failed:', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal',
@@ -448,8 +443,6 @@ class PemesananController extends Controller
                 if ($detailPenumpang) {
                     $detailPenumpang->nomor_kursi = $dataKursi['nomor_kursi'];
                     $detailPenumpang->save();
-                } else {
-                    throw new \Exception('Detail penumpang dengan ID ' . $dataKursi['penumpang_id'] . ' tidak ditemukan');
                 }
             }
 
@@ -461,14 +454,10 @@ class PemesananController extends Controller
 
             DB::commit();
 
-            // Reload data
-            $pemesanan->refresh();
-            $pemesanan->load('detailPenumpang');
-
             return response()->json([
                 'success' => true,
                 'message' => 'Pemilihan kursi berhasil!',
-                'data' => $pemesanan
+                'data' => $pemesanan->load('detailPenumpang')
             ]);
 
         } catch (\Exception $e) {
@@ -488,13 +477,8 @@ class PemesananController extends Controller
      */
     public function bayar(Request $request, $kode_booking)
     {
-        Log::info('API Bayar Request:', [
-            'kode_booking' => $kode_booking,
-            'data' => $request->all()
-        ]);
-
         $validator = Validator::make($request->all(), [
-            'metode_pembayaran' => 'required|string'
+            'metode_pembayaran' => 'required|string|exists:metode_pembayaran,kode'
         ]);
 
         if ($validator->fails()) {
@@ -529,10 +513,22 @@ class PemesananController extends Controller
                 ], 400);
             }
 
-            // Update pemesanan - HAPUS tanggal_pembayaran_terakhir
+            // Ambil metode pembayaran
+            $metodePembayaran = MetodePembayaran::where('kode', $request->metode_pembayaran)
+                ->where('aktif', true)
+                ->first();
+
+            if (!$metodePembayaran) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Metode pembayaran tidak tersedia'
+                ], 400);
+            }
+
+            // Update pemesanan
             $pemesanan->metode_pembayaran = $request->metode_pembayaran;
             $pemesanan->status = 'menunggu_pembayaran';
-            $pemesanan->waktu_kadaluarsa = Carbon::now()->addHours(24);
+            $pemesanan->tanggal_pembayaran_terakhir = Carbon::now()->addHours(24);
             $pemesanan->save();
 
             // Generate kode pembayaran
@@ -555,7 +551,8 @@ class PemesananController extends Controller
                 'message' => 'Pembayaran berhasil diproses. Silakan selesaikan pembayaran dalam 24 jam.',
                 'data' => [
                     'pemesanan' => $pemesanan,
-                    'transaksi' => $transaksi
+                    'transaksi' => $transaksi,
+                    'metode_pembayaran' => $metodePembayaran
                 ]
             ]);
 
@@ -582,7 +579,8 @@ class PemesananController extends Controller
             $pemesanan = Pemesanan::with([
                 'jadwal.shuttle',
                 'detailPenumpang',
-                'transaksi'
+                'transaksi',
+                'jadwal.rutes'
             ])
             ->where('kode_booking', $kode_booking)
             ->where('customer_id', $user->id)
@@ -595,11 +593,9 @@ class PemesananController extends Controller
                 ], 404);
             }
 
-            // Cek status pembayaran - lebih fleksibel
-            $isPaid = $pemesanan->status === 'dibayar' ||
-                     ($pemesanan->transaksi && $pemesanan->transaksi->status === 'success');
-
-            if (!$isPaid) {
+            // Cek status pembayaran
+            if ($pemesanan->status !== 'dibayar' &&
+                ($pemesanan->transaksi && $pemesanan->transaksi->status !== 'success')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Pemesanan belum dibayar atau belum dikonfirmasi.'
@@ -608,6 +604,8 @@ class PemesananController extends Controller
 
             // Format data e-ticket
             $jadwal = $pemesanan->jadwal;
+            $rutePertama = $jadwal->rutes->first();
+            $ruteTerakhir = $jadwal->rutes->last();
 
             $waktuBerangkat = Carbon::parse($jadwal->waktu_keberangkatan);
             $waktuSampai = $waktuBerangkat->copy()->addHours(3)->addMinutes(30);
@@ -622,8 +620,8 @@ class PemesananController extends Controller
                     'email' => $pemesanan->email_pemesan
                 ],
                 'perjalanan' => [
-                    'dari' => 'Kota Asal',
-                    'ke' => 'Kota Tujuan',
+                    'dari' => $rutePertama->kota_asal ?? 'Kota Asal',
+                    'ke' => $ruteTerakhir->kota_tujuan ?? 'Kota Tujuan',
                     'tanggal' => Carbon::parse($jadwal->tanggal_keberangkatan)->isoFormat('dddd, D MMMM YYYY'),
                     'waktu_berangkat' => $waktuBerangkat->format('H:i'),
                     'waktu_tiba' => $waktuSampai->format('H:i'),

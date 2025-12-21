@@ -3,14 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cookie;
-use App\Http\Controllers\API\AuthController;
 use App\Models\Outlet;
 use App\Models\Jadwal;
 use App\Models\Rute;
@@ -28,8 +26,10 @@ use App\Models\RuteJadwal;
 use App\Models\User;
 use App\Models\MetodePembayaran;
 use App\Models\Transaksi;
-
+use App\Models\Faq;
 use App\Models\MembershipPayment;
+use App\Models\HargaPaket;
+use App\Models\PengirimanPaket;
 use Carbon\Carbon;
 
 // Helper function untuk mendapatkan inisial nama
@@ -48,11 +48,9 @@ if (!function_exists('getInitials')) {
             }
         }
 
-        // Jika hanya 1 kata, ambil 2 karakter pertama
         if (strlen($initials) == 1) {
             $initials = strtoupper(substr($name, 0, 2));
         } else {
-            // Ambil maksimal 2 huruf inisial
             $initials = substr($initials, 0, 2);
         }
 
@@ -62,14 +60,13 @@ if (!function_exists('getInitials')) {
 
 class CustomerController extends Controller
 {
-    // Halaman beranda (bisa diakses tamu)
+    /**
+     * Halaman beranda
+     */
     public function beranda()
     {
-        // Cek jika user sudah login dari session
-        /** @var array|null $user */
         $user = session()->get('user');
 
-        // **AMBIL DATA OUTLET AKTIF DIKELOMPOKKAN BERDASARKAN KOTA**
         $outletsGrouped = Outlet::with('branch')
             ->where('status', 'aktif')
             ->orderBy('nama_outlet')
@@ -78,7 +75,7 @@ class CustomerController extends Controller
                 return $outlet->branch ? $outlet->branch->kota : 'Lainnya';
             });
 
-        $layanan = \App\Models\MLayanan::where('status_aktif', true)
+        $layanan = MLayanan::where('status_aktif', true)
             ->orderBy('urutan_tampilan', 'asc')
             ->take(3)
             ->get();
@@ -88,23 +85,34 @@ class CustomerController extends Controller
         return view('customer.beranda', compact('user', 'outletsGrouped', 'layanan', 'profile'));
     }
 
-    public function outlet()
+    /**
+     * Halaman outlet
+     */
+    public function outlet(Request $request)
     {
-        // Cek jika user sudah login dari session
         $user = session()->get('user');
 
-        // Ambil semua outlet yang aktif
-        $outlets = Outlet::with('branch')
-            ->where('status', 'aktif')
-            ->orderBy('nama_outlet')
-            ->get();
+        $query = Outlet::with('branch')
+            ->where('status', 'aktif');
 
-        // Ambil data cabang untuk filter
+        // Filter berdasarkan kota
+        if ($request->filled('kota')) {
+            $query->whereHas('branch', function ($q) use ($request) {
+                $q->where('kota', $request->kota);
+            });
+        }
+
+        // Filter berdasarkan branch_id
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        $outlets = $query->orderBy('nama_outlet')->get();
+
         $branches = Branch::where('status', 'aktif')
             ->orderBy('kota')
             ->get();
 
-        // Ambil data kota unik dari branches untuk filter outlet
         $kotaList = Branch::select('kota')
             ->distinct()
             ->where('status', 'aktif')
@@ -115,10 +123,11 @@ class CustomerController extends Controller
         return view('customer.outlet', compact('user', 'outlets', 'branches', 'kotaList'));
     }
 
-    // Form login
+    /**
+     * Form login
+     */
     public function showLogin()
     {
-        // Jika sudah login, redirect ke beranda
         if (session()->has('user')) {
             return redirect()->route('customer.beranda')->with('info', 'Anda sudah login!');
         }
@@ -126,86 +135,9 @@ class CustomerController extends Controller
         return view('customer.login');
     }
 
-    // Form register
-    public function showRegister()
-    {
-        // Jika sudah login, redirect ke beranda
-        if (session()->has('user')) {
-            return redirect()->route('customer.beranda')->with('info', 'Anda sudah login!');
-        }
-
-        // Ambil data dari tabel khusus
-        $syaratKetentuan = SyaratKetentuan::getUntukPengguna();
-        $kebijakanPrivasi = KebijakanPrivasi::getAktif();
-
-        return view('customer.register', [
-            'syaratKetentuan' => $syaratKetentuan,
-            'kebijakanPrivasi' => $kebijakanPrivasi
-        ]);
-    }
-
-    // Proses register
-    public function register(Request $request)
-    {
-        \Log::info('CustomerController::register - Starting', [
-            'method' => $request->method(),
-            'url' => $request->fullUrl(),
-            'all_data' => $request->all()
-        ]);
-
-        try {
-            // Tambahkan validasi di sini
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users,email',
-                'password' => 'required|string|min:6|confirmed', // pastikan ada password_confirmation
-            ]);
-
-            \Log::info('CustomerController::register - Validation passed', [
-                'validated_data' => array_keys($validated)
-            ]);
-
-            // Gunakan AuthController untuk registrasi langsung
-            $authController = new AuthController();
-            $result = $authController->performRegistration([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'password' => $validated['password'],
-                'password_confirmation' => $request->password_confirmation,
-            ]);
-
-            \Log::info('CustomerController::register - performRegistration result', [
-                'has_errors' => isset($result['errors']),
-                'has_user' => isset($result['user']),
-                'has_token' => isset($result['token'])
-            ]);
-
-            if (isset($result['errors'])) {
-                \Log::warning('CustomerController::register - Validation errors from performRegistration', [
-                    'errors' => $result['errors']
-                ]);
-                return back()->withErrors($result['errors'])->withInput();
-            }
-
-            return redirect()->route('customer.login')
-                ->with('success', 'Registrasi berhasil! Silakan login.');
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('CustomerController::register - ValidationException', [
-                'errors' => $e->errors(),
-                'message' => $e->getMessage()
-            ]);
-            return back()->withErrors($e->errors())->withInput();
-        } catch (\Exception $e) {
-            \Log::error('CustomerController::register - Exception', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return back()->withErrors(['message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()])->withInput();
-        }
-    }
-
-    // Proses login
+    /**
+     * Proses login
+     */
     public function login(Request $request)
     {
         $validated = $request->validate([
@@ -214,34 +146,27 @@ class CustomerController extends Controller
         ]);
 
         try {
-            // pastikan remember boolean (true jika dicentang)
             $remember = $request->filled('remember');
-
-            // langsung gunakan auth()->attempt agar session dan cookie remember dibuat oleh guard web
             $credentials = [
                 'email' => $validated['email'],
                 'password' => $validated['password'],
             ];
 
-            if (!auth()->attempt($credentials, $remember)) {
+            if (!Auth::attempt($credentials, $remember)) {
                 return back()->withErrors(['message' => 'Email atau password salah'])->withInput();
             }
 
-            // regenerate session untuk keamanan (prevent session fixation)
             $request->session()->regenerate();
+            $user = Auth::user();
 
-            // ambil user yang ter-auth
-            $user = auth()->user();
-
-            // simpan minimal informasi di session untuk tampilan UI (hindari menyimpan model lengkap)
             session()->put('user', [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'avatar' => $user->avatar,
+                'membership_status' => $user->membership_status,
+                'membership_level' => $user->membership_level,
             ]);
-
-            // jika perlu token API untuk UI, buat di sini (opsional)
-            // session()->put('token', $user->createToken('SmartShuttle-API')->plainTextToken);
 
             return redirect()->route('customer.beranda');
 
@@ -251,18 +176,82 @@ class CustomerController extends Controller
         }
     }
 
-    // Proses logout
+    /**
+     * Form register
+     */
+    public function showRegister()
+    {
+        if (session()->has('user')) {
+            return redirect()->route('customer.beranda')->with('info', 'Anda sudah login!');
+        }
+
+        $syaratKetentuan = SyaratKetentuan::getUntukPengguna();
+        $kebijakanPrivasi = KebijakanPrivasi::getAktif();
+
+        return view('customer.register', [
+            'syaratKetentuan' => $syaratKetentuan,
+            'kebijakanPrivasi' => $kebijakanPrivasi
+        ]);
+    }
+
+    /**
+     * Proses register
+     */
+    public function register(Request $request)
+    {
+        \Log::info('CustomerController::register - Starting', $request->all());
+
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|string|min:6|confirmed',
+            ]);
+
+            // Buat user baru
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => bcrypt($validated['password']),
+                'membership_status' => 'non_member',
+                'membership_level' => 'Bronze',
+                'member_point' => 0,
+                'loyalty_point' => 0,
+            ]);
+
+            // Login otomatis setelah registrasi
+            Auth::login($user);
+
+            session()->put('user', [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $user->avatar,
+                'membership_status' => $user->membership_status,
+                'membership_level' => $user->membership_level,
+            ]);
+
+            return redirect()->route('customer.beranda')
+                ->with('success', 'Registrasi berhasil! Selamat datang di Smart Shuttle.');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            \Log::error('CustomerController::register - Exception', ['error' => $e->getMessage()]);
+            return back()->withErrors(['message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()])->withInput();
+        }
+    }
+
+    /**
+     * Proses logout
+     */
     public function logout(Request $request)
     {
         try {
-            // Logout Laravel auth (menghapus session)
             Auth::logout();
-
-            // Hapus remember me cookie jika ada
-            $recaller = Auth::getRecallerName(); // nama cookie yang dipakai remember me
+            $recaller = Auth::getRecallerName();
             Cookie::queue(Cookie::forget($recaller));
 
-            // Hapus session manual
             session()->forget(['user', 'token']);
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -270,16 +259,16 @@ class CustomerController extends Controller
             return redirect()->route('customer.beranda');
 
         } catch (\Exception $e) {
-            // fallback: hapus session tetap
             session()->forget(['user', 'token']);
             return redirect()->route('customer.beranda');
         }
     }
 
-    // Halaman pencarian shuttle (GET method)
+    /**
+     * Halaman pencarian shuttle
+     */
     public function showSearch(Request $request)
     {
-        // Ambil semua outlet dan kelompokkan berdasarkan kota
         $outlets = Outlet::with('branch')
             ->where('status', 'aktif')
             ->get()
@@ -294,7 +283,6 @@ class CustomerController extends Controller
             })
             ->toArray();
 
-        // Kelompokkan outlet berdasarkan kota
         $outletsGrouped = [];
         foreach ($outlets as $outlet) {
             $kota = $outlet['kota'];
@@ -304,17 +292,22 @@ class CustomerController extends Controller
             $outletsGrouped[$kota][] = $outlet;
         }
 
-        $data = [
-            'outletsGrouped' => $outletsGrouped,
-        ];
+        $data = ['outletsGrouped' => $outletsGrouped];
 
-        // Jika ada parameter pencarian, proses pencarian
         if ($request->has('departure_outlet') && $request->has('destination_outlet')) {
             $searchData = $this->processSearch($request);
             $data = array_merge($data, $searchData);
         }
 
         return view('customer.search', $data);
+    }
+
+    /**
+     * API endpoint untuk pencarian (AJAX)
+     */
+    public function search(Request $request)
+    {
+        return $this->showSearch($request);
     }
 
     /**
@@ -329,7 +322,6 @@ class CustomerController extends Controller
             'passenger_count' => 'required|integer|min:1|max:10',
         ]);
 
-        // Ambil data outlet asal dan tujuan
         $departureOutlet = Outlet::with('branch')->find($validated['departure_outlet']);
         $destinationOutlet = Outlet::with('branch')->find($validated['destination_outlet']);
 
@@ -338,7 +330,6 @@ class CustomerController extends Controller
         $validated['departure_city'] = $departureOutlet->branch->kota ?? 'Unknown';
         $validated['destination_city'] = $destinationOutlet->branch->kota ?? 'Unknown';
 
-        // Cari jadwal berdasarkan rute yang menghubungkan kedua kota
         $jadwals = $this->findAvailableSchedules(
             $validated['departure_city'],
             $validated['destination_city'],
@@ -355,13 +346,10 @@ class CustomerController extends Controller
     }
 
     /**
-     * Mencari jadwal yang tersedia dengan logika yang lebih baik
+     * Mencari jadwal yang tersedia
      */
     private function findAvailableSchedules($departureCity, $destinationCity, $departureOutlet, $destinationOutlet, $departureDate, $passengerCount)
     {
-        // Cari semua rute yang mungkin
-        // 1. Rute langsung dari departureCity ke destinationCity
-        // 2. Rute yang memiliki pemberhentian di departureCity dan destinationCity
         $allRutes = Rute::where('status', 'aktif')->get();
         $validRuteIds = [];
 
@@ -375,7 +363,6 @@ class CustomerController extends Controller
             return collect();
         }
 
-        // Cari jadwal berdasarkan rute yang valid
         $jadwals = Jadwal::with(['shuttle', 'rutes'])
             ->where('tanggal_keberangkatan', $departureDate)
             ->where('status', 'tersedia')
@@ -386,13 +373,9 @@ class CustomerController extends Controller
             ->orderBy('waktu_keberangkatan')
             ->get()
             ->map(function ($jadwal) use ($departureCity, $destinationCity) {
-                // Hitung harga berdasarkan segment yang sesuai
                 $totalHarga = $this->calculatePriceForRoute($jadwal, $departureCity, $destinationCity);
                 $jadwal->harga_total = $totalHarga ?? $jadwal->harga_total;
-
-                // Format rute string
                 $jadwal->rute_string = $departureCity . ' → ' . $destinationCity;
-
                 return $jadwal;
             });
 
@@ -404,12 +387,10 @@ class CustomerController extends Controller
      */
     private function isRouteValid($rute, $departureCity, $destinationCity, $departureOutlet, $destinationOutlet)
     {
-        // Jika rute langsung dari kota asal ke kota tujuan
         if ($rute->kota_asal == $departureCity && $rute->kota_tujuan == $destinationCity) {
             return $this->checkOutletsInRoute($rute, $departureOutlet, $destinationOutlet);
         }
 
-        // Jika departureCity adalah kota asal dan destinationCity ada dalam pemberhentian
         if ($rute->kota_asal == $departureCity) {
             $pemberhentian = json_decode($rute->rute_pemberhentian, true) ?? [];
             foreach ($pemberhentian as $stop) {
@@ -419,7 +400,6 @@ class CustomerController extends Controller
             }
         }
 
-        // Jika destinationCity adalah kota tujuan dan departureCity ada dalam pemberhentian
         if ($rute->kota_tujuan == $destinationCity) {
             $pemberhentian = json_decode($rute->rute_pemberhentian, true) ?? [];
             foreach ($pemberhentian as $stop) {
@@ -429,18 +409,13 @@ class CustomerController extends Controller
             }
         }
 
-        // Jika kedua kota ada dalam pemberhentian (transit)
         $pemberhentian = json_decode($rute->rute_pemberhentian, true) ?? [];
         $foundDeparture = false;
         $foundDestination = false;
 
         foreach ($pemberhentian as $stop) {
-            if (($stop['kota'] ?? '') == $departureCity) {
-                $foundDeparture = true;
-            }
-            if (($stop['kota'] ?? '') == $destinationCity) {
-                $foundDestination = true;
-            }
+            if (($stop['kota'] ?? '') == $departureCity) $foundDeparture = true;
+            if (($stop['kota'] ?? '') == $destinationCity) $foundDestination = true;
         }
 
         if ($foundDeparture && $foundDestination) {
@@ -459,9 +434,8 @@ class CustomerController extends Controller
         $departureValid = false;
         $destinationValid = false;
 
-        // Cek untuk departure outlet
+        // Cek departure outlet
         if ($rute->kota_asal == $depCityInStop || $depCityInStop === null) {
-            // Cek dalam pemberhentian untuk departure city
             foreach ($pemberhentian as $stop) {
                 if (($stop['kota'] ?? '') == ($depCityInStop ?? $rute->kota_asal)) {
                     if (in_array($departureOutlet, $stop['outlets'] ?? [])) {
@@ -470,15 +444,13 @@ class CustomerController extends Controller
                     }
                 }
             }
-            // Jika kota asal adalah departure city dan tidak ada dalam pemberhentian, anggap valid
             if (!$departureValid && $rute->kota_asal == ($depCityInStop ?? $rute->kota_asal)) {
                 $departureValid = true;
             }
         }
 
-        // Cek untuk destination outlet
+        // Cek destination outlet
         if ($rute->kota_tujuan == $destCityInStop || $destCityInStop === null) {
-            // Cek dalam pemberhentian untuk destination city
             foreach ($pemberhentian as $stop) {
                 if (($stop['kota'] ?? '') == ($destCityInStop ?? $rute->kota_tujuan)) {
                     if (in_array($destinationOutlet, $stop['outlets'] ?? [])) {
@@ -487,7 +459,6 @@ class CustomerController extends Controller
                     }
                 }
             }
-            // Jika kota tujuan adalah destination city dan tidak ada dalam pemberhentian, anggap valid
             if (!$destinationValid && $rute->kota_tujuan == ($destCityInStop ?? $rute->kota_tujuan)) {
                 $destinationValid = true;
             }
@@ -501,40 +472,22 @@ class CustomerController extends Controller
      */
     private function calculatePriceForRoute($jadwal, $departureCity, $destinationCity)
     {
-        // Ambil rute pertama dari jadwal (asumsi satu jadwal satu rute)
         $ruteJadwal = RuteJadwal::where('jadwal_id', $jadwal->id)->first();
-        if (!$ruteJadwal) {
-            return $jadwal->harga_total;
-        }
+        if (!$ruteJadwal) return $jadwal->harga_total;
 
-        $rute = \App\Models\Rute::find($ruteJadwal->rute_id);
-        if (!$rute) {
-            return $jadwal->harga_total;
-        }
+        $rute = Rute::find($ruteJadwal->rute_id);
+        if (!$rute) return $jadwal->harga_total;
 
-        // Jika rute langsung, gunakan harga dasar
         if ($rute->kota_asal == $departureCity && $rute->kota_tujuan == $destinationCity) {
             return $rute->harga_dasar;
         }
 
-        // Hitung harga proporsional berdasarkan jarak (jika ada data jarak)
         if ($rute->jarak) {
-            // Asumsi harga per km
             $hargaPerKm = $rute->harga_dasar / $rute->jarak;
-
-            // Untuk sekarang, return harga dasar (bisa dikembangkan lebih lanjut)
             return $rute->harga_dasar;
         }
 
         return $jadwal->harga_total;
-    }
-
-    /**
-     * API endpoint untuk pencarian (digunakan untuk AJAX)
-     */
-    public function search(Request $request)
-    {
-        return $this->showSearch($request);
     }
 
     /**
@@ -549,41 +502,34 @@ class CustomerController extends Controller
             'outlet_tujuan' => 'required|exists:outlets,id',
         ]);
 
-        // Ambil data jadwal
         $jadwal = Jadwal::with(['shuttle', 'rutes'])->find($validated['jadwal_id']);
-
-        // Ambil data outlet
         $outletAsal = Outlet::with('branch')->find($validated['outlet_asal']);
         $outletTujuan = Outlet::with('branch')->find($validated['outlet_tujuan']);
 
-        // Cek ketersediaan kursi
         if ($jadwal->kursi_tersedia < $validated['penumpang']) {
             return redirect()->back()
                 ->with('error', 'Kursi tidak tersedia. Hanya tersisa ' . $jadwal->kursi_tersedia . ' kursi.');
         }
 
-        // Hitung total harga
-        $hargaPerKursi = $jadwal->harga_total; // Harga per kursi
+        $hargaPerKursi = $jadwal->harga_total;
         $totalHarga = $hargaPerKursi * $validated['penumpang'];
 
-        // Cek jika ada promo yang sudah diterapkan di session
+        // Cek promo
         $appliedPromo = session()->get('applied_promo');
         $diskon = 0;
         $totalAfterDiscount = $totalHarga;
 
         if ($appliedPromo) {
-            // Validasi ulang promo untuk memastikan masih valid
             $promo = Promo::find($appliedPromo['id']);
             if ($promo && $promo->is_aktif && $totalHarga >= $promo->minimal_pembelian) {
                 $diskon = $promo->hitungDiskon($totalHarga);
                 $totalAfterDiscount = $totalHarga - $diskon;
             } else {
-                // Jika promo tidak valid, hapus dari session
                 session()->forget('applied_promo');
             }
         }
 
-        // Cek loyalty discount di session
+        // Cek loyalty discount
         $loyaltyDiscount = session()->get('loyalty_discount');
         $diskonLoyalty = 0;
 
@@ -592,21 +538,14 @@ class CustomerController extends Controller
             if ($loyaltyDiscount['user_id'] == ($user['id'] ?? null)) {
                 $diskonLoyalty = $loyaltyDiscount['discount_amount'];
                 $totalAfterDiscount -= $diskonLoyalty;
-
-                if ($totalAfterDiscount < 0) {
-                    $totalAfterDiscount = 0;
-                }
+                if ($totalAfterDiscount < 0) $totalAfterDiscount = 0;
             }
         }
 
-        // Ambil data user dari session jika ada
         $user = session()->get('user', []);
-
-        // Ambil kota asal dan tujuan dari outlet
         $kotaAsal = $outletAsal->branch ? $outletAsal->branch->kota : 'Kota Asal';
         $kotaTujuan = $outletTujuan->branch ? $outletTujuan->branch->kota : 'Kota Tujuan';
 
-        // Cari rute yang sesuai dengan kota asal dan tujuan
         $rutePertama = null;
         $ruteTerakhir = null;
         $ruteString = '';
@@ -638,16 +577,10 @@ class CustomerController extends Controller
     }
 
     /**
-     * Validasi promo untuk customer (AJAX endpoint)
+     * Validasi promo (AJAX)
      */
     public function validatePromo(Request $request)
     {
-        \Log::info('CustomerController::validatePromo - Starting', [
-            'promo_code' => $request->promo_code,
-            'total_amount' => $request->total_amount,
-            'all_data' => $request->all()
-        ]);
-
         try {
             $request->validate([
                 'promo_code' => 'required|string',
@@ -655,9 +588,6 @@ class CustomerController extends Controller
             ]);
 
             $promoCode = strtoupper($request->promo_code);
-
-            \Log::info('CustomerController::validatePromo - Searching promo:', ['kode_promo' => $promoCode]);
-
             $promo = Promo::where('kode_promo', $promoCode)
                 ->where('status', true)
                 ->whereDate('tanggal_mulai', '<=', now())
@@ -665,55 +595,29 @@ class CustomerController extends Controller
                 ->first();
 
             if (!$promo) {
-                \Log::warning('CustomerController::validatePromo - Promo not found or inactive');
                 return response()->json([
                     'success' => false,
                     'message' => 'Kode promo tidak valid atau sudah kadaluarsa'
                 ]);
             }
 
-            \Log::info('CustomerController::validatePromo - Promo found:', [
-                'id' => $promo->id,
-                'nama' => $promo->nama_promo,
-                'kuota' => $promo->kuota,
-                'terpakai' => $promo->terpakai,
-                'minimal_pembelian' => $promo->minimal_pembelian
-            ]);
-
-            // Cek kuota
             if ($promo->kuota && $promo->terpakai >= $promo->kuota) {
-                \Log::warning('CustomerController::validatePromo - Quota exceeded', [
-                    'kuota' => $promo->kuota,
-                    'terpakai' => $promo->terpakai
-                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Kuota promo sudah habis'
                 ]);
             }
 
-            // Cek minimal pembelian
             if ($request->total_amount < $promo->minimal_pembelian) {
-                \Log::warning('CustomerController::validatePromo - Minimum purchase not met', [
-                    'total_amount' => $request->total_amount,
-                    'minimal_pembelian' => $promo->minimal_pembelian
-                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Minimal pembelian Rp ' . number_format($promo->minimal_pembelian, 0, ',', '.')
                 ]);
             }
 
-            // Hitung diskon
             $diskon = $promo->hitungDiskon($request->total_amount);
             $totalAfterDiscount = $request->total_amount - $diskon;
 
-            \Log::info('CustomerController::validatePromo - Discount calculated', [
-                'diskon' => $diskon,
-                'total_after_discount' => $totalAfterDiscount
-            ]);
-
-            // Simpan promo ke session
             session()->put('applied_promo', [
                 'id' => $promo->id,
                 'kode' => $promo->kode_promo,
@@ -721,10 +625,6 @@ class CustomerController extends Controller
                 'deskripsi' => $promo->deskripsi,
                 'diskon' => $diskon,
                 'total_setelah_diskon' => $totalAfterDiscount
-            ]);
-
-            \Log::info('CustomerController::validatePromo - Promo saved to session', [
-                'applied_promo' => session()->get('applied_promo')
             ]);
 
             return response()->json([
@@ -744,20 +644,7 @@ class CustomerController extends Controller
                 'total_after_discount' => $totalAfterDiscount
             ]);
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('CustomerController::validatePromo - ValidationException', [
-                'errors' => $e->errors(),
-                'message' => $e->getMessage()
-            ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal: ' . implode(', ', $e->errors()['promo_code'] ?? $e->errors()['total_amount'] ?? ['Data tidak valid'])
-            ]);
         } catch (\Exception $e) {
-            \Log::error('CustomerController::validatePromo - Exception', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
@@ -766,26 +653,17 @@ class CustomerController extends Controller
     }
 
     /**
-     * Hapus promo dari session (AJAX endpoint)
+     * Hapus promo (AJAX)
      */
     public function removePromo(Request $request)
     {
-        \Log::info('CustomerController::removePromo - Removing promo from session');
-
         try {
             session()->forget('applied_promo');
-
-            \Log::info('CustomerController::removePromo - Promo removed successfully');
-
             return response()->json([
                 'success' => true,
                 'message' => 'Promo berhasil dihapus'
             ]);
         } catch (\Exception $e) {
-            \Log::error('CustomerController::removePromo - Exception', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus promo'
@@ -798,10 +676,8 @@ class CustomerController extends Controller
      */
     public function prosesPemesanan(Request $request)
     {
-        // Debug: lihat data yang masuk
         \Log::info('Proses Pemesanan Request Data:', $request->all());
 
-        // Validasi input
         $validator = Validator::make($request->all(), [
             'jadwal_id' => 'required|exists:jadwals,id',
             'jumlah_penumpang' => 'required|integer|min:1|max:10',
@@ -810,23 +686,15 @@ class CustomerController extends Controller
             'email_pemesan' => 'required|email|max:100',
             'penumpang' => 'required|array|min:1',
             'penumpang.*.nama_lengkap' => 'required|string|max:100',
-            'penumpang.*.nik' => 'required|string|size:16', // Pastikan NIK 16 digit
+            'penumpang.*.nik' => 'required|string|digits:16',
             'penumpang.*.jenis_kelamin' => 'required|string|in:L,P',
-            'kode_promo' => 'nullable|string|exists:promos,kode', // Perhatikan nama tabel
+            'kode_promo' => 'nullable|string|exists:promo,kode_promo',
             'catatan' => 'nullable|string',
             'diskon_amount' => 'nullable|numeric',
             'total_after_discount' => 'required|numeric',
-        ], [
-            'penumpang.*.nama_lengkap.required' => 'Nama lengkap penumpang harus diisi',
-            'penumpang.*.nik.required' => 'NIK penumpang harus diisi',
-            'penumpang.*.nik.size' => 'NIK harus 16 digit',
-            'penumpang.*.jenis_kelamin.required' => 'Jenis kelamin penumpang harus dipilih',
-            'penumpang.*.jenis_kelamin.in' => 'Jenis kelamin harus L atau P',
         ]);
 
         if ($validator->fails()) {
-            \Log::error('Validation errors:', $validator->errors()->toArray());
-
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput()
@@ -836,28 +704,19 @@ class CustomerController extends Controller
         DB::beginTransaction();
 
         try {
-            // Ambil data jadwal
             $jadwal = Jadwal::with('shuttle')->findOrFail($request->jadwal_id);
 
-            // Debug jadwal
-            \Log::info('Jadwal found:', ['jadwal_id' => $jadwal->id, 'kursi_tersedia' => $jadwal->kursi_tersedia]);
-
-            // Cek ketersediaan kursi
             if ($jadwal->kursi_tersedia < $request->jumlah_penumpang) {
                 throw new \Exception('Kursi tidak tersedia. Sisa kursi: ' . $jadwal->kursi_tersedia);
             }
 
-            // Hitung harga total berdasarkan jumlah penumpang
-            $hargaPerOrang = $jadwal->harga_total; // Harga per orang dari jadwal
+            $hargaPerOrang = $jadwal->harga_total;
             $hargaTotal = $hargaPerOrang * $request->jumlah_penumpang;
-
-            // Gunakan diskon dari form jika ada
             $diskon = $request->diskon_amount ?? 0;
             $promoId = null;
 
-            // Jika ada kode promo, validasi dan dapatkan promo_id
             if ($request->kode_promo) {
-                $promo = Promo::where('kode', strtoupper($request->kode_promo))
+                $promo = Promo::where('kode_promo', strtoupper($request->kode_promo))
                     ->where('status', true)
                     ->whereDate('tanggal_mulai', '<=', now())
                     ->whereDate('tanggal_berakhir', '>=', now())
@@ -865,22 +724,19 @@ class CustomerController extends Controller
 
                 if ($promo) {
                     $promoId = $promo->id;
-                    // Jika diskon dari form 0, hitung ulang
                     if ($diskon == 0 && method_exists($promo, 'hitungDiskon')) {
                         $diskon = $promo->hitungDiskon($hargaTotal);
                     }
                 }
             }
 
-            // Cek loyalty discount dari session
             $loyaltyDiscount = session()->get('loyalty_discount');
             $diskonLoyalty = 0;
 
             if ($loyaltyDiscount) {
-                $user = auth()->user();
+                $user = Auth::user();
                 if ($loyaltyDiscount['user_id'] == ($user->id ?? null)) {
                     $diskonLoyalty = $loyaltyDiscount['discount_amount'];
-                    // Gunakan loyalty points
                     if ($user && $user->isMemberActive()) {
                         $user->useLoyaltyPoints($loyaltyDiscount['points_used']);
                     }
@@ -888,21 +744,17 @@ class CustomerController extends Controller
                 }
             }
 
-            // Hitung total bayar
             $totalBayar = $hargaTotal - $diskon - $diskonLoyalty;
 
-            // Gunakan total_after_discount dari form jika ada
             if ($request->total_after_discount && $request->total_after_discount > 0) {
                 $totalBayar = $request->total_after_discount;
             }
 
-            // Generate kode booking
             $kodeBooking = $this->generateKodeBooking();
 
-            // Buat pemesanan
             $pemesanan = Pemesanan::create([
                 'kode_booking' => $kodeBooking,
-                'customer_id' => auth()->id(),
+                'customer_id' => Auth::id(),
                 'jadwal_id' => $jadwal->id,
                 'jumlah_penumpang' => $request->jumlah_penumpang,
                 'harga_total' => $hargaTotal,
@@ -917,20 +769,16 @@ class CustomerController extends Controller
                 'waktu_kadaluarsa' => now()->addHours(24),
             ]);
 
-            \Log::info('Pemesanan created:', ['id' => $pemesanan->id, 'kode_booking' => $kodeBooking]);
-
-            // Simpan detail penumpang
-            foreach ($request->penumpang as $index => $dataPenumpang) {
+            foreach ($request->penumpang as $dataPenumpang) {
                 DetailPenumpang::create([
                     'pemesanan_id' => $pemesanan->id,
                     'nama_lengkap' => $dataPenumpang['nama_lengkap'],
                     'nik' => $dataPenumpang['nik'],
                     'jenis_kelamin' => $dataPenumpang['jenis_kelamin'],
-                    'nomor_kursi' => null // Akan diisi saat pilih kursi
+                    'nomor_kursi' => null
                 ]);
             }
 
-            // Update kuota promo jika digunakan
             if ($promoId) {
                 $promo = Promo::find($promoId);
                 if ($promo && $promo->kuota) {
@@ -939,39 +787,27 @@ class CustomerController extends Controller
                 }
             }
 
-            // Update kursi tersedia di jadwal
             $jadwal->kursi_tersedia -= $request->jumlah_penumpang;
             if ($jadwal->kursi_tersedia <= 0) {
                 $jadwal->status = 'penuh';
             }
             $jadwal->save();
 
-            // Jika pemesanan berhasil, tambahkan poin jika user adalah member aktif
-            $user = auth()->user();
+            $user = Auth::user();
             if ($user && $user->isMemberActive()) {
-                // Tambah member points (100 per pembelian)
                 $user->addMemberPoints(100);
-
-                // Tambah loyalty points berdasarkan level membership
                 $loyaltyPointsToAdd = $user->calculateLoyaltyPointsToAdd();
                 $user->addLoyaltyPoints($loyaltyPointsToAdd);
             }
 
             DB::commit();
 
-            \Log::info('Pemesanan successful, redirecting to kursi', ['pemesanan_id' => $pemesanan->id]);
-
-            // Redirect ke halaman kursi
             return redirect()->route('customer.kursi', ['pemesanan_id' => $pemesanan->id])
                 ->with('success', 'Pemesanan berhasil! Silakan pilih kursi untuk penumpang.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-
-            \Log::error('Pemesanan failed:', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            \Log::error('Pemesanan failed:', ['error' => $e->getMessage()]);
 
             return redirect()->back()
                 ->with('error', 'Gagal melakukan pemesanan: ' . $e->getMessage())
@@ -979,13 +815,14 @@ class CustomerController extends Controller
         }
     }
 
-    // Method untuk generate kode booking
+    /**
+     * Generate kode booking
+     */
     private function generateKodeBooking()
     {
         $prefix = 'SS';
         $date = date('Ymd');
         $random = strtoupper(substr(md5(uniqid()), 0, 6));
-
         return $prefix . $date . $random;
     }
 
@@ -995,36 +832,33 @@ class CustomerController extends Controller
     public function showPemilihanKursi(Request $request)
     {
         $validated = $request->validate([
-            'kode_booking' => 'required|exists:pemesanans,kode_booking'
+            'pemesanan_id' => 'required|exists:pemesanan,id'
         ]);
 
-        $pemesanan = Pemesanan::with(['jadwal.shuttle', 'penumpang'])
-            ->where('kode_booking', $validated['kode_booking'])
-            ->first();
+        $pemesanan = Pemesanan::with(['jadwal.shuttle', 'detailPenumpang'])
+            ->where('id', $validated['pemesanan_id'])
+            ->where('customer_id', Auth::id())
+            ->firstOrFail();
 
-        // Cek status pemesanan
-        if ($pemesanan->status_pemesanan !== 'menunggu_konfirmasi') {
+        if ($pemesanan->status !== 'menunggu_pembayaran') {
             return redirect()->route('customer.beranda')
                 ->with('error', 'Pemesanan ini sudah diproses atau dibatalkan.');
         }
 
-        // Ambil denah shuttle
         $shuttle = $pemesanan->jadwal->shuttle;
-        $denahKursi = json_decode($shuttle->denah_kursi, true) ?? [];
+        $layoutKursi = $shuttle->layout_kursi_array ?? [];
 
-        // Ambil kursi yang sudah terisi di jadwal ini
         $kursiTerisi = DetailPenumpang::whereHas('pemesanan', function($query) use ($pemesanan) {
             $query->where('jadwal_id', $pemesanan->jadwal_id)
-                ->where('status_pemesanan', '!=', 'dibatalkan');
+                ->where('status', '!=', 'dibatalkan');
         })->pluck('nomor_kursi')->filter()->toArray();
 
-        // Ambil kursi yang sudah dipilih di pemesanan ini
-        $kursiDipilih = $pemesanan->penumpang->pluck('nomor_kursi')->filter()->toArray();
+        $kursiDipilih = $pemesanan->detailPenumpang->pluck('nomor_kursi')->filter()->toArray();
 
-        return view('customer.pemilihan_kursi', [
+        return view('customer.kursi', [
             'pemesanan' => $pemesanan,
             'shuttle' => $shuttle,
-            'denahKursi' => $denahKursi,
+            'layoutKursi' => $layoutKursi,
             'kursiTerisi' => $kursiTerisi,
             'kursiDipilih' => $kursiDipilih
         ]);
@@ -1036,42 +870,36 @@ class CustomerController extends Controller
     public function prosesPemilihanKursi(Request $request)
     {
         $validated = $request->validate([
-            'kode_booking' => 'required|exists:pemesanans,kode_booking',
+            'pemesanan_id' => 'required|exists:pemesanan,id',
             'kursi' => 'required|array',
             'kursi.*' => 'required|string'
         ]);
 
-        $pemesanan = Pemesanan::with(['penumpang', 'jadwal.shuttle'])
-            ->where('kode_booking', $validated['kode_booking'])
-            ->first();
+        $pemesanan = Pemesanan::with(['detailPenumpang', 'jadwal.shuttle'])
+            ->where('id', $validated['pemesanan_id'])
+            ->where('customer_id', Auth::id())
+            ->firstOrFail();
 
-        // Validasi jumlah kursi sama dengan jumlah penumpang
         if (count($validated['kursi']) !== $pemesanan->jumlah_penumpang) {
             return redirect()->back()
                 ->with('error', 'Jumlah kursi yang dipilih harus sama dengan jumlah penumpang.');
         }
 
-        // Validasi kursi unik
         if (count($validated['kursi']) !== count(array_unique($validated['kursi']))) {
             return redirect()->back()
                 ->with('error', 'Setiap penumpang harus memiliki kursi yang berbeda.');
         }
 
-        // Ambil denah shuttle untuk validasi kursi
         $shuttle = $pemesanan->jadwal->shuttle;
-        $denahKursi = json_decode($shuttle->denah_kursi, true) ?? [];
+        $layoutKursi = $shuttle->layout_kursi_array ?? [];
         $kursiValid = [];
 
-        // Flatten denah kursi untuk validasi
-        foreach ($denahKursi as $baris) {
-            foreach ($baris['kursi'] as $kursi) {
-                if ($kursi['status'] === 'tersedia') {
-                    $kursiValid[] = $kursi['nomor'];
-                }
+        foreach ($layoutKursi as $kursi) {
+            if (($kursi['status'] ?? 'tersedia') === 'tersedia') {
+                $kursiValid[] = $kursi['nomor'];
             }
         }
 
-        // Validasi kursi yang dipilih
         foreach ($validated['kursi'] as $kursi) {
             if (!in_array($kursi, $kursiValid)) {
                 return redirect()->back()
@@ -1079,14 +907,12 @@ class CustomerController extends Controller
             }
         }
 
-        // Cek kursi yang sudah terisi di jadwal ini
-        $kursiTerisi = \App\Models\Penumpang::whereHas('pemesanan', function($query) use ($pemesanan) {
+        $kursiTerisi = DetailPenumpang::whereHas('pemesanan', function($query) use ($pemesanan) {
             $query->where('jadwal_id', $pemesanan->jadwal_id)
                 ->where('id', '!=', $pemesanan->id)
-                ->where('status_pemesanan', '!=', 'dibatalkan');
+                ->where('status', '!=', 'dibatalkan');
         })->pluck('nomor_kursi')->filter()->toArray();
 
-        // Validasi kursi tidak terisi oleh pemesanan lain
         foreach ($validated['kursi'] as $kursi) {
             if (in_array($kursi, $kursiTerisi)) {
                 return redirect()->back()
@@ -1095,28 +921,17 @@ class CustomerController extends Controller
         }
 
         try {
-            // Update kursi untuk setiap penumpang
-            foreach ($pemesanan->penumpang as $index => $penumpang) {
+            foreach ($pemesanan->detailPenumpang as $index => $penumpang) {
                 if (isset($validated['kursi'][$index])) {
                     $penumpang->nomor_kursi = $validated['kursi'][$index];
                     $penumpang->save();
                 }
             }
 
-            // Update status pemesanan
-            $pemesanan->status_pemesanan = 'diproses';
-            $pemesanan->save();
-
-            // Redirect ke halaman pembayaran
-            return redirect()->route('customer.pembayaran', [
-                'kode_booking' => $pemesanan->kode_booking
-            ])->with('success', 'Pemilihan kursi berhasil!');
+            return redirect()->route('customer.detail_pemesanan', ['kode_booking' => $pemesanan->kode_booking])
+                ->with('success', 'Kursi berhasil dipilih! Silakan konfirmasi detail pesanan.');
 
         } catch (\Exception $e) {
-            \Log::error('CustomerController::prosesPemilihanKursi - Exception', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
         }
@@ -1125,171 +940,36 @@ class CustomerController extends Controller
     /**
      * Halaman pembayaran
      */
-    public function showPembayaran(Request $request)
-    {
-        $validated = $request->validate([
-            'kode_booking' => 'required|exists:pemesanans,kode_booking'
-        ]);
 
-        $pemesanan = Pemesanan::with(['jadwal', 'penumpang'])
-            ->where('kode_booking', $validated['kode_booking'])
-            ->first();
-
-        // Cek status pemesanan
-        if (!in_array($pemesanan->status_pemesanan, ['diproses', 'menunggu_pembayaran'])) {
-            return redirect()->route('customer.beranda')
-                ->with('error', 'Pemesanan ini sudah diproses atau dibatalkan.');
-        }
-
-        // Ambil metode pembayaran yang tersedia
-        $metodePembayaran = MetodePembayaran::where('aktif', true)
-            ->orderBy('urutan', 'asc')
-            ->get();
-
-        return view('customer.pembayaran', [
-            'pemesanan' => $pemesanan,
-            'metodePembayaran' => $metodePembayaran
-        ]);
-    }
 
     /**
      * Proses pembayaran
      */
-    public function prosesPembayaran(Request $request)
-    {
-        $validated = $request->validate([
-            'kode_booking' => 'required|exists:pemesanans,kode_booking',
-            'metode_pembayaran' => 'required|exists:metode_pembayaran,kode'
-        ]);
-
-        try {
-            $pemesanan = \App\Models\Pemesanan::find($validated['kode_booking']);
-
-            // Update status pembayaran
-            $pemesanan->metode_pembayaran = $validated['metode_pembayaran'];
-            $pemesanan->status_pembayaran = 'menunggu_pembayaran';
-            $pemesanan->status_pemesanan = 'menunggu_pembayaran';
-            $pemesanan->tanggal_pembayaran_terakhir = Carbon::now()->addHours(24); // Batas waktu 24 jam
-            $pemesanan->save();
-
-            // Generate kode pembayaran (contoh: menggunakan kombinasi)
-            $kodePembayaran = 'PAY' . strtoupper(substr(md5(uniqid(rand(), true)), 0, 8));
-
-            // Simpan transaksi pembayaran
-            $transaksi = new \App\Models\Transaksi();
-            $transaksi->pemesanan_id = $pemesanan->id;
-            $transaksi->kode_transaksi = $kodePembayaran;
-            $transaksi->metode_pembayaran = $validated['metode_pembayaran'];
-            $transaksi->jumlah = $pemesanan->total_bayar;
-            $transaksi->status = 'pending';
-            $transaksi->save();
-
-            // Redirect ke halaman konfirmasi pembayaran
-            return redirect()->route('customer.konfirmasi-pembayaran', [
-                'kode_transaksi' => $kodePembayaran
-            ])->with('success', 'Silakan selesaikan pembayaran dalam 24 jam.');
-
-        } catch (\Exception $e) {
-            \Log::error('CustomerController::prosesPembayaran - Exception', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
-        }
-    }
 
     /**
      * Halaman konfirmasi pembayaran
      */
-    public function showKonfirmasiPembayaran(Request $request)
-    {
-        $validated = $request->validate([
-            'kode_transaksi' => 'required|exists:transaksis,kode_transaksi'
-        ]);
-
-        $transaksi = Transaksi::with(['pemesanan.jadwal', 'pemesanan.penumpang'])
-            ->where('kode_transaksi', $validated['kode_transaksi'])
-            ->first();
-
-        // Ambil detail metode pembayaran
-        $metodePembayaran = \App\Models\MetodePembayaran::where('kode', $transaksi->metode_pembayaran)
-            ->first();
-
-        return view('customer.konfirmasi_pembayaran', [
-            'transaksi' => $transaksi,
-            'metodePembayaran' => $metodePembayaran
-        ]);
-    }
 
     /**
-     * Proses konfirmasi pembayaran (upload bukti)
+     * Proses konfirmasi pembayaran
      */
-    public function prosesKonfirmasiPembayaran(Request $request)
-    {
-        $validated = $request->validate([
-            'kode_transaksi' => 'required|exists:transaksis,kode_transaksi',
-            'bukti_pembayaran' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-            'nama_pengirim' => 'required|string|max:255',
-            'tanggal_transfer' => 'required|date',
-            'jumlah_transfer' => 'required|numeric'
-        ]);
-
-        try {
-            $transaksi = Transaksi::find($validated['kode_transaksi']);
-
-            // Upload bukti pembayaran
-            if ($request->hasFile('bukti_pembayaran')) {
-                $file = $request->file('bukti_pembayaran');
-                $filename = 'bukti_' . time() . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('bukti_pembayaran', $filename, 'public');
-
-                $transaksi->bukti_pembayaran = $path;
-            }
-
-            $transaksi->nama_pengirim = $validated['nama_pengirim'];
-            $transaksi->tanggal_transfer = $validated['tanggal_transfer'];
-            $transaksi->jumlah_transfer = $validated['jumlah_transfer'];
-            $transaksi->status = 'menunggu_verifikasi';
-            $transaksi->save();
-
-            // Update status pemesanan
-            $pemesanan = $transaksi->pemesanan;
-            $pemesanan->status_pembayaran = 'menunggu_verifikasi';
-            $pemesanan->save();
-
-            return redirect()->route('customer.riwayat')
-                ->with('success', 'Bukti pembayaran berhasil diupload. Silakan tunggu verifikasi admin.');
-
-        } catch (\Exception $e) {
-            \Log::error('CustomerController::prosesKonfirmasiPembayaran - Exception', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
-        }
-    }
-
+    
     /**
      * Halaman riwayat pemesanan
      */
     public function showRiwayat(Request $request)
     {
-        // Cek jika user sudah login
-        if (!session()->has('user')) {
+        if (!Auth::check()) {
             return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        $user = session()->get('user');
-
-        // Ambil riwayat pemesanan user dengan relasi yang diperlukan
+        $user = Auth::user();
         $riwayat = Pemesanan::with([
             'jadwal.shuttle',
-            'jadwal.rutes',  // Pastikan relasi rutes ada
+            'jadwal.rutes',
             'detailPenumpang'
         ])
-        ->where('customer_id', $user['id'])
+        ->where('customer_id', $user->id)
         ->orderBy('created_at', 'desc')
         ->get();
 
@@ -1302,22 +982,19 @@ class CustomerController extends Controller
     /**
      * Halaman detail pemesanan
      */
-    public function showDetailPemesanan(Request $request, $kode_booking)
+    public function showDetailPemesanan($kode_booking)
     {
-        // Cek jika user sudah login
-        if (!session()->has('user')) {
+        if (!Auth::check()) {
             return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        $user = session()->get('user');
-
-        // Ambil data pemesanan
-        $pemesanan = \App\Models\Pemesanan::with([
+        $user = Auth::user();
+        $pemesanan = Pemesanan::with([
             'jadwal.shuttle',
-            'penumpang',
+            'detailPenumpang',
             'transaksi'
         ])->where('kode_booking', $kode_booking)
-        ->where('customer_id', $user['id'])
+        ->where('customer_id', $user->id)
         ->first();
 
         if (!$pemesanan) {
@@ -1325,27 +1002,49 @@ class CustomerController extends Controller
                 ->with('error', 'Pemesanan tidak ditemukan.');
         }
 
-        return view('customer.detail_pemesanan', [
+        // Prepare data for the view
+        $jadwal = $pemesanan->jadwal;
+        $rute = $jadwal->rutes->first();
+
+        $from = $rute ? $rute->kota_asal : 'Kota Asal';
+        $to = $rute ? $rute->kota_tujuan : 'Kota Tujuan';
+        $date = $jadwal->tanggal_keberangkatan;
+        $time = $jadwal->waktu_keberangkatan;
+
+        $customer_name = $pemesanan->nama_pemesan;
+        $customer_phone = $pemesanan->telepon_pemesan;
+        $customer_email = $pemesanan->email_pemesan;
+
+        $penumpang = $pemesanan->detailPenumpang;
+        $total = $pemesanan->total_bayar;
+
+        return view('customer.detail_pesanan', [
             'pemesanan' => $pemesanan,
-            'user' => $user
+            'user' => $user,
+            'from' => $from,
+            'to' => $to,
+            'date' => $date,
+            'time' => $time,
+            'customer_name' => $customer_name,
+            'customer_phone' => $customer_phone,
+            'customer_email' => $customer_email,
+            'penumpang' => $penumpang,
+            'total' => $total
         ]);
     }
 
     /**
      * Batalkan pemesanan
      */
-    public function batalkanPemesanan(Request $request, $kode_booking)
+    public function batalkanPemesanan($kode_booking)
     {
-        // Cek jika user sudah login
-        if (!session()->has('user')) {
+        if (!Auth::check()) {
             return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        $user = session()->get('user');
-
         try {
             $pemesanan = Pemesanan::where('kode_booking', $kode_booking)
-                ->where('customer_id', $user['id'])
+                ->where('customer_id', Auth::id())
                 ->first();
 
             if (!$pemesanan) {
@@ -1353,29 +1052,24 @@ class CustomerController extends Controller
                     ->with('error', 'Pemesanan tidak ditemukan.');
             }
 
-            // Hanya bisa dibatalkan jika status masih menunggu pembayaran
-            if (!in_array($pemesanan->status_pemesanan, ['menunggu_konfirmasi', 'menunggu_pembayaran'])) {
+            if (!in_array($pemesanan->status, ['menunggu_konfirmasi', 'menunggu_pembayaran'])) {
                 return redirect()->back()
                     ->with('error', 'Pemesanan tidak dapat dibatalkan karena sudah diproses.');
             }
 
-            // Kembalikan kursi tersedia
             $jadwal = $pemesanan->jadwal;
             $jadwal->kursi_tersedia += $pemesanan->jumlah_penumpang;
 
-            // Jika status sebelumnya tidak tersedia, ubah jadi tersedia
             if ($jadwal->status === 'tidak_tersedia') {
                 $jadwal->status = 'tersedia';
             }
 
             $jadwal->save();
 
-            // Update status pemesanan
-            $pemesanan->status_pemesanan = 'dibatalkan';
+            $pemesanan->status = 'dibatalkan';
             $pemesanan->status_pembayaran = 'dibatalkan';
             $pemesanan->save();
 
-            // Update transaksi jika ada
             if ($pemesanan->transaksi) {
                 $pemesanan->transaksi->status = 'dibatalkan';
                 $pemesanan->transaksi->save();
@@ -1385,10 +1079,6 @@ class CustomerController extends Controller
                 ->with('success', 'Pemesanan berhasil dibatalkan.');
 
         } catch (\Exception $e) {
-            \Log::error('CustomerController::batalkanPemesanan - Exception', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
         }
@@ -1399,77 +1089,126 @@ class CustomerController extends Controller
      */
     public function profil()
     {
-        // Cek jika user belum login
-        if (!session()->has('user')) {
+        if (!Auth::check()) {
             return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        $user = session()->get('user');
-
-        // Ambil data lengkap user dari database
-        $userData = \App\Models\User::find($user['id']);
-
-        // Jika user tidak ditemukan, redirect ke login
-        if (!$userData) {
-            return redirect()->route('customer.login')->with('error', 'Sesi tidak valid. Silakan login kembali.');
-        }
-
-        // Ambil data riwayat pemesanan terbaru (opsional untuk dashboard)
-        $riwayatTerbaru = \App\Models\Pemesanan::where('customer_id', $user['id'])
+        $user = Auth::user();
+        $riwayatTerbaru = Pemesanan::where('customer_id', $user->id)
             ->with(['jadwal', 'outletAsal', 'outletTujuan'])
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
 
         return view('customer.dashboardprofile', [
-            'user' => $userData,
+            'user' => $user,
             'riwayatTerbaru' => $riwayatTerbaru
         ]);
     }
 
     /**
-     * Halaman membership dengan status
+     * Halaman detail profil
      */
-    public function membership()
+    public function profilDetail()
     {
-        if (!session()->has('user')) {
+        if (!Auth::check()) {
             return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        $user = session()->get('user');
-        $userData = User::find($user['id']);
+        $user = Auth::user();
+        return view('customer.profilcust', ['user' => $user]);
+    }
 
-        if (!$userData) {
-            return redirect()->route('customer.login')->with('error', 'Sesi tidak valid. Silakan login kembali.');
+    /**
+     * Update profil
+     */
+    public function updateProfile(Request $request)
+    {
+        if (!Auth::check()) {
+            return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        // Jika user belum menjadi member, tampilkan halaman untuk mendaftar membership
-        if ($userData->membership_status === 'non_member') {
-            return view('customer.membership_non_member', [
-                'user' => $userData
+        $user = Auth::user();
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'username' => 'nullable|string|max:50|unique:users,username,' . $user->id,
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'phone' => 'nullable|string|max:20',
+            'nik' => 'nullable|string|max:20',
+            'tanggal_lahir' => 'nullable|date',
+            'jenis_kelamin' => 'nullable|in:L,P',
+            'password' => 'nullable|string|min:6|confirmed',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        try {
+            $user->name = $validated['name'];
+            $user->username = $validated['username'] ?? $user->username;
+            $user->email = $validated['email'];
+            $user->phone = $validated['phone'] ?? $user->phone;
+            $user->nik = $validated['nik'] ?? $user->nik;
+            $user->tanggal_lahir = $validated['tanggal_lahir'] ?? $user->tanggal_lahir;
+            $user->jenis_kelamin = $validated['jenis_kelamin'] ?? $user->jenis_kelamin;
+
+            if ($request->filled('password')) {
+                $user->password = bcrypt($validated['password']);
+            }
+
+            if ($request->hasFile('avatar')) {
+                $avatarPath = $request->file('avatar')->store('avatars', 'public');
+                $user->avatar = $avatarPath;
+            }
+
+            $user->save();
+
+            session()->put('user', [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $user->avatar,
+                'membership_status' => $user->membership_status,
+                'membership_level' => $user->membership_level,
             ]);
+
+            return redirect()->route('customer.profilcust')->with('success', 'Profil berhasil diperbarui!');
+
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Gagal memperbarui profil: ' . $e->getMessage()])
+                        ->withInput();
+        }
+    }
+
+    /**
+     * Halaman membership
+     */
+    public function membership()
+    {
+        if (!Auth::check()) {
+            return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        // Jika status pending (menunggu pembayaran)
-        if ($userData->membership_status === 'pending') {
-            // Cari payment yang pending
-            $pendingPayment = MembershipPayment::where('user_id', $userData->id)
+        $user = Auth::user();
+
+        if ($user->membership_status === 'non_member') {
+            return view('customer.membership_non_member', ['user' => $user]);
+        }
+
+        if ($user->membership_status === 'pending') {
+            $pendingPayment = MembershipPayment::where('user_id', $user->id)
                 ->where('payment_status', 'pending')
                 ->orderBy('created_at', 'desc')
                 ->first();
 
             return view('customer.membership_pending', [
-                'user' => $userData,
+                'user' => $user,
                 'pendingPayment' => $pendingPayment
             ]);
         }
 
-        // Jika membership aktif, hitung semua data untuk ditampilkan
-        $membershipLevel = $userData->membership_level ?? 'Bronze';
-        $currentPoints = $userData->member_point ?? 0;
-        $loyaltyPoints = $userData->loyalty_point ?? 0;
+        $membershipLevel = $user->membership_level ?? 'Bronze';
+        $currentPoints = $user->member_point ?? 0;
+        $loyaltyPoints = $user->loyalty_point ?? 0;
 
-        // Tentukan range point untuk setiap level
         $levelRanges = [
             'Bronze' => ['min' => 0, 'max' => 1000],
             'Silver' => ['min' => 1000, 'max' => 2500],
@@ -1477,12 +1216,10 @@ class CustomerController extends Controller
             'Platinum' => ['min' => 4500, 'max' => 6000],
         ];
 
-        // Tentukan level berikutnya
         $levels = ['Bronze', 'Silver', 'Gold', 'Platinum'];
         $currentIndex = array_search($membershipLevel, $levels);
         $nextLevel = $currentIndex < count($levels) - 1 ? $levels[$currentIndex + 1] : 'Platinum';
 
-        // Hitung progress
         $currentMin = $levelRanges[$membershipLevel]['min'];
         $currentMax = $levelRanges[$membershipLevel]['max'];
 
@@ -1494,7 +1231,6 @@ class CustomerController extends Controller
             $progressPercentage = (($currentPoints - $currentMin) / ($currentMax - $currentMin)) * 100;
         }
 
-        // Hitung points yang dibutuhkan untuk level berikutnya
         $pointsNeeded = 0;
         if ($membershipLevel !== 'Platinum') {
             $nextMin = $levelRanges[$nextLevel]['min'];
@@ -1502,13 +1238,11 @@ class CustomerController extends Controller
             if ($pointsNeeded < 0) $pointsNeeded = 0;
         }
 
-        // Hitung sisa waktu membership
         $daysRemaining = 0;
-        if ($userData->membership_end_date) {
-            $daysRemaining = Carbon::parse($userData->membership_end_date)->diffInDays(Carbon::now());
+        if ($user->membership_end_date) {
+            $daysRemaining = max(0, Carbon::parse($user->membership_end_date)->diffInDays(Carbon::now(), false));
         }
 
-        // Create membership object for view
         $membership = (object) [
             'level' => $membershipLevel,
             'points' => $currentPoints,
@@ -1516,7 +1250,7 @@ class CustomerController extends Controller
         ];
 
         return view('customer.membership', [
-            'user' => $userData,
+            'user' => $user,
             'membership' => $membership,
             'currentPoints' => $currentPoints,
             'loyaltyPoints' => $loyaltyPoints,
@@ -1527,26 +1261,28 @@ class CustomerController extends Controller
             'progressPercentage' => $progressPercentage,
             'pointsNeeded' => $pointsNeeded,
             'daysRemaining' => $daysRemaining,
-            'membershipStartDate' => $userData->membership_start_date,
-            'membershipEndDate' => $userData->membership_end_date,
+            'membershipStartDate' => $user->membership_start_date,
+            'membershipEndDate' => $user->membership_end_date,
         ]);
     }
 
     /**
-     * Halaman form pendaftaran membership
+     * Form pendaftaran membership
      */
     public function showMembershipForm()
     {
-        $user = Auth::user();
-
-        // Cek apakah user sudah punya membership
-        if ($user->membership_status === 'active') {
-            return redirect()->route('customer.membership');
-        } elseif ($user->membership_status === 'pending') {
-            return redirect()->route('customer.membership');
+        if (!Auth::check()) {
+            return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        return view('customer.membership_form');
+        $user = Auth::user();
+
+        if ($user->membership_status !== 'non_member') {
+            return redirect()->route('customer.membership')
+                ->with('info', 'Anda sudah terdaftar sebagai member.');
+        }
+
+        return view('customer.membership_form', ['user' => $user]);
     }
 
     /**
@@ -1554,81 +1290,121 @@ class CustomerController extends Controller
      */
     public function processMembershipRegistration(Request $request)
     {
-        $request->validate([
-            'phone' => 'required|string|min:10|max:12',
-            'birthdate' => 'required|date',
-            'gender' => 'required|string|in:L,P',
-        ]);
+        if (!Auth::check()) {
+            return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
+        }
 
         $user = Auth::user();
 
-        // Cek apakah sudah ada membership aktif atau pending
-        if (in_array($user->membership_status, ['active', 'pending'])) {
-            return redirect()->route('customer.membership');
+        $validator = Validator::make($request->all(), [
+            'nama_lengkap' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'telepon' => 'required|string|max:20',
+            'tanggal_lahir' => 'required|date|before:-17 years',
+            'jenis_kelamin' => 'required|in:L,P',
+            'agree_terms' => 'required|accepted',
+        ], [
+            'tanggal_lahir.before' => 'Anda harus berusia minimal 17 tahun untuk mendaftar membership.',
+            'agree_terms.accepted' => 'Anda harus menyetujui syarat dan ketentuan membership.',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
         }
 
         DB::beginTransaction();
 
         try {
-            // Update user data
             $user->update([
-                'phone' => $request->phone,
-                'tanggal_lahir' => $request->birthdate,
-                'jenis_kelamin' => $request->gender,
+                'name' => $request->nama_lengkap,
+                'email' => $request->email,
+                'phone' => $request->telepon,
+                'tanggal_lahir' => $request->tanggal_lahir,
+                'jenis_kelamin' => $request->jenis_kelamin,
                 'membership_status' => 'pending',
-                'membership_level' => 'Bronze',
-                'member_point' => 0,
-                'loyalty_point' => 0,
-                'membership_fee' => 20000,
-                'membership_transaction_id' => 'MEM' . date('Ymd') . strtoupper(substr(md5(uniqid()), 0, 6)),
-            ]);
-
-            // Buat payment record menggunakan MembershipPayment model
-            MembershipPayment::create([
-                'user_id' => $user->id,
-                'transaction_id' => $user->membership_transaction_id,
-                'amount' => 20000,
-                'discount' => 0,
-                'total_amount' => 20000,
-                'payment_status' => 'pending',
-                'waktu_kadaluarsa' => Carbon::now()->addHours(24),
             ]);
 
             DB::commit();
 
-            return redirect()->route('customer.membership.payment');
+            return redirect()->route('customer.membership.payment')
+                ->with('success', 'Data berhasil disimpan! Silakan lanjutkan ke pembayaran membership.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->withErrors(['error' => 'Terjadi kesalahan saat mendaftar membership: ' . $e->getMessage()]);
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan saat menyimpan data. Silakan coba lagi.')
+                ->withInput();
         }
     }
 
     /**
-     * Tampilkan halaman pembayaran membership
+     * Halaman pembayaran membership
      */
     public function showMembershipPayment()
     {
+        if (!Auth::check()) {
+            return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
+        }
+
         $user = Auth::user();
 
-        // Check if user has pending membership
         if ($user->membership_status !== 'pending') {
-            return redirect()->route('customer.membership');
+            return redirect()->route('customer.membership')
+                ->with('error', 'Anda tidak memiliki pembayaran membership yang tertunda.');
         }
 
-        // Find pending payment for this user
-        $payment = MembershipPayment::where('user_id', $user->id)
+        $existingPayment = MembershipPayment::where('user_id', $user->id)
             ->where('payment_status', 'pending')
+            ->where('waktu_kadaluarsa', '>', now())
             ->first();
 
-        if (!$payment) {
-            return redirect()->route('customer.membership');
+        if ($existingPayment) {
+            $metodePembayaran = MetodePembayaran::where('aktif', true)
+                ->orderBy('urutan', 'asc')
+                ->get();
+
+            return view('customer.membership_payment', [
+                'user' => $user,
+                'payment' => $existingPayment,
+                'metodePembayaran' => $metodePembayaran
+            ]);
         }
 
-        return view('customer.membership_payment', [
-            'user' => $user,
-            'payment' => $payment,
-        ]);
+        DB::beginTransaction();
+
+        try {
+            $amount = 100000;
+            $transactionId = MembershipPayment::generateTransactionId();
+
+            $payment = MembershipPayment::create([
+                'user_id' => $user->id,
+                'transaction_id' => $transactionId,
+                'amount' => $amount,
+                'discount' => 0,
+                'total_amount' => $amount,
+                'payment_status' => 'pending',
+                'waktu_kadaluarsa' => now()->addHours(24),
+            ]);
+
+            DB::commit();
+
+            $metodePembayaran = MetodePembayaran::where('aktif', true)
+                ->orderBy('urutan', 'asc')
+                ->get();
+
+            return view('customer.membership_payment', [
+                'user' => $user,
+                'payment' => $payment,
+                'metodePembayaran' => $metodePembayaran
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('customer.membership')
+                ->with('error', 'Terjadi kesalahan saat membuat pembayaran. Silakan coba lagi.');
+        }
     }
 
     /**
@@ -1636,200 +1412,110 @@ class CustomerController extends Controller
      */
     public function processMembershipPayment(Request $request)
     {
-        $user = Auth::user();
-
-        // Cek apakah user memiliki membership pending
-        if ($user->membership_status !== 'pending') {
-            return redirect()->route('customer.membership');
+        if (!Auth::check()) {
+            return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        // Cari payment yang pending
-        $payment = MembershipPayment::where('user_id', $user->id)
-            ->where('payment_status', 'pending')
-            ->first();
+        $user = Auth::user();
 
-        if (!$payment) {
-            return redirect()->route('customer.membership');
+        $validator = Validator::make($request->all(), [
+            'transaction_id' => 'required|exists:membership_payments,transaction_id',
+            'payment_method' => 'required|string',
+            'bukti_pembayaran' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'nama_pengirim' => 'required|string|max:255',
+            'tanggal_transfer' => 'required|date',
+            'jumlah_transfer' => 'required|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
         }
 
         DB::beginTransaction();
 
         try {
-            // Update status membership menjadi active
+            $payment = MembershipPayment::where('transaction_id', $request->transaction_id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$payment || $payment->payment_status !== 'pending' || $payment->isExpired()) {
+                throw new \Exception('Transaksi tidak valid atau sudah kadaluarsa.');
+            }
+
+            $buktiPembayaran = null;
+            if ($request->hasFile('bukti_pembayaran')) {
+                $file = $request->file('bukti_pembayaran');
+                $filename = 'membership_' . time() . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('membership_payments', $filename, 'public');
+                $buktiPembayaran = $path;
+            }
+
+            $payment->update([
+                'payment_method' => $request->payment_method,
+                'payment_status' => 'success',
+                'bukti_pembayaran' => $buktiPembayaran,
+                'nama_pengirim' => $request->nama_pengirim,
+                'tanggal_transfer' => $request->tanggal_transfer,
+                'jumlah_transfer' => $request->jumlah_transfer,
+                'paid_at' => now(),
+            ]);
+
             $user->update([
                 'membership_status' => 'active',
                 'membership_start_date' => now(),
                 'membership_end_date' => now()->addMonths(12),
-                'membership_payment_status' => 'paid',
+                'membership_fee' => $payment->total_amount,
+                'membership_payment_method' => $request->payment_method,
+                'membership_payment_status' => 'success',
+                'membership_transaction_id' => $payment->transaction_id,
+                'membership_level' => 'Bronze',
+                'member_point' => 0,
+                'loyalty_point' => 0,
             ]);
 
-            // Update status payment
-            $payment->update([
-                'payment_status' => 'success',
-                'paid_at' => now(),
-            ]);
-
-            DB::commit();
-
-            return redirect()->route('customer.membership')->with('success', 'Membership berhasil diaktifkan!');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->withErrors(['error' => 'Terjadi kesalahan saat memproses pembayaran: ' . $e->getMessage()]);
-        }
-    }
-
-    /**
-     * Tampilkan halaman pending pembayaran
-     */
-    public function showMembershipPending()
-    {
-        $user = Auth::user();
-
-        // Check if user has pending membership
-        if ($user->membership_status !== 'pending') {
-            return redirect()->route('customer.membership');
-        }
-
-        // Find pending payment for this user
-        $payment = MembershipPayment::where('user_id', $user->id)
-            ->where('payment_status', 'pending')
-            ->first();
-
-        if (!$payment) {
-            return redirect()->route('customer.membership');
-        }
-
-        return view('customer.membership_pending', [
-            'user' => $user,
-            'payment' => $payment,
-        ]);
-    }
-
-    /**
-     * Simulasi pembayaran (untuk testing)
-     */
-    public function simulateMembershipPayment(Request $request)
-    {
-        $user = Auth::user();
-
-        // Cek apakah user memiliki membership pending
-        if ($user->membership_status !== 'pending') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Membership tidak ditemukan'
-            ]);
-        }
-
-        // Cari payment yang pending
-        $payment = MembershipPayment::where('user_id', $user->id)
-            ->where('payment_status', 'pending')
-            ->first();
-
-        if (!$payment) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Payment tidak ditemukan'
-            ]);
-        }
-
-        DB::beginTransaction();
-
-        try {
-            // Update status membership menjadi active
-            $user->update([
+            session()->put('user', [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $user->avatar,
                 'membership_status' => 'active',
-                'membership_start_date' => now(),
-                'membership_end_date' => now()->addMonths(12),
-                'membership_payment_status' => 'paid',
-            ]);
-
-            // Update status payment
-            $payment->update([
-                'payment_status' => 'success',
-                'paid_at' => now(),
+                'membership_level' => 'Bronze',
             ]);
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Pembayaran berhasil disimulasikan',
-                'redirect_url' => route('customer.membership')
-            ]);
+            return redirect()->route('customer.membership')
+                ->with('success', 'Pembayaran berhasil! Membership Anda sekarang aktif.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-            ]);
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
-    /**
-     * Batalkan pembayaran membership
-     */
-    public function cancelMembershipPayment(Request $request)
-    {
-        $user = Auth::user();
-
-        // Check if user has pending membership
-        if ($user->membership_status !== 'pending') {
-            return redirect()->route('customer.membership')->with('info', 'Tidak ada pembayaran pending yang dapat dibatalkan.');
-        }
-
-        // Find and delete pending payment
-        $payment = MembershipPayment::where('user_id', $user->id)
-            ->where('payment_status', 'pending')
-            ->first();
-
-        if ($payment) {
-            $payment->delete();
-        }
-
-        // Reset user membership status to non_member
-        $user->update([
-            'membership_status' => 'non_member',
-            'membership_transaction_id' => null,
-        ]);
-
-        return redirect()->route('customer.membership')->with('info', 'Pembayaran telah dibatalkan.');
-    }
-
-    /**
-     * Tampilkan halaman membership aktif (redirect ke halaman utama membership)
-     */
-    public function membershipActive()
-    {
-        return redirect()->route('customer.membership');
-    }
     /**
      * Gunakan loyalty points untuk diskon
      */
     public function useLoyaltyPoints(Request $request)
     {
-        if (!session()->has('user')) {
+        if (!Auth::check()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $user = session()->get('user');
-        $userData = User::find($user['id']);
+        $user = Auth::user();
 
-        if (!$userData) {
-            return response()->json(['success' => false, 'message' => 'User not found'], 404);
-        }
-
-        // Cek apakah user adalah member aktif
-        if (!$userData->isMemberActive()) {
+        if (!$user->isMemberActive()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda harus menjadi member aktif untuk menggunakan loyalty points.'
             ]);
         }
 
-        // Cek apakah memiliki cukup loyalty points
-        if ($userData->loyalty_point < 50) {
+        if ($user->loyalty_point < 50) {
             return response()->json([
                 'success' => false,
                 'message' => 'Minimum 50 loyalty points diperlukan untuk mendapatkan diskon.'
@@ -1845,8 +1531,7 @@ class CustomerController extends Controller
             ]);
         }
 
-        // Hitung diskon berdasarkan loyalty points
-        $discount = $userData->calculateDiscountFromLoyaltyPoints($totalAmount);
+        $discount = $user->calculateDiscountFromLoyaltyPoints($totalAmount);
 
         if ($discount <= 0) {
             return response()->json([
@@ -1855,19 +1540,17 @@ class CustomerController extends Controller
             ]);
         }
 
-        // Tentukan poin yang digunakan
         $pointsUsed = 0;
-        if ($userData->loyalty_point >= 150) {
+        if ($user->loyalty_point >= 150) {
             $pointsUsed = 150;
-        } elseif ($userData->loyalty_point >= 100) {
+        } elseif ($user->loyalty_point >= 100) {
             $pointsUsed = 100;
         } else {
             $pointsUsed = 50;
         }
 
-        // Simpan diskon ke session
         session()->put('loyalty_discount', [
-            'user_id' => $userData->id,
+            'user_id' => $user->id,
             'discount_amount' => $discount,
             'points_used' => $pointsUsed,
             'total_before_discount' => $totalAmount,
@@ -1880,119 +1563,32 @@ class CustomerController extends Controller
             'discount' => $discount,
             'total_after_discount' => $totalAmount - $discount,
             'points_used' => $pointsUsed,
-            'remaining_points' => $userData->loyalty_point - $pointsUsed
+            'remaining_points' => $user->loyalty_point - $pointsUsed
         ]);
     }
 
     /**
-     * Hapus loyalty discount dari session
+     * Hapus loyalty discount
      */
     public function removeLoyaltyDiscount(Request $request)
     {
         session()->forget('loyalty_discount');
-
         return response()->json([
             'success' => true,
             'message' => 'Loyalty discount berhasil dihapus.'
         ]);
     }
 
-    public function profilDetail()
-    {
-        if (!session()->has('user')) {
-            return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
-        }
-
-        $user = session()->get('user');
-        $userData = \App\Models\User::find($user['id']);
-
-        if (!$userData) {
-            return redirect()->route('customer.login')->with('error', 'Sesi tidak valid. Silakan login kembali.');
-        }
-
-        return view('customer.profilcust', [
-            'user' => $userData
-        ]);
-    }
-
-    public function updateProfile(Request $request)
-    {
-        // Cek jika user belum login
-        if (!session()->has('user')) {
-            return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
-        }
-
-        $user = session()->get('user');
-        $userData = \App\Models\User::find($user['id']);
-
-        if (!$userData) {
-            return redirect()->route('customer.login')->with('error', 'Sesi tidak valid. Silakan login kembali.');
-        }
-
-        // Validasi input
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'username' => 'nullable|string|max:50|unique:users,username,' . $userData->id,
-            'email' => 'required|email|unique:users,email,' . $userData->id,
-            'phone' => 'nullable|string|max:20',
-            'nik' => 'nullable|string|max:20',
-            'tanggal_lahir' => 'nullable|date',
-            'jenis_kelamin' => 'nullable|in:L,P',
-            'password' => 'nullable|string|min:6|confirmed',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
-
-        try {
-            // Update data user
-            $userData->name = $validated['name'];
-            $userData->username = $validated['username'] ?? $userData->username;
-            $userData->email = $validated['email'];
-            $userData->phone = $validated['phone'] ?? $userData->phone;
-            $userData->nik = $validated['nik'] ?? $userData->nik;
-            $userData->tanggal_lahir = $validated['tanggal_lahir'] ?? $userData->tanggal_lahir;
-            $userData->jenis_kelamin = $validated['jenis_kelamin'] ?? $userData->jenis_kelamin;
-
-            // Update password jika diisi
-            if ($request->filled('password')) {
-                $userData->password = bcrypt($validated['password']);
-            }
-
-            // Upload avatar jika ada
-            if ($request->hasFile('avatar')) {
-                $avatarPath = $request->file('avatar')->store('avatars', 'public');
-                $userData->avatar = $avatarPath;
-            }
-
-            $userData->save();
-
-            // Update session
-            session()->put('user', [
-                'id' => $userData->id,
-                'name' => $userData->name,
-                'email' => $userData->email,
-            ]);
-
-            return redirect()->route('customer.profilcust')->with('success', 'Profil berhasil diperbarui!');
-
-        } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Gagal memperbarui profil: ' . $e->getMessage()])
-                        ->withInput();
-        }
-    }
-
+    /**
+     * Update points (untuk testing/admin)
+     */
     public function updatePoints(Request $request)
     {
-        if (!session()->has('user')) {
+        if (!Auth::check()) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $user = session()->get('user');
-        $userData = \App\Models\User::find($user['id']);
-
-        if (!$userData) {
-            return response()->json(['error' => 'User not found'], 404);
-        }
-
+        $user = Auth::user();
         $validated = $request->validate([
             'points' => 'required|integer|min:0',
             'loyalty_points' => 'required|integer|min:0',
@@ -2000,10 +1596,10 @@ class CustomerController extends Controller
         ]);
 
         try {
-            $userData->member_point = $validated['points'];
-            $userData->loyalty_point = $validated['loyalty_points'];
-            $userData->membership_level = $validated['membership_level'];
-            $userData->save();
+            $user->member_point = $validated['points'];
+            $user->loyalty_point = $validated['loyalty_points'];
+            $user->membership_level = $validated['membership_level'];
+            $user->save();
 
             return response()->json([
                 'success' => true,
@@ -2022,14 +1618,11 @@ class CustomerController extends Controller
     public function bantuan()
     {
         $user = session()->get('user', []);
-
-        // Ambil FAQ dari database
         $faqs = Faq::where('status', 'aktif')
             ->orderBy('urutan', 'asc')
             ->get();
 
-        // Ambil kontak support
-        $kontakSupport = \App\Models\MProfilePerusahaan::select('telepon', 'email', 'alamat')
+        $kontakSupport = MProfilePerusahaan::select('telepon', 'email', 'alamat')
             ->where('status', 'active')
             ->first();
 
@@ -2042,10 +1635,7 @@ class CustomerController extends Controller
     public function syaratKetentuan()
     {
         $user = session()->get('user', []);
-
-        // Ambil syarat dan ketentuan
         $syaratKetentuan = SyaratKetentuan::getUntukPengguna();
-
         return view('customer.syarat_ketentuan', compact('user', 'syaratKetentuan'));
     }
 
@@ -2055,28 +1645,20 @@ class CustomerController extends Controller
     public function kebijakanPrivasi()
     {
         $user = session()->get('user', []);
-
-        // Ambil kebijakan privasi
         $kebijakanPrivasi = KebijakanPrivasi::getAktif();
-
         return view('customer.kebijakan_privasi', compact('user', 'kebijakanPrivasi'));
     }
 
     /**
-     * Halaman kontak dengan master data
+     * Halaman kontak
      */
     public function contact()
     {
-        // Cek jika user sudah login dari session
         $user = session()->get('user');
-
-        // Ambil data master kontak
         $masterKontak = MMasterKontak::where('status', 'active')->first();
 
-        // Jika tidak ada data master kontak, gunakan data dari profil perusahaan
         if (!$masterKontak) {
             $profile = MProfilePerusahaan::where('status', 'active')->first();
-
             if ($profile) {
                 $masterKontak = (object) [
                     'nama_perusahaan' => $profile->nama_dagang ?? 'Smart Shuttle',
@@ -2097,40 +1679,18 @@ class CustomerController extends Controller
                     'link_kebijakan_privasi' => $profile->link_kebijakan_privasi ?? '#',
                     'link_syarat_ketentuan' => $profile->link_syarat_ketentuan ?? '#',
                 ];
-            } else {
-                // Data fallback jika tidak ada sama sekali
-                $masterKontak = (object) [
-                    'nama_perusahaan' => 'Smart Shuttle',
-                    'deskripsi_singkat' => 'Menghubungkan kota, menyatukan perjalanan',
-                    'email_utama' => 'mdcitrasolusi@gmail.com',
-                    'email_dukungan' => 'mdcitrasolusi@gmail.com',
-                    'telepon_utama' => '0858-1122-4321',
-                    'telepon_dukungan' => '0858-1122-4321',
-                    'alamat_kantor_pusat' => 'Ruko Citra Grand CBD, Jl. Alternatif Cibubur',
-                    'facebook_url' => '#',
-                    'instagram_url' => 'https://citrasolusi.id',
-                    'twitter_url' => '#',
-                    'jam_operasional' => json_encode([
-                        ['hari' => 'Senin - Jumat', 'jam' => '08:00 - 17:00'],
-                        ['hari' => 'Sabtu', 'jam' => '08:00 - 15:00'],
-                        ['hari' => 'Minggu', 'jam' => 'Tutup']
-                    ]),
-                    'link_kebijakan_privasi' => '#',
-                    'link_syarat_ketentuan' => '#',
-                ];
             }
         }
 
-        // Parse jam operasional jika dalam format JSON
         if (isset($masterKontak->jam_operasional) && is_string($masterKontak->jam_operasional)) {
             $masterKontak->jam_operasional = json_decode($masterKontak->jam_operasional, true);
         }
 
-        return view('customer.kontak', compact('user', 'masterKontak'));
+        return view('customer.contact', compact('user', 'masterKontak'));
     }
 
     /**
-     * Proses pengiriman pesan dari form kontak
+     * Proses pengiriman pesan kontak
      */
     public function submitContact(Request $request)
     {
@@ -2149,7 +1709,6 @@ class CustomerController extends Controller
         }
 
         try {
-            // Simpan pesan ke database
             PesanKontak::create([
                 'nama_pengirim' => $request->nama,
                 'email_pengirim' => $request->email,
@@ -2158,18 +1717,10 @@ class CustomerController extends Controller
                 'status' => 'terkirim',
             ]);
 
-            // Log untuk debugging
-            Log::info('Pesan kontak berhasil dikirim', [
-                'nama' => $request->nama,
-                'email' => $request->email,
-            ]);
-
             return redirect()->back()
                 ->with('success', 'Pesan Anda telah berhasil dikirim! Kami akan menghubungi Anda dalam waktu 1x24 jam.');
 
         } catch (\Exception $e) {
-            Log::error('Error saat menyimpan pesan kontak: ' . $e->getMessage());
-
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan saat mengirim pesan. Silakan coba lagi nanti.')
                 ->withInput();
@@ -2177,78 +1728,143 @@ class CustomerController extends Controller
     }
 
     /**
-     * Halaman syarat dan ketentuan membership khusus
+     * Cek harga paket (AJAX)
      */
-    public function syaratKetentuanMembership()
+    public function cekHargaPaket(Request $request)
     {
-        $user = session()->get('user', []);
+        \Log::info('Cek Harga Paket Request:', $request->all());
 
-        // Ambil syarat dan ketentuan khusus membership
-        $syaratKetentuan = SyaratKetentuan::where('jenis', 'membership')->first();
+        try {
+            $validated = $request->validate([
+                'asal' => 'required|string',
+                'tujuan' => 'required|string',
+                'berat' => 'required|numeric|min:0.1',
+                'panjang' => 'nullable|numeric|min:0',
+                'lebar' => 'nullable|numeric|min:0',
+                'tinggi' => 'nullable|numeric|min:0',
+            ]);
 
-        if (!$syaratKetentuan) {
-            // Fallback ke syarat ketentuan umum
-            $syaratKetentuan = SyaratKetentuan::getUntukPengguna();
+            if ($validated['asal'] === $validated['tujuan']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kota asal dan tujuan tidak boleh sama!'
+                ]);
+            }
+
+            $hargaPaket = HargaPaket::findHarga($validated['asal'], $validated['tujuan']);
+
+            if (!$hargaPaket) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Layanan pengiriman untuk rute ini belum tersedia.'
+                ]);
+            }
+
+            $berat = floatval($validated['berat']);
+            $panjang = floatval($validated['panjang'] ?? 0);
+            $lebar = floatval($validated['lebar'] ?? 0);
+            $tinggi = floatval($validated['tinggi'] ?? 0);
+
+            $perhitungan = $hargaPaket->calculateHarga($berat, $panjang, $lebar, $tinggi);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'kota_asal' => $validated['asal'],
+                    'kota_tujuan' => $validated['tujuan'],
+                    'berat_aktual' => number_format($perhitungan['berat_aktual'], 2, ',', '.'),
+                    'berat_volumetric' => number_format($perhitungan['berat_volumetric'], 2, ',', '.'),
+                    'berat_terpakai' => number_format($perhitungan['berat_terpakai'], 2, ',', '.'),
+                    'harga_per_kg' => 'Rp ' . number_format($hargaPaket->harga_per_kg, 0, ',', '.'),
+                    'harga_minimum' => 'Rp ' . number_format($hargaPaket->harga_minimum, 0, ',', '.'),
+                    'harga_total' => 'Rp ' . number_format($perhitungan['harga_total'], 0, ',', '.'),
+                    'harga_total_raw' => $perhitungan['harga_total'],
+                    'estimasi_hari' => $perhitungan['estimasi_hari'],
+                    'kode_harga' => $perhitungan['kode_harga'],
+                    'keterangan' => $hargaPaket->keterangan
+                ],
+                'message' => 'Harga berhasil dihitung!'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error cek harga paket:', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
+            ]);
         }
-
-        return view('customer.syarat_ketentuan_membership', compact('user', 'syaratKetentuan'));
     }
 
     /**
-     * Perpanjang membership
+     * Proses kirim paket
      */
-    public function renewMembership()
+    public function prosesKirimPaket(Request $request)
     {
-        if (!session()->has('user')) {
-            return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
-        }
-
-        $user = session()->get('user');
-        $userData = User::find($user['id']);
-
-        if (!$userData) {
-            return redirect()->route('customer.login')->with('error', 'Sesi tidak valid. Silakan login kembali.');
-        }
-
-        // Hanya bisa renew jika membership aktif atau expired
-        if (!in_array($userData->membership_status, ['active', 'expired'])) {
-            return redirect()->route('customer.membership')
-                ->with('error', 'Anda tidak dapat memperpanjang membership saat ini.');
-        }
-
-        // Buat payment baru untuk renewal
-        DB::beginTransaction();
+        \Log::info('Proses Kirim Paket Request:', $request->all());
 
         try {
-            $amount = 100000; // Biaya renewal Rp 100.000
-            $transactionId = MembershipPayment::generateTransactionId();
-
-            $payment = MembershipPayment::create([
-                'user_id' => $userData->id,
-                'transaction_id' => $transactionId,
-                'amount' => $amount,
-                'discount' => 0,
-                'total_amount' => $amount,
-                'payment_status' => 'pending',
-                'waktu_kadaluarsa' => now()->addHours(24),
+            $validated = $request->validate([
+                'nama_pengirim' => 'required|string|max:100',
+                'telepon_pengirim' => 'required|string|max:20',
+                'email_pengirim' => 'required|email|max:100',
+                'nama_penerima' => 'required|string|max:100',
+                'telepon_penerima' => 'required|string|max:20',
+                'kota_asal' => 'required|string',
+                'kota_tujuan' => 'required|string',
+                'berat' => 'required|numeric|min:0.1',
+                'panjang' => 'nullable|numeric|min:0',
+                'lebar' => 'nullable|numeric|min:0',
+                'tinggi' => 'nullable|numeric|min:0',
+                'keterangan' => 'nullable|string',
+                'harga_total' => 'required|numeric',
+                'kode_harga' => 'required|string'
             ]);
 
-            // Update user status menjadi pending (untuk pembayaran renewal)
-            $userData->update([
-                'membership_status' => 'pending',
+            $hargaPaket = HargaPaket::where('kode_harga', $validated['kode_harga'])->first();
+
+            if (!$hargaPaket) {
+                return redirect()->back()
+                    ->with('error', 'Data harga tidak valid!')
+                    ->withInput();
+            }
+
+            DB::beginTransaction();
+
+            $kodeResi = 'PKT' . date('Ymd') . strtoupper(substr(md5(uniqid()), 0, 6));
+
+            $pengiriman = PengirimanPaket::create([
+                'kode_resi' => $kodeResi,
+                'user_id' => Auth::id(),
+                'nama_pengirim' => $validated['nama_pengirim'],
+                'telepon_pengirim' => $validated['telepon_pengirim'],
+                'email_pengirim' => $validated['email_pengirim'],
+                'nama_penerima' => $validated['nama_penerima'],
+                'telepon_penerima' => $validated['telepon_penerima'],
+                'kota_asal' => $validated['kota_asal'],
+                'kota_tujuan' => $validated['kota_tujuan'],
+                'berat' => $validated['berat'],
+                'panjang' => $validated['panjang'] ?? 0,
+                'lebar' => $validated['lebar'] ?? 0,
+                'tinggi' => $validated['tinggi'] ?? 0,
+                'keterangan' => $validated['keterangan'] ?? null,
+                'harga_total' => $validated['harga_total'],
+                'kode_harga' => $validated['kode_harga'],
+                'status' => 'pending',
+                'tanggal_pengiriman' => now(),
             ]);
 
             DB::commit();
 
-            return redirect()->route('customer.membership.payment')
-                ->with('success', 'Silakan lanjutkan pembayaran untuk memperpanjang membership.');
+            return redirect()->route('customer.beranda')
+                ->with('success', 'Paket berhasil diproses! Kode Resi: ' . $kodeResi);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error creating membership renewal payment: ' . $e->getMessage());
+            \Log::error('Error proses kirim paket:', ['error' => $e->getMessage()]);
 
-            return redirect()->route('customer.membership')
-                ->with('error', 'Terjadi kesalahan saat membuat pembayaran renewal.');
+            return redirect()->back()
+                ->with('error', 'Gagal memproses paket: ' . $e->getMessage())
+                ->withInput();
         }
     }
 }

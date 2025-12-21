@@ -339,12 +339,24 @@
     </div>
 
     <!-- Action Buttons -->
-    <div style="margin-top: 30px;">
-        <a href="{{ route('customer.pembayaran', ['kode' => $pemesanan->kode_booking]) }}"
+    <!-- Action Buttons -->
+<div style="margin-top: 30px;">
+    @if($pemesanan->status == 'menunggu_pembayaran')
+        <a href="{{ route('customer.pembayaran', ['kode_booking' => $pemesanan->kode_booking]) }}"
            class="btn-orange">
             Lanjut Pembayaran
         </a>
-    </div>
+    @elseif($pemesanan->status == 'dibayar')
+        <a href="{{ route('customer.e_ticket', ['kode_booking' => $pemesanan->kode_booking]) }}"
+           class="btn-orange" style="background-color: #28a745;">
+            Lihat E-Ticket
+        </a>
+    @else
+        <button class="btn-orange" style="background-color: #6c757d;" disabled>
+            Status: {{ ucfirst(str_replace('_', ' ', $pemesanan->status)) }}
+        </button>
+    @endif
+</div>
 
     <!-- Important Notes -->
     <div class="info-box">

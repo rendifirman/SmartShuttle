@@ -19,9 +19,11 @@ return new class extends Migration
                 'tanggal_pembayaran',
                 'waktu_pembayaran',
                 'metode_pembayaran',
-                'kode_promo'
+                'kode_promo',
+                'outlet_asal_id',
+                'outlet_tujuan_id'
             ];
-            
+
             foreach ($columnsToDrop as $column) {
                 if (Schema::hasColumn('pemesanan', $column)) {
                     $table->dropColumn($column);
@@ -31,10 +33,11 @@ return new class extends Migration
             // Tambah kolom baru dengan struktur yang benar
             if (!Schema::hasColumn('pemesanan', 'status')) {
                 $table->enum('status', [
-                    'menunggu_pembayaran', 
-                    'dibayar', 
-                    'diproses', 
-                    'selesai', 
+                    'menunggu_pembayaran',
+                    'menunggu_konfirmasi',
+                    'diproses',
+                    'dibayar',
+                    'selesai',
                     'dibatalkan'
                 ])->default('menunggu_pembayaran');
             }
@@ -58,6 +61,16 @@ return new class extends Migration
             if (!Schema::hasColumn('pemesanan', 'waktu_kadaluarsa')) {
                 $table->timestamp('waktu_kadaluarsa')->nullable();
             }
+
+            if (!Schema::hasColumn('pemesanan', 'outlet_asal_id')) {
+                $table->unsignedBigInteger('outlet_asal_id')->nullable();
+                $table->foreign('outlet_asal_id')->references('id')->on('outlets')->onDelete('set null');
+            }
+
+            if (!Schema::hasColumn('pemesanan', 'outlet_tujuan_id')) {
+                $table->unsignedBigInteger('outlet_tujuan_id')->nullable();
+                $table->foreign('outlet_tujuan_id')->references('id')->on('outlets')->onDelete('set null');
+            }
         });
     }
 
@@ -74,7 +87,9 @@ return new class extends Migration
                 'waktu_pembayaran',
                 'metode_pembayaran',
                 'kode_promo',
-                'waktu_kadaluarsa'
+                'waktu_kadaluarsa',
+                'outlet_asal_id',
+                'outlet_tujuan_id'
             ];
 
             foreach ($columnsToDrop as $column) {

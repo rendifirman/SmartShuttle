@@ -8,24 +8,42 @@ use App\Models\Pembayaran;
 use App\Models\MetodePembayaran;
 use App\Models\Transaksi;
 use App\Models\User;
+use App\Services\PaylabsSimulator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class PembayaranController extends Controller
 {
+    protected $paylabsSimulator;
+
+    public function __construct(PaylabsSimulator $paylabsSimulator)
+    {
+        $this->paylabsSimulator = $paylabsSimulator;
+    }
+
     /**
      * Tampilkan halaman pembayaran
      */
-    public function index($kodeBooking)
+    public function index($kode_booking)
     {
-        $pemesanan = Pemesanan::with(['jadwal', 'detailPenumpang', 'jadwal.rutes'])
-            ->where('kode_booking', $kodeBooking)
+        if (!Auth::check()) {
+            return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
+        }
+
+        $pemesanan = Pemesanan::with(['jadwal', 'detailPenumpang', 'jadwal.rutes', 'jadwal.shuttle'])
+            ->where('kode_booking', $kode_booking)
             ->firstOrFail();
+
+        // Check if user is authorized to view this payment
+        if ($pemesanan->customer_id != Auth::id()) {
+            return redirect()->route('customer.riwayat')
+                ->with('error', 'Anda tidak memiliki akses ke pembayaran ini');
+        }
 
         // Cek status pemesanan
         if ($pemesanan->status != 'menunggu_pembayaran') {
-            return redirect()->route('customer.riwayat')
+            return redirect()->route('customer.detail_pemesanan', ['kode_booking' => $kode_booking])
                 ->with('info', 'Pemesanan ini sudah diproses');
         }
 
@@ -33,23 +51,25 @@ class PembayaranController extends Controller
         if ($pemesanan->waktu_kadaluarsa && $pemesanan->waktu_kadaluarsa < now()) {
             $pemesanan->status = 'dibatalkan';
             $pemesanan->save();
-            
+
             return redirect()->route('customer.riwayat')
                 ->with('error', 'Pemesanan telah kadaluarsa');
         }
 
         // Ambil data pembayaran jika sudah ada
         $pembayaran = Pembayaran::where('pemesanan_id', $pemesanan->id)
-            ->where('status', 'menunggu')
+            ->whereIn('status', ['menunggu', 'diproses'])
             ->first();
 
-        // Jika belum ada pembayaran, buat baru
+        // Jika belum ada pembayaran, buat baru dengan default metode QRIS
         if (!$pembayaran) {
             $pembayaran = $this->buatPembayaran($pemesanan);
         }
 
         // Ambil metode pembayaran yang aktif
-        $metodePembayaran = MetodePembayaran::aktif()->get();
+        $metodePembayaran = MetodePembayaran::where('aktif', true)
+            ->orderBy('urutan', 'asc')
+            ->get();
 
         // Siapkan data untuk view
         $rutePertama = $pemesanan->jadwal->rutes->first();
@@ -67,7 +87,8 @@ class PembayaranController extends Controller
             'customer_phone' => $pemesanan->telepon_pemesan ?? 'Nomor Telepon',
             'customer_email' => $pemesanan->email_pemesan ?? 'Email',
             'total' => $pemesanan->total_bayar,
-            'penumpang' => $pemesanan->detailPenumpang
+            'penumpang' => $pemesanan->detailPenumpang,
+            'shuttle' => $pemesanan->jadwal->shuttle
         ];
 
         return view('customer.pembayaran', $data);
@@ -82,10 +103,20 @@ class PembayaranController extends Controller
             'pemesanan_id' => $pemesanan->id,
             'kode_pembayaran' => Pembayaran::generateKodePembayaran(),
             'jumlah' => $pemesanan->total_bayar,
-            'metode' => 'qris',
+            'metode' => 'qris', // Default metode
             'status' => 'menunggu',
-            'waktu_kadaluarsa' => now()->addMinutes(30), // 30 menit untuk bayar
+            'waktu_kadaluarsa' => now()->addMinutes(30),
         ]);
+
+        // Create Paylabs payment request for default method
+        $method = MetodePembayaran::where('kode', 'qris')->first();
+        if ($method && $method->is_paylabs) {
+            $paylabsResponse = $this->paylabsSimulator->createPayment(
+                $pembayaran,
+                $method->paylabs_channel_code,
+                $method->paylabs_channel_name
+            );
+        }
 
         return $pembayaran;
     }
@@ -93,141 +124,84 @@ class PembayaranController extends Controller
     /**
      * Proses pemilihan metode pembayaran
      */
-    public function pilihMetode(Request $request, $kodeBooking)
+    public function pilihMetode(Request $request, $kode_booking)
     {
+        if (!Auth::check()) {
+            return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
+        }
+
         $request->validate([
-            'metode' => 'required|string'
+            'metode' => 'required|string|exists:metode_pembayaran,kode'
         ]);
 
-        $pemesanan = Pemesanan::where('kode_booking', $kodeBooking)
+        $pemesanan = Pemesanan::where('kode_booking', $kode_booking)
+            ->where('customer_id', Auth::id())
             ->firstOrFail();
 
         $pembayaran = Pembayaran::where('pemesanan_id', $pemesanan->id)
-            ->where('status', 'menunggu')
+            ->whereIn('status', ['menunggu', 'diproses'])
             ->firstOrFail();
 
-        // Update metode pembayaran
-        $pembayaran->update([
-            'metode' => $request->metode,
-            'waktu_kadaluarsa' => now()->addMinutes(30),
-        ]);
+        DB::beginTransaction();
 
-        // Generate nomor virtual account jika metode VA
-        if (str_contains($request->metode, '_va')) {
-            $this->generateVirtualAccount($pembayaran, $request->metode);
+        try {
+            // Update metode pembayaran
+            $pembayaran->update([
+                'metode' => $request->metode,
+                'waktu_kadaluarsa' => now()->addMinutes(30),
+            ]);
+
+            // Get payment method
+            $method = MetodePembayaran::where('kode', $request->metode)->first();
+
+            if ($method && $method->is_paylabs) {
+                // Create Paylabs payment request
+                $paylabsResponse = $this->paylabsSimulator->createPayment(
+                    $pembayaran,
+                    $method->paylabs_channel_code,
+                    $method->paylabs_channel_name
+                );
+            }
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Metode pembayaran berhasil dipilih');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            \Log::error('Pilih metode pembayaran error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal memilih metode pembayaran');
         }
-
-        return redirect()->back();
-    }
-
-    /**
-     * Generate nomor virtual account
-     */
-    private function generateVirtualAccount($pembayaran, $metode)
-    {
-        $prefix = '';
-        $bank = '';
-
-        switch ($metode) {
-            case 'bca_va':
-                $prefix = '812';
-                $bank = 'BCA';
-                break;
-            case 'mandiri_va':
-                $prefix = '88608';
-                $bank = 'Mandiri';
-                break;
-            case 'bni_va':
-                $prefix = '881';
-                $bank = 'BNI';
-                break;
-            case 'bri_va':
-                $prefix = '888';
-                $bank = 'BRI';
-                break;
-        }
-
-        // Format: Prefix + Kode Booking (angka saja) + Check Digit
-        $kodeAngka = preg_replace('/[^0-9]/', '', $pembayaran->kode_pembayaran);
-        $noVA = $prefix . substr($kodeAngka, 0, 10 - strlen($prefix));
-        $noVA = str_pad($noVA, 16, '0', STR_PAD_RIGHT);
-
-        $pembayaran->update([
-            'no_virtual_account' => $noVA,
-            'nama_bank' => $bank,
-            'instruksi_pembayaran' => $this->getInstruksiPembayaran($metode, $noVA)
-        ]);
-    }
-
-    /**
-     * Get instruksi pembayaran
-     */
-    private function getInstruksiPembayaran($metode, $noVA)
-    {
-        $instruksi = [];
-
-        switch ($metode) {
-            case 'bca_va':
-                $instruksi = [
-                    "ATM BCA:",
-                    "1. Pilih menu 'Transaksi Lainnya'",
-                    "2. Pilih 'Transfer'",
-                    "3. Pilih 'Ke Rekening BCA Virtual Account'",
-                    "4. Masukkan nomor VA: $noVA",
-                    "5. Ikuti instruksi selanjutnya",
-                    "",
-                    "Mobile Banking BCA:",
-                    "1. Pilih menu 'm-BCA'",
-                    "2. Pilih 'm-Transfer'",
-                    "3. Pilih 'BCA Virtual Account'",
-                    "4. Masukkan nomor VA: $noVA",
-                    "5. Ikuti instruksi selanjutnya"
-                ];
-                break;
-
-            case 'mandiri_va':
-                $instruksi = [
-                    "ATM Mandiri:",
-                    "1. Pilih menu 'Bayar/Beli'",
-                    "2. Pilih 'Multi Payment'",
-                    "3. Masukkan kode perusahaan: 88888",
-                    "4. Masukkan nomor VA: $noVA",
-                    "5. Ikuti instruksi selanjutnya",
-                    "",
-                    "Livin by Mandiri:",
-                    "1. Pilih menu 'Pembayaran'",
-                    "2. Pilih 'Virtual Account'",
-                    "3. Masukkan nomor VA: $noVA",
-                    "4. Ikuti instruksi selanjutnya"
-                ];
-                break;
-        }
-
-        return implode("\n", $instruksi);
     }
 
     /**
      * Simulasi pembayaran berhasil
      */
-    public function simulasiPembayaran($kodePembayaran)
+    public function simulasiPembayaran($kodePembayaran, $status = 'success')
     {
-        // Cek jika request adalah AJAX
-        if (request()->expectsJson()) {
-            return $this->processPaymentAjax($kodePembayaran);
+        if (!Auth::check()) {
+            return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
         }
-        
-        // Proses biasa untuk non-AJAX
-        DB::beginTransaction();
 
         try {
             $pembayaran = Pembayaran::where('kode_pembayaran', $kodePembayaran)
-                ->where('status', 'menunggu')
+                ->whereIn('status', ['menunggu', 'diproses'])
                 ->firstOrFail();
+
+            // Check if payment is expired
+            if ($pembayaran->waktu_kadaluarsa < now()) {
+                return redirect()->back()
+                    ->with('error', 'Pembayaran telah kadaluarsa');
+            }
+
+            DB::beginTransaction();
 
             // Update status pembayaran
             $pembayaran->update([
                 'status' => 'berhasil',
-                'waktu_pembayaran' => now()
+                'waktu_pembayaran' => now(),
+                'paylabs_status' => 'PAID'
             ]);
 
             // Update status pemesanan
@@ -239,7 +213,7 @@ class PembayaranController extends Controller
             ]);
 
             // Buat transaksi
-            $transaksi = Transaksi::create([
+            Transaksi::create([
                 'pembayaran_id' => $pembayaran->id,
                 'pemesanan_id' => $pembayaran->pemesanan_id,
                 'kode_transaksi' => Transaksi::generateKodeTransaksi(),
@@ -252,14 +226,26 @@ class PembayaranController extends Controller
             // Tambah loyalty points
             $user = Auth::user();
             $pointsData = null;
-            
+
             if ($user) {
                 $pointsData = $this->addLoyaltyPoints($user);
             }
 
             DB::commit();
 
-            // Redirect ke halaman riwayat
+            // Return JSON for AJAX request
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pembayaran berhasil diproses',
+                    'points_added' => true,
+                    'member_points_added' => 100,
+                    'loyalty_points_added' => $pointsData['loyalty_points_added'] ?? 0,
+                    'membership_level' => $pointsData['new_level'] ?? 'Bronze'
+                ]);
+            }
+
+            // Redirect untuk web request
             return redirect()->route('customer.riwayat')
                 ->with('success', 'Pembayaran berhasil! Tiket Anda sudah aktif.')
                 ->with('points_added', true)
@@ -270,82 +256,15 @@ class PembayaranController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Simulasi pembayaran error: ' . $e->getMessage());
-            
+
             if (request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Gagal memproses pembayaran: ' . $e->getMessage()
                 ], 500);
             }
-            
+
             return redirect()->back()->with('error', 'Gagal memproses pembayaran: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Proses pembayaran untuk AJAX request
-     */
-    private function processPaymentAjax($kodePembayaran)
-    {
-        DB::beginTransaction();
-
-        try {
-            $pembayaran = Pembayaran::where('kode_pembayaran', $kodePembayaran)
-                ->where('status', 'menunggu')
-                ->firstOrFail();
-
-            // Update status pembayaran
-            $pembayaran->update([
-                'status' => 'berhasil',
-                'waktu_pembayaran' => now()
-            ]);
-
-            // Update status pemesanan
-            $pembayaran->pemesanan->update([
-                'status' => 'dibayar',
-                'tanggal_pembayaran' => now()->toDateString(),
-                'waktu_pembayaran' => now(),
-                'metode_pembayaran' => $pembayaran->metode
-            ]);
-
-            // Buat transaksi
-            $transaksi = Transaksi::create([
-                'pembayaran_id' => $pembayaran->id,
-                'pemesanan_id' => $pembayaran->pemesanan_id,
-                'kode_transaksi' => Transaksi::generateKodeTransaksi(),
-                'jumlah' => $pembayaran->jumlah,
-                'biaya_admin' => 0,
-                'total' => $pembayaran->jumlah,
-                'waktu_transaksi' => now()
-            ]);
-
-            // Tambah loyalty points
-            $user = Auth::user();
-            $pointsData = null;
-            
-            if ($user) {
-                $pointsData = $this->addLoyaltyPoints($user);
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Pembayaran berhasil diproses',
-                'points_added' => true,
-                'member_points_added' => 100,
-                'loyalty_points_added' => $pointsData['loyalty_points_added'] ?? 0,
-                'membership_level' => $pointsData['new_level'] ?? 'Bronze'
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            \Log::error('AJAX Pembayaran error: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memproses pembayaran: ' . $e->getMessage()
-            ], 500);
         }
     }
 
@@ -356,17 +275,17 @@ class PembayaranController extends Controller
     {
         // Tambah 100 member points untuk setiap transaksi
         $user->member_point += 100;
-        
+
         // Tambah loyalty points berdasarkan membership level
         $loyaltyPointsToAdd = $this->calculateLoyaltyPoints($user->membership_level);
         $user->loyalty_point += $loyaltyPointsToAdd;
-        
+
         // Update membership level jika perlu
         $newLevel = $this->updateMembershipLevel($user);
         $user->membership_level = $newLevel;
-        
+
         $user->save();
-        
+
         // Catat penambahan points di log
         \Log::info('Loyalty points added', [
             'user_id' => $user->id,
@@ -376,7 +295,7 @@ class PembayaranController extends Controller
             'new_loyalty_points' => $user->loyalty_point,
             'membership_level' => $user->membership_level
         ]);
-        
+
         return [
             'loyalty_points_added' => $loyaltyPointsToAdd,
             'new_level' => $user->membership_level
@@ -389,16 +308,11 @@ class PembayaranController extends Controller
     private function calculateLoyaltyPoints($membershipLevel)
     {
         switch ($membershipLevel) {
-            case 'Bronze':
-                return 50;
-            case 'Silver':
-                return 60;
-            case 'Gold':
-                return 80;
-            case 'Platinum':
-                return 100;
-            default:
-                return 50;
+            case 'Bronze': return 50;
+            case 'Silver': return 60;
+            case 'Gold': return 80;
+            case 'Platinum': return 100;
+            default: return 50;
         }
     }
 
@@ -408,46 +322,87 @@ class PembayaranController extends Controller
     private function updateMembershipLevel($user)
     {
         $points = $user->member_point;
-        
-        if ($points >= 4500) {
-            return 'Platinum';
-        } elseif ($points >= 2500) {
-            return 'Gold';
-        } elseif ($points >= 1000) {
-            return 'Silver';
-        } else {
-            return 'Bronze';
+
+        if ($points >= 4500) return 'Platinum';
+        if ($points >= 2500) return 'Gold';
+        if ($points >= 1000) return 'Silver';
+        return 'Bronze';
+    }
+
+    /**
+     * Cek status pembayaran via AJAX
+     */
+    public function cekStatus($kodePembayaran)
+    {
+        try {
+            $pembayaran = Pembayaran::where('kode_pembayaran', $kodePembayaran)
+                ->firstOrFail();
+
+            // Jika menggunakan Paylabs, cek status terbaru
+            if ($pembayaran->paylabs_transaction_id) {
+                $status = $this->paylabsSimulator->checkStatus($pembayaran->paylabs_transaction_id);
+            } else {
+                $status = ['status' => $pembayaran->status];
+            }
+
+            return response()->json([
+                'success' => true,
+                'status' => $pembayaran->status,
+                'paylabs_status' => $pembayaran->paylabs_status,
+                'status_text' => $pembayaran->status_text,
+                'waktu_kadaluarsa' => $pembayaran->waktu_kadaluarsa,
+                'is_kadaluarsa' => $pembayaran->waktu_kadaluarsa < now(),
+                'remaining_time' => max(0, now()->diffInSeconds($pembayaran->waktu_kadaluarsa)),
+                'is_paid' => $pembayaran->status === 'berhasil'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 
     /**
-     * Webhook untuk callback dari payment gateway
+     * Webhook untuk callback dari Paylabs
      */
     public function webhook(Request $request)
     {
+        \Log::info('Paylabs webhook received', $request->all());
+
         $validated = $request->validate([
-            'kode_pembayaran' => 'required|string',
+            'merchantId' => 'required|string',
+            'transactionId' => 'required|string',
+            'merchantOrderId' => 'required|string',
             'status' => 'required|string',
             'signature' => 'required|string'
         ]);
 
-        $pembayaran = Pembayaran::where('kode_pembayaran', $request->kode_pembayaran)
-            ->first();
-
-        if (!$pembayaran) {
-            return response()->json(['error' => 'Pembayaran tidak ditemukan'], 404);
-        }
-
         DB::beginTransaction();
 
         try {
+            $pembayaran = Pembayaran::where('kode_pembayaran', $request->merchantOrderId)
+                ->orWhere('paylabs_transaction_id', $request->transactionId)
+                ->first();
+
+            if (!$pembayaran) {
+                \Log::error('Payment not found for webhook', $request->all());
+                return response()->json(['error' => 'Payment not found'], 404);
+            }
+
+            // Map Paylabs status to local status
+            $localStatus = $this->mapPaylabsStatus($request->status);
+
             $pembayaran->update([
-                'status' => $request->status,
-                'waktu_pembayaran' => now()
+                'paylabs_status' => $request->status,
+                'status' => $localStatus,
+                'paylabs_response' => json_encode($request->all()),
+                'waktu_pembayaran' => $request->status === 'PAID' ? now() : null
             ]);
 
-            if ($request->status === 'berhasil') {
-                // Update status pemesanan
+            if ($request->status === 'PAID') {
+                // Update pemesanan
                 $pembayaran->pemesanan->update([
                     'status' => 'dibayar',
                     'tanggal_pembayaran' => now()->toDateString(),
@@ -455,7 +410,7 @@ class PembayaranController extends Controller
                     'metode_pembayaran' => $pembayaran->metode
                 ]);
 
-                // Buat transaksi
+                // Create transaksi
                 Transaksi::create([
                     'pembayaran_id' => $pembayaran->id,
                     'pemesanan_id' => $pembayaran->pemesanan_id,
@@ -466,37 +421,61 @@ class PembayaranController extends Controller
                     'waktu_transaksi' => now()
                 ]);
 
-                // Tambah loyalty points
+                // Add loyalty points
                 $user = User::find($pembayaran->pemesanan->customer_id);
-                
                 if ($user) {
                     $this->addLoyaltyPoints($user);
                 }
             }
 
             DB::commit();
+
+            \Log::info('Paylabs webhook processed successfully', [
+                'transactionId' => $request->transactionId,
+                'status' => $request->status
+            ]);
+
             return response()->json(['success' => true]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Webhook error: ' . $e->getMessage());
+            \Log::error('Paylabs webhook error: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
     /**
-     * Cek status pembayaran
+     * Map Paylabs status to local status
      */
-    public function cekStatus($kodePembayaran)
+    private function mapPaylabsStatus($paylabsStatus)
+    {
+        $mapping = [
+            'PENDING' => 'menunggu',
+            'PAID' => 'berhasil',
+            'EXPIRED' => 'kadaluarsa',
+            'FAILED' => 'gagal',
+            'CANCELLED' => 'dibatalkan'
+        ];
+
+        return $mapping[$paylabsStatus] ?? 'menunggu';
+    }
+
+    /**
+     * Generate QR code untuk pembayaran
+     */
+    public function generateQRCode($kodePembayaran)
     {
         $pembayaran = Pembayaran::where('kode_pembayaran', $kodePembayaran)
             ->firstOrFail();
 
+        // Generate QR code URL
+        $qrContent = "SMARTSHUTTLE|{$pembayaran->kode_pembayaran}|{$pembayaran->jumlah}";
+        $qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" .
+                     urlencode($qrContent) . "&format=png";
+
         return response()->json([
-            'status' => $pembayaran->status,
-            'status_text' => $pembayaran->status_text,
-            'waktu_kadaluarsa' => $pembayaran->waktu_kadaluarsa,
-            'is_kadaluarsa' => $pembayaran->is_kadaluarsa
+            'qr_code_url' => $qrCodeUrl,
+            'payment_code' => $pembayaran->kode_pembayaran
         ]);
     }
 }

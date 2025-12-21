@@ -10,7 +10,7 @@ class Pemesanan extends Model
     use HasFactory;
 
     protected $table = 'pemesanan';
-    
+
     protected $fillable = [
         'kode_booking',
         'customer_id',
@@ -29,7 +29,10 @@ class Pemesanan extends Model
         'bukti_pembayaran',
         'tanggal_pembayaran',
         'waktu_pembayaran',
-        'status_pembayaran'
+        'status_pembayaran',
+        'outlet_asal_id',
+        'outlet_tujuan_id',
+        'kode_promo'
     ];
 
     protected $casts = [
@@ -72,6 +75,18 @@ class Pemesanan extends Model
         return $this->hasOne(Transaksi::class, 'pemesanan_id');
     }
 
+    // Relasi ke outlet asal
+    public function outletAsal()
+    {
+        return $this->belongsTo(Outlet::class, 'outlet_asal_id', 'id_outlet');
+    }
+
+    // Relasi ke outlet tujuan
+    public function outletTujuan()
+    {
+        return $this->belongsTo(Outlet::class, 'outlet_tujuan_id', 'id_outlet');
+    }
+
     // Scope untuk pemesanan aktif
     public function scopeAktif($query)
     {
@@ -92,22 +107,10 @@ class Pemesanan extends Model
         return $this->waktu_kadaluarsa && $this->waktu_kadaluarsa < now();
     }
 
-    // Generate kode booking
-    public static function generateKodeBooking()
+    // Cek apakah pemesanan bisa dibatalkan
+    public function getCanCancelAttribute()
     {
-        $prefix = 'SS';
-        $date = date('Ymd');
-        $random = strtoupper(substr(md5(uniqid(rand(), true)), 0, 6));
-        
-        $kode = $prefix . $date . $random;
-        
-        // Cek unik
-        while (self::where('kode_booking', $kode)->exists()) {
-            $random = strtoupper(substr(md5(uniqid(rand(), true)), 0, 6));
-            $kode = $prefix . $date . $random;
-        }
-        
-        return $kode;
+        return in_array($this->status, ['menunggu_konfirmasi', 'menunggu_pembayaran']);
     }
 
     // Format status
@@ -117,11 +120,12 @@ class Pemesanan extends Model
             'menunggu_pembayaran' => 'Menunggu Pembayaran',
             'menunggu_konfirmasi' => 'Menunggu Konfirmasi',
             'diproses' => 'Diproses',
+            'dibayar' => 'Dibayar',
             'selesai' => 'Selesai',
             'dibatalkan' => 'Dibatalkan',
             'kadaluarsa' => 'Kadaluarsa'
         ];
-        
+
         return $statuses[$this->status] ?? $this->status;
     }
 
@@ -130,15 +134,35 @@ class Pemesanan extends Model
     {
         return 'Rp ' . number_format($this->total_bayar, 0, ',', '.');
     }
-    
-    public function outletAsal()
+
+    // Format harga total
+    public function getHargaTotalFormattedAttribute()
     {
-        return $this->belongsTo(Outlet::class, 'outlet_asal_id', 'id_outlet');
+        return 'Rp ' . number_format($this->harga_total, 0, ',', '.');
     }
-    
-    public function outletTujuan()
+
+    // Format diskon
+    public function getDiskonFormattedAttribute()
     {
-        return $this->belongsTo(Outlet::class, 'outlet_tujuan_id', 'id_outlet');
+        return 'Rp ' . number_format($this->diskon, 0, ',', '.');
+    }
+
+    // Generate kode booking (static method)
+    public static function generateKodeBooking()
+    {
+        $prefix = 'SS';
+        $date = date('Ymd');
+        $random = strtoupper(substr(md5(uniqid(rand(), true)), 0, 6));
+
+        $kode = $prefix . $date . $random;
+
+        // Cek unik
+        while (self::where('kode_booking', $kode)->exists()) {
+            $random = strtoupper(substr(md5(uniqid(rand(), true)), 0, 6));
+            $kode = $prefix . $date . $random;
+        }
+
+        return $kode;
     }
 
     // Tambahan: Format tanggal untuk e-ticket

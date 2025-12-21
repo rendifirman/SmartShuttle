@@ -904,7 +904,7 @@
             </li>
 
             <li class="sidebar-footer">
-                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                <form id="logout-form" action="{{ route('customer.logout') }}" method="POST" style="display: none;">
                     @csrf
                 </form>
                 <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="menu-link logout-link">

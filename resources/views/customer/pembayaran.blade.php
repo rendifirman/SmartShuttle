@@ -243,7 +243,7 @@
                 </div>
 
                 <!-- Form untuk pilih metode -->
-                <form id="formMetode" action="{{ route('customer.pembayaran.pilih_metode', ['kode' => $pemesanan->kode_booking]) }}" method="POST" class="hidden">
+                <form id="formMetode" action="{{ route('customer.pembayaran.pilih_metode', ['kode_booking' => $pemesanan->kode_booking]) }}" method="POST" class="hidden">
                     @csrf
                     <input type="hidden" name="metode" id="inputMetode">
                 </form>
@@ -482,21 +482,97 @@ function paymentHandler() {
         selectedMetode: '{{ $pembayaran->metode }}',
         timeLeft: {{ $pembayaran->waktu_kadaluarsa->diffInSeconds(now()) }},
         interval: null,
+        isProcessing: false,
+        qrCodeUrl: null,
+        vaNumber: null,
+        ewalletCode: null,
 
-        init() {
+        async init() {
             // Mulai timer jika metode sudah dipilih
             if (this.selectedMetode) {
                 this.startTimer();
+                // Load payment details based on method
+                await this.loadPaymentDetails();
             }
         },
 
-        selectMetode(metode) {
+        async selectMetode(metode) {
             this.selectedMetode = metode;
-            this.startTimer();
+            this.isProcessing = true;
 
-            // Submit form untuk menyimpan metode
-            document.getElementById('inputMetode').value = metode;
-            document.getElementById('formMetode').submit();
+            try {
+                // Submit form untuk menyimpan metode
+                const formData = new FormData();
+                formData.append('metode', metode);
+                formData.append('_token', '{{ csrf_token() }}');
+
+                const response = await fetch('{{ route("customer.pembayaran.pilih_metode", ["kode_booking" => $pemesanan->kode_booking]) }}', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    this.startTimer();
+                    await this.loadPaymentDetails();
+                    showToast('Metode pembayaran berhasil dipilih');
+                } else {
+                    showToast('Gagal memilih metode pembayaran', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Terjadi kesalahan', 'error');
+            } finally {
+                this.isProcessing = false;
+            }
+        },
+
+        async loadPaymentDetails() {
+            // Load payment details from API
+            try {
+                const response = await fetch(`/api/payment/status/{{ $pembayaran->kode_pembayaran }}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    // Load QR code if QRIS
+                    if (this.selectedMetode === 'qris') {
+                        await this.loadQRCode();
+                    }
+
+                    // Load VA number if VA
+                    if (this.selectedMetode.includes('_va')) {
+                        this.vaNumber = data.data.payment.no_virtual_account || this.generateVANumber();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading payment details:', error);
+            }
+        },
+
+        async loadQRCode() {
+            try {
+                const response = await fetch(`/api/payment/qr-code/{{ $pembayaran->kode_pembayaran }}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    this.qrCodeUrl = data.data.qr_code_url;
+                    document.getElementById('qrCodeImage').src = this.qrCodeUrl;
+                }
+            } catch (error) {
+                console.error('Error loading QR code:', error);
+            }
+        },
+
+        generateVANumber() {
+            const prefixes = {
+                'bca_va': '3901',
+                'mandiri_va': '88608',
+                'bni_va': '881',
+                'bri_va': '888'
+            };
+
+            const prefix = prefixes[this.selectedMetode] || '8888';
+            const random = Math.floor(100000000 + Math.random() * 900000000);
+            return prefix + random.toString().substring(0, 16 - prefix.length);
         },
 
         startTimer() {
@@ -528,6 +604,31 @@ function paymentHandler() {
     }
 }
 
+// API function untuk cek status pembayaran
+async function checkPaymentStatus() {
+    try {
+        const response = await fetch(`/api/payment/status/{{ $pembayaran->kode_pembayaran }}`);
+        const data = await response.json();
+
+        if (data.success) {
+            if (data.data.status === 'berhasil') {
+                // Redirect ke success page
+                window.location.href = '{{ route("customer.detail_pemesanan", ["kode_booking" => $pemesanan->kode_booking]) }}';
+            } else if (data.data.is_expired) {
+                // Refresh page
+                window.location.reload();
+            }
+
+            // Update timer jika masih ada
+            if (window.Alpine && Alpine.$data(document.querySelector('[x-data]')).timeLeft !== data.data.remaining_time) {
+                Alpine.$data(document.querySelector('[x-data]')).timeLeft = data.data.remaining_time;
+            }
+        }
+    } catch (error) {
+        console.error('Error checking payment status:', error);
+    }
+}
+setInterval(checkPaymentStatus, 10000);
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => {
         // Buat notifikasi kecil

@@ -10,6 +10,7 @@ use App\Http\Controllers\API\BranchController;
 use App\Http\Controllers\API\OutletController;
 use App\Http\Controllers\API\LayananController;
 use App\Http\Controllers\API\ScheduleController;
+use App\Http\Controllers\API\PemesananController; // TAMBAHKAN INI
 use App\Http\Controllers\KursiController;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Hash;
@@ -176,7 +177,7 @@ Route::prefix('outlets')->group(function () {
     Route::get('/{id}', [OutletController::class, 'show']);
 });
 
-// PUBLIC LAYANAN APIs (YANG BARU DITAMBAHKAN)
+// PUBLIC LAYANAN APIs
 Route::prefix('layanan')->group(function () {
     Route::get('/', [LayananController::class, 'index']);
     Route::get('/homepage', [LayananController::class, 'forHomepage']);
@@ -185,11 +186,12 @@ Route::prefix('layanan')->group(function () {
     Route::get('/{id}', [LayananController::class, 'show']);
     Route::get('/slug/{slug}', [LayananController::class, 'bySlug']);
 });
+
 // PUBLIC SCHEDULE APIs
 Route::prefix('schedules')->group(function () {
     Route::get('/', [ScheduleController::class, 'index']);
     Route::get('/active', [ScheduleController::class, 'active']);
-  Route::post('/schedules/search', [ScheduleController::class, 'search']);
+    Route::post('/search', [ScheduleController::class, 'search']);
     Route::get('/today', [ScheduleController::class, 'today']);
     Route::get('/upcoming', [ScheduleController::class, 'upcoming']);
     Route::get('/layanan/{layananId}', [ScheduleController::class, 'byLayanan']);
@@ -197,12 +199,16 @@ Route::prefix('schedules')->group(function () {
     Route::get('/{id}', [ScheduleController::class, 'show']);
     Route::get('/{id}/availability', [ScheduleController::class, 'checkAvailability']);
 });
-// KURSI APIs
+
+// PUBLIC KURSI APIs
 Route::get('/kursi-tersedia/{jadwalId}', [KursiController::class, 'getKursiTersediaAPI'])
     ->name('api.kursi.tersedia');
 
 Route::post('/validasi-kursi', [KursiController::class, 'validasiKursiAPI'])
     ->name('api.kursi.validasi');
+
+// PUBLIC PROMO APIs (UNTUK VALIDASI)
+Route::post('/promo/validate', [PemesananController::class, 'validatePromoAPI']);
 
 // ==================== PROTECTED ROUTES (MEMBUTUHKAN AUTH) ====================
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -212,11 +218,54 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/sessions', [AuthController::class, 'getSessions']);
     Route::delete('/sessions/{tokenId}', [AuthController::class, 'revokeSession']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
+// PAYMENT APIs
+Route::prefix('payment')->group(function () {
+    // Create payment
+    Route::post('/create', [\App\Http\Controllers\API\PaymentController::class, 'createPayment']);
 
+    // Get payment status
+    Route::get('/status/{kodePembayaran}', [\App\Http\Controllers\API\PaymentController::class, 'getPaymentStatus']);
+
+    // Get payment methods
+    Route::get('/methods', [\App\Http\Controllers\API\PaymentController::class, 'getPaymentMethods']);
+
+    // Simulate payment (for demo)
+    Route::post('/simulate', [\App\Http\Controllers\API\PaymentController::class, 'simulatePayment']);
+
+    // Get QR code
+    Route::get('/qr-code/{kodePembayaran}', [\App\Http\Controllers\API\PaymentController::class, 'getQRCode']);
+
+    // Paylabs callback (public)
+    Route::post('/callback', [\App\Http\Controllers\API\PaymentController::class, 'callback'])
+        ->name('api.payment.callback');
+});
+
+// Tambahkan juga di web.php untuk web routes
+Route::post('/payment/{kodePembayaran}/simulate/{status?}', [\App\Http\Controllers\PembayaranController::class, 'simulasiPembayaran'])
+    ->name('customer.pembayaran.simulasi')
+    ->where('status', 'success|failed|expired');
+
+Route::get('/payment/qr-code/{kodePembayaran}', [\App\Http\Controllers\PembayaranController::class, 'generateQRCode'])
+    ->name('customer.pembayaran.qrcode');
+
+Route::post('/payment/webhook', [\App\Http\Controllers\PembayaranController::class, 'webhook'])
+    ->name('customer.pembayaran.webhook');
     // PROFILE
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::post('/profile/avatar', [ProfileController::class, 'updateProfilePicture']);
+
+    // PEMESANAN APIs
+    Route::prefix('pemesanan')->group(function () {
+        Route::get('/', [PemesananController::class, 'index']); // Daftar pemesanan
+        Route::post('/', [PemesananController::class, 'store']); // Buat pemesanan baru
+        Route::get('/riwayat', [PemesananController::class, 'riwayat']); // Riwayat pemesanan
+        Route::get('/{kode_booking}', [PemesananController::class, 'show']); // Detail pemesanan
+        Route::put('/{kode_booking}/cancel', [PemesananController::class, 'cancel']); // Batalkan pemesanan
+        Route::post('/{kode_booking}/pilih-kursi', [PemesananController::class, 'pilihKursi']); // Pilih kursi
+        Route::post('/{kode_booking}/bayar', [PemesananController::class, 'bayar']); // Proses pembayaran
+        Route::get('/{kode_booking}/eticket', [PemesananController::class, 'eTicket']); // E-Ticket
+    });
 
     // EMAIL VERIFICATION
     Route::post('/email/verification-notification', function (Request $request) {

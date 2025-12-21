@@ -6,11 +6,14 @@
     <title>Smart Shuttle - Beranda</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-     <style>
+    <style>
         /* CSS Variables */
         :root {
             --primary-color: #00215E;
             --secondary-color: #FF581E;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --modal-bg: rgba(74, 66, 62, 0.50); /* 95% opacity */
         }
 
         /* Reset margin dan padding untuk body */
@@ -18,19 +21,21 @@
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow-x: hidden; /* Mencegah scroll horizontal */
+            overflow-x: hidden;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            background-color: white;
         }
 
         .content-wrapper {
             flex: 1;
+            background-color: white;
         }
 
-        /* Custom Navbar Styles - HANYA UNTUK BERANDA */
+        /* Custom Navbar Styles - TRANSPARAN */
         .custom-navbar {
-            background: transparent;
+            background: transparent; /* UBAH: dari white menjadi transparent */
             padding: 20px 5%;
             display: flex;
             justify-content: center;
@@ -43,6 +48,7 @@
             transition: all 0.4s ease;
             min-height: 80px;
             transform: translateY(0);
+            box-shadow: none; /* HAPUS: shadow default */
         }
 
         .custom-navbar.hidden {
@@ -57,19 +63,19 @@
             max-width: 1200px;
         }
 
-        /* Panel Oval untuk Navbar */
+        /* Panel Oval untuk Navbar - TRANSPARAN DENGAN BLUR */
         .nav-panel {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.9); /* UBAH: semi-transparan dengan blur effect */
             border-radius: 50px;
             padding: 8px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.3);
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px); /* TAMBAH: efek blur untuk glassmorphism */
         }
 
         .nav-brand img {
@@ -147,21 +153,27 @@
             transform: translateY(-2px);
         }
 
-        /* Navbar saat di-scroll */
-        .custom-navbar.scrolled .nav-panel {
-            background: rgba(255, 255, 255, 0.98);
-            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.2);
+        /* Navbar saat di-scroll - LEBIH TRANSPARAN */
+        .custom-navbar.scrolled {
+            background: rgba(255, 255, 255, 0.95); /* Sedikit lebih solid saat di-scroll */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
-        .custom-navbar.scrolled .nav-links a {
+        .custom-navbar.scrolled .nav-panel {
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        /* HAPUS: Warna link saat di-scroll karena sudah baik */
+        /* .custom-navbar.scrolled .nav-links a {
             color: var(--primary-color);
         }
 
         .custom-navbar.scrolled .btn-login {
             background-color: var(--secondary-color);
-        }
+        } */
 
-        /* Hero Section dengan Background Image */
+        /* Hero Section */
         .hero-section {
             position: relative;
             height: 100vh;
@@ -171,13 +183,6 @@
             align-items: center;
             padding: 0 6%;
             margin-bottom: 30px;
-        }
-
-        .hero-section::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-
         }
 
         .hero-content {
@@ -200,32 +205,39 @@
         }
 
         .hero-services {
-    display: flex;
-    text-decoration: none;
-    justify-content: flex-start; /* Ubah dari space-between */
-    gap: 8px; /* Kurangi dari 15px */
-    margin-top: 35px;
-    max-width: 400px; /* Tambahkan batas maksimal lebar */
-}
+            display: flex;
+            text-decoration: none;
+            justify-content: flex-start;
+            gap: 8px;
+            margin-top: 35px;
+            max-width: 400px;
+        }
 
-      .hero-service {
-        text-decoration: none;
-    background: rgba(255,255,255,0.15);
-    border-radius: 12px;
-    padding: 12px 14px; /* Kurangi padding */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px; /* Kurangi gap internal */
-    font-size: 14px;
-    backdrop-filter: blur(6px);
-    transition: background 0.3s, transform 0.3s;
-    flex: 1; /* Biarkan fleksibel */
-    min-width: 110px; /* Atur lebar minimum */
-}
+        .hero-service {
+            text-decoration: none;
+            background: rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            backdrop-filter: blur(6px);
+            transition: background 0.3s, transform 0.3s, border 0.3s;
+            flex: 1;
+            min-width: 110px;
+            border: 2px solid transparent;
+        }
 
         .hero-service:hover {
             background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
+        }
+
+        .hero-service.active {
+            background: rgba(255, 255, 255, 0.3) !important;
+            border: 2px solid var(--secondary-color) !important;
             transform: scale(1.05);
         }
 
@@ -239,27 +251,7 @@
             font-weight: 600;
         }
 
-
-        .hero-visual {
-            position: absolute;
-            right: 5%;
-            bottom: 80px;
-            z-index: 2;
-        }
-
-        .hero-car {
-            width: 520px;
-        }
-
-        .hero-box {
-            width: 140px;
-            position: absolute;
-            right: -40px;
-            bottom: -20px;
-        }
-
-        /* ================= SEARCH SECTION (DESIGN FINAL) ================= */
-
+        /* Search Section */
         .search-section {
             position: relative;
             z-index: 20;
@@ -267,12 +259,13 @@
             display: flex;
             justify-content: center;
             margin-top: -138px;
+            background: transparent;
         }
 
         .search-container {
             width: 100%;
             max-width: 1200px;
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.25);
             padding: 25px;
             border-radius: 16px;
             box-shadow: 0 18px 40px rgba(0,0,0,0.18);
@@ -288,13 +281,16 @@
         /* FIELD */
         .search-field {
             width: 100%;
+            position: relative;
+            height: auto;
+            min-height: fit-content;
         }
 
         .search-input {
             width: 100%;
             height: 48px;
             border-radius: 6px;
-            border: none;
+            border: 2px solid #e0e0e0;
             font-size: 14px;
             background: #ffffff;
             color: black;
@@ -305,13 +301,14 @@
 
         .search-input:focus {
             outline: none;
+            border-color: var(--secondary-color);
             box-shadow: 0 0 0 2px rgba(255, 88, 30, 0.25);
         }
 
         /* Select2 Custom Styling */
         .select2-container--default .select2-selection--single {
             height: 48px !important;
-            border: none !important;
+            border: 2px solid #e0e0e0 !important;
             border-radius: 6px !important;
             background: #ffffff !important;
             font-weight: bold !important;
@@ -329,7 +326,7 @@
         }
 
         .select2-dropdown {
-            border: none !important;
+            border: 2px solid #e0e0e0 !important;
             border-radius: 6px !important;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
         }
@@ -337,30 +334,570 @@
         /* BUTTON */
         .search-btn-container {
             height: 48px;
-
         }
 
         .search-btn {
             height: 100%;
             border-radius: 12px;
-            background: #FF581E;
-            color: #fff;
-            border: none;
+            background: white;
+            color: var(--secondary-color);
+            border: 2px solid #e0e0e0;
             font-weight: 700;
             padding: 0 32px;
             cursor: pointer;
             font-size: 14px;
             transition: all 0.25s ease;
-            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* Tombol dengan layout vertikal (teks rata kiri, tanpa ikon) */
+        .search-btn.vertical-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 15px 20px;
+            height: auto !important;
+            min-height: fit-content;
+            text-align: left;
+            width: 100%;
+        }
+
+        /* Container untuk teks (tanpa container ikon) */
+        .btn-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
+            width: 100%;
+        }
+
+        /* Hapus container ikon karena tidak perlu */
+        .btn-icon {
+            display: none;
+        }
+
+        /* Teks utama tombol */
+        .btn-main-text {
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: inherit;
+            text-align: left;
+            width: 100%;
+        }
+
+        /* Label di bawah teks utama */
+        .search-btn.vertical-btn .btn-label {
+            font-size: 12px;
+            line-height: 1.4;
+            margin-top: 0;
+            color: inherit;
+            font-weight: 500;
+            max-width: 100%;
+            text-align: left;
+        }
+
+        /* Untuk tombol Cek Paket (default state) */
+        #btn-cek-paket .btn-main-text,
+        #btn-cek-paket .btn-label {
+            color: var(--secondary-color);
+        }
+
+        /* Untuk tombol Kirim Paket (default state) */
+        #kirim-paket-form .search-btn:not(#btn-cek-paket) .btn-main-text,
+        #kirim-paket-form .search-btn:not(#btn-cek-paket) .btn-label {
+            color: var(--secondary-color);
+        }
+
+        /* Hover state untuk kedua tombol */
+        #btn-cek-paket:hover .btn-main-text,
+        #btn-cek-paket:hover .btn-label,
+        #kirim-paket-form .search-btn:not(#btn-cek-paket):hover .btn-main-text,
+        #kirim-paket-form .search-btn:not(#btn-cek-paket):hover .btn-label {
+            color: white !important;
         }
 
         .search-btn:hover {
-            filter: brightness(0.94);
-            transform: translateY(-1px);
+            background: var(--secondary-color);
+            color: white;
+            transform: translateY(-2px);
         }
 
-        /* ================= RESPONSIVE ================= */
+        /* Style khusus untuk form Kirim Paket */
+        #kirim-paket-form .search-row {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 20px !important;
+        }
 
+        #kirim-paket-form .search-btn {
+            height: 55px !important;
+            font-size: 16px !important;
+            width: 100%;
+            background: white;
+            color: var(--secondary-color);
+            border: 2px solid var(--secondary-color);
+        }
+
+        /* Tombol Cek Paket */
+        #btn-cek-paket {
+            background: white !important;
+            color: var(--secondary-color) !important;
+            border: 2px solid var(--secondary-color) !important;
+        }
+
+        #btn-cek-paket:hover {
+            background: var(--secondary-color) !important;
+            color: white !important;
+        }
+
+        /* Tombol Kirim Paket */
+        #kirim-paket-form .search-btn:not(#btn-cek-paket) {
+            background: white !important;
+            color: var(--secondary-color) !important;
+            border: 2px solid var(--secondary-color) !important;
+        }
+
+        #kirim-paket-form .search-btn:not(#btn-cek-paket):hover {
+            background: var(--secondary-color) !important;
+            color: white !important;
+        }
+
+        /* Style untuk form Tiket Shuttle */
+        #search-form .search-btn {
+            background: white;
+            color: var(--secondary-color);
+            border: 2px solid var(--secondary-color);
+        }
+
+        #search-form .search-btn:hover {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        /* Modal Cek Paket - DISATUKAN DENGAN TOMBOL */
+        .modal-cek-paket {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: var(--modal-bg);
+            border-radius: 12px;
+            padding: 0;
+            z-index: 10;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+            box-sizing: border-box;
+            overflow: hidden;
+            min-height: fit-content;
+        }
+
+        .modal-cek-paket.show {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-start;
+            height: auto;
+        }
+
+        /* Header Modal - SAMA SEPERTI TOMBOL CEK PAKET */
+        .modal-header {
+            background: var(--modal-bg);
+            padding: 25px 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            text-align: left;
+            width: 100%;
+            box-sizing: border-box;
+            backdrop-filter: blur(5px);
+            flex-shrink: 0;
+        }
+
+        /* Teks utama modal dengan warna secondary */
+        .modal-main-text {
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--secondary-color);
+            text-align: left;
+            width: 100%;
+        }
+
+        /* Label di bawah teks utama */
+        .modal-label {
+            font-size: 14px;
+            line-height: 1.4;
+            margin-top: 0;
+            color: white;
+            font-weight: 500;
+            max-width: 100%;
+            text-align: left;
+        }
+
+        /* Garis pemisah */
+        .modal-divider {
+            width: 100%;
+            height: 1px;
+            background: rgba(255,255,255,0.2);
+            margin: 0;
+            border: none;
+        }
+
+        /* Container untuk form input */
+        .modal-body {
+            width: 100%;
+            padding: 30px;
+            box-sizing: border-box;
+            background: var(--modal-bg);
+            height: auto;
+            min-height: fit-content;
+            flex-shrink: 0;
+        }
+
+        /* Form Cek Resi - layout horizontal */
+        .resi-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            height: auto;
+        }
+
+        /* Container untuk input dan tombol - DIUBAH MENJADI FLEX ROW */
+        .resi-input-group {
+            display: flex;
+            flex-direction: row;
+            gap: 15px;
+            width: 100%;
+            align-items: center;
+            height: auto;
+            min-height: fit-content;
+        }
+
+        /* Input field - DIUBAH MENJADI FLEXIBLE */
+        .form-control {
+            flex: 1;
+            padding: 14px 18px;
+            border-radius: 8px;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: white;
+            color: #333;
+            font-size: 15px;
+            box-sizing: border-box;
+            text-align: left;
+            transition: all 0.3s ease;
+            min-width: 0;
+        }
+
+        .form-control::placeholder {
+            color: rgba(87, 65, 65, 0.7);
+            text-align: left;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(255, 88, 30, 0.2);
+        }
+
+        /* Tombol CEK - DIUBAH WIDTH MENJADI AUTO */
+        .btn-cek-resi {
+            width: auto;
+            padding: 15px 30px;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            height: 48px;
+        }
+
+        .btn-cek-resi:hover {
+            background: #E54E1A;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* Tombol close modal */
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            z-index: 20;
+        }
+
+        .close-modal:hover {
+            background: rgba(255,255,255,0.2);
+            color: var(--secondary-color);
+            transform: rotate(90deg);
+        }
+
+        /* Modal Kirim Paket */
+        .modal-kirim-paket {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: var(--modal-bg);
+            border-radius: 12px;
+            padding: 0;
+            z-index: 10;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+            box-sizing: border-box;
+            overflow: hidden;
+            min-height: fit-content;
+        }
+
+        .modal-kirim-paket.show {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-start;
+            height: auto;
+        }
+
+        /* Form Kirim Paket - lebih kompleks */
+        .kirim-paket-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            height: auto;
+        }
+
+        /* Form group untuk setiap baris - DIUBAH: label dan input dalam satu baris */
+        .form-group {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            flex-wrap: nowrap;
+        }
+
+        /* Label untuk form - DIUBAH: lebar tetap */
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            min-width: 120px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Input container - DIUBAH: mengambil sisa space */
+        .form-input-container {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* Select2 untuk modal */
+        .select2-modal {
+            width: 100% !important;
+        }
+
+        .select2-container--default .select2-selection--single.select2-modal {
+            height: 48px !important;
+            border: 2px solid rgba(255,255,255,0.3) !important;
+            border-radius: 8px !important;
+            background: white !important;
+        }
+
+        .select2-container--default .select2-selection--single.select2-modal .select2-selection__rendered {
+            line-height: 48px !important;
+            color: #333 !important;
+            font-size: 15px !important;
+            padding-left: 18px !important;
+        }
+
+        /* Input dengan suffix (kg, cm) - DIUBAH: lebih kompak */
+        .input-with-suffix {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            position: relative;
+        }
+
+        .input-with-suffix .form-control {
+            padding-right: 50px;
+            width: 100%;
+        }
+
+        .input-suffix {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            color:  #666 !important;
+            font-size: 14px !important;
+            padding: 5px !important;
+            border-radius: 3px !important;
+            position: absolute !important;
+            right: 12px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            z-index: 100 !important;
+            font-weight: 500;
+        }
+
+        /* Volume container - 3 input dalam satu baris - DIUBAH: lebih kompak */
+        .volume-container {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .volume-input {
+            flex: 1;
+            position: relative;
+            min-width: 0;
+        }
+
+        .volume-input .form-control {
+            padding-right: 40px;
+            width: 100%;
+        }
+
+        .volume-suffix {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+            pointer-events: none;
+        }
+
+        /* Harga total display - DIUBAH: tetap di satu baris */
+        .harga-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-top: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            flex-wrap: nowrap;
+        }
+
+        .harga-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            white-space: nowrap;
+        }
+
+        .harga-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--secondary-color);
+            white-space: nowrap;
+        }
+
+        /* Tombol Cek Harga di tengah - UKURAN REFERENSI */
+        .btn-cek-harga {
+            width: 100%;
+            padding: 15px 30px;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            height: 48px;
+            margin-top: 20px;
+        }
+
+        .btn-cek-harga:hover {
+            background: #E54E1A;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* Animasi untuk hasil perhitungan */
+        #hasil-perhitungan {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        #hasil-perhitungan.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Hover effect untuk rows tabel */
+        .hasil-harga-container tr:hover td {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Responsive untuk tabel hasil */
+        @media (max-width: 768px) {
+            .hasil-harga-container table {
+                font-size: 12px;
+            }
+
+            .harga-container {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+
+            .harga-label {
+                font-size: 16px;
+            }
+
+            .harga-value {
+                font-size: 20px;
+            }
+        }
+
+        /* Responsive untuk modal */
         @media (max-width: 900px) {
             .search-row {
                 grid-template-columns: repeat(2, 1fr);
@@ -373,6 +910,71 @@
             .search-btn {
                 width: 100%;
             }
+
+            #kirim-paket-form .search-row {
+                grid-template-columns: 1fr !important;
+                gap: 15px !important;
+            }
+
+            .modal-cek-paket,
+            .modal-kirim-paket {
+                position: relative;
+                top: auto;
+                left: auto;
+                right: auto;
+                margin-top: 15px;
+                min-height: fit-content;
+            }
+
+            .search-container {
+                padding: 20px;
+            }
+
+            #kirim-paket-form .search-btn {
+                height: auto !important;
+                min-height: fit-content;
+            }
+
+            .modal-header {
+                padding: 20px;
+            }
+
+            .modal-body {
+                padding: 20px;
+            }
+
+            /* Responsive untuk form horizontal */
+            .resi-input-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn-cek-resi,
+            .btn-cek-harga {
+                width: 100%;
+            }
+
+            /* Responsive untuk form group dalam satu baris */
+            .form-group {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .form-label {
+                min-width: 100%;
+                margin-bottom: 0;
+            }
+
+            .form-input-container {
+                width: 100%;
+            }
+
+            /* Responsive untuk volume container */
+            .volume-container {
+                flex-direction: column;
+                gap: 10px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -383,84 +985,63 @@
             .search-btn-container {
                 grid-column: span 1;
             }
+
+            .modal-cek-paket,
+            .modal-kirim-paket {
+                min-height: fit-content;
+            }
+
+            .modal-header {
+                padding: 15px;
+            }
+
+            .modal-main-text {
+                font-size: 16px;
+            }
+
+            .modal-label {
+                font-size: 12px;
+            }
+
+            .modal-body {
+                padding: 15px;
+            }
+
+            .form-control {
+                padding: 12px 15px;
+                font-size: 14px;
+            }
+
+            .btn-cek-resi,
+            .btn-cek-harga {
+                padding: 12px 15px;
+                font-size: 14px;
+                width: 100%;
+                height: 44px;
+            }
+
+            #kirim-paket-form .search-btn {
+                padding: 12px 15px;
+                min-height: fit-content;
+            }
+
+            .harga-container {
+                padding: 12px 15px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+
+            .harga-label {
+                font-size: 14px;
+            }
+
+            .harga-value {
+                font-size: 18px;
+            }
         }
 
-
-        /* Header di atas gambar */
-        .header {
-            padding: 140px 40px 60px;
-            text-align: left;
-            color: white;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            max-width: 50%;
-        }
-
-        .logo {
-            font-size: 48px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            color: white;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
-
-        .tagline {
-            font-size: 18px;
-            opacity: 0.95;
-            max-width: 600px;
-            margin: 0;
-            line-height: 1.8;
-            color: white;
-            text-shadow: 0 1px 5px rgba(0,0,0,0.3);
-        }
-
-
-
-        .autocomplete-container {
-            position: relative;
-            width: 100%;
-        }
-
-        .autocomplete-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-top: none;
-            border-radius: 0 0 6px 6px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-        }
-
-        .autocomplete-item {
-            padding: 10px 12px;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 12px;
-            transition: background-color 0.2s;
-        }
-
-        .autocomplete-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .autocomplete-item:last-child {
-            border-bottom: none;
-        }
-
-        .autocomplete-item.active {
-            background-color: #FF581E;
-            color: white;
-        }
-
-        /* ===== SERVICES SECTION ===== */
+        /* Services Section */
         .services-section {
             padding: 80px 0;
             background: #ffffff;
@@ -470,7 +1051,7 @@
         .services-title {
             font-size: 26px;
             font-weight: 700;
-            color: #17375f;
+            color: var(--secondary-color);
             margin-bottom: 10px;
         }
 
@@ -496,31 +1077,7 @@
             border-radius: 16px;
             padding: 24px 20px 28px;
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
-        }
-
-        /* LOGO WRAPPER */
-        .service-logo-box {
-            border: 1.8px solid #dcdcdc;
-            border-radius: 12px;
-            padding: 18px;
-            margin-bottom: 18px;
-        }
-
-        .service-logo-box img {
-            width: 200px;
-            height: auto;
-        }
-
-        /* TEXT */
-        .service-desc {
-            font-size: 13px;
-            font-weight: 600;
-            color: #17375f;
-            line-height: 1.5;
-        }
-
-        /* ===== INTERACTION BASE ===== */
-        .service-card {
+            border: 2px solid #e0e0e0;
             transition: all 0.35s ease;
             cursor: pointer;
             position: relative;
@@ -531,72 +1088,44 @@
         .service-card:hover {
             transform: translateY(-10px) scale(1.01);
             box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+            border-color: var(--secondary-color);
         }
 
-        /* BORDER GLOW EFFECT */
-        .service-card::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: 16px;
-            border: 2px solid transparent;
-            transition: 0.35s;
-        }
-
-        .service-card:hover::before {
-            border-color: #ff6b2c;
-        }
-
-        /* LOGO ANIMATION */
+        /* LOGO WRAPPER */
         .service-logo-box {
+            border: 1.8px solid #dcdcdc;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 18px;
             transition: all 0.35s ease;
+        }
+
+        .service-logo-box img {
+            width: 200px;
+            height: auto;
+            transition: 0.35s ease;
         }
 
         .service-card:hover .service-logo-box {
             transform: scale(1.03);
         }
 
-        /* LOGO IMAGE */
-        .service-logo-box img {
-            transition: 0.35s ease;
-        }
-
         .service-card:hover .service-logo-box img {
             transform: scale(1.06);
         }
 
-        /* TEXT ANIMATION */
+        /* TEXT */
         .service-desc {
+            font-size: 13px;
+            font-weight: 600;
+            color: #17375f;
+            line-height: 1.5;
             transition: 0.35s ease;
         }
 
         .service-card:hover .service-desc {
-            color: #ff6b2c;
+            color: var(--secondary-color);
         }
-
-        /* SOFT SHINE EFFECT */
-        .service-card::after {
-            content: "";
-            position: absolute;
-            top: -100%;
-            left: -100%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(
-                120deg,
-                transparent 30%,
-                rgba(255, 255, 255, 0.15) 40%,
-                transparent 55%
-            );
-            transition: 0.6s;
-        }
-
-        .service-card:hover::after {
-            top: -20%;
-            left: -20%;
-        }
-
-
 
         /* Divider */
         .divider {
@@ -605,7 +1134,6 @@
             margin: 50px 0;
             opacity: 0.6;
         }
-
 
         /* Features Section */
         .features-section {
@@ -619,7 +1147,7 @@
             font-size: 36px;
             font-weight: 700;
             margin-bottom: 60px;
-            color: #123352;
+            color: var(--secondary-color);
             text-transform: uppercase;
             letter-spacing: 1px;
             line-height: 1.3;
@@ -634,20 +1162,22 @@
         }
 
         .feature-card {
-            background: #123352;
+            background: white;
             padding: 40px 30px;
             border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(18, 51, 82, 0.15);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
             transition: all 0.3s ease;
             text-align: center;
-            color: white;
+            color: #333;
             position: relative;
             overflow: hidden;
+            border: 2px solid #e0e0e0;
         }
 
         .feature-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 15px 40px rgba(18, 51, 82, 0.25);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+            border-color: var(--secondary-color);
         }
 
         .feature-card::before {
@@ -663,7 +1193,7 @@
         .feature-icon {
             font-size: 48px;
             margin-bottom: 25px;
-            color: white;
+            color: var(--secondary-color);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -674,13 +1204,13 @@
             font-size: 20px;
             font-weight: 700;
             margin-bottom: 20px;
-            color: white;
+            color: var(--secondary-color);
             line-height: 1.4;
         }
 
         .feature-desc {
             font-size: 14px;
-            color: rgba(255, 255, 255, 0.9);
+            color: #666;
             line-height: 1.6;
             margin: 0;
         }
@@ -688,7 +1218,7 @@
         /* Feedback Section */
         .feedback-section {
             padding: 80px 40px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            background: white;
         }
 
         .feedback-container {
@@ -698,11 +1228,12 @@
             border-radius: 25px;
             box-shadow: 0 25px 60px rgba(0,0,0,0.12);
             padding: 50px;
+            border: 2px solid #e0e0e0;
         }
 
         .feedback-title {
             font-size: 32px;
-            color: #123352;
+            color: var(--secondary-color);
             margin-bottom: 10px;
             font-weight: 700;
             text-align: left;
@@ -762,30 +1293,18 @@
             font-size: 14px;
         }
 
-       .stars {
-    color: #ff9d00;
-    font-size: 20px;
-    letter-spacing: 3px;
-    }
-
-    /* Untuk bintang kosong */
-    .stars .empty-star {
-        color: #ddd;
-    }
-
-    /* Atau gunakan ini di review section */
-    .review-card .stars {
-        color: #ff9d00;
-        font-size: 20px;
-        letter-spacing: 3px;
-    }
+        .stars {
+            color: #ff9d00;
+            font-size: 20px;
+            letter-spacing: 3px;
+        }
 
         /* RIGHT REVIEW FORM */
         .form-title {
             font-size: 22px;
             font-weight: bold;
             margin-bottom: 15px;
-            color: #123352;
+            color: var(--secondary-color);
         }
 
         .star-input {
@@ -825,11 +1344,11 @@
 
         .btn-primary {
             width: 100%;
-            background: linear-gradient(135deg, #FF581E 0%, #ff7b4d 100%);
-            color: white;
+            background: white;
+            color: var(--secondary-color);
             padding: 15px;
             font-size: 18px;
-            border: none;
+            border: 2px solid var(--secondary-color);
             border-radius: 10px;
             margin-top: 20px;
             cursor: pointer;
@@ -842,17 +1361,18 @@
         }
 
         .btn-primary:hover {
+            background: var(--secondary-color);
+            color: white;
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(255, 88, 30, 0.3);
         }
 
         .btn-close {
             width: 100%;
-            background: #333;
-            color: white;
+            background: white;
+            color: #333;
             padding: 15px;
             font-size: 18px;
-            border: none;
+            border: 2px solid #333;
             border-radius: 10px;
             margin-top: 15px;
             cursor: pointer;
@@ -865,9 +1385,9 @@
         }
 
         .btn-close:hover {
-            background: #000;
+            background: #333;
+            color: white;
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         /* Responsive Styles */
@@ -887,6 +1407,20 @@
 
             .nav-links {
                 gap: 25px;
+            }
+
+            .services-grid {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .service-card {
+                width: 100%;
+                    max-width: 400px;
+            }
+
+            .features-grid-6 {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
 
@@ -918,12 +1452,30 @@
                 text-align: center;
             }
 
-            .header {
-                max-width: 90%;
-                padding: 160px 20px 60px;
+            .hero-section {
+                height: auto;
+                min-height: 100vh;
+                padding: 120px 20px 60px;
+            }
+
+            .hero-content {
+                max-width: 100%;
                 text-align: center;
             }
 
+            .hero-title {
+                font-size: 36px;
+            }
+
+            .hero-desc {
+                font-size: 16px;
+                margin: 0 auto;
+            }
+
+            .hero-services {
+                justify-content: center;
+                max-width: 100%;
+            }
 
             .services-section {
                 padding: 40px 20px;
@@ -1001,20 +1553,61 @@
             .stars {
                 justify-content: center;
             }
+
+            .total-harga-container {
+                padding: 8px 15px;
+                margin: 10px 0;
+            }
+
+            .success-icon {
+                font-size: 22px;
+                margin-bottom: 6px;
+            }
+
+            .total-harga-label {
+                font-size: 11px;
+                margin-bottom: 4px;
+            }
+
+            .total-harga-value {
+                font-size: 16px;
+                margin-bottom: 4px;
+            }
+
+            .total-harga-desc {
+                font-size: 9px;
+                margin-top: 4px;
+            }
         }
 
         @media (max-width: 480px) {
-            .header {
-                max-width: 95%;
-                padding: 140px 15px 40px;
+            .hero-title {
+                font-size: 28px;
             }
 
-            .logo {
-                font-size: 36px;
+            .hero-desc {
+                font-size: 14px;
             }
 
-            .tagline {
-                font-size: 16px;
+            .hero-service {
+                min-width: 90px;
+                padding: 10px;
+            }
+
+            .hero-service i {
+                font-size: 24px;
+            }
+
+            .hero-service span {
+                font-size: 12px;
+            }
+
+            .search-section {
+                margin-top: -100px;
+            }
+
+            .search-container {
+                padding: 15px;
             }
 
             .features-title {
@@ -1070,9 +1663,10 @@
         /* Footer Styles */
         .site-footer {
             background: #00215E;
-            color: white;
+            color: #00215E;
             padding: 50px 40px 20px;
             margin-top: auto;
+            border-top: 2px solid #00215E;
         }
 
         .footer-container {
@@ -1096,19 +1690,19 @@
             font-size: 18px;
             font-weight: 700;
             margin-bottom: 15px;
-            color: #FF581E;
+            color: var(--secondary-color);
         }
 
         .footer-subtitle {
             font-size: 16px;
             font-weight: 600;
             margin-bottom: 15px;
-            color: #FF581E;
+            color: var(--secondary-color);
         }
 
         .footer-text {
             font-size: 14px;
-            color: #e0e0e0;
+            color: #ffffffff;
             line-height: 1.6;
             margin-bottom: 15px;
         }
@@ -1122,7 +1716,7 @@
 
         .contact-line {
             font-size: 14px;
-            color: #e0e0e0;
+            color: #ffffffff;
             line-height: 1.4;
         }
 
@@ -1141,7 +1735,7 @@
         .social-button {
             width: 32px;
             height: 32px;
-            background: #FF581E;
+            background: var(--secondary-color);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -1162,7 +1756,7 @@
 
         /* Footer Bottom */
         .footer-bottom {
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            border-top: 1px solid #e0e0e0;
             padding-top: 20px;
         }
 
@@ -1176,7 +1770,7 @@
 
         .copyright {
             font-size: 14px;
-            color: #b0b0b0;
+            color: #ffffffff;
             margin: 0;
         }
 
@@ -1188,13 +1782,13 @@
 
         .footer-link {
             font-size: 14px;
-            color: #b0b0b0;
+            color: #ffffffff;
             text-decoration: none;
             transition: color 0.3s ease;
         }
 
         .footer-link:hover {
-            color: white;
+            color: var(--secondary-color);
         }
 
         @media (max-width: 768px) {
@@ -1277,9 +1871,9 @@
             white-space: nowrap;
         }
 
-    /* pastikan dropdown ada di atas semua layer navbar/hero */
+        /* Dropdown Menu */
         .dropdown-menu {
-            z-index: 3000; /* tingkat lebih tinggi agar tidak tertutup */
+            z-index: 3000;
             display: none;
             position: absolute;
             top: calc(100% + 8px);
@@ -1289,13 +1883,13 @@
             border-radius: 10px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             padding: 10px;
+            border: 1px solid #e0e0e0;
         }
-
 
         .dropdown-menu a {
             display: block;
             padding: 8px 12px;
-            color: #00215E;
+            color: var(--secondary-color);
             text-decoration: none;
             border-radius: 5px;
             margin-bottom: 5px;
@@ -1303,7 +1897,7 @@
         }
 
         .dropdown-menu a:hover {
-            background-color: rgba(0, 33, 94, 0.05);
+            background-color: rgba(255, 88, 30, 0.1);
         }
 
         .dropdown-menu form {
@@ -1317,7 +1911,7 @@
             padding: 8px 12px;
             background: none;
             border: none;
-            color: #00215E;
+            color: var(--secondary-color);
             cursor: pointer;
             border-radius: 5px;
             font-family: inherit;
@@ -1326,7 +1920,7 @@
         }
 
         .dropdown-menu button[type="submit"]:hover {
-            background-color: rgba(0, 33, 94, 0.05);
+            background-color: rgba(255, 88, 30, 0.1);
         }
 
         /* Tambahkan class untuk show */
@@ -1334,577 +1928,1261 @@
             display: block;
         }
 
-        /* Tambahkan style ini di bagian CSS services section */
-        .service-description {
-            color: #666;
-            font-size: 14px;
-            line-height: 1.5;
-            margin-top: 10px;
-            padding: 0 10px;
-            flex-grow: 1;
+        /* Style untuk hasil perhitungan yang lebih sederhana - SAMA DENGAN TOMBOL CEK HARGA + 3px */
+        .total-harga-container {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 14px 20px;
+            margin: 15px 0;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+            min-height: 51px; /* 48px (tombol) + 3px */
             display: flex;
-            align-items: center;
+            flex-direction: column;
             justify-content: center;
+            align-items: center;
+        }
+
+        .total-harga-label {
+            font-size: 12px;
+            color: #ccc;
+            margin-bottom: 4px;
+            display: block;
+            line-height: 1.2;
+        }
+
+        .total-harga-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--secondary-color);
+            margin-bottom: 4px;
+            display: block;
+            line-height: 1.2;
+        }
+
+        .total-harga-desc {
+            font-size: 10px;
+            color: #aaa;
+            margin-top: 4px;
+            display: block;
+            line-height: 1.2;
+        }
+
+        .success-icon {
+            font-size: 24px;
+            color: #28a745;
+            margin-bottom: 6px;
         }
     </style>
     @php
-        // Ambil data profil perusahaan dari database
         use App\Models\MProfilePerusahaan;
         $profile = MProfilePerusahaan::first();
     @endphp
 </head>
 <body>
-    <!-- Custom Navbar Hanya untuk Beranda -->
+    <!-- Custom Navbar TRANSPARAN -->
     <nav class="custom-navbar" id="navbar">
-    <div class="nav-container">
-        <div class="nav-panel">
-            <div class="nav-brand">
-                <img src="{{ asset($profile->logo_perusahaan ?? '/images/smartshuttlelogo.png') }}" alt="{{ $profile->nama_dagang ?? 'Smart Shuttle' }}">
-            </div>
-                <div class="nav-menu">
-                   <ul class="nav-links">
-    <li><a href="/customer/beranda" class="active">Beranda</a></li>
-    <li><a href="{{ route('customer.search') }}">Cari Tiket</a></li>
-    <li><a href="{{ route('customer.outlet') }}">Outlet</a></li>
-    <li><a href="/customer/contact">Kontak</a></li>
-</ul>
+        <div class="nav-container">
+            <div class="nav-panel">
+                <div class="nav-brand">
+                    <img src="{{ asset($profile->logo_perusahaan ?? '/images/smartshuttlelogo.png') }}" alt="{{ $profile->nama_dagang ?? 'Smart Shuttle' }}">
                 </div>
-               <!-- BAGIAN NAV-AUTH -->
-<div class="nav-auth">
-    @if(isset($user) && $user)
-        <div class="profile-wrapper">
-            <button id="profile-dropdown" class="profile-btn" type="button" aria-expanded="false">
-                @if(!empty($user['avatar'] ?? null))
-                    <span class="profile-avatar">
-                        <img src="{{ $user['avatar'] }}" alt="avatar">
-                    </span>
-                @else
-                    <span class="profile-avatar">{{ strtoupper(substr($user['name'] ?? 'U', 0, 1)) }}</span>
-                @endif
-                <span class="profile-name">{{ strlen($user['name'] ?? '') > 12 ? substr($user['name'], 0, 12).'...' : ($user['name'] ?? 'User') }}</span>
-            </button>
-
-            <div id="dropdown-menu" class="dropdown-menu">
-                <a href="{{ route('customer.dashboardprofile') }}">Profil</a>
-                <form action="{{ route('customer.logout') }}" method="POST">
-                    @csrf
-                    <button type="submit">Logout</button>
-                </form>
-            </div>
-        </div>
-    @else
-        <a href="{{ route('customer.login') }}" class="btn-login">Login</a>
-    @endif
-</div>
+                <div class="nav-menu">
+                    <ul class="nav-links">
+                        <li><a href="/customer/beranda" class="active">Beranda</a></li>
+                        <li><a href="{{ route('customer.search') }}">Cari Tiket</a></li>
+                        <li><a href="{{ route('customer.outlet') }}">Outlet</a></li>
+                        <li><a href="/customer/contact">Kontak</a></li>
+                    </ul>
+                </div>
+                <!-- BAGIAN NAV-AUTH -->
+                <div class="nav-auth">
+                    @if(isset($user) && $user)
+                        <div class="profile-wrapper">
+                            <button id="profile-dropdown" class="profile-btn" type="button" aria-expanded="false">
+                                @if(!empty($user['avatar'] ?? null))
+                                    <span class="profile-avatar">
+                                        <img src="{{ $user['avatar'] }}" alt="avatar">
+                                    </span>
+                                @else
+                                    <span class="profile-avatar">{{ strtoupper(substr($user['name'] ?? 'U', 0, 1)) }}</span>
+                                @endif
+                                <span class="profile-name">{{ strlen($user['name'] ?? '') > 12 ? substr($user['name'], 0, 12).'...' : ($user['name'] ?? 'User') }}</span>
+                            </button>
+                            <div id="dropdown-menu" class="dropdown-menu">
+                                <a href="{{ route('customer.dashboardprofile') }}">Profil</a>
+                                <form action="{{ route('customer.logout') }}" method="POST">
+                                    @csrf
+                                    <button type="submit">Logout</button>
+                                </form>
+                            </div>
+                        </div>
+                    @else
+                        <a href="{{ route('customer.login') }}" class="btn-login">Login</a>
+                    @endif
+                </div>
             </div>
         </div>
     </nav>
 
-  <!-- Hero Section dengan Background Image -->
-<div class="hero-section" style="background-image:url('{{ asset($profile->background_website ?? 'images/bgSmartShuttle2.png') }}');">
-    <div class="hero-content">
-        <h1 class="hero-title">{{ $profile->nama_dagang ?? 'Smart Shuttle' }}</h1>
-        <p class="hero-desc">
-            {{ $profile->deskripsi_singkat ?? 'Menghubungkan kota, menyatukan perjalanan – Solusi cerdas untuk mobilitas anda' }}
-        </p>
-
-        <div class="hero-services">
-            <a href="{{ route('customer.search') }}" class="hero-service">
-                <i class="fas fa-shuttle-van"></i>
-                <span>Tiket Shuttle</span>
-            </a>
-            <a href="#" class="hero-service" onclick="alert('Fitur Kirim Paket akan segera hadir!')">
-                <i class="fas fa-box"></i>
-                <span>Kirim Paket</span>
-            </a>
-            <a href="#" class="hero-service" onclick="alert('Fitur Sewa Armada akan segera hadir!')">
-                <i class="fas fa-car"></i>
-                <span>Sewa Armada</span>
-            </a>
+    <!-- Hero Section dengan Background Image -->
+    <div class="hero-section" style="background-image:url('{{ asset('images/bg.png') }}');">
+        <div class="hero-content">
+            <h1 class="hero-title">{{ $profile->nama_dagang ?? 'Smart Shuttle' }}</h1>
+            <p class="hero-desc">
+                {{ $profile->deskripsi_singkat ?? 'Menghubungkan kota, menyatukan perjalanan – Solusi cerdas untuk mobilitas anda' }}
+            </p>
+            <div class="hero-services">
+                <a href="{{ url()->current() }}?service=shuttle" class="hero-service" id="shuttle-link">
+                    <i class="fas fa-shuttle-van"></i>
+                    <span>Tiket Shuttle</span>
+                </a>
+                <a href="{{ url()->current() }}?service=kirim-paket" class="hero-service" id="kirim-paket-link">
+                    <i class="fas fa-box"></i>
+                    <span>Kirim Paket</span>
+                </a>
+                <a href="#" class="hero-service" onclick="alert('Fitur Sewa Armada akan segera hadir!')">
+                    <i class="fas fa-car"></i>
+                    <span>Sewa Armada</span>
+                </a>
+            </div>
         </div>
     </div>
-</div>
-    </div>
 
-</div>
-
-   <!-- Search Section -->
-<div class="search-section">
-    <div class="search-container">
-        <form action="{{ route('customer.search') }}" method="GET" id="search-form">
-            <div class="search-row">
-                <div class="search-field">
-                    <div class="autocomplete-container">
-                        <select class="search-input select2-dropdown" id="departure-outlet" name="departure_outlet" required>
-                            <option value="">Pilih Outlet Keberangkatan</option>
-                            @foreach($outletsGrouped as $kota => $outlets)
-                                <optgroup label="{{ $kota }}">
-                                    @foreach($outlets as $outlet)
-                                        <option value="{{ $outlet->id }}">
-                                            {{ $outlet->nama_outlet }}
-                                             {{-- - {{ $outlet->alamat_lengkap }} --}}
-                                        </option>
-                                    @endforeach
-                                </optgroup>
-                            @endforeach
-                        </select>
+    <!-- Search Section -->
+    <div class="search-section">
+        <div class="search-container">
+            <!-- Form Tiket Shuttle (Default) -->
+            <form action="{{ route('customer.search') }}" method="GET" id="search-form" class="service-form" data-service="shuttle">
+                <div class="search-row">
+                    <div class="search-field">
+                        <div class="autocomplete-container">
+                            <select class="search-input select2-dropdown" id="departure-outlet" name="departure_outlet" required>
+                                <option value="">Pilih Outlet Keberangkatan</option>
+                                @foreach($outletsGrouped as $kota => $outlets)
+                                    <optgroup label="{{ $kota }}">
+                                        @foreach($outlets as $outlet)
+                                            <option value="{{ $outlet->id }}">
+                                                {{ $outlet->nama_outlet }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="search-field">
+                        <div class="autocomplete-container">
+                            <select class="search-input select2-dropdown" id="destination-outlet" name="destination_outlet" required>
+                                <option value="">Pilih Outlet Tujuan</option>
+                                @foreach($outletsGrouped as $kota => $outlets)
+                                    <optgroup label="{{ $kota }}">
+                                        @foreach($outlets as $outlet)
+                                            <option value="{{ $outlet->id }}">
+                                                {{ $outlet->nama_outlet }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="search-field">
+                        <input type="date" class="search-input" name="departure_date"
+                            value="{{ old('departure_date', date('Y-m-d')) }}"
+                            min="{{ date('Y-m-d') }}" required>
+                    </div>
+                    <div class="search-field">
+                        <input type="number" class="search-input" name="passenger_count"
+                            value="{{ old('passenger_count', 1) }}"
+                            placeholder="Jumlah..." min="1" max="10" required>
+                    </div>
+                    <div class="search-btn-container">
+                        <button type="submit" class="search-btn">
+                            <i class="fas fa-search"></i> CEK SHUTTLE
+                        </button>
                     </div>
                 </div>
-                <div class="search-field">
-                    <div class="autocomplete-container">
-                        <select class="search-input select2-dropdown" id="destination-outlet" name="destination_outlet" required>
-                            <option value="">Pilih Outlet Tujuan</option>
-                            @foreach($outletsGrouped as $kota => $outlets)
-                                <optgroup label="{{ $kota }}">
-                                    @foreach($outlets as $outlet)
-                                        <option value="{{ $outlet->id }}">
-                                            {{ $outlet->nama_outlet }}
-                                             {{-- - {{ $outlet->alamat_lengkap }} --}}
-                                        </option>
-                                    @endforeach
-                                </optgroup>
-                            @endforeach
-                        </select>
+            </form>
+
+            <!-- Form Kirim Paket (Hidden by Default) -->
+            <form action="{{ route('customer.kirim-paket') }}" method="GET" id="kirim-paket-form" class="service-form" data-service="kirim-paket" style="display: none;">
+                <div class="search-row" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <!-- Tombol Cek Paket -->
+                    <div class="search-field">
+                        <button type="button" class="search-btn vertical-btn" id="btn-cek-paket">
+                            <div class="btn-text">
+                                <div class="btn-main-text">CEK PAKET</div>
+                                <div class="btn-label">
+                                    Cek status paket yang sudah anda kirim kan
+                                </div>
+                            </div>
+                        </button>
+                        <!-- Modal Cek Paket - DISATUKAN DENGAN TOMBOL -->
+                        <div class="modal-cek-paket" id="modal-cek-paket">
+                            <button type="button" class="close-modal" id="close-modal-cek-paket">
+                                <i class="fas fa-times"></i>
+                            </button>
+
+                            <!-- Header - SAMA SEPERTI TOMBOL CEK PAKET -->
+                            <div class="modal-header">
+                                <div class="modal-main-text">CEK PAKET</div>
+                                <div class="modal-label">Cek status paket yang sudah anda kirim kan</div>
+                            </div>
+
+                            <!-- Garis pemisah -->
+                            <hr class="modal-divider">
+
+                            <!-- Body dengan form input -->
+                            <div class="modal-body">
+                                <div class="resi-form">
+                                    <!-- Input dan tombol CEK dalam satu baris -->
+                                    <div class="resi-input-group">
+                                        <input type="text" class="form-control" id="kode-resi"
+                                            placeholder="Kode Resi">
+                                        <button type="button" class="btn-cek-resi" id="btn-cek-resi">
+                                            <i class="fas fa-search"></i> CEK STATUS PAKET
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Tombol Kirim Paket -->
+                    <div class="search-field">
+                        <button type="button" class="search-btn vertical-btn" id="btn-kirim-paket">
+                            <div class="btn-text">
+                                <div class="btn-main-text">KIRIM PAKET</div>
+                                <div class="btn-label">
+                                    Kirim paket ke beberapa daerah
+                                </div>
+                            </div>
+                        </button>
+                        <!-- Modal Kirim Paket - DISATUKAN DENGAN TOMBOL -->
+                        <div class="modal-kirim-paket" id="modal-kirim-paket">
+                            <button type="button" class="close-modal" id="close-modal-kirim-paket">
+                                <i class="fas fa-times"></i>
+                            </button>
+
+                            <!-- Header - SAMA SEPERTI TOMBOL KIRIM PAKET -->
+                            <div class="modal-header">
+                                <div class="modal-main-text">CEK HARGA PAKET</div>
+                                <div class="modal-label">Cek harga pengiriman paket antar kota</div>
+                            </div>
+
+                            <!-- Garis pemisah -->
+                            <hr class="modal-divider">
+
+                            <!-- Body dengan form input -->
+                            <div class="modal-body">
+                                <div class="kirim-paket-form" id="form-kirim-paket">
+                                    <!-- Data Paket -->
+                                    <h4 style="color: white; margin-bottom: 15px;">Data Paket</h4>
+
+                                    <div class="form-group">
+                                        <label class="form-label">Kota Asal</label>
+                                        <div class="form-input-container">
+                                            <select class="form-control select2-modal" id="asal-paket" name="asal_paket">
+                                                <option value="">Pilih Kota Asal</option>
+                                                @foreach($outletsGrouped as $kota => $outlets)
+                                                    <option value="{{ $kota }}">{{ $kota }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">Kota Tujuan</label>
+                                        <div class="form-input-container">
+                                            <select class="form-control select2-modal" id="tujuan-paket" name="tujuan_paket">
+                                                <option value="">Pilih Kota Tujuan</option>
+                                                @foreach($outletsGrouped as $kota => $outlets)
+                                                    <option value="{{ $kota }}">{{ $kota }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Berat -->
+                                    <div class="form-group">
+                                        <label class="form-label">Berat Paket</label>
+                                        <div class="form-input-container">
+                                            <div class="input-with-suffix">
+                                                <input type="number" class="form-control" id="berat-paket"
+                                                    name="berat_paket" placeholder="0.1" min="0.1" step="0.1" value="0.1" style="max-width: 150px;">
+                                                <span class="input-suffix">kg</span>
+                                            </div>
+                                            <small style="color: #ccc; font-size: 12px; margin-top: 5px; display: block;">
+                                                *Minimum 0.1 kg
+                                            </small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Volume - Opsional -->
+                                    <div class="form-group">
+                                        <label class="form-label">Dimensi Paket <span style="color: #ccc; font-weight: normal;">(Opsional)</span></label>
+                                        <div class="form-input-container">
+                                            <div class="volume-container">
+                                                <div class="volume-input">
+                                                    <input type="number" class="form-control" id="panjang-paket"
+                                                        name="panjang_paket" placeholder="Panjang" min="0" step="0.1">
+                                                    <span class="volume-suffix">cm</span>
+                                                </div>
+                                                <div class="volume-input">
+                                                    <input type="number" class="form-control" id="lebar-paket"
+                                                        name="lebar_paket" placeholder="Lebar" min="0" step="0.1">
+                                                    <span class="volume-suffix">cm</span>
+                                                </div>
+                                                <div class="volume-input">
+                                                    <input type="number" class="form-control" id="tinggi-paket"
+                                                        name="tinggi_paket" placeholder="Tinggi" min="0" step="0.1">
+                                                    <span class="volume-suffix">cm</span>
+                                                </div>
+                                            </div>
+                                            <small style="color: #ccc; font-size: 12px; margin-top: 5px; display: block;">
+                                                *Berat volumetric dihitung: (P × L × T) ÷ 6000
+                                            </small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Tombol Cek Harga -->
+                                    <button type="button" class="btn-cek-harga" id="btn-cek-harga">
+                                        <i class="fas fa-calculator"></i> CEK HARGA SEKARANG
+                                    </button>
+
+                                    <!-- HASIL PERHITUNGAN (akan muncul setelah cek harga) -->
+                                    <div id="hasil-perhitungan" style="display: none; margin-top: 25px;">
+                                        <h4 style="color: white; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
+                                            <i class="fas fa-check-circle"></i> Hasil Perhitungan Harga
+                                        </h4>
+
+                                        <!-- Container Total Harga yang Sederhana DAN LEBIH KECIL -->
+                                        <div class="total-harga-container">
+                                            <div class="success-icon">
+                                                <i class="fas fa-check-circle"></i>
+                                            </div>
+                                            <span class="total-harga-label">Total Biaya Pengiriman:</span>
+                                            <span class="total-harga-value" id="harga-total">Rp 0</span>
+                                            <span class="total-harga-desc">
+                                                Harga sudah termasuk semua biaya pengiriman standar
+                                            </span>
+                                        </div>
+
+                                        <!-- Informasi tambahan -->
+                                        <div style="margin-top: 15px; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; border-left: 3px solid var(--secondary-color);">
+                                            <p style="color: #ccc; font-size: 12px; margin: 0;">
+                                                <i class="fas fa-info-circle" style="margin-right: 5px; color: var(--secondary-color);"></i>
+                                                Harga sudah termasuk biaya pengiriman standar. Berat yang digunakan adalah berat terbesar antara berat aktual dan berat volumetric.
+                                            </p>
+                                        </div>
+
+                                        <!-- Tombol Reset -->
+                                        <button type="button" class="btn-cek-ulang" id="btn-cek-ulang"
+                                                style="width: 100%; padding: 12px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s ease; margin-top: 15px;">
+                                            <i class="fas fa-redo"></i> CEK HARGA LAINNYA
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="search-field">
-                    <input type="date" class="search-input" name="departure_date"
-                           value="{{ old('departure_date', date('Y-m-d')) }}"
-                           min="{{ date('Y-m-d') }}" required>
-                </div>
-                <div class="search-field">
-                    <input type="number" class="search-input" name="passenger_count"
-                           value="{{ old('passenger_count', 1) }}"
-                           placeholder="Jumlah..." min="1" max="10" required>
-                </div>
-                <div class="search-btn-container">
-                    <button type="submit" class="search-btn">CEK SHUTTLE</button>
-                </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
-</div>
+
     <!-- Divider -->
     <div class="divider"></div>
 
-   <!-- Services Section -->
-<div class="services-section">
-    <h2 class="services-title">Layanan Utama {{ $profile->nama_dagang ?? 'Smart Shuttle' }}</h2>
-
-    <p class="services-subtitle">
-        {{ $profile->services_subtitle ?? 'Nikmati tiga layanan unggulan kami – SmartShuttle, SmartRent, dan SmartSend. Dirancang untuk memenuhi kebutuhan perjalanan dan pengiriman Anda dengan mudah dan cepat.' }}
-    </p>
-
-    <div class="services-grid">
-        @forelse($layanan as $item)
-        <!-- Dynamic Service Cards -->
-        <div class="service-card">
-            <div class="service-logo-box">
-                @if($item->logo)
-                    <img src="{{ asset($item->logo) }}"
-                        alt="{{ $item->nama_layanan }}"
-                        onerror="this.onerror=null; this.src='/images/default-service.png';">
-                @else
-                    <img src="/images/default-service.png"
-                        alt="{{ $item->nama_layanan }}">
-                @endif
-            </div>
-            <p class="service-desc">
-                {{ $item->nama_layanan }}
-            </p>
-        </div>
-        @empty
-        <!-- Fallback jika tidak ada data -->
-        <div class="service-card">
-            <div class="service-logo-box">
-                <img src="{{ asset('images/lgsmartrent.png') }}" alt="Smart Rent">
-            </div>
-            <p class="service-desc">
-                Layanan Penyewaan Armada
-            </p>
-        </div>
-
-        <div class="service-card">
-            <div class="service-logo-box">
-                <img src="{{ asset('images/smartshuttlelogo.png') }}" alt="Smart Shuttle">
-            </div>
-            <p class="service-desc">
-                Layanan Pemesanan Tiket Shuttle Antarkota
-            </p>
-        </div>
-
-        <div class="service-card">
-            <div class="service-logo-box">
-                <img src="{{ asset('images/lgsmartsend.png') }}" alt="Smart Send">
-            </div>
-            <p class="service-desc">
-                Layanan Pengiriman Barang Antar Kota
-            </p>
-        </div>
-        @endforelse
-    </div>
-</div>
-
-   <!-- Features Section -->
-<div class="features-section">
-    <h2 class="features-title">{{ strtoupper($profile->nama_dagang ?? 'SMART SHUTTLE') }} {{ $profile->features_title ?? 'SIAP MENEMANI SETIAP PERJALANANMU!' }}</h2>
-
-    <div class="features-grid-6">
-        @php
-            $features = isset($profile->features) ? json_decode($profile->features, true) : [];
-        @endphp
-
-        @if(!empty($features))
-            @foreach($features as $feature)
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="{{ $feature['icon'] ?? 'fas fa-star' }}"></i>
+    <!-- Services Section -->
+    <div class="services-section">
+        <h2 class="services-title">Layanan Utama {{ $profile->nama_dagang ?? 'Smart Shuttle' }}</h2>
+        <p class="services-subtitle">
+            {{ $profile->services_subtitle ?? 'Nikmati tiga layanan unggulan kami – SmartShuttle, SmartRent, dan SmartSend. Dirancang untuk memenuhi kebutuhan perjalanan dan pengiriman Anda dengan mudah dan cepat.' }}
+        </p>
+        <div class="services-grid">
+            @forelse($layanan as $item)
+            <!-- Dynamic Service Cards -->
+            <div class="service-card">
+                <div class="service-logo-box">
+                    @if($item->logo)
+                        <img src="{{ asset($item->logo) }}"
+                            alt="{{ $item->nama_layanan }}"
+                            onerror="this.onerror=null; this.src='/images/default-service.png';">
+                    @else
+                        <img src="/images/default-service.png"
+                            alt="{{ $item->nama_layanan }}">
+                    @endif
                 </div>
-                <h3 class="feature-label">{{ $feature['title'] ?? 'Judul Fitur' }}</h3>
-                <p class="feature-desc">{{ $feature['description'] ?? 'Deskripsi fitur' }}</p>
+                <p class="service-desc">
+                    {{ $item->nama_layanan }}
+                </p>
             </div>
-            @endforeach
-        @else
+            @empty
             <!-- Fallback jika tidak ada data -->
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-route"></i>
+            <div class="service-card">
+                <div class="service-logo-box">
+                    <img src="{{ asset('images/lgsmartrent.png') }}" alt="Smart Rent">
                 </div>
-                <h3 class="feature-label">Perjalanan Tanpa Ribet</h3>
-                <p class="feature-desc">Pesan tiket antar kota secara online dengan cepat dan nyaman, semua urusan perjalanan kamu lebih mudah!</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-hand-holding-usd"></i>
-                </div>
-                <h3 class="feature-label">Harga Bersahabat</h3>
-                <p class="feature-desc">Nikmati perjalanan nyaman dengan tarif terjangkau tanpa kompromi kualitas.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-car-alt"></i>
-                </div>
-                <h3 class="feature-label">Sewa Fleksibel</h3>
-                <p class="feature-desc">Butuh kendaraan pribadi atau bisnis? SmartRent siap kapan pun kamu butuh.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-shipping-fast"></i>
-                </div>
-                <h3 class="feature-label">Kirim Cepat & Aman</h3>
-                <p class="feature-desc">SmartSend bantu antar paketmu tepat waktu, dengan pelacakan real-time.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-mobile-alt"></i>
-                </div>
-                <h3 class="feature-label">Satu Aplikasi, Semua Bisa!</h3>
-                <p class="feature-desc">Perjalanan, sewa, dan kirim barang – semua dalam satu platform SmartShuttle.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-headset"></i>
-                </div>
-                <h3 class="feature-label">Bantuan 24/7</h3>
-                <p class="feature-desc">Tim kami selalu siap membantu setiap langkah perjalananmu.</p>
-            </div>
-        @endif
-    </div>
-</div>
-
-<section class="feedback-section">
-    <div class="feedback-container">
-        <h2 class="feedback-title">Review</h2>
-        <div class="feedback-line"></div>
-
-        <div class="review-wrapper">
-            <!-- ================= LEFT REVIEW LIST ================= -->
-            <div>
-                @php
-                    $reviews = isset($profile->reviews) ? json_decode($profile->reviews, true) : [];
-                @endphp
-
-                @if(!empty($reviews))
-                    @foreach($reviews as $review)
-                    <div class="review-card">
-                        <img src="{{ $review['avatar'] ?? 'https://randomuser.me/api/portraits/women/32.jpg' }}"
-                             class="review-avatar"
-                             alt="{{ $review['name'] ?? 'Reviewer' }}">
-                        <div>
-                            <div class="stars">
-                                @for($i = 0; $i < 5; $i++)
-                                    @if($i < ($review['stars'] ?? 5))
-                                        ★
-                                    @else
-                                        ☆
-                                    @endif
-                                @endfor
-                            </div>
-                            <div class="review-name">{{ $review['name'] ?? 'Nama Reviewer' }}</div>
-                            <div class="review-text">
-                                {{ $review['text'] ?? 'Teks review akan ditampilkan di sini.' }}
-                            </div>
-                        </div>
-                    </div>
-                    @endforeach
-                @else
-                    <!-- Fallback jika tidak ada data -->
-                    <div class="review-card">
-                        <img src="https://randomuser.me/api/portraits/women/32.jpg" class="review-avatar" alt="Luna Ayna">
-                        <div>
-                            <div class="stars">★★★★★</div>
-                            <div class="review-name">Luna Ayna</div>
-                            <div class="review-text">
-                                Servisnya bagus, drivernya sopan dan nyetirnya halus jadi bisa tidur selama perjalanan.
-                                Tracking lokasinya juga akurat. Bakal jadi langganan.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="review-card">
-                        <img src="https://randomuser.me/api/portraits/men/54.jpg" class="review-avatar" alt="Rizky Pratama">
-                        <div>
-                            <div class="stars">★★★★☆</div>
-                            <div class="review-name">Rizky Pratama</div>
-                            <div class="review-text">
-                                Pertama kali coba SmartShuttle dan langsung puas. Mobilnya bersih, AC dingin, kursinya empuk.
-                                Berangkat juga sesuai jadwal. Recommended banget buat yang sering PP Jakarta–Bandung!
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="review-card">
-                        <img src="https://randomuser.me/api/portraits/women/68.jpg" class="review-avatar" alt="Sari Dewi">
-                        <div>
-                            <div class="stars">★★★★★</div>
-                            <div class="review-name">Sari Dewi</div>
-                            <div class="review-text">
-                                Harganya menurut saya cukup murah dibanding shuttle lain, tapi kualitas layanannya tetap bagus.
-                                Pemesanan lewat aplikasi juga gampang.
-                            </div>
-                        </div>
-                    </div>
-                @endif
-            </div>
-
-            <!-- ================= RIGHT REVIEW FORM ================= -->
-            <div>
-                <div class="form-title">Berikan Review Anda</div>
-
-                <div class="star-input" id="star-rating">
-                    <i class="fas fa-star" data-rating="1"></i>
-                    <i class="fas fa-star" data-rating="2"></i>
-                    <i class="fas fa-star" data-rating="3"></i>
-                    <i class="fas fa-star" data-rating="4"></i>
-                    <i class="fas fa-star" data-rating="5"></i>
-                </div>
-
-                <textarea class="form-textarea" id="review-text" placeholder="Tulis pendapat anda..."></textarea>
-
-                <button class="btn-primary" id="submit-review">
-                    <i class="fas fa-paper-plane"></i>
-                    Kirim Review
-                </button>
-                <button class="btn-close" id="close-review">
-                    <i class="fas fa-times"></i>
-                    Tutup
-                </button>
-            </div>
-        </div>
-    </div>
-</section>
-    </div>
-  <footer class="site-footer">
-    <div class="footer-container">
-        <div class="footer-main">
-            <!-- Smart Shuttle -->
-            <div class="footer-column">
-                <h3 class="footer-title">{{ $profile->nama_dagang ?? 'Smart Shuttle' }}</h3>
-                <p class="footer-text">
-                    {{ $profile->deskripsi_singkat ?? 'Layanan transportasi cerdas yang siap mengantarkan Anda menjelajahi keindahan Jawa Barat dengan harga terbaik dan kenyamanan maksimal.' }}
+                <p class="service-desc">
+                    Layanan Penyewaan Armada
                 </p>
             </div>
-
-            <!-- Kontak -->
-<div class="footer-column">
-    <h4 class="footer-subtitle">Kontak</h4>
-    <div class="contact-list">
-        <div class="contact-line">
-            <span>Whatsapp: {{ $profile->telepon ?? '+62 858-1122-4321' }}</span>
-        </div>
-        <div class="contact-line">
-            <span>Email: {{ $profile->email ?? 'mdcitrasolusi@gmail.com' }}</span>
-        </div>
-        <div class="contact-line">
-            <span class="address">Alamat: {{ $profile->alamat_kantor_pusat ?? 'Ruko Citra Grand CBD, Jl. Alternatif Cibubur – Cileungsi No.KM. 5 ER 01 No 02, Jatirangga, Kec. Jatisampurna, Kota Bks, Jawa Barat 17434' }}</span>
-        </div>
-    </div>
-</div>
-
-<!-- Sosial Media -->
-<div class="footer-column">
-    <h4 class="footer-subtitle">Sosial Media</h4>
-    <p class="footer-text">
-        {{ $profile->footer_description ?? 'Dengan layanan unggulan yang kami hadirkan, kami berkomitmen untuk menjadikan setiap momen perjalanan Anda lebih istimewa.' }}
-    </p>
-    <div class="social-buttons">
-        <a href="{{ $profile->facebook_url ?? '#' }}" class="social-button" target="_blank">
-            <i class="fab fa-facebook-f"></i>
-        </a>
-        <a href="{{ $profile->instagram_url ?? 'https://citrasolusi.id' }}" class="social-button" target="_blank">
-            <i class="fab fa-instagram"></i>
-        </a>
-        <a href="{{ $profile->twitter_url ?? '#' }}" class="social-button" target="_blank">
-            <i class="fab fa-twitter"></i>
-        </a>
-    </div>
-</div>
-        </div>
-
-        <div class="footer-bottom">
-            <div class="footer-bottom-content">
-                <p class="copyright">
-                    &copy; {{ date('Y') }} {{ $profile->nama_dagang ?? 'Smart Shuttle' }}. All rights reserved.
+            <div class="service-card">
+                <div class="service-logo-box">
+                    <img src="{{ asset('images/smartshuttlelogo.png') }}" alt="Smart Shuttle">
+                </div>
+                <p class="service-desc">
+                    Layanan Pemesanan Tiket Shuttle Antarkota
                 </p>
-                <div class="footer-links">
-                    <a href="{{ $profile->link_kebijakan_privasi ?? '#' }}" class="footer-link">Privacy Policy</a>
-                    <a href="{{ $profile->link_syarat_ketentuan ?? '#' }}" class="footer-link">Terms of Service</a>
-                    <a href="#" class="footer-link">Contact Us</a>
+            </div>
+            <div class="service-card">
+                <div class="service-logo-box">
+                    <img src="{{ asset('images/lgsmartsend.png') }}" alt="Smart Send">
+                </div>
+                <p class="service-desc">
+                    Layanan Pengiriman Barang Antar Kota
+                </p>
+            </div>
+            @endforelse
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="features-section">
+        <h2 class="features-title">{{ strtoupper($profile->nama_dagang ?? 'SMART SHUTTLE') }} {{ $profile->features_title ?? 'SIAP MENEMANI SETIAP PERJALANANMU!' }}</h2>
+        <div class="features-grid-6">
+            @php
+                $features = isset($profile->features) ? json_decode($profile->features, true) : [];
+            @endphp
+            @if(!empty($features))
+                @foreach($features as $feature)
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="{{ $feature['icon'] ?? 'fas fa-star' }}"></i>
+                    </div>
+                    <h3 class="feature-label">{{ $feature['title'] ?? 'Judul Fitur' }}</h3>
+                    <p class="feature-desc">{{ $feature['description'] ?? 'Deskripsi fitur' }}</p>
+                </div>
+                @endforeach
+            @else
+                <!-- Fallback jika tidak ada data -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-route"></i>
+                    </div>
+                    <h3 class="feature-label">Perjalanan Tanpa Ribet</h3>
+                    <p class="feature-desc">Pesan tiket antar kota secara online dengan cepat dan nyaman, semua urusan perjalanan kamu lebih mudah!</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-hand-holding-usd"></i>
+                    </div>
+                    <h3 class="feature-label">Harga Bersahabat</h3>
+                    <p class="feature-desc">Nikmati perjalanan nyaman dengan tarif terjangkau tanpa kompromi kualitas.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-car-alt"></i>
+                    </div>
+                    <h3 class="feature-label">Sewa Fleksibel</h3>
+                    <p class="feature-desc">Butuh kendaraan pribadi atau bisnis? SmartRent siap kapan pun kamu butuh.</p>
+                </div>
+                <div class="feature-card {
+                    <div class="feature-icon">
+                        <i class="fas fa-shipping-fast"></i>
+                    </div>
+                    <h3 class="feature-label">Kirim Cepat & Aman</h3>
+                    <p class="feature-desc">SmartSend bantu antar paketmu tepat waktu, dengan pelacakan real-time.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h3 class="feature-label">Satu Aplikasi, Semua Bisa!</h3>
+                    <p class="feature-desc">Perjalanan, sewa, dan kirim barang – semua dalam satu platform SmartShuttle.</p>
+                </div>
+                <div class="feature-card {
+                    <div class="feature-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h3 class="feature-label">Bantuan 24/7</h3>
+                    <p class="feature-desc">Tim kami selalu siap membantu setiap langkah perjalananmu.</p>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <!-- Feedback Section -->
+    <section class="feedback-section">
+        <div class="feedback-container">
+            <h2 class="feedback-title">Review</h2>
+            <div class="feedback-line"></div>
+            <div class="review-wrapper">
+                <!-- LEFT REVIEW LIST -->
+                <div>
+                    @php
+                        $reviews = isset($profile->reviews) ? json_decode($profile->reviews, true) : [];
+                    @endphp
+                    @if(!empty($reviews))
+                        @foreach($reviews as $review)
+                        <div class="review-card">
+                            <img src="{{ $review['avatar'] ?? 'https://randomuser.me/api/portraits/women/32.jpg' }}"
+                                class="review-avatar"
+                                alt="{{ $review['name'] ?? 'Reviewer' }}">
+                            <div>
+                                <div class="stars">
+                                    @for($i = 0; $i < 5; $i++)
+                                        @if($i < ($review['stars'] ?? 5))
+                                            ★
+                                        @else
+                                            ☆
+                                        @endif
+                                    @endfor
+                                </div>
+                                <div class="review-name">{{ $review['name'] ?? 'Nama Reviewer' }}</div>
+                                <div class="review-text">
+                                    {{ $review['text'] ?? 'Teks review akan ditampilkan di sini.' }}
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    @else
+                        <!-- Fallback jika tidak ada data -->
+                        <div class="review-card">
+                            <img src="https://randomuser.me/api/portraits/women/32.jpg" class="review-avatar" alt="Luna Ayna">
+                            <div>
+                                <div class="stars">★★★★★</div>
+                                <div class="review-name">Luna Ayna</div>
+                                <div class="review-text">
+                                    Servisnya bagus, drivernya sopan dan nyetirnya halus jadi bisa tidur selama perjalanan.
+                                    Tracking lokasinya juga akurat. Bakal jadi langganan.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="review-card">
+                            <img src="https://randomuser.me/api/portraits/men/54.jpg" class="review-avatar" alt="Rizky Pratama">
+                            <div>
+                                <div class="stars">★★★★☆</div>
+                                <div class="review-name">Rizky Pratama</div>
+                                <div class="review-text">
+                                    Pertama kali coba SmartShuttle dan langsung puas. Mobilnya bersih, AC dingin, kursinya empuk.
+                                    Berangkat juga sesuai jadwal. Recommended banget buat yang sering PP Jakarta–Bandung!
+                                </div>
+                            </div>
+                        </div>
+                        <div class="review-card">
+                            <img src="https://randomuser.me/api/portraits/women/68.jpg" class="review-avatar" alt="Sari Dewi">
+                            <div>
+                                <div class="stars">★★★★★</div>
+                                <div class="review-name">Sari Dewi</div>
+                                <div class="review-text">
+                                    Harganya menurut saya cukup murah dibanding shuttle lain, tapi kualitas layanannya tetap bagus.
+                                    Pemesanan lewat aplikasi juga gampang.
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                <!-- RIGHT REVIEW FORM -->
+                <div>
+                    <div class="form-title">Berikan Review Anda</div>
+                    <div class="star-input" id="star-rating">
+                        <i class="fas fa-star" data-rating="1"></i>
+                        <i class="fas fa-star" data-rating="2"></i>
+                        <i class="fas fa-star" data-rating="3"></i>
+                        <i class="fas fa-star" data-rating="4"></i>
+                        <i class="fas fa-star" data-rating="5"></i>
+                    </div>
+                    <textarea class="form-textarea" id="review-text" placeholder="Tulis pendapat anda..."></textarea>
+                    <button class="btn-primary" id="submit-review">
+                        <i class="fas fa-paper-plane"></i>
+                        Kirim Review
+                    </button>
+                    <button class="btn-close" id="close-review">
+                        <i class="fas fa-times"></i>
+                        Tutup
+                    </button>
                 </div>
             </div>
         </div>
-    </div>
-</footer>
+    </section>
 
-<!-- JavaScript yang sudah diperbaiki -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded - init scripts');
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-main">
+                <!-- Smart Shuttle -->
+                <div class="footer-column">
+                    <h3 class="footer-title">{{ $profile->nama_dagang ?? 'Smart Shuttle' }}</h3>
+                    <p class="footer-text">
+                        {{ $profile->deskripsi_singkat ?? 'Layanan transportasi cerdas yang siap mengantarkan Anda menjelajahi keindahan Jawa Barat dengan harga terbaik dan kenyamanan maksimal.' }}
+                    </p>
+                </div>
 
-    /* ---------- NAVBAR SCROLL ---------- */
-    const navbar = document.getElementById('navbar');
-    let lastScrollY = window.scrollY || 0;
-    if (navbar) {
-        window.addEventListener('scroll', function () {
-            const currentY = window.scrollY || 0;
-            if (currentY > 100) {
-                navbar.classList.add('scrolled');
-                if (currentY > lastScrollY && currentY > 100) {
-                    navbar.classList.add('hidden');
+                <!-- Kontak -->
+                <div class="footer-column">
+                    <h4 class="footer-subtitle">Kontak</h4>
+                    <div class="contact-list">
+                        <div class="contact-line">
+                            <span>Whatsapp: {{ $profile->telepon ?? '+62 858-1122-4321' }}</span>
+                        </div>
+                        <div class="contact-line">
+                            <span>Email: {{ $profile->email ?? 'mdcitrasolusi@gmail.com' }}</span>
+                        </div>
+                        <div class="contact-line">
+                            <span class="address">Alamat: {{ $profile->alamat_kantor_pusat ?? 'Ruko Citra Grand CBD, Jl. Alternatif Cibubur – Cileungsi No.KM. 5 ER 01 No 02, Jatirangga, Kec. Jatisampurna, Kota Bks, Jawa Barat 17434' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sosial Media -->
+                <div class="footer-column">
+                    <h4 class="footer-subtitle">Sosial Media</h4>
+                    <p class="footer-text">
+                        {{ $profile->footer_description ?? 'Dengan layanan unggulan yang kami hadirkan, kami berkomitmen untuk menjadikan setiap momen perjalanan Anda lebih istimewa.' }}
+                    </p>
+                    <div class="social-buttons">
+                        <a href="{{ $profile->facebook_url ?? '#' }}" class="social-button" target="_blank">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="{{ $profile->instagram_url ?? 'https://citrasolusi.id' }}" class="social-button" target="_blank">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="{{ $profile->twitter_url ?? '#' }}" class="social-button" target="_blank">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="footer-bottom-content">
+                    <p class="copyright">
+                        &copy; {{ date('Y') }} {{ $profile->nama_dagang ?? 'Smart Shuttle' }}. All rights reserved.
+                    </p>
+                    <div class="footer-links">
+                        <a href="{{ $profile->link_kebijakan_privasi ?? '#' }}" class="footer-link">Privacy Policy</a>
+                        <a href="{{ $profile->link_syarat_ketentuan ?? '#' }}" class="footer-link">Terms of Service</a>
+                        <a href="#" class="footer-link">Contact Us</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        /* ---------- NAVBAR SCROLL ---------- */
+        const navbar = document.getElementById('navbar');
+        let lastScrollY = window.scrollY || 0;
+        if (navbar) {
+            window.addEventListener('scroll', function () {
+                const currentY = window.scrollY || 0;
+                if (currentY > 100) {
+                    navbar.classList.add('scrolled');
+                    if (currentY > lastScrollY && currentY > 100) {
+                        navbar.classList.add('hidden');
+                    } else {
+                        navbar.classList.remove('hidden');
+                    }
                 } else {
+                    navbar.classList.remove('scrolled');
                     navbar.classList.remove('hidden');
                 }
-            } else {
-                navbar.classList.remove('scrolled');
-                navbar.classList.remove('hidden');
-            }
-            lastScrollY = currentY;
-        }, { passive: true });
-    }
+                lastScrollY = currentY;
+            }, { passive: true });
+        }
 
-    /* ---------- DATE MIN ---------- */
-    const departureDateInput = document.querySelector('input[name="departure_date"]');
-    if (departureDateInput) {
-        const today = new Date().toISOString().split('T')[0];
-        departureDateInput.setAttribute('min', today);
-    }
+        /* ---------- DATE MIN ---------- */
+        const departureDateInput = document.querySelector('input[name="departure_date"]');
+        if (departureDateInput) {
+            const today = new Date().toISOString().split('T')[0];
+            departureDateInput.setAttribute('min', today);
+        }
 
-    /* ---------- SEARCH FORM VALIDATION ---------- */
-    const searchForm = document.getElementById('search-form');
-    if (searchForm) {
-        searchForm.addEventListener('submit', function(e) {
-            const departureOutlet = document.getElementById('departure-outlet');
-            const destinationOutlet = document.getElementById('destination-outlet');
+        /* ---------- SEARCH FORM VALIDATION ---------- */
+        const searchForm = document.getElementById('search-form');
+        if (searchForm) {
+            searchForm.addEventListener('submit', function(e) {
+                const departureOutlet = document.getElementById('departure-outlet');
+                const destinationOutlet = document.getElementById('destination-outlet');
 
-            if (departureOutlet && destinationOutlet && departureOutlet.value === destinationOutlet.value) {
-                e.preventDefault();
-                alert('Outlet keberangkatan dan tujuan tidak boleh sama!');
-                return false;
-            }
-        });
-    }
+                if (departureOutlet && destinationOutlet && departureOutlet.value === destinationOutlet.value) {
+                    e.preventDefault();
+                    alert('Outlet keberangkatan dan tujuan tidak boleh sama!');
+                    return false;
+                }
+            });
+        }
 
-    /* ---------- PROFILE DROPDOWN ---------- */
-    const dropdownButton = document.getElementById('profile-dropdown');
-    const dropdownMenu = document.getElementById('dropdown-menu');
+        /* ---------- PROFILE DROPDOWN ---------- */
+        const dropdownButton = document.getElementById('profile-dropdown');
+        const dropdownMenu = document.getElementById('dropdown-menu');
 
-    if (dropdownButton && dropdownMenu) {
-        // Ensure button is keyboard focusable
-        dropdownButton.setAttribute('aria-haspopup', 'true');
-        dropdownButton.setAttribute('aria-expanded', 'false');
+        if (dropdownButton && dropdownMenu) {
+            dropdownButton.setAttribute('aria-haspopup', 'true');
+            dropdownButton.setAttribute('aria-expanded', 'false');
 
-        // Toggle on click
-        dropdownButton.addEventListener('click', function (e) {
-            e.stopPropagation();
-            const isShown = dropdownMenu.classList.toggle('show');
-            dropdownButton.setAttribute('aria-expanded', isShown ? 'true' : 'false');
-        });
+            dropdownButton.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const isShown = dropdownMenu.classList.toggle('show');
+                dropdownButton.setAttribute('aria-expanded', isShown ? 'true' : 'false');
+            });
 
-        // Close when clicking outside
-        document.addEventListener('click', function (e) {
-            if (!dropdownButton.contains(e.target) && !dropdownMenu.contains(e.target)) {
-                if (dropdownMenu.classList.contains('show')) {
+            document.addEventListener('click', function (e) {
+                if (!dropdownButton.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                    if (dropdownMenu.classList.contains('show')) {
+                        dropdownMenu.classList.remove('show');
+                        dropdownButton.setAttribute('aria-expanded', 'false');
+                    }
+                }
+            });
+
+            dropdownMenu.addEventListener('click', function (e) {
+                const tag = e.target.tagName;
+                if (tag === 'A' || tag === 'BUTTON') {
                     dropdownMenu.classList.remove('show');
                     dropdownButton.setAttribute('aria-expanded', 'false');
                 }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && dropdownMenu.classList.contains('show')) {
+                    dropdownMenu.classList.remove('show');
+                    dropdownButton.setAttribute('aria-expanded', 'false');
+                    dropdownButton.focus();
+                }
+            });
+        }
+
+        /* ---------- MODAL CEK PAKET ---------- */
+        const btnCekPaket = document.getElementById('btn-cek-paket');
+        const modalCekPaket = document.getElementById('modal-cek-paket');
+        const closeModalCekPaket = document.getElementById('close-modal-cek-paket');
+        const btnCekResi = document.getElementById('btn-cek-resi');
+
+        // Show modal cek paket - menggantikan tombol
+        if (btnCekPaket) {
+            btnCekPaket.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Tutup modal Kirim Paket jika terbuka
+                if (modalKirimPaket && modalKirimPaket.classList.contains('show')) {
+                    modalKirimPaket.classList.remove('show');
+                    btnKirimPaket.style.visibility = 'visible';
+
+                    const searchFieldKirim = btnKirimPaket.closest('.search-field');
+                    if (searchFieldKirim) {
+                        searchFieldKirim.style.height = '';
+                        searchFieldKirim.style.minHeight = '';
+                    }
+                }
+
+                // Buka modal Cek Paket
+                modalCekPaket.classList.toggle('show');
+                btnCekPaket.style.visibility = 'hidden';
+
+                const searchField = btnCekPaket.closest('.search-field');
+                if (searchField) {
+                    searchField.style.height = 'auto';
+                    searchField.style.minHeight = 'fit-content';
+                }
+            });
+        }
+
+        // Close modal when clicking close button
+        if (closeModalCekPaket) {
+            closeModalCekPaket.addEventListener('click', function(e) {
+                e.preventDefault();
+                modalCekPaket.classList.remove('show');
+                btnCekPaket.style.visibility = 'visible';
+
+                const searchField = btnCekPaket.closest('.search-field');
+                if (searchField) {
+                    searchField.style.height = '';
+                    searchField.style.minHeight = '';
+                }
+            });
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            if (modalCekPaket.classList.contains('show')) {
+                if (!modalCekPaket.contains(e.target) && !btnCekPaket.contains(e.target)) {
+                    modalCekPaket.classList.remove('show');
+                    btnCekPaket.style.visibility = 'visible';
+
+                    const searchField = btnCekPaket.closest('.search-field');
+                    if (searchField) {
+                        searchField.style.height = '';
+                        searchField.style.minHeight = '';
+                    }
+                }
             }
         });
 
-        // Close when any link/button inside clicked
-        dropdownMenu.addEventListener('click', function (e) {
-            const tag = e.target.tagName;
-            if (tag === 'A' || tag === 'BUTTON') {
-                dropdownMenu.classList.remove('show');
-                dropdownButton.setAttribute('aria-expanded', 'false');
+        // Handle cek resi button
+        if (btnCekResi) {
+            btnCekResi.addEventListener('click', function(e) {
+                e.preventDefault();
+                const kodeResi = document.getElementById('kode-resi').value.trim();
+
+                if (!kodeResi) {
+                    alert('Silakan masukkan kode resi terlebih dahulu!');
+                    return;
+                }
+
+                // Simulasi cek resi
+                alert('Mencari informasi untuk resi: ' + kodeResi + '\n\n(Sistem cek paket akan ditampilkan di sini)');
+
+                // Reset form
+                document.getElementById('kode-resi').value = '';
+                modalCekPaket.classList.remove('show');
+                // Tampilkan kembali tombol utama
+                btnCekPaket.style.visibility = 'visible';
+
+                // Kembalikan ukuran container search
+                const searchField = btnCekPaket.closest('.search-field');
+                if (searchField) {
+                    searchField.style.height = '';
+                    searchField.style.minHeight = '';
+                }
+            });
+        }
+
+        /* ---------- MODAL KIRIM PAKET ---------- */
+        const btnKirimPaket = document.getElementById('btn-kirim-paket');
+        const modalKirimPaket = document.getElementById('modal-kirim-paket');
+        const closeModalKirimPaket = document.getElementById('close-modal-kirim-paket');
+
+        // Show modal kirim paket - menggantikan tombol
+        if (btnKirimPaket) {
+            btnKirimPaket.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Tutup modal Cek Paket jika terbuka
+                if (modalCekPaket && modalCekPaket.classList.contains('show')) {
+                    modalCekPaket.classList.remove('show');
+                    btnCekPaket.style.visibility = 'visible';
+
+                    const searchFieldCek = btnCekPaket.closest('.search-field');
+                    if (searchFieldCek) {
+                        searchFieldCek.style.height = '';
+                        searchFieldCek.style.minHeight = '';
+                    }
+                }
+
+                // Buka modal Kirim Paket
+                modalKirimPaket.classList.toggle('show');
+                btnKirimPaket.style.visibility = 'hidden';
+
+                const searchField = btnKirimPaket.closest('.search-field');
+                if (searchField) {
+                    searchField.style.height = 'auto';
+                    searchField.style.minHeight = 'fit-content';
+                }
+
+                // Initialize Select2 untuk modal
+                setTimeout(() => {
+                    $('#asal-paket').select2({
+                        placeholder: "Pilih Kota Asal",
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: modalKirimPaket
+                    });
+                    $('#tujuan-paket').select2({
+                        placeholder: "Pilih Kota Tujuan",
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: modalKirimPaket
+                    });
+                }, 100);
+            });
+        }
+
+        // Close modal when clicking close button
+        if (closeModalKirimPaket) {
+            closeModalKirimPaket.addEventListener('click', function(e) {
+                e.preventDefault();
+                modalKirimPaket.classList.remove('show');
+                btnKirimPaket.style.visibility = 'visible';
+
+                const searchField = btnKirimPaket.closest('.search-field');
+                if (searchField) {
+                    searchField.style.height = '';
+                    searchField.style.minHeight = '';
+                }
+            });
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            if (modalKirimPaket.classList.contains('show')) {
+                if (!modalKirimPaket.contains(e.target) && !btnKirimPaket.contains(e.target)) {
+                    modalKirimPaket.classList.remove('show');
+                    btnKirimPaket.style.visibility = 'visible';
+
+                    const searchField = btnKirimPaket.closest('.search-field');
+                    if (searchField) {
+                        searchField.style.height = '';
+                        searchField.style.minHeight = '';
+                    }
+                }
             }
         });
 
-        // Close on Escape
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && dropdownMenu.classList.contains('show')) {
-                dropdownMenu.classList.remove('show');
-                dropdownButton.setAttribute('aria-expanded', 'false');
-                dropdownButton.focus();
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            // Tutup modal Cek Paket jika terbuka
+            if (e.key === 'Escape' && modalCekPaket.classList.contains('show')) {
+                modalCekPaket.classList.remove('show');
+                btnCekPaket.style.visibility = 'visible';
+
+                const searchField = btnCekPaket.closest('.search-field');
+                if (searchField) {
+                    searchField.style.height = '';
+                    searchField.style.minHeight = '';
+                }
+            }
+
+            // Tutup modal Kirim Paket jika terbuka
+            if (e.key === 'Escape' && modalKirimPaket.classList.contains('show')) {
+                modalKirimPaket.classList.remove('show');
+                btnKirimPaket.style.visibility = 'visible';
+
+                const searchField = btnKirimPaket.closest('.search-field');
+                if (searchField) {
+                    searchField.style.height = '';
+                    searchField.style.minHeight = '';
+                }
             }
         });
-    } else {
-        console.log('Dropdown elements not present or not rendered for this user.');
-    }
 
+        /* ---------- SERVICE SWITCHER ---------- */
+        const shuttleLink = document.getElementById('shuttle-link');
+        const kirimPaketLink = document.getElementById('kirim-paket-link');
+        const serviceForms = document.querySelectorAll('.service-form');
+        const heroServices = document.querySelectorAll('.hero-service');
+        const heroTitle = document.querySelector('.hero-title');
+        const heroDesc = document.querySelector('.hero-desc');
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeService = urlParams.get('service') || 'shuttle';
 
-    const successMsg = @json(session('success'));
-    const errorMsg = @json(session('error'));
+        // Function to switch between forms
+        function switchService(serviceType) {
+            // Hide all forms
+            serviceForms.forEach(form => {
+                form.style.display = 'none';
+            });
 
-    if (successMsg) {
-        try { alert(successMsg); } catch (err) { console.log('Alert success failed', err, successMsg); }
-    }
-    if (errorMsg) {
-        try { alert(errorMsg); } catch (err) { console.log('Alert error failed', err, errorMsg); }
-    }
-});
+            // Show selected form
+            const activeForm = document.querySelector(`.service-form[data-service="${serviceType}"]`);
+            if (activeForm) {
+                activeForm.style.display = 'block';
+            }
 
-// Initialize Select2
-$(document).ready(function() {
-    $('#departure-outlet').select2({
-        placeholder: "Pilih Outlet Keberangkatan",
-        allowClear: true,
-        width: '100%'
+            // Tutup kedua modal jika terbuka
+            if (modalCekPaket) {
+                modalCekPaket.classList.remove('show');
+                btnCekPaket.style.visibility = 'visible';
+
+                const searchFieldCek = btnCekPaket.closest('.search-field');
+                if (searchFieldCek) {
+                    searchFieldCek.style.height = '';
+                    searchFieldCek.style.minHeight = '';
+                }
+            }
+
+            if (modalKirimPaket) {
+                modalKirimPaket.classList.remove('show');
+                btnKirimPaket.style.visibility = 'visible';
+
+                const searchFieldKirim = btnKirimPaket.closest('.search-field');
+                if (searchFieldKirim) {
+                    searchFieldKirim.style.height = '';
+                    searchFieldKirim.style.minHeight = '';
+                }
+            }
+
+            // Update hero title and description based on service
+            updateHeroContent(serviceType);
+
+            // Update URL without reloading page
+            const newUrl = new URL(window.location);
+            if (serviceType === 'shuttle') {
+                newUrl.searchParams.delete('service');
+            } else {
+                newUrl.searchParams.set('service', serviceType);
+            }
+            window.history.pushState({}, '', newUrl);
+
+            // Update hero services active state
+            updateHeroServicesActiveState(serviceType);
+
+            // Reinitialize Select2 for visible form
+            setTimeout(() => {
+                if (serviceType === 'shuttle') {
+                    $('#departure-outlet').select2({
+                        placeholder: "Pilih Outlet Keberangkatan",
+                        allowClear: true,
+                        width: '100%'
+                    });
+                    $('#destination-outlet').select2({
+                        placeholder: "Pilih Outlet Tujuan",
+                        allowClear: true,
+                        width: '100%'
+                    });
+                }
+            }, 100);
+        }
+
+        // Function to update hero content based on service
+        function updateHeroContent(serviceType) {
+            if (heroTitle && heroDesc) {
+                if (serviceType === 'kirim-paket') {
+                    // Ubah untuk SmartSend
+                    heroTitle.textContent = 'SmartSend';
+                    heroDesc.textContent = 'Setiap kiriman punya tujuan — Paket terkirim cepat, aman, dan terpantau.';
+                } else {
+                    // Kembalikan ke default
+                    heroTitle.textContent = '{{ $profile->nama_dagang ?? 'Smart Shuttle' }}';
+                    heroDesc.textContent = '{{ $profile->deskripsi_singkat ?? 'Menghubungkan kota, menyatukan perjalanan – Solusi cerdas untuk mobilitas anda' }}';
+                }
+            }
+        }
+
+        // Function to update active state in hero services
+        function updateHeroServicesActiveState(serviceType) {
+            heroServices.forEach(service => {
+                service.classList.remove('active');
+
+                if (service.id === 'shuttle-link' && serviceType === 'shuttle') {
+                    service.classList.add('active');
+                } else if (service.id === 'kirim-paket-link' && serviceType === 'kirim-paket') {
+                    service.classList.add('active');
+                }
+            });
+        }
+
+        // Initialize based on URL parameter
+        if (activeService === 'kirim-paket') {
+            switchService('kirim-paket');
+        } else {
+            switchService('shuttle');
+        }
+
+        // Handle click on Tiket Shuttle link
+        if (shuttleLink) {
+            shuttleLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                switchService('shuttle');
+
+                // Scroll to search section
+                document.querySelector('.search-section').scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        }
+
+        // Handle click on Kirim Paket link
+        if (kirimPaketLink) {
+            kirimPaketLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                switchService('kirim-paket');
+
+                // Scroll to search section
+                document.querySelector('.search-section').scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        }
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const service = urlParams.get('service') || 'shuttle';
+            switchService(service);
+        });
+
+        // Session messages
+        const successMsg = @json(session('success'));
+        const errorMsg = @json(session('error'));
+
+        if (successMsg) {
+            alert(successMsg);
+        }
+        if (errorMsg) {
+            alert(errorMsg);
+        }
     });
 
-    $('#destination-outlet').select2({
-        placeholder: "Pilih Outlet Tujuan",
-        allowClear: true,
-        width: '100%'
-    });
-});
-</script>
+    /* ---------- CEK HARGA PAKET AJAX ---------- */
+    const btnCekHarga = document.getElementById('btn-cek-harga');
+    const btnCekUlang = document.getElementById('btn-cek-ulang');
+    const hasilPerhitungan = document.getElementById('hasil-perhitungan');
 
+    if (btnCekHarga) {
+        btnCekHarga.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const asal = document.getElementById('asal-paket').value;
+            const tujuan = document.getElementById('tujuan-paket').value;
+            const berat = parseFloat(document.getElementById('berat-paket').value) || 0.1;
+            const panjang = parseFloat(document.getElementById('panjang-paket').value) || 0;
+            const lebar = parseFloat(document.getElementById('lebar-paket').value) || 0;
+            const tinggi = parseFloat(document.getElementById('tinggi-paket').value) || 0;
+
+            // Validasi dasar
+            if (!asal || !tujuan) {
+                alert('Silakan pilih asal dan tujuan terlebih dahulu!');
+                return;
+            }
+
+            if (asal === tujuan) {
+                alert('Kota asal dan tujuan tidak boleh sama!');
+                return;
+            }
+
+            if (berat <= 0) {
+                alert('Silakan isi berat paket (minimal 0.1 kg)!');
+                return;
+            }
+
+            // Validasi dimensi jika salah satu diisi
+            if ((panjang > 0 || lebar > 0 || tinggi > 0) &&
+                (panjang <= 0 || lebar <= 0 || tinggi <= 0)) {
+                alert('Jika mengisi dimensi, semua kolom panjang, lebar, dan tinggi harus diisi!');
+                return;
+            }
+
+            // Tampilkan loading
+            const originalText = btnCekHarga.innerHTML;
+            btnCekHarga.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghitung...';
+            btnCekHarga.disabled = true;
+
+            // Kirim AJAX request
+            fetch('{{ route("customer.cek-harga-paket") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    asal: asal,
+                    tujuan: tujuan,
+                    berat: berat,
+                    panjang: panjang,
+                    lebar: lebar,
+                    tinggi: tinggi
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Kembalikan tombol ke keadaan semula
+                btnCekHarga.innerHTML = originalText;
+                btnCekHarga.disabled = false;
+
+                if (data.success) {
+                    // Tampilkan hasil perhitungan
+                    hasilPerhitungan.style.display = 'block';
+
+                    // Update hanya total harga
+                    document.getElementById('harga-total').textContent = data.data.harga_total;
+
+                    // Scroll ke hasil perhitungan
+                    hasilPerhitungan.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                    // Tambahkan class untuk animasi
+                    hasilPerhitungan.classList.add('show');
+
+                    // RESET KOTA ASAL DAN TUJUAN SETELAH BERHASIL
+                    $('#asal-paket').val('').trigger('change');
+                    $('#tujuan-paket').val('').trigger('change');
+
+                    // Reset berat ke default 0.1 kg
+                    document.getElementById('berat-paket').value = '0.1';
+
+                    // Reset dimensi
+                    document.getElementById('panjang-paket').value = '';
+                    document.getElementById('lebar-paket').value = '';
+                    document.getElementById('tinggi-paket').value = '';
+
+                } else {
+                    alert(data.message || 'Terjadi kesalahan saat menghitung harga.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                btnCekHarga.innerHTML = originalText;
+                btnCekHarga.disabled = false;
+                alert('Terjadi kesalahan saat menghitung harga.');
+            });
+        });
+    }
+
+    // Tombol cek ulang
+    if (btnCekUlang) {
+        btnCekUlang.addEventListener('click', function() {
+            // Reset kota asal dan tujuan
+            $('#asal-paket').val('').trigger('change');
+            $('#tujuan-paket').val('').trigger('change');
+
+            // Reset berat
+            document.getElementById('berat-paket').value = '0.1';
+
+            // Reset dimensi
+            document.getElementById('panjang-paket').value = '';
+            document.getElementById('lebar-paket').value = '';
+            document.getElementById('tinggi-paket').value = '';
+
+            // Sembunyikan hasil
+            hasilPerhitungan.style.display = 'none';
+
+            // Scroll ke atas form
+            document.getElementById('form-kirim-paket').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    }
+
+    // Initialize Select2 untuk modal
+    $(document).ready(function() {
+        $('#asal-paket').select2({
+            placeholder: "Pilih Kota Asal",
+            allowClear: true,
+            width: '100%',
+            dropdownParent: $('#modal-kirim-paket')
+        });
+
+        $('#tujuan-paket').select2({
+            placeholder: "Pilih Kota Tujuan",
+            allowClear: true,
+            width: '100%',
+            dropdownParent: $('#modal-kirim-paket')
+        });
+    });
+
+    // Initialize Select2 for default form
+    $(document).ready(function() {
+        $('#departure-outlet').select2({
+            placeholder: "Pilih Outlet Keberangkatan",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#destination-outlet').select2({
+            placeholder: "Pilih Outlet Tujuan",
+            allowClear: true,
+            width: '100%'
+        });
+    });
+    </script>
 </body>
 </html>

@@ -7,31 +7,31 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-    
+
     html, body {
       height: 100%;
       font-family: 'Inter', sans-serif;
     }
-    
-    body {     
+
+    body {
       background-image: url('/images/bgSmartshuttle.png');
       background-size: cover;
       background-position: center 35%;
       background-repeat: no-repeat;
       background-attachment: fixed;
     }
-    
+
     .glass-effect {
       background: rgba(255, 255, 255, 0.15);
       border: 1px solid rgba(255, 255, 255, 0.3);
     }
-    
+
     .left-overlay {
       background: rgba(255, 254, 254, 0.73);
       backdrop-filter: blur(2px);
@@ -119,7 +119,7 @@
           <!-- Logo kecil bisa ditambahkan di sini jika perlu -->
         </div>
       </div>
-      
+
       <div class="flex flex-col items-center mb-8">
         <div class="w-full text-center">
           <h2 class="text-3xl font-bold mb-10 text-white">Masuk ke Akun Anda</h2>
@@ -129,7 +129,7 @@
       <!-- FORM -->
       <form action="{{ route('customer.login.post') }}" method="POST" class="space-y-5">
         @csrf
-        
+
         <!-- Email -->
         <div>
           <label class="block mb-2 text-white/80 flex items-center gap-2">
@@ -138,10 +138,10 @@
             </svg>
             Email
           </label>
-          <input 
-            type="email" 
-            name="email" 
-            class="w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300" 
+          <input
+            type="email"
+            name="email"
+            class="w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300"
             placeholder="Masukkan email Anda"
             required
           />
@@ -158,10 +158,10 @@
             </svg>
             Password
           </label>
-          <input 
-            type="password" 
-            name="password" 
-            class="w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300" 
+          <input
+            type="password"
+            name="password"
+            class="w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300"
             placeholder="Masukkan password Anda"
             required
           />
@@ -176,10 +176,10 @@
             <input type="checkbox" name="remember" value="1" class="rounded text-[#00C8FF] focus:ring-[#00C8FF]">
             <span class="ml-2 text-white/80">Ingat saya</span>
           </label>
-          
-       <a href="{{ route('password.request') }}" class="text-[#FF581E] hover:underline">
-    Lupa password?
-</a>
+
+          <a href="{{ route('password.request') }}" class="text-[#FF581E] hover:underline">
+            Lupa password?
+          </a>
         </div>
 
         @error('message')
@@ -188,17 +188,49 @@
           </div>
         @enderror
 
-        <button 
-          type="submit" 
-          class="w-full bg-[#FF581E] hover:bg-[#FF581E] text-[#FFFF] font-bold py-3 rounded-lg mt-5 transition-all duration-300 transform hover:scale-105"
+        <button
+          type="submit"
+          class="w-full bg-[#FF581E] hover:bg-[#FF581E]/90 text-[#FFFF] font-bold py-3 rounded-lg mt-5 transition-all duration-300 transform hover:scale-105"
         >
           Masuk
         </button>
       </form>
 
+      <!-- TOMBOL GOOGLE LOGIN -->
+      <div class="mt-6">
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-transparent text-white/80">Atau masuk dengan</span>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <a href="{{ route('login.google') }}"
+             class="w-full flex justify-center items-center gap-3 py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF581E] transition-all duration-300">
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <span class="font-medium">Masuk dengan Google</span>
+          </a>
+
+          <p class="mt-4 text-xs text-white/60 text-center">
+            Dengan masuk, Anda menyetujui
+            <a href="{{ route('customer.kebijakan.privasi') }}" class="text-[#FF581E] hover:underline">Kebijakan Privasi</a>
+            dan
+            <a href="{{ route('customer.syarat.ketentuan') }}" class="text-[#FF581E] hover:underline">Syarat & Ketentuan</a>
+          </p>
+        </div>
+      </div>
+
       <!-- Link ke register -->
       <p class="mt-6 text-white/80 text-center">
-        Belum punya akun? 
+        Belum punya akun?
         <a href="{{ route('customer.register') }}" class="text-[#FF581E] font-semibold hover:text-[#FFFF] transition-colors">
           Daftar di sini
         </a>
