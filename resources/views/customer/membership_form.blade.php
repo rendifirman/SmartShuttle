@@ -626,6 +626,16 @@
                                 @enderror
                             </div>
 
+                            <div class="form-row">
+                                <label class="form-label" style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="checkbox" name="agree_terms" value="1" {{ old('agree_terms') ? 'checked' : '' }} required>
+                                    <span>Saya menyetujui <a href="{{ route('customer.syarat.ketentuan') }}" target="_blank" style="color: #ff5a1f; text-decoration: underline;">Syarat & Ketentuan</a> dan <a href="{{ route('customer.kebijakan.privasi') }}" target="_blank" style="color: #ff5a1f; text-decoration: underline;">Kebijakan Privasi</a> membership Smart Shuttle <span class="required">*</span></span>
+                                </label>
+                                @error('agree_terms')
+                                    <span style="color: #e53e3e; font-size: 12px;">{{ $message }}</span>
+                                @enderror
+                            </div>
+
                             <button type="submit" class="btn-membership">
                                 <i class="fas fa-check-circle"></i> Daftar Membership
                             </button>
@@ -673,8 +683,9 @@
                 const phone = document.getElementById('phone').value;
                 const birthdate = document.getElementById('birthdate').value;
                 const gender = document.querySelector('select[name="gender"]').value;
+                const agreeTerms = document.querySelector('input[name="agree_terms"]').checked;
 
-                if (!phone || !birthdate || !gender) {
+                if (!phone || !birthdate || !gender || !agreeTerms) {
                     e.preventDefault();
                     alert('Harap lengkapi semua field yang wajib diisi!');
                     return;

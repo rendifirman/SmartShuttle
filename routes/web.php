@@ -183,3 +183,5 @@ Route::get('/debug/e-ticket/{kode_booking}', function($kode_booking) {
 Route::fallback(function () {
     return redirect()->route('customer.beranda');
 });
+// Route untuk review
+Route::post('/customer/review', [CustomerController::class, 'storeReview'])->name('customer.review.store');

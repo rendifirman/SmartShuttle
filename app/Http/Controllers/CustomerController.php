@@ -31,6 +31,7 @@ use App\Models\MembershipPayment;
 use App\Models\HargaPaket;
 use App\Models\PengirimanPaket;
 use Carbon\Carbon;
+use App\Models\Review;
 
 // Helper function untuk mendapatkan inisial nama
 if (!function_exists('getInitials')) {
@@ -82,7 +83,47 @@ class CustomerController extends Controller
 
         $profile = MProfilePerusahaan::where('status', 'active')->first();
 
-        return view('customer.beranda', compact('user', 'outletsGrouped', 'layanan', 'profile'));
+        // Ambil data review dari database yang sudah approved
+        $reviews = Review::with('user')
+            ->where('status', 'approved')
+            ->orderBy('created_at', 'desc')
+            ->limit(3)
+            ->get()
+            ->map(function($review) {
+                return [
+                    'name' => $review->user->name ?? 'User',
+                    'avatar' => $review->user->avatar ?? null,
+                    'stars' => $review->rating,
+                    'text' => $review->review,
+                    'date' => $review->created_at->format('d M Y')
+                ];
+            });
+
+        // Jika tidak ada review dari database, gunakan default
+        if ($reviews->isEmpty()) {
+            $reviews = collect([
+                [
+                    'name' => 'Luna Ayna',
+                    'avatar' => 'https://randomuser.me/api/portraits/women/32.jpg',
+                    'stars' => 5,
+                    'text' => 'Servisnya bagus, drivernya sopan dan nyetirnya halus jadi bisa tidur selama perjalanan. Tracking lokasinya juga akurat. Bakal jadi langganan.'
+                ],
+                [
+                    'name' => 'Rizky Pratama',
+                    'avatar' => 'https://randomuser.me/api/portraits/men/54.jpg',
+                    'stars' => 4,
+                    'text' => 'Pertama kali coba SmartShuttle dan langsung puas. Mobilnya bersih, AC dingin, kursinya empuk. Berangkat juga sesuai jadwal. Recommended banget buat yang sering PP Jakarta–Bandung!'
+                ],
+                [
+                    'name' => 'Sari Dewi',
+                    'avatar' => 'https://randomuser.me/api/portraits/women/68.jpg',
+                    'stars' => 5,
+                    'text' => 'Harganya menurut saya cukup murah dibanding shuttle lain, tapi kualitas layanannya tetap bagus. Pemesanan lewat aplikasi juga gampang.'
+                ]
+            ]);
+        }
+
+        return view('customer.beranda', compact('user', 'outletsGrouped', 'layanan', 'profile', 'reviews'));
     }
 
     /**
@@ -197,41 +238,39 @@ class CustomerController extends Controller
     /**
      * Proses register
      */
-   // CustomerController.php - method register
-// CustomerController.php - method register
-public function register(Request $request)
-{
-    \Log::info('CustomerController::register - Starting', $request->all());
+    public function register(Request $request)
+    {
+        \Log::info('CustomerController::register - Starting', $request->all());
 
-    try {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|string|min:6|confirmed',
+            ]);
 
-        // Buat user baru TANPA login otomatis
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => bcrypt($validated['password']),
-            'membership_status' => 'non_member',
-            'membership_level' => 'Bronze',
-            'member_point' => 0,
-            'loyalty_point' => 0,
-        ]);
+            // Buat user baru TANPA login otomatis
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => bcrypt($validated['password']),
+                'membership_status' => 'non_member',
+                'membership_level' => 'Bronze',
+                'member_point' => 0,
+                'loyalty_point' => 0,
+            ]);
 
-        // Tidak login otomatis, langsung redirect ke halaman login
-        return redirect()->route('customer.login')
-            ->with('success', 'Registrasi berhasil! Silakan login dengan akun Anda.');
+            // Tidak login otomatis, langsung redirect ke halaman login
+            return redirect()->route('customer.login')
+                ->with('success', 'Registrasi berhasil! Silakan login dengan akun Anda.');
 
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        return back()->withErrors($e->errors())->withInput();
-    } catch (\Exception $e) {
-        \Log::error('CustomerController::register - Exception', ['error' => $e->getMessage()]);
-        return back()->withErrors(['message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()])->withInput();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            \Log::error('CustomerController::register - Exception', ['error' => $e->getMessage()]);
+            return back()->withErrors(['message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()])->withInput();
+        }
     }
-}
 
     /**
      * Proses logout
@@ -929,23 +968,6 @@ public function register(Request $request)
     }
 
     /**
-     * Halaman pembayaran
-     */
-
-
-    /**
-     * Proses pembayaran
-     */
-
-    /**
-     * Halaman konfirmasi pembayaran
-     */
-
-    /**
-     * Proses konfirmasi pembayaran
-     */
-
-    /**
      * Halaman riwayat pemesanan
      */
     public function showRiwayat(Request $request)
@@ -1187,8 +1209,13 @@ public function register(Request $request)
         if ($user->membership_status === 'pending') {
             $pendingPayment = MembershipPayment::where('user_id', $user->id)
                 ->where('payment_status', 'pending')
+                ->where('waktu_kadaluarsa', '>', now())
                 ->orderBy('created_at', 'desc')
                 ->first();
+
+            if (!$pendingPayment) {
+                return redirect()->route('customer.membership.payment');
+            }
 
             return view('customer.membership_pending', [
                 'user' => $user,
@@ -1288,14 +1315,14 @@ public function register(Request $request)
         $user = Auth::user();
 
         $validator = Validator::make($request->all(), [
-            'nama_lengkap' => 'required|string|max:255',
+            'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
-            'telepon' => 'required|string|max:20',
-            'tanggal_lahir' => 'required|date|before:-17 years',
-            'jenis_kelamin' => 'required|in:L,P',
+            'phone' => 'required|string|max:20',
+            'birthdate' => 'required|date|before:-17 years',
+            'gender' => 'required|in:L,P',
             'agree_terms' => 'required|accepted',
         ], [
-            'tanggal_lahir.before' => 'Anda harus berusia minimal 17 tahun untuk mendaftar membership.',
+            'birthdate.before' => 'Anda harus berusia minimal 17 tahun untuk mendaftar membership.',
             'agree_terms.accepted' => 'Anda harus menyetujui syarat dan ketentuan membership.',
         ]);
 
@@ -1309,17 +1336,17 @@ public function register(Request $request)
 
         try {
             $user->update([
-                'name' => $request->nama_lengkap,
+                'name' => $request->name,
                 'email' => $request->email,
-                'phone' => $request->telepon,
-                'tanggal_lahir' => $request->tanggal_lahir,
-                'jenis_kelamin' => $request->jenis_kelamin,
+                'phone' => $request->phone,
+                'tanggal_lahir' => $request->birthdate,
+                'jenis_kelamin' => $request->gender,
                 'membership_status' => 'pending',
             ]);
 
             DB::commit();
 
-            return redirect()->route('customer.membership.payment')
+            return redirect()->route('customer.membership')
                 ->with('success', 'Data berhasil disimpan! Silakan lanjutkan ke pembayaran membership.');
 
         } catch (\Exception $e) {
@@ -1409,13 +1436,14 @@ public function register(Request $request)
 
         $user = Auth::user();
 
+        // Validation rules - make manual transfer fields optional for online payments
         $validator = Validator::make($request->all(), [
             'transaction_id' => 'required|exists:membership_payments,transaction_id',
             'payment_method' => 'required|string',
             'bukti_pembayaran' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'nama_pengirim' => 'required|string|max:255',
-            'tanggal_transfer' => 'required|date',
-            'jumlah_transfer' => 'required|numeric',
+            'nama_pengirim' => 'nullable|string|max:255',
+            'tanggal_transfer' => 'nullable|date',
+            'jumlah_transfer' => 'nullable|numeric',
         ]);
 
         if ($validator->fails()) {
@@ -1443,42 +1471,58 @@ public function register(Request $request)
                 $buktiPembayaran = $path;
             }
 
+            // For online payments (QRIS/BCA), mark as success immediately
+            // For manual transfer, keep as pending until admin approval
+            $paymentStatus = 'success';
+            if ($request->payment_method === 'manual_transfer') {
+                $paymentStatus = 'pending'; // Wait for admin approval
+            }
+
             $payment->update([
                 'payment_method' => $request->payment_method,
-                'payment_status' => 'success',
+                'payment_status' => $paymentStatus,
                 'bukti_pembayaran' => $buktiPembayaran,
                 'nama_pengirim' => $request->nama_pengirim,
                 'tanggal_transfer' => $request->tanggal_transfer,
                 'jumlah_transfer' => $request->jumlah_transfer,
-                'paid_at' => now(),
+                'paid_at' => $paymentStatus === 'success' ? now() : null,
             ]);
 
-            $user->update([
-                'membership_status' => 'active',
-                'membership_start_date' => now(),
-                'membership_end_date' => now()->addMonths(12),
-                'membership_fee' => $payment->total_amount,
-                'membership_payment_method' => $request->payment_method,
-                'membership_payment_status' => 'success',
-                'membership_transaction_id' => $payment->transaction_id,
-                'membership_level' => 'Bronze',
-                'member_point' => 0,
-                'loyalty_point' => 0,
-            ]);
+            // Only activate membership for online payments or successful manual transfers
+            if ($paymentStatus === 'success') {
+                $user->update([
+                    'membership_status' => 'active',
+                    'membership_start_date' => now(),
+                    'membership_end_date' => now()->addMonths(12),
+                    'membership_fee' => $payment->total_amount,
+                    'membership_payment_method' => $request->payment_method,
+                    'membership_payment_status' => 'success',
+                    'membership_transaction_id' => $payment->transaction_id,
+                    'membership_level' => 'Bronze',
+                    'member_point' => 0,
+                    'loyalty_point' => 0,
+                ]);
 
-            session()->put('user', [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'avatar' => $user->avatar,
-                'membership_status' => 'active',
-                'membership_level' => 'Bronze',
-            ]);
+                session()->put('user', [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar,
+                    'membership_status' => 'active',
+                    'membership_level' => 'Bronze',
+                ]);
 
-            DB::commit();
+                DB::commit();
 
-            return redirect()->route('customer.membership')
-                ->with('success', 'Pembayaran berhasil! Membership Anda sekarang aktif.');
+                return redirect()->route('customer.membership')
+                    ->with('success', 'Pembayaran berhasil! Membership Anda sekarang aktif.');
+            } else {
+                // For manual transfer, keep status as pending
+                DB::commit();
+
+                return redirect()->route('customer.membership')
+                    ->with('info', 'Pembayaran telah dikirim dan menunggu konfirmasi admin. Status membership akan aktif setelah diverifikasi.');
+            }
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1856,6 +1900,56 @@ public function register(Request $request)
             return redirect()->back()
                 ->with('error', 'Gagal memproses paket: ' . $e->getMessage())
                 ->withInput();
+        }
+    }
+
+    /**
+     * Store review dari customer
+     */
+    public function storeReview(Request $request)
+    {
+        try {
+            // Validasi input
+            $request->validate([
+                'rating' => 'required|integer|min:1|max:5',
+                'review' => 'required|string|min:10|max:500'
+            ]);
+
+            // Cek apakah user sudah login
+            if (!auth()->check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Silakan login terlebih dahulu'
+                ], 401);
+            }
+
+            // Simpan review ke database
+            $review = Review::create([
+                'user_id' => auth()->id(),
+                'rating' => $request->rating,
+                'review' => $request->review,
+                'status' => 'pending' // review akan ditampilkan setelah disetujui admin
+            ]);
+
+            // Data untuk response
+            $reviewData = [
+                'user_name' => auth()->user()->name,
+                'rating' => $review->rating,
+                'review' => $review->review,
+                'created_at' => $review->created_at->format('Y-m-d H:i:s')
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Review berhasil dikirim! Review Anda akan ditampilkan setelah disetujui oleh admin.',
+                'review' => $reviewData
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

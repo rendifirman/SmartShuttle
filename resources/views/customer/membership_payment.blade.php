@@ -549,7 +549,7 @@
             <div class="card-box">
                 <div class="section-title">Metode Pembayaran</div>
 
-                <form action="{{ route('customer.membership.process-payment') }}" method="POST" id="paymentForm">
+                <form action="{{ route('customer.membership.payment.submit') }}" method="POST" id="paymentForm">
                     @csrf
 
                     <label class="payment-option">

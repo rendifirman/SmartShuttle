@@ -1260,7 +1260,6 @@
             padding: 20px;
             display: flex;
             gap: 18px;
-            margin-bottom: 20px;
             transition: all 0.3s ease;
         }
 
@@ -1975,6 +1974,143 @@
             color: #28a745;
             margin-bottom: 6px;
         }
+
+        /* === REVIEW SLIDER STYLES (DARI PROMPT TERBARU) === */
+        /* Review Slider Styles */
+        .review-slider-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+
+        .review-slider {
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+            gap: 20px;
+        }
+
+        .review-slide {
+            flex: 0 0 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .slider-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            color: var(--secondary-color);
+            font-size: 18px;
+        }
+
+        .slider-btn:hover {
+            background: var(--secondary-color);
+            color: white;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .prev-btn {
+            left: 10px;
+        }
+
+        .next-btn {
+            right: 10px;
+        }
+
+        .slider-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .slider-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .slider-dot.active {
+            background: var(--secondary-color);
+            transform: scale(1.2);
+        }
+
+        /* Review Card in Slider */
+        .review-slide .review-card {
+            background: white;
+            border: 1px solid #e2e2e2;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            gap: 18px;
+            margin-bottom: 0;
+            transition: all 0.3s ease;
+            min-height: 180px;
+        }
+
+        .review-slide .review-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border-color: #FF581E;
+        }
+
+        /* Responsive for Slider */
+        @media (max-width: 1024px) {
+            .review-wrapper {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .review-slider-container {
+                margin-bottom: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .slider-btn {
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+            }
+
+            .prev-btn {
+                left: 5px;
+            }
+
+            .next-btn {
+                right: 5px;
+            }
+
+            .review-slide .review-card {
+                flex-direction: column;
+                text-align: center;
+                padding: 15px;
+                min-height: 200px;
+            }
+
+            .review-slide .review-avatar {
+                margin: 0 auto;
+            }
+        }
+        /* === END REVIEW SLIDER STYLES === */
     </style>
     @php
         use App\Models\MProfilePerusahaan;
@@ -2415,76 +2551,30 @@
         </div>
     </div>
 
-    <!-- Feedback Section -->
+    <!-- === FEEDBACK SECTION DENGAN SLIDER VERTIKAL === -->
     <section class="feedback-section">
         <div class="feedback-container">
             <h2 class="feedback-title">Review</h2>
             <div class="feedback-line"></div>
             <div class="review-wrapper">
-                <!-- LEFT REVIEW LIST -->
-                <div>
-                    @php
-                        $reviews = isset($profile->reviews) ? json_decode($profile->reviews, true) : [];
-                    @endphp
-                    @if(!empty($reviews))
-                        @foreach($reviews as $review)
-                        <div class="review-card">
-                            <img src="{{ $review['avatar'] ?? 'https://randomuser.me/api/portraits/women/32.jpg' }}"
-                                class="review-avatar"
-                                alt="{{ $review['name'] ?? 'Reviewer' }}">
-                            <div>
-                                <div class="stars">
-                                    @for($i = 0; $i < 5; $i++)
-                                        @if($i < ($review['stars'] ?? 5))
-                                            ★
-                                        @else
-                                            ☆
-                                        @endif
-                                    @endfor
-                                </div>
-                                <div class="review-name">{{ $review['name'] ?? 'Nama Reviewer' }}</div>
-                                <div class="review-text">
-                                    {{ $review['text'] ?? 'Teks review akan ditampilkan di sini.' }}
-                                </div>
-                            </div>
-                        </div>
-                        @endforeach
-                    @else
-                        <!-- Fallback jika tidak ada data -->
-                        <div class="review-card">
-                            <img src="https://randomuser.me/api/portraits/women/32.jpg" class="review-avatar" alt="Luna Ayna">
-                            <div>
-                                <div class="stars">★★★★★</div>
-                                <div class="review-name">Luna Ayna</div>
-                                <div class="review-text">
-                                    Servisnya bagus, drivernya sopan dan nyetirnya halus jadi bisa tidur selama perjalanan.
-                                    Tracking lokasinya juga akurat. Bakal jadi langganan.
-                                </div>
-                            </div>
-                        </div>
-                        <div class="review-card">
-                            <img src="https://randomuser.me/api/portraits/men/54.jpg" class="review-avatar" alt="Rizky Pratama">
-                            <div>
-                                <div class="stars">★★★★☆</div>
-                                <div class="review-name">Rizky Pratama</div>
-                                <div class="review-text">
-                                    Pertama kali coba SmartShuttle dan langsung puas. Mobilnya bersih, AC dingin, kursinya empuk.
-                                    Berangkat juga sesuai jadwal. Recommended banget buat yang sering PP Jakarta–Bandung!
-                                </div>
-                            </div>
-                        </div>
-                        <div class="review-card">
-                            <img src="https://randomuser.me/api/portraits/women/68.jpg" class="review-avatar" alt="Sari Dewi">
-                            <div>
-                                <div class="stars">★★★★★</div>
-                                <div class="review-name">Sari Dewi</div>
-                                <div class="review-text">
-                                    Harganya menurut saya cukup murah dibanding shuttle lain, tapi kualitas layanannya tetap bagus.
-                                    Pemesanan lewat aplikasi juga gampang.
-                                </div>
-                            </div>
-                        </div>
-                    @endif
+                <!-- LEFT REVIEW SLIDER -->
+                <div class="review-slider-container">
+                    <div class="review-slider" id="review-slider">
+                        <!-- Reviews akan diisi oleh JavaScript -->
+                    </div>
+
+                    <!-- Navigation buttons -->
+                    <button class="slider-btn prev-btn" id="prev-btn">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="slider-btn next-btn" id="next-btn">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+
+                    <!-- Dots indicator -->
+                    <div class="slider-dots" id="slider-dots">
+                        <!-- Dots akan diisi oleh JavaScript -->
+                    </div>
                 </div>
 
                 <!-- RIGHT REVIEW FORM -->
@@ -3022,6 +3112,319 @@
         }
         if (errorMsg) {
             alert(errorMsg);
+        }
+
+        /* === REVIEW SLIDER FUNCTIONALITY (DARI PROMPT TERBARU) === */
+        /* ---------- REVIEW SLIDER ---------- */
+        const reviewSlider = document.getElementById('review-slider');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const sliderDots = document.getElementById('slider-dots');
+
+        // Data review - ganti dengan data dari database jika ada
+        @php
+            $reviews = isset($profile->reviews) ? json_decode($profile->reviews, true) : [];
+        @endphp
+
+        // Gunakan data dari PHP jika ada, jika tidak gunakan fallback
+        let reviewsData = @json($reviews ?? []);
+
+        // Jika tidak ada data, gunakan fallback
+        if (reviewsData.length === 0) {
+            reviewsData = [
+                {
+                    avatar: 'https://randomuser.me/api/portraits/women/32.jpg',
+                    name: 'Luna Ayna',
+                    stars: 5,
+                    text: 'Servisnya bagus, drivernya sopan dan nyetirnya halus jadi bisa tidur selama perjalanan. Tracking lokasinya juga akurat. Bakal jadi langganan.'
+                },
+                {
+                    avatar: 'https://randomuser.me/api/portraits/men/54.jpg',
+                    name: 'Rizky Pratama',
+                    stars: 4,
+                    text: 'Pertama kali coba SmartShuttle dan langsung puas. Mobilnya bersih, AC dingin, kursinya empuk. Berangkat juga sesuai jadwal. Recommended banget!'
+                },
+                {
+                    avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
+                    name: 'Sari Dewi',
+                    stars: 5,
+                    text: 'Harganya menurut saya cukup murah dibanding shuttle lain, tapi kualitas layanannya tetap bagus. Pemesanan lewat aplikasi juga gampang.'
+                },
+                {
+                    avatar: 'https://randomuser.me/api/portraits/men/45.jpg',
+                    name: 'Budi Santoso',
+                    stars: 5,
+                    text: 'Sangat puas dengan layanan SmartShuttle. Armada bersih, driver ramah, dan tepat waktu. Sudah beberapa kali menggunakan dan selalu puas.'
+                },
+                {
+                    avatar: 'https://randomuser.me/api/portraits/women/55.jpg',
+                    name: 'Maya Indah',
+                    stars: 4,
+                    text: 'Pelayanan bagus, harga terjangkau. Cuma kadang agak telat sedikit, tapi masih dalam batas wajar. Overall recommended!'
+                },
+                {
+                    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+                    name: 'Ahmad Fauzi',
+                    stars: 5,
+                    text: 'SmartShuttle membantu sekali untuk perjalanan bisnis saya. Jadwal fleksibel, booking mudah, dan selalu on time. Terima kasih!'
+                },
+                {
+                    avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
+                    name: 'Siti Rahayu',
+                    stars: 5,
+                    text: 'Pengiriman paket sangat cepat dan aman. Driver ramah dan profesional. Harga juga terjangkau. Sangat recommended!'
+                },
+                {
+                    avatar: 'https://randomuser.me/api/portraits/men/65.jpg',
+                    name: 'Hendra Wijaya',
+                    stars: 4,
+                    text: 'Layanan shuttle sangat nyaman, AC dingin, kursi empuk. Perjalanan Jakarta-Bandung jadi tidak melelahkan.'
+                },
+                {
+                    avatar: 'https://randomuser.me/api/portraits/women/29.jpg',
+                    name: 'Dewi Lestari',
+                    stars: 5,
+                    text: 'Sudah langganan 2 tahun, selalu puas. Tidak pernah telat dan armada selalu dalam kondisi bersih.'
+                }
+            ];
+        }
+
+        let currentSlide = 0;
+        const reviewsPerSlide = 3;
+        const totalSlides = Math.ceil(reviewsData.length / reviewsPerSlide);
+
+        // Initialize slider
+        function initSlider() {
+            reviewSlider.innerHTML = '';
+            sliderDots.innerHTML = '';
+
+            // Create slides
+            for (let i = 0; i < totalSlides; i++) {
+                const slide = document.createElement('div');
+                slide.className = 'review-slide';
+
+                // Get reviews for this slide
+                const startIdx = i * reviewsPerSlide;
+                const endIdx = startIdx + reviewsPerSlide;
+                const slideReviews = reviewsData.slice(startIdx, endIdx);
+
+                // Add reviews to slide
+                slideReviews.forEach(review => {
+                    const reviewCard = document.createElement('div');
+                    reviewCard.className = 'review-card';
+
+                    // Create stars HTML
+                    let starsHtml = '';
+                    for (let j = 0; j < 5; j++) {
+                        starsHtml += j < review.stars ? '★' : '☆';
+                    }
+
+                    reviewCard.innerHTML = `
+                        <img src="${review.avatar}" class="review-avatar" alt="${review.name}"
+                             onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(review.name)}&background=FF581E&color=fff'">
+                        <div>
+                            <div class="stars">${starsHtml}</div>
+                            <div class="review-name">${review.name}</div>
+                            <div class="review-text">${review.text}</div>
+                        </div>
+                    `;
+
+                    slide.appendChild(reviewCard);
+                });
+
+                reviewSlider.appendChild(slide);
+
+                // Create dot
+                const dot = document.createElement('button');
+                dot.className = 'slider-dot';
+                if (i === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => goToSlide(i));
+                sliderDots.appendChild(dot);
+            }
+
+            updateSlider();
+        }
+
+        // Update slider position
+        function updateSlider() {
+            const slideWidth = 100; // 100% per slide
+            reviewSlider.style.transform = `translateX(-${currentSlide * slideWidth}%)`;
+
+            // Update active dot
+            document.querySelectorAll('.slider-dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+
+            // Update button states
+            if (prevBtn) prevBtn.disabled = currentSlide === 0;
+            if (nextBtn) nextBtn.disabled = currentSlide === totalSlides - 1;
+        }
+
+        // Navigate to specific slide
+        function goToSlide(slideIndex) {
+            currentSlide = slideIndex;
+            updateSlider();
+        }
+
+        // Next slide
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlider();
+            }
+        }
+
+        // Previous slide
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlider();
+            }
+        }
+
+        // Auto slide (optional)
+        let autoSlideInterval;
+        function startAutoSlide() {
+            autoSlideInterval = setInterval(() => {
+                nextSlide();
+            }, 5000); // Change slide every 5 seconds
+        }
+
+        function stopAutoSlide() {
+            clearInterval(autoSlideInterval);
+        }
+
+        // Event listeners
+        if (prevBtn) prevBtn.addEventListener('click', prevSlide);
+        if (nextBtn) nextBtn.addEventListener('click', nextSlide);
+
+        // Pause auto slide on hover
+        if (reviewSlider) {
+            reviewSlider.addEventListener('mouseenter', stopAutoSlide);
+            reviewSlider.addEventListener('mouseleave', startAutoSlide);
+        }
+
+        // Initialize
+        initSlider();
+
+        // Start auto slide if more than one slide
+        if (totalSlides > 1) {
+            startAutoSlide();
+        }
+
+        /* ---------- REVIEW FORM SUBMISSION ---------- */
+        const submitReviewBtn = document.getElementById('submit-review');
+        const starRating = document.getElementById('star-rating');
+        const reviewText = document.getElementById('review-text');
+        const closeReviewBtn = document.getElementById('close-review');
+
+        let selectedRating = 0;
+
+        // Star rating selection
+        if (starRating) {
+            const stars = starRating.querySelectorAll('i');
+            stars.forEach(star => {
+                star.addEventListener('click', function() {
+                    const rating = parseInt(this.getAttribute('data-rating'));
+                    selectedRating = rating;
+
+                    // Update star display
+                    stars.forEach((s, index) => {
+                        if (index < rating) {
+                            s.classList.add('fas');
+                            s.classList.remove('far');
+                            s.style.color = '#ff9d00';
+                        } else {
+                            s.classList.add('far');
+                            s.classList.remove('fas');
+                            s.style.color = '#ccc';
+                        }
+                    });
+                });
+
+                // Hover effect
+                star.addEventListener('mouseover', function() {
+                    const rating = parseInt(this.getAttribute('data-rating'));
+                    stars.forEach((s, index) => {
+                        if (index < rating) {
+                            s.style.transform = 'scale(1.1)';
+                            s.style.color = '#ff9d00';
+                        }
+                    });
+                });
+
+                star.addEventListener('mouseout', function() {
+                    stars.forEach((s, index) => {
+                        s.style.transform = 'scale(1)';
+                        // Reset to selected rating
+                        if (selectedRating > 0 && index >= selectedRating) {
+                            s.style.color = '#ccc';
+                        }
+                    });
+                });
+            });
+        }
+
+        // Submit review
+        if (submitReviewBtn) {
+            submitReviewBtn.addEventListener('click', function() {
+                if (selectedRating === 0) {
+                    alert('Silakan berikan rating!');
+                    return;
+                }
+
+                if (!reviewText.value.trim()) {
+                    alert('Silakan tulis review Anda!');
+                    reviewText.focus();
+                    return;
+                }
+
+                // Simulate submission (replace with actual AJAX call)
+                const newReview = {
+                    avatar: 'https://ui-avatars.com/api/?name={{ $user["name"] ?? "Guest" }}&background=FF581E&color=fff',
+                    name: '{{ $user["name"] ?? "Guest" }}',
+                    stars: selectedRating,
+                    text: reviewText.value
+                };
+
+                // Add to reviewsData (in real app, send to server)
+                reviewsData.unshift(newReview);
+
+                // Reset form
+                reviewText.value = '';
+                selectedRating = 0;
+
+                // Reset stars
+                const stars = starRating.querySelectorAll('i');
+                stars.forEach(star => {
+                    star.classList.add('fas');
+                    star.classList.remove('far');
+                    star.style.color = '#ff9d00';
+                    star.style.transform = 'scale(1)';
+                });
+
+                // Reinitialize slider with new data
+                currentSlide = 0;
+                initSlider();
+
+                alert('Terima kasih atas review Anda! Review sedang diproses.');
+            });
+        }
+
+        // Close review form
+        if (closeReviewBtn) {
+            closeReviewBtn.addEventListener('click', function() {
+                reviewText.value = '';
+                selectedRating = 0;
+
+                // Reset stars
+                const stars = starRating.querySelectorAll('i');
+                stars.forEach(star => {
+                    star.classList.add('fas');
+                    star.classList.remove('far');
+                    star.style.color = '#ff9d00';
+                });
+            });
         }
     });
 
