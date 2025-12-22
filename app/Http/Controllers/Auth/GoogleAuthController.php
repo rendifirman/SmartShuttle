@@ -1,5 +1,5 @@
 <?php
-// app/Http\Controllers\Auth\GoogleAuthController.php
+// app/Http/Controllers/Auth/GoogleAuthController.php
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -39,7 +39,7 @@ class GoogleAuthController extends Controller
                         'avatar' => $googleUser->getAvatar(),
                     ]);
                 } else {
-                    // Buat user baru
+                    // Buat user baru dengan data dari Google
                     $user = User::create([
                         'name' => $googleUser->getName(),
                         'email' => $googleUser->getEmail(),
@@ -48,48 +48,36 @@ class GoogleAuthController extends Controller
                         'provider' => 'google',
                         'avatar' => $googleUser->getAvatar(),
                         'email_verified_at' => now(), // Auto verify karena dari Google
-                        'username' => $this->generateUsername($googleUser->getName()),
+                        'membership_status' => 'non_member',
+                        'membership_level' => 'Bronze',
+                        'member_point' => 0,
+                        'loyalty_point' => 0,
                     ]);
                 }
             }
 
-            // Login user
+            // Login user (langsung masuk ke beranda)
             Auth::login($user, true);
 
             // Set session untuk customer
-            session(['user' => $user]);
+            session()->put('user', [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $user->avatar,
+                'membership_status' => $user->membership_status,
+                'membership_level' => $user->membership_level,
+            ]);
 
-            // Redirect ke dashboard berdasarkan role
-            if ($user->hasRole('admin_pusat')) {
-                return redirect()->route('admin.dashboard');
-            }
-
-            return redirect()->route('customer.beranda');
+            // Redirect ke beranda (langsung masuk)
+            return redirect()->route('customer.beranda')
+                ->with('success', 'Login dengan Google berhasil! Selamat datang di Smart Shuttle.');
 
         } catch (\Exception $e) {
             \Log::error('Google OAuth Error: ' . $e->getMessage());
             return redirect()->route('customer.login')
                 ->withErrors('Login dengan Google gagal. Silakan coba lagi.');
         }
-    }
-
-    private function generateUsername($name)
-    {
-        $username = Str::slug($name, '');
-        $username = preg_replace('/[^a-zA-Z0-9]/', '', $username);
-
-        // Jika username terlalu pendek
-        if (strlen($username) < 3) {
-            $username .= Str::random(5);
-        }
-
-        // Cek apakah username sudah ada
-        $count = User::where('username', $username)->count();
-        if ($count > 0) {
-            $username .= '_' . Str::random(4);
-        }
-
-        return $username;
     }
 
     public function logout(Request $request)

@@ -197,50 +197,41 @@ class CustomerController extends Controller
     /**
      * Proses register
      */
-    public function register(Request $request)
-    {
-        \Log::info('CustomerController::register - Starting', $request->all());
+   // CustomerController.php - method register
+// CustomerController.php - method register
+public function register(Request $request)
+{
+    \Log::info('CustomerController::register - Starting', $request->all());
 
-        try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users,email',
-                'password' => 'required|string|min:6|confirmed',
-            ]);
+    try {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
 
-            // Buat user baru
-            $user = User::create([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'password' => bcrypt($validated['password']),
-                'membership_status' => 'non_member',
-                'membership_level' => 'Bronze',
-                'member_point' => 0,
-                'loyalty_point' => 0,
-            ]);
+        // Buat user baru TANPA login otomatis
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => bcrypt($validated['password']),
+            'membership_status' => 'non_member',
+            'membership_level' => 'Bronze',
+            'member_point' => 0,
+            'loyalty_point' => 0,
+        ]);
 
-            // Login otomatis setelah registrasi
-            Auth::login($user);
+        // Tidak login otomatis, langsung redirect ke halaman login
+        return redirect()->route('customer.login')
+            ->with('success', 'Registrasi berhasil! Silakan login dengan akun Anda.');
 
-            session()->put('user', [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'avatar' => $user->avatar,
-                'membership_status' => $user->membership_status,
-                'membership_level' => $user->membership_level,
-            ]);
-
-            return redirect()->route('customer.beranda')
-                ->with('success', 'Registrasi berhasil! Selamat datang di Smart Shuttle.');
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return back()->withErrors($e->errors())->withInput();
-        } catch (\Exception $e) {
-            \Log::error('CustomerController::register - Exception', ['error' => $e->getMessage()]);
-            return back()->withErrors(['message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()])->withInput();
-        }
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return back()->withErrors($e->errors())->withInput();
+    } catch (\Exception $e) {
+        \Log::error('CustomerController::register - Exception', ['error' => $e->getMessage()]);
+        return back()->withErrors(['message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()])->withInput();
     }
+}
 
     /**
      * Proses logout
@@ -953,7 +944,7 @@ class CustomerController extends Controller
     /**
      * Proses konfirmasi pembayaran
      */
-    
+
     /**
      * Halaman riwayat pemesanan
      */

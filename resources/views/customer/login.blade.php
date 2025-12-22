@@ -126,6 +126,13 @@
         </div>
       </div>
 
+      <!-- TAMPILKAN PESAN SUKSES JIKA ADA -->
+      @if(session('success'))
+      <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+        {{ session('success') }}
+      </div>
+      @endif
+
       <!-- FORM -->
       <form action="{{ route('customer.login.post') }}" method="POST" class="space-y-5">
         @csrf
@@ -144,6 +151,7 @@
             class="w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300"
             placeholder="Masukkan email Anda"
             required
+            value="{{ old('email') }}"
           />
           @error('email')
             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -218,13 +226,6 @@
             </svg>
             <span class="font-medium">Masuk dengan Google</span>
           </a>
-
-          <p class="mt-4 text-xs text-white/60 text-center">
-            Dengan masuk, Anda menyetujui
-            <a href="{{ route('customer.kebijakan.privasi') }}" class="text-[#FF581E] hover:underline">Kebijakan Privasi</a>
-            dan
-            <a href="{{ route('customer.syarat.ketentuan') }}" class="text-[#FF581E] hover:underline">Syarat & Ketentuan</a>
-          </p>
         </div>
       </div>
 

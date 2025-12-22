@@ -134,7 +134,7 @@
         letter-spacing: 0.5px;
     }
 
-    /* Card Image (Foto di BAWAH header) */
+    /* Card Image */
     .card-image {
         width: 100%;
         height: 200px;
@@ -153,7 +153,7 @@
         transform: scale(1.05);
     }
 
-    /* Card Body (Alamat dan tombol) */
+    /* Card Body */
     .card-body {
         padding: 24px;
         flex: 1;
@@ -201,7 +201,7 @@
         transform: translateY(0);
     }
 
-    /* Popup Overlay Styles */
+    /* ============ POPUP LAYOUT: FOTO DI ATAS, INFO DI BAWAH ============ */
     .popup-overlay {
         position: fixed;
         top: 0;
@@ -217,8 +217,8 @@
     }
 
     .popup-container {
-        max-width: 500px;
-        width: 90%;
+        max-width: 700px;
+        width: 95%;
         max-height: 90vh;
         overflow-y: auto;
         animation: slideUp 0.3s ease;
@@ -266,33 +266,52 @@
         transform: scale(1.1);
     }
 
-    .popup-image-container {
+    /* Foto di ATAS popup */
+    .popup-top-image {
         width: 100%;
         height: 250px;
         overflow: hidden;
     }
 
-    .popup-image {
+    .popup-top-image img {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        transition: transform 0.5s ease;
     }
 
+    .popup-top-image:hover img {
+        transform: scale(1.05);
+    }
+
+    /* Konten di BAWAH dalam 2 kolom */
     .popup-content {
         padding: 25px;
     }
 
-    .popup-info-grid {
+    /* Layout Dua Kolom untuk Info */
+    .popup-two-columns {
         display: grid;
-        grid-template-columns: 1fr;
-        gap: 16px;
-        margin-bottom: 20px;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 25px;
     }
 
-    .popup-info-item {
+    /* Kolom Kiri */
+    .popup-left-column {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+    }
+
+    /* Kolom Kanan */
+    .popup-right-column {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Info Items */
+    .popup-info-item {
+        margin-bottom: 18px;
     }
 
     .popup-label {
@@ -301,47 +320,104 @@
         font-size: 13px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .popup-label i {
+        color: #FF581E;
+        font-size: 14px;
     }
 
     .popup-value {
         color: #555;
         line-height: 1.5;
         font-size: 15px;
+        padding-left: 22px;
+        word-break: break-word;
     }
 
+    /* Kontak Section */
+    .popup-contact-section {
+        margin-top: 10px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+    }
+
+    /* Fasilitas Section */
     .popup-facilities {
-        margin-top: 20px;
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
     }
 
     .popup-facilities-label {
         font-weight: 600;
         color: #0C2D48;
-        margin-bottom: 12px;
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        margin-bottom: 15px;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .popup-facilities-label i {
+        color: #FF581E;
     }
 
     .popup-facilities-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 8px;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 10px;
     }
 
     .popup-facility-item {
         background: #e3f2fd;
         color: #0C2D48;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 12px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        font-size: 13px;
         font-weight: 500;
         text-align: center;
-        transition: transform 0.2s ease;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
     }
 
     .popup-facility-item:hover {
         transform: translateY(-2px);
         background: #bbdefb;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .popup-facility-item i {
+        font-size: 12px;
+        color: #FF581E;
+    }
+
+    /* No Facilities */
+    .no-facilities {
+        text-align: center;
+        padding: 20px;
+        color: #888;
+        font-style: italic;
+        background: #f8f9fa;
+        border-radius: 8px;
+        grid-column: 1 / -1;
+    }
+
+    /* Alamat Khusus (Full width) */
+    .full-width-section {
+        grid-column: 1 / -1;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #0C2D48;
     }
 
     /* Animasi */
@@ -405,21 +481,48 @@
             text-align: center;
         }
 
+        /* Popup Responsive */
         .popup-container {
             width: 95%;
-            max-width: 400px;
+            max-width: 500px;
+        }
+
+        .popup-header {
+            padding: 16px;
+            font-size: 18px;
+        }
+
+        .popup-top-image {
+            height: 200px;
         }
 
         .popup-content {
             padding: 20px;
         }
 
-        .popup-image-container {
-            height: 200px;
+        .popup-two-columns {
+            grid-template-columns: 1fr;
+            gap: 20px;
         }
 
         .popup-facilities-grid {
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .popup-label {
+            font-size: 12px;
+        }
+
+        .popup-value {
+            font-size: 14px;
+        }
+
+        .btn-close-popup {
+            top: 12px;
+            right: 16px;
+            width: 28px;
+            height: 28px;
+            font-size: 16px;
         }
 
         .outlet-page {
@@ -440,12 +543,12 @@
             height: 160px;
         }
 
-        .popup-content {
-            padding: 18px;
+        .popup-top-image {
+            height: 180px;
         }
 
-        .popup-image-container {
-            height: 180px;
+        .popup-content {
+            padding: 16px;
         }
 
         .popup-facilities-grid {
@@ -453,8 +556,16 @@
         }
 
         .popup-header {
-            padding: 16px;
-            font-size: 18px;
+            padding: 14px;
+            font-size: 16px;
+        }
+
+        .btn-close-popup {
+            top: 10px;
+            right: 14px;
+            width: 26px;
+            height: 26px;
+            font-size: 14px;
         }
     }
 </style>
@@ -504,15 +615,17 @@
                         <div class="card-header">
                             {{ $outlet->nama_outlet }}
                         </div>
-
-                        <!-- Card Image - FIXED -->
                         <div class="card-image">
-                            <img src="{{ $outlet->foto_url }}"
+                            @php
+                                $gambar = $outlet->foto_url ??
+                                         (isset($outlet->foto_outlet) ? asset($outlet->foto_outlet) :
+                                         asset('images/placeholder-outlet.jpg'));
+                            @endphp
+                            <img src="{{ $gambar }}"
                                  alt="{{ $outlet->nama_outlet }}"
                                  class="outlet-img"
                                  onerror="this.onerror=null;this.src='{{ asset('images/placeholder-outlet.jpg') }}'">
                         </div>
-
                         <div class="card-body">
                             <div class="card-text">
                                 <strong>Cabang:</strong> {{ $outlet->branch ? $outlet->branch->nama_cabang : 'Tidak diketahui' }}<br>
@@ -550,11 +663,40 @@
 
 @php
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+
+// Fungsi untuk mendapatkan gambar
+function getOutletImage($outlet) {
+    if (!empty($outlet->foto_outlet)) {
+        if (Str::startsWith($outlet->foto_outlet, ['http://', 'https://'])) {
+            return $outlet->foto_outlet;
+        }
+
+        if (Storage::exists($outlet->foto_outlet)) {
+            return Storage::url($outlet->foto_outlet);
+        }
+
+        $publicPath = 'images/' . ltrim($outlet->foto_outlet, '/');
+        if (file_exists(public_path($publicPath))) {
+            return asset($publicPath);
+        }
+
+        if (file_exists(public_path($outlet->foto_outlet))) {
+            return asset($outlet->foto_outlet);
+        }
+    }
+
+    return asset('images/placeholder-outlet.jpg');
+}
+
 $outletsArray = $outlets->map(function($o) {
     // fasilitas → array
     $fasilitas = $o->fasilitas
         ? array_map('trim', explode(',', $o->fasilitas))
         : [];
+
+    // gambar → cek url atau pakai placeholder
+    $gambar = getOutletImage($o);
 
     // Buat array fasilitas tambahan dari boolean fields
     $fasilitasTambahan = [];
@@ -565,6 +707,11 @@ $outletsArray = $outlets->map(function($o) {
 
     // Gabungkan semua fasilitas
     $semuaFasilitas = array_merge($fasilitas, $fasilitasTambahan);
+
+    // Jika kosong, tambahkan default
+    if (empty($semuaFasilitas)) {
+        $semuaFasilitas = ['Ruang Tunggu', 'Informasi Tiket'];
+    }
 
     return [
         'id' => $o->id,
@@ -579,23 +726,54 @@ $outletsArray = $outlets->map(function($o) {
         'tipe_outlet' => $o->tipe_outlet,
         'zona_pelayanan' => $o->zona_pelayanan,
         'kapasitas_parkir' => $o->kapasitas_parkir,
-        'gambar' => $o->foto_url, // Menggunakan foto_url dari model
+        'gambar' => $gambar,
+        'foto_url' => $o->foto_url ?? null,
     ];
 })->values();
 @endphp
 
 @push('scripts')
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 <script>
     // Data outlets diambil dari server (Blade -> JS)
     const outletsData = @json($outletsArray);
     const placeholderImage = "{{ asset('images/placeholder-outlet.jpg') }}";
+
+    // Icon mapping untuk fasilitas
+    const facilityIcons = {
+        'Toilet': 'fas fa-restroom',
+        'Musholla': 'fas fa-mosque',
+        'ATM': 'fas fa-money-bill-wave',
+        'WiFi': 'fas fa-wifi',
+        'AC': 'fas fa-snowflake',
+        'Ruang Tunggu': 'fas fa-couch',
+        'Parkir': 'fas fa-parking',
+        'Cafe': 'fas fa-coffee',
+        'Restoran': 'fas fa-utensils',
+        'Mini Market': 'fas fa-store',
+        'Toilet Disabilitas': 'fas fa-wheelchair',
+        'Ruang Menyusui': 'fas fa-baby',
+        'Area Merokok': 'fas fa-smoking',
+        '24 Jam': 'fas fa-clock',
+        'Informasi Tiket': 'fas fa-ticket-alt',
+    };
 
     // Utility: cari outlet berdasarkan id
     function getOutletById(id) {
         return outletsData.find(o => Number(o.id) === Number(id));
     }
 
-    // Tampilkan popup
+    // Get icon for facility
+    function getFacilityIcon(facility) {
+        for (const [key, icon] of Object.entries(facilityIcons)) {
+            if (facility.toLowerCase().includes(key.toLowerCase())) {
+                return icon;
+            }
+        }
+        return 'fas fa-check-circle';
+    }
+
+    // Tampilkan popup dengan layout: Foto di ATAS, Info di BAWAH
     function showOutletPopup(id) {
         const outlet = getOutletById(id);
         const popupCard = document.getElementById('popupCard');
@@ -604,9 +782,25 @@ $outletsArray = $outlets->map(function($o) {
         if (!outlet || !popupCard || !popupOverlay) return;
 
         // build fasilitas HTML dari array fasilitas
-        const facilitiesHtml = (outlet.fasilitas && outlet.fasilitas.length)
-            ? outlet.fasilitas.map(f => `<div class="popup-facility-item">${escapeHtml(f)}</div>`).join('')
-            : '<div class="popup-value">Tidak ada data fasilitas</div>';
+        let facilitiesHtml = '';
+        if (outlet.fasilitas && outlet.fasilitas.length) {
+            outlet.fasilitas.forEach(f => {
+                const icon = getFacilityIcon(f);
+                facilitiesHtml += `
+                    <div class="popup-facility-item">
+                        <i class="${icon}"></i>
+                        <span>${escapeHtml(f)}</span>
+                    </div>
+                `;
+            });
+        } else {
+            facilitiesHtml = `
+                <div class="no-facilities">
+                    <i class="fas fa-info-circle"></i>
+                    Tidak ada data fasilitas
+                </div>
+            `;
+        }
 
         const contentHtml = `
             <div class="popup-header" id="popupTitle">
@@ -614,56 +808,106 @@ $outletsArray = $outlets->map(function($o) {
                 <button class="btn-close-popup" aria-label="Tutup" onclick="hideOutletPopup()">×</button>
             </div>
 
-            <div class="popup-image-container">
+            <!-- FOTO DI ATAS -->
+            <div class="popup-top-image">
                 <img src="${escapeHtml(outlet.gambar)}"
                      alt="${escapeHtml(outlet.nama)}"
-                     class="popup-image"
                      onerror="this.onerror=null;this.src='${placeholderImage}'">
             </div>
 
+            <!-- INFO DI BAWAH dalam 2 kolom -->
             <div class="popup-content">
-                <div class="popup-info-grid">
-                    <div class="popup-info-item">
-                        <div class="popup-label">Cabang</div>
-                        <div class="popup-value">${escapeHtml(outlet.cabang)} - ${escapeHtml(outlet.kota)}</div>
+                <!-- Alamat Lengkap (Full Width) -->
+                <div class="full-width-section">
+                    <div class="popup-label">
+                        <i class="fas fa-map-marker-alt"></i>
+                        ALAMAT LENGKAP
+                    </div>
+                    <div class="popup-value">${escapeHtml(outlet.alamat)}</div>
+                </div>
+
+                <!-- Grid 2 Kolom untuk Info Lainnya -->
+                <div class="popup-two-columns">
+                    <!-- Kolom Kiri -->
+                    <div class="popup-left-column">
+                        <div class="popup-info-item">
+                            <div class="popup-label">
+                                <i class="fas fa-store"></i>
+                                CABANG
+                            </div>
+                            <div class="popup-value">${escapeHtml(outlet.cabang)}</div>
+                        </div>
+
+                        <div class="popup-info-item">
+                            <div class="popup-label">
+                                <i class="fas fa-city"></i>
+                                KOTA
+                            </div>
+                            <div class="popup-value">${escapeHtml(outlet.kota)}</div>
+                        </div>
+
+                        <div class="popup-info-item">
+                            <div class="popup-label">
+                                <i class="fas fa-tag"></i>
+                                TIPE OUTLET
+                            </div>
+                            <div class="popup-value">${escapeHtml(outlet.tipe_outlet || 'Standard')}</div>
+                        </div>
+
+                        <div class="popup-info-item">
+                            <div class="popup-label">
+                                <i class="fas fa-clock"></i>
+                                JAM OPERASIONAL
+                            </div>
+                            <div class="popup-value">${escapeHtml(outlet.jam_operasional)}</div>
+                        </div>
                     </div>
 
-                    <div class="popup-info-item">
-                        <div class="popup-label">Tipe Outlet</div>
-                        <div class="popup-value">${escapeHtml(outlet.tipe_outlet || 'Standard')}</div>
-                    </div>
+                    <!-- Kolom Kanan -->
+                    <div class="popup-right-column">
+                        <div class="popup-info-item">
+                            <div class="popup-label">
+                                <i class="fas fa-map-marked-alt"></i>
+                                ZONA PELAYANAN
+                            </div>
+                            <div class="popup-value">${escapeHtml(outlet.zona_pelayanan || 'Seluruh kota')}</div>
+                        </div>
 
-                    <div class="popup-info-item">
-                        <div class="popup-label">Alamat Lengkap</div>
-                        <div class="popup-value">${escapeHtml(outlet.alamat)}</div>
-                    </div>
+                        <div class="popup-info-item">
+                            <div class="popup-label">
+                                <i class="fas fa-car"></i>
+                                KAPASITAS PARKIR
+                            </div>
+                            <div class="popup-value">${outlet.kapasitas_parkir || 0} kendaraan</div>
+                        </div>
 
-                    <div class="popup-info-item">
-                        <div class="popup-label">Jam Operasional</div>
-                        <div class="popup-value">${escapeHtml(outlet.jam_operasional)}</div>
-                    </div>
+                        <!-- Kontak Section -->
+                        <div class="popup-contact-section">
+                            <div class="popup-info-item">
+                                <div class="popup-label">
+                                    <i class="fas fa-phone"></i>
+                                    TELEPON
+                                </div>
+                                <div class="popup-value">${escapeHtml(outlet.telepon || '-')}</div>
+                            </div>
 
-                    <div class="popup-info-item">
-                        <div class="popup-label">Zona Pelayanan</div>
-                        <div class="popup-value">${escapeHtml(outlet.zona_pelayanan || 'Seluruh kota')}</div>
-                    </div>
-
-                    <div class="popup-info-item">
-                        <div class="popup-label">Kapasitas Parkir</div>
-                        <div class="popup-value">${outlet.kapasitas_parkir || 0} kendaraan</div>
-                    </div>
-
-                    <div class="popup-info-item">
-                        <div class="popup-label">Kontak</div>
-                        <div class="popup-value">
-                            Telepon: ${escapeHtml(outlet.telepon || '-')}<br>
-                            Email: ${escapeHtml(outlet.email || '-')}
+                            <div class="popup-info-item">
+                                <div class="popup-label">
+                                    <i class="fas fa-envelope"></i>
+                                    EMAIL
+                                </div>
+                                <div class="popup-value">${escapeHtml(outlet.email || '-')}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
+                <!-- Fasilitas (Full Width di bawah) -->
                 <div class="popup-facilities">
-                    <div class="popup-facilities-label">Fasilitas</div>
+                    <div class="popup-facilities-label">
+                        <i class="fas fa-star"></i>
+                        FASILITAS
+                    </div>
                     <div class="popup-facilities-grid">
                         ${facilitiesHtml}
                     </div>

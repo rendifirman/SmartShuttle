@@ -18,11 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 
-       $middleware->alias([
-        'admin.role' => \App\Http\Middleware\CheckAdminRole::class,
-           'auth.customer' => \App\Http\Middleware\CheckCustomerSession::class, // TAMBAH INI
-            'guest.customer' => \App\Http\Middleware\RedirectIfAuthenticated::class,
-    ]);
+        $middleware->alias([
+            'admin.role' => \App\Http\Middleware\CheckAdminRole::class,
+            'auth.customer' => \App\Http\Middleware\CheckCustomerSession::class,
+            'guest.customer' => \App\Http\Middleware\RedirectIfAuthenticatedCustomer::class, // PERBAIKAN DI SINI
+        ]);
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
