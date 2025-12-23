@@ -4,6 +4,45 @@
 
 @push('styles')
 <style>
+    /* Tombol Reset Filter */
+.btn-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #868e96 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #5a6268 0%, #727b84 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.btn-secondary:active {
+    transform: translateY(0);
+}
+
+.btn-secondary i {
+    margin-right: 8px;
+}
+
+/* Style untuk input dengan datalist */
+input[list] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%230C2D48' class='bi bi-chevron-down' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 12px;
+    padding-right: 40px;
+    cursor: pointer;
+}
+
+input[list]:hover {
+    border-color: #FF581E;
+}
     /* Outlet Page Styles dengan Background Foto */
     .outlet-page {
         background:
@@ -576,36 +615,58 @@
     <div class="outlet-container">
         <h1 class="outlet-title">LOKASI OUTLET SMARTSHUTTLE</h1>
 
-        <!-- Filter Section -->
-        <div class="filter-section">
-            <h4>Filter Outlet</h4>
-            <form method="GET" action="{{ route('customer.outlet.filter') }}">
-                <div class="row">
-                    <div class="col-md-4">
-                        <label>Filter berdasarkan Kota:</label>
-                        <select name="kota" class="form-control" onchange="this.form.submit()">
-                            <option value="">Semua Kota</option>
-                            @foreach($kotaList as $kota)
-                                <option value="{{ $kota }}" {{ request('kota') == $kota ? 'selected' : '' }}>
-                                    {{ $kota }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label>Filter berdasarkan Cabang:</label>
-                        <select name="branch_id" class="form-control" onchange="this.form.submit()">
-                            <option value="">Semua Cabang</option>
-                            @foreach($branches as $branch)
-                                <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
-                                    {{ $branch->nama_cabang }} - {{ $branch->kota }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-            </form>
+       <!-- Filter Section -->
+<div class="filter-section">
+    <h4>Filter Outlet</h4>
+    <form method="GET" action="{{ route('customer.outlet.filter') }}" id="filterForm">
+        <div class="row">
+            <!-- Filter Kota dengan Input Datalist -->
+            <div class="col-md-4">
+                <label>Filter berdasarkan Kota:</label>
+                <input type="text"
+                       name="kota"
+                       class="form-control"
+                       id="kotaInput"
+                       list="kotaOptions"
+                       placeholder="Ketik atau pilih kota"
+                       value="{{ request('kota') }}"
+                       onchange="submitFilterForm()">
+                <datalist id="kotaOptions">
+                    @foreach($kotaList as $kota)
+                        <option value="{{ $kota }}">
+                    @endforeach
+                </datalist>
+            </div>
+
+            <!-- Filter Cabang dengan Input Datalist -->
+            <div class="col-md-4">
+                <label>Filter berdasarkan Cabang:</label>
+                <input type="text"
+                       name="branch_name"
+                       class="form-control"
+                       id="branchInput"
+                       list="branchOptions"
+                       placeholder="Ketik atau pilih cabang"
+                       value="{{ request('branch_name') }}"
+                       onchange="submitFilterForm()">
+                <input type="hidden" name="branch_id" id="branchIdInput" value="{{ request('branch_id') }}">
+                <datalist id="branchOptions">
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->nama_cabang }} - {{ $branch->kota }}"
+                                data-id="{{ $branch->id }}">
+                    @endforeach
+                </datalist>
+            </div>
+
+            <!-- Tombol Reset Filter -->
+            <div class="col-md-4" style="display: flex; align-items: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="resetFilter()" style="height: 42px; width: 100%;">
+                    <i class="fas fa-redo"></i> Reset Filter
+                </button>
+            </div>
         </div>
+    </form>
+</div>
 
         <!-- Grid Outlet -->
         <div class="outlet-grid">
@@ -735,6 +796,76 @@ $outletsArray = $outlets->map(function($o) {
 @push('scripts')
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 <script>
+    // Fungsi untuk submit form filter
+function submitFilterForm() {
+    document.getElementById('filterForm').submit();
+}
+
+// Fungsi untuk reset filter
+function resetFilter() {
+    // Reset input values
+    document.getElementById('kotaInput').value = '';
+    document.getElementById('branchInput').value = '';
+    document.getElementById('branchIdInput').value = '';
+
+    // Submit form
+    document.getElementById('filterForm').submit();
+}
+
+// Handle branch selection from datalist
+document.addEventListener('DOMContentLoaded', function() {
+    const branchInput = document.getElementById('branchInput');
+    const branchIdInput = document.getElementById('branchIdInput');
+    const branchOptions = document.getElementById('branchOptions');
+
+    branchInput.addEventListener('input', function() {
+        // Cari branch yang sesuai dengan input
+        const inputValue = this.value.toLowerCase();
+        let foundBranchId = null;
+
+        // Loop melalui semua option di datalist
+        Array.from(branchOptions.options).forEach(option => {
+            if (option.value.toLowerCase() === inputValue) {
+                foundBranchId = option.getAttribute('data-id');
+            }
+        });
+
+        // Set hidden input untuk branch_id
+        branchIdInput.value = foundBranchId || '';
+
+        // Jika tidak ada yang cocok, clear hidden input
+        if (!foundBranchId) {
+            // Optional: submit form untuk mencari cabang berdasarkan nama
+            setTimeout(() => {
+                branchIdInput.value = '';
+            }, 100);
+        }
+    });
+
+    // Tambahkan event listener untuk enter key
+    branchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            submitFilterForm();
+        }
+    });
+
+    kotaInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            submitFilterForm();
+        }
+    });
+
+    // Auto-submit ketika memilih dari datalist (untuk browser yang support)
+    branchInput.addEventListener('change', function() {
+        setTimeout(submitFilterForm, 100);
+    });
+
+    kotaInput.addEventListener('change', function() {
+        setTimeout(submitFilterForm, 100);
+    });
+});
     // Data outlets diambil dari server (Blade -> JS)
     const outletsData = @json($outletsArray);
     const placeholderImage = "{{ asset('images/placeholder-outlet.jpg') }}";

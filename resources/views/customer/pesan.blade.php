@@ -869,6 +869,18 @@
             box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25) !important;
         }
 
+        /* Style untuk input type tel */
+        input[type="tel"] {
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+
+        /* Auto format untuk input telepon */
+        .telepon-formatted {
+            background-color: #f8f9fa !important;
+            border-color: #dee2e6 !important;
+        }
+
         /* Promo Loading Spinner */
         .promo-loading {
             display: inline-block;
@@ -911,6 +923,22 @@
             color: #FF581E;
         }
 
+        /* Checkbox disabled state */
+        .same-as-pemesan-checkbox:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+            border-color: #cccccc;
+        }
+
+        .same-as-pemesan-label.disabled {
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        .same-as-pemesan-label.disabled:hover {
+            color: #999;
+        }
+
         /* Style untuk form-check inline */
         .form-check-inline {
             margin-bottom: 0;
@@ -949,6 +977,49 @@
             font-size: 11px;
             font-weight: 600;
             margin-left: 8px;
+        }
+
+        /* Exclusive checkbox styling */
+        .exclusive-checkbox {
+            border-color: #FF581E;
+            position: relative;
+        }
+
+        .exclusive-checkbox:checked::after {
+            content: '✓';
+            color: white;
+            font-weight: bold;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+        }
+
+        /* Warning message for exclusive checkbox */
+        .exclusive-warning {
+            color: #FF581E;
+            font-size: 11px;
+            margin-top: 5px;
+            font-style: italic;
+            display: none;
+        }
+
+        /* Tambahan untuk email di form penumpang */
+        .email-field {
+            display: none;
+        }
+
+        .email-field.show {
+            display: block;
+        }
+
+        /* Feedback untuk perubahan field */
+        .field-feedback {
+            color: #FF581E;
+            font-size: 11px;
+            margin-top: 5px;
+            display: block;
         }
     </style>
 @endpush
@@ -994,7 +1065,7 @@
                         <div class="journey-details">
                             <div class="detail-row">
                                 <div class="detail-label">Tanggal</div>
-                              <div class="detail-value">{{ \Carbon\Carbon::parse($jadwal->tanggal_keberangkatan)->locale('id')->isoFormat('dddd, D MMMM YYYY') }}</div>
+                                <div class="detail-value">{{ \Carbon\Carbon::parse($jadwal->tanggal_keberangkatan)->locale('id')->isoFormat('dddd, D MMMM YYYY') }}</div>
                             </div>
                             <div class="detail-row">
                                 <div class="detail-label">Waktu</div>
@@ -1119,7 +1190,7 @@
                         <div class="form-group">
                             <label class="form-label">Nama Lengkap</label>
                             <input type="text" class="form-control" name="nama_pemesan" id="nama_pemesan"
-                                value="{{ old('nama_pemesan', $userData['name'] ?? '') }}"
+                                value="{{ old('nama_pemesan', $userData->name ?? ($user['name'] ?? '')) }}"
                                 placeholder="Masukkan nama lengkap" required>
                             @error('nama_pemesan')
                                 <span class="error-message">{{ $message }}</span>
@@ -1130,9 +1201,9 @@
                             <div class="form-col">
                                 <div class="form-group">
                                     <label class="form-label">Nomor Handphone</label>
-                                    <input type="text" class="form-control" name="telepon_pemesan" id="telepon_pemesan"
-                                        value="{{ old('telepon_pemesan', $userData['phone'] ?? '') }}"
-                                        placeholder="0812-3456-7890" required>
+                                    <input type="tel" class="form-control" name="telepon_pemesan" id="telepon_pemesan"
+                                        value="{{ old('telepon_pemesan', $userData->phone ?? ($user['phone'] ?? '')) }}"
+                                        placeholder="081234567890" required>
                                     @error('telepon_pemesan')
                                         <span class="error-message">{{ $message }}</span>
                                     @enderror
@@ -1142,7 +1213,7 @@
                                 <div class="form-group">
                                     <label class="form-label">Email</label>
                                     <input type="email" class="form-control" name="email_pemesan" id="email_pemesan"
-                                        value="{{ old('email_pemesan', $userData['email'] ?? '') }}"
+                                        value="{{ old('email_pemesan', $userData->email ?? ($user['email'] ?? '')) }}"
                                         placeholder="email@contoh.com" required>
                                     @error('email_pemesan')
                                         <span class="error-message">{{ $message }}</span>
@@ -1159,6 +1230,12 @@
 
                         <!-- Data Penumpang -->
                         <h5 class="fw-bold mt-4 section-header">DATA PENUMPANG</h5>
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle text-warning"></i>
+                                Fitur "Sama dengan pemesan" hanya bisa digunakan untuk satu penumpang saja.
+                            </small>
+                        </div>
 
                         @for($i = 1; $i <= $penumpang; $i++)
                         <div class="penumpang-group" id="penumpang-{{ $i }}">
@@ -1170,15 +1247,21 @@
 
                                 <!-- Checkbox "Sama dengan Pemesan" -->
                                 <div class="form-check form-check-inline">
-                                    <input type="checkbox" class="form-check-input same-as-pemesan-checkbox"
+                                    <input type="checkbox" class="form-check-input same-as-pemesan-checkbox exclusive-checkbox"
                                            id="same-as-pemesan-{{ $i }}" data-index="{{ $i }}"
                                            {{ old("penumpang.$i.same_as_pemesan") == 'on' ? 'checked' : '' }}>
-                                    <label class="form-check-label same-as-pemesan-label" for="same-as-pemesan-{{ $i }}">
+                                    <label class="form-check-label same-as-pemesan-label" for="same-as-pemesan-{{ $i }}" id="label-same-as-pemesan-{{ $i }}">
                                         <i class="fas fa-user-check"></i>
                                         Sama dengan pemesan
                                     </label>
                                 </div>
                             </div>
+                            <div class="exclusive-warning" id="warning-{{ $i }}">
+                                <i class="fas fa-exclamation-circle"></i> Hanya satu penumpang yang bisa menggunakan fitur ini
+                            </div>
+
+                            <!-- Hidden input untuk email penumpang -->
+                            <input type="hidden" name="penumpang[{{ $i }}][email]" id="email-penumpang-{{ $i }}">
 
                             <div class="form-group">
                                 <label class="form-label">Nama Lengkap Penumpang <span style="color: red;">*</span></label>
@@ -1237,11 +1320,11 @@
                                 <div class="form-col">
                                     <div class="form-group">
                                         <label class="form-label">Nomor Telepon Penumpang <span style="color: red;">*</span></label>
-                                        <input type="text" class="form-control telepon-input penumpang-telepon"
+                                        <input type="tel" class="form-control telepon-input penumpang-telepon"
                                                name="penumpang[{{ $i }}][telepon]"
                                                id="telepon-{{ $i }}"
                                                value="{{ old("penumpang.$i.telepon") }}"
-                                               placeholder="0812-3456-7890"
+                                               placeholder="081234567890"
                                                required
                                                data-index="{{ $i }}">
                                         <small style="color: #666; font-size: 12px;">* Wajib diisi (minimal 10 digit)</small>
@@ -1251,6 +1334,15 @@
                                         @enderror
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Field email yang disembunyikan tapi akan diisi -->
+                            <div class="form-group email-field" id="email-field-{{ $i }}">
+                                <label class="form-label">Email Penumpang</label>
+                                <input type="email" class="form-control"
+                                       id="email-display-{{ $i }}"
+                                       placeholder="Email akan terisi otomatis"
+                                       readonly>
                             </div>
                         </div>
                         @endfor
@@ -1370,171 +1462,497 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentTotal = {{ $totalAfterDiscount ?? $totalHarga ?? 0 }};
     const currentDiskon = {{ $diskon ?? 0 }};
 
+    // Data profil dari userData (dikirim dari controller)
+    const userData = @json($userData ?? null);
+    const userSession = @json($user ?? null);
+
+    console.log('User Data from database:', userData);
+    console.log('User Data from session:', userSession);
     console.log('Original Total:', originalTotal);
     console.log('Current Total:', currentTotal);
     console.log('Current Diskon:', currentDiskon);
 
-    // ========== FUNGSI UNTUK "SAMA DENGAN PEMESAN" ==========
+    // ========== FUNGSI UNTUK "SAMA DENGAN PEMESAN" (EXCLUSIVE) ==========
 
-    // Fungsi untuk mengisi data penumpang dengan data pemesan
-    function fillPenumpangWithPemesan(index) {
+    // Get all checkboxes
+    const sameAsPemesanCheckboxes = document.querySelectorAll('.same-as-pemesan-checkbox');
+
+    // Track currently checked checkbox
+    let currentlyCheckedCheckbox = null;
+
+    // Initialize - find if any checkbox is already checked from old data
+    sameAsPemesanCheckboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            currentlyCheckedCheckbox = checkbox;
+            disableOtherCheckboxes(checkbox.dataset.index);
+        }
+    });
+
+    // Fungsi untuk menonaktifkan checkbox lainnya
+    function disableOtherCheckboxes(currentIndex) {
+        sameAsPemesanCheckboxes.forEach(checkbox => {
+            const index = checkbox.dataset.index;
+            const label = document.getElementById(`label-same-as-pemesan-${index}`);
+            const warning = document.getElementById(`warning-${index}`);
+
+            if (index !== currentIndex) {
+                checkbox.disabled = true;
+                if (label) {
+                    label.classList.add('disabled');
+                }
+            } else {
+                // Show warning for the checked one
+                if (warning) {
+                    warning.style.display = 'block';
+                }
+            }
+        });
+    }
+
+    // Fungsi untuk mengaktifkan semua checkbox
+    function enableAllCheckboxes() {
+        sameAsPemesanCheckboxes.forEach(checkbox => {
+            const index = checkbox.dataset.index;
+            const label = document.getElementById(`label-same-as-pemesan-${index}`);
+            const warning = document.getElementById(`warning-${index}`);
+            const emailField = document.getElementById(`email-field-${index}`);
+
+            checkbox.disabled = false;
+            if (label) {
+                label.classList.remove('disabled');
+            }
+            if (warning) {
+                warning.style.display = 'none';
+            }
+            if (emailField) {
+                emailField.classList.remove('show');
+            }
+        });
+        currentlyCheckedCheckbox = null;
+    }
+
+    // Fungsi untuk mendapatkan data profil pengguna
+    function getProfileData() {
         // Ambil data dari form pemesan
         const namaPemesan = document.getElementById('nama_pemesan').value;
         const teleponPemesan = document.getElementById('telepon_pemesan').value;
+        const emailPemesan = document.getElementById('email_pemesan').value;
+
+        // Ambil data dari profil pengguna (database atau session)
+        let nikUser = '';
+        let jenisKelaminUser = '';
+
+        // Prioritas 1: Data dari database (userData)
+        if (userData) {
+            nikUser = userData.nik || '';
+            jenisKelaminUser = userData.jenis_kelamin || '';
+        }
+        // Prioritas 2: Data dari session
+        else if (userSession && userSession.nik) {
+            nikUser = userSession.nik || '';
+            jenisKelaminUser = userSession.jenis_kelamin || '';
+        }
+
+        // Bersihkan format telepon (hapus karakter non-digit)
+        const teleponClean = teleponPemesan.replace(/\D/g, '');
+
+        return {
+            nama: namaPemesan,
+            telepon: teleponClean,
+            teleponFormatted: teleponPemesan,
+            email: emailPemesan,
+            nik: nikUser,
+            jenis_kelamin: jenisKelaminUser
+        };
+    }
+
+    // Fungsi untuk mengisi data penumpang dengan data pemesan DAN profil
+    function fillPenumpangWithPemesan(index) {
+        const profileData = getProfileData();
 
         // Ambil elemen input penumpang berdasarkan index
         const namaPenumpang = document.getElementById(`nama-penumpang-${index}`);
         const teleponPenumpang = document.getElementById(`telepon-${index}`);
-        const nikInput = document.getElementById(`nik-${index}`);
-        const jkSelect = document.getElementById(`jk-${index}`);
+        const nikPenumpang = document.getElementById(`nik-${index}`);
+        const jkPenumpang = document.getElementById(`jk-${index}`);
+        const emailHidden = document.getElementById(`email-penumpang-${index}`);
+        const emailDisplay = document.getElementById(`email-display-${index}`);
+        const emailField = document.getElementById(`email-field-${index}`);
 
-        // Isi nilai ke field penumpang
-        if (namaPenumpang) {
-            namaPenumpang.value = namaPemesan;
-            namaPenumpang.classList.add('auto-filled');
-            namaPenumpang.dispatchEvent(new Event('input')); // Trigger event untuk validasi
+        // Simpan nilai asli sebelum diisi (untuk comparison nanti)
+        if (namaPenumpang) namaPenumpang.setAttribute('data-original-value', namaPenumpang.value);
+        if (teleponPenumpang) teleponPenumpang.setAttribute('data-original-value', teleponPenumpang.value);
+        if (nikPenumpang) nikPenumpang.setAttribute('data-original-value', nikPenumpang.value);
+        if (jkPenumpang) jkPenumpang.setAttribute('data-original-value', jkPenumpang.value);
+
+        // Isi nilai ke field penumpang - HANYA jika field kosong atau masih sama dengan asli
+        if (namaPenumpang && profileData.nama) {
+            const currentValue = namaPenumpang.value;
+            const originalValue = namaPenumpang.getAttribute('data-original-value') || '';
+
+            if (!currentValue || currentValue === originalValue) {
+                namaPenumpang.value = profileData.nama;
+                namaPenumpang.classList.add('auto-filled');
+                namaPenumpang.dispatchEvent(new Event('input'));
+            }
         }
 
-        if (teleponPenumpang) {
-            teleponPenumpang.value = teleponPemesan;
-            teleponPenumpang.classList.add('auto-filled');
-            teleponPenumpang.dispatchEvent(new Event('input')); // Trigger event untuk validasi
+        if (teleponPenumpang && profileData.teleponFormatted) {
+            const currentValue = teleponPenumpang.value;
+            const originalValue = teleponPenumpang.getAttribute('data-original-value') || '';
+
+            if (!currentValue || currentValue === originalValue) {
+                teleponPenumpang.value = profileData.teleponFormatted;
+                teleponPenumpang.classList.add('auto-filled');
+                teleponPenumpang.dispatchEvent(new Event('input'));
+            }
+        }
+
+        if (nikPenumpang && profileData.nik) {
+            const currentValue = nikPenumpang.value;
+            const originalValue = nikPenumpang.getAttribute('data-original-value') || '';
+
+            if (!currentValue || currentValue === originalValue) {
+                nikPenumpang.value = profileData.nik;
+                nikPenumpang.classList.add('auto-filled');
+                nikPenumpang.dispatchEvent(new Event('input'));
+            }
+        }
+
+        if (jkPenumpang && profileData.jenis_kelamin) {
+            const currentValue = jkPenumpang.value;
+            const originalValue = jkPenumpang.getAttribute('data-original-value') || '';
+
+            if (!currentValue || currentValue === originalValue) {
+                jkPenumpang.value = profileData.jenis_kelamin;
+                jkPenumpang.classList.add('auto-filled');
+                jkPenumpang.dispatchEvent(new Event('input'));
+            }
+        }
+
+        // Untuk email, selalu isi dari pemesan
+        if (emailHidden && profileData.email) {
+            emailHidden.value = profileData.email;
+        }
+
+        if (emailDisplay && profileData.email) {
+            emailDisplay.value = profileData.email;
+        }
+
+        if (emailField && profileData.email) {
+            emailField.classList.add('show');
         }
 
         // Update label checkbox
-        const checkboxLabel = document.querySelector(`label[for="same-as-pemesan-${index}"]`);
+        const checkboxLabel = document.getElementById(`label-same-as-pemesan-${index}`);
         if (checkboxLabel) {
             checkboxLabel.classList.add('checkbox-checked');
         }
 
-        console.log(`Mengisi data penumpang ${index} dengan data pemesan`);
+        console.log(`Mengisi data penumpang ${index} dengan data pemesan dan profil`, profileData);
     }
 
-    // Fungsi untuk menghapus isian data penumpang (ketika checkbox di-uncheck)
+    // Fungsi untuk mengosongkan data penumpang (ketika checkbox di-uncheck)
     function clearPenumpangData(index) {
         const namaPenumpang = document.getElementById(`nama-penumpang-${index}`);
         const teleponPenumpang = document.getElementById(`telepon-${index}`);
+        const nikPenumpang = document.getElementById(`nik-${index}`);
+        const jkPenumpang = document.getElementById(`jk-${index}`);
+        const emailHidden = document.getElementById(`email-penumpang-${index}`);
+        const emailDisplay = document.getElementById(`email-display-${index}`);
+        const emailField = document.getElementById(`email-field-${index}`);
 
-        if (namaPenumpang) {
-            namaPenumpang.value = '';
+        // Hapus class 'auto-filled' tapi jangan kosongkan nilai jika user sudah mengubahnya
+        if (namaPenumpang && namaPenumpang.classList.contains('auto-filled')) {
             namaPenumpang.classList.remove('auto-filled');
-            namaPenumpang.dispatchEvent(new Event('input'));
         }
 
-        if (teleponPenumpang) {
-            teleponPenumpang.value = '';
+        if (teleponPenumpang && teleponPenumpang.classList.contains('auto-filled')) {
             teleponPenumpang.classList.remove('auto-filled');
-            teleponPenumpang.dispatchEvent(new Event('input'));
         }
+
+        if (nikPenumpang && nikPenumpang.classList.contains('auto-filled')) {
+            nikPenumpang.classList.remove('auto-filled');
+        }
+
+        if (jkPenumpang && jkPenumpang.classList.contains('auto-filled')) {
+            jkPenumpang.classList.remove('auto-filled');
+        }
+
+        // Kosongkan email karena ini khusus
+        if (emailHidden) {
+            emailHidden.value = '';
+        }
+
+        if (emailDisplay) {
+            emailDisplay.value = '';
+        }
+
+        if (emailField) {
+            emailField.classList.remove('show');
+        }
+
+        // Hapus data-original-value attributes
+        if (namaPenumpang) namaPenumpang.removeAttribute('data-original-value');
+        if (teleponPenumpang) teleponPenumpang.removeAttribute('data-original-value');
+        if (nikPenumpang) nikPenumpang.removeAttribute('data-original-value');
+        if (jkPenumpang) jkPenumpang.removeAttribute('data-original-value');
 
         // Update label checkbox
-        const checkboxLabel = document.querySelector(`label[for="same-as-pemesan-${index}"]`);
+        const checkboxLabel = document.getElementById(`label-same-as-pemesan-${index}`);
         if (checkboxLabel) {
             checkboxLabel.classList.remove('checkbox-checked');
         }
 
-        console.log(`Mengosongkan data penumpang ${index}`);
+        console.log(`Mengosongkan data auto-filled untuk penumpang ${index}`);
     }
 
-    // Fungsi untuk menangani perubahan data pemesan (jika checkbox dicentang)
-    function handlePemesanChange() {
-        // Cari semua checkbox yang dicentang
-        const checkedCheckboxes = document.querySelectorAll('.same-as-pemesan-checkbox:checked');
+    // ========== MODIFIED: EVENT LISTENERS UNTUK MANUAL INPUT ==========
 
-        checkedCheckboxes.forEach(checkbox => {
-            const index = checkbox.dataset.index;
-            fillPenumpangWithPemesan(index);
-        });
-    }
-
-    // Fungsi untuk memeriksa apakah penumpang sudah diisi manual
-    function isPenumpangManuallyFilled(index) {
-        const namaPenumpang = document.getElementById(`nama-penumpang-${index}`).value;
-        const teleponPenumpang = document.getElementById(`telepon-${index}`).value;
-        const namaPemesan = document.getElementById('nama_pemesan').value;
-        const teleponPemesan = document.getElementById('telepon_pemesan').value;
-
-        // Jika data penumpang berbeda dengan data pemesan, berarti diisi manual
-        return namaPenumpang !== namaPemesan || teleponPenumpang !== teleponPemesan;
-    }
-
-    // ========== EVENT LISTENERS UNTUK "SAMA DENGAN PEMESAN" ==========
-
-    // Event listener untuk checkbox
-    const sameAsPemesanCheckboxes = document.querySelectorAll('.same-as-pemesan-checkbox');
+    // Event listener untuk input manual pada field penumpang
     sameAsPemesanCheckboxes.forEach(checkbox => {
+        const index = checkbox.dataset.index;
+
+        // Event listener untuk perubahan checkbox
         checkbox.addEventListener('change', function() {
             const index = this.dataset.index;
 
             if (this.checked) {
-                // Isi dengan data pemesan
+                // Jika ada checkbox lain yang sudah dicentang, uncheck dulu
+                if (currentlyCheckedCheckbox && currentlyCheckedCheckbox !== this) {
+                    currentlyCheckedCheckbox.checked = false;
+                    clearPenumpangData(currentlyCheckedCheckbox.dataset.index);
+                    removeInputListeners(currentlyCheckedCheckbox.dataset.index);
+                }
+
+                // Set current checkbox sebagai yang aktif
+                currentlyCheckedCheckbox = this;
+
+                // Nonaktifkan checkbox lainnya
+                disableOtherCheckboxes(index);
+
+                // Isi dengan data pemesan DAN profil
                 fillPenumpangWithPemesan(index);
+
+                // Attach input event listeners
+                attachInputListeners(index);
             } else {
+                // Aktifkan semua checkbox
+                enableAllCheckboxes();
+
                 // Kosongkan data
                 clearPenumpangData(index);
+
+                // Remove input event listeners
+                removeInputListeners(index);
             }
         });
+
+        // Jika checkbox sudah dicentang dari awal (old data), attach listeners
+        if (checkbox.checked) {
+            attachInputListeners(index);
+        }
     });
 
     // Event listener untuk perubahan data pemesan
-    const pemesanInputs = ['nama_pemesan', 'telepon_pemesan'];
+    const pemesanInputs = ['nama_pemesan', 'telepon_pemesan', 'email_pemesan'];
     pemesanInputs.forEach(inputName => {
         const inputElement = document.getElementById(inputName);
         if (inputElement) {
             inputElement.addEventListener('input', function() {
-                handlePemesanChange();
+                // Update data penumpang yang checkbox-nya dicentang
+                if (currentlyCheckedCheckbox) {
+                    const index = currentlyCheckedCheckbox.dataset.index;
+                    fillPenumpangWithPemesan(index);
+                }
             });
         }
     });
 
-    // ========== AUTO FILL PENUMPANG PERTAMA (OPTIONAL) ==========
-    // Auto check untuk penumpang pertama jika belum ada data dan form pemesan sudah terisi
-    const firstCheckbox = document.querySelector('.same-as-pemesan-checkbox');
-    const firstNamaPenumpang = document.getElementById('nama-penumpang-1');
-    const namaPemesanValue = document.getElementById('nama_pemesan').value;
-    const teleponPemesanValue = document.getElementById('telepon_pemesan').value;
-
-    // Cek apakah penumpang pertama sudah diisi manual atau dari old data
-    if (firstCheckbox && firstNamaPenumpang && !firstNamaPenumpang.value.trim() &&
-        namaPemesanValue && teleponPemesanValue) {
-        // Auto check untuk penumpang pertama
-        firstCheckbox.checked = true;
-        fillPenumpangWithPemesan(1);
-    }
-
-    // ========== HANDLE MANUAL INPUT PADA FIELD YANG DIISI OTOMATIS ==========
-    // Jika user mengubah field yang diisi otomatis, uncheck checkbox
-    sameAsPemesanCheckboxes.forEach(checkbox => {
-        const index = checkbox.dataset.index;
+    // Fungsi untuk attach event listeners ke input field dengan debounce
+    function attachInputListeners(index) {
         const namaInput = document.getElementById(`nama-penumpang-${index}`);
         const teleponInput = document.getElementById(`telepon-${index}`);
+        const nikInput = document.getElementById(`nik-${index}`);
+        const jkInput = document.getElementById(`jk-${index}`);
+        const checkbox = document.querySelector(`#same-as-pemesan-${index}`);
 
+        // Helper function untuk check jika nilai sudah berbeda
+        function checkIfValueChanged(fieldType, newValue) {
+            if (!checkbox || !checkbox.checked) return;
+
+            const profileData = getProfileData();
+            let shouldUncheck = false;
+
+            switch(fieldType) {
+                case 'nama':
+                    shouldUncheck = (newValue !== profileData.nama);
+                    break;
+                case 'telepon':
+                    const cleanedNewValue = newValue.replace(/\D/g, '');
+                    shouldUncheck = (cleanedNewValue !== profileData.telepon);
+                    break;
+                case 'nik':
+                    // Hanya uncheck jika profile memiliki NIK DAN user mengubahnya
+                    shouldUncheck = (profileData.nik && newValue !== profileData.nik);
+                    break;
+                case 'jk':
+                    // Hanya uncheck jika profile memiliki jenis kelamin DAN user mengubahnya
+                    shouldUncheck = (profileData.jenis_kelamin && newValue !== profileData.jenis_kelamin);
+                    break;
+            }
+
+            if (shouldUncheck) {
+                checkbox.checked = false;
+                checkbox.dispatchEvent(new Event('change'));
+
+                // Tambahkan pesan feedback
+                showFieldChangeFeedback(index, fieldType);
+            }
+        }
+
+        // Attach listeners dengan debounce untuk menghindari trigger berlebihan
         if (namaInput) {
-            namaInput.addEventListener('input', function() {
-                if (checkbox.checked) {
-                    // Cek apakah nilai masih sama dengan pemesan
-                    const namaPemesan = document.getElementById('nama_pemesan').value;
-                    if (this.value !== namaPemesan) {
-                        checkbox.checked = false;
-                        clearPenumpangData(index);
-                    }
+            const originalNamaValue = namaInput.value;
+            namaInput.addEventListener('input', debounce(function() {
+                if (this.value !== originalNamaValue) {
+                    checkIfValueChanged('nama', this.value);
                 }
-            });
+            }, 500));
         }
 
         if (teleponInput) {
-            teleponInput.addEventListener('input', function() {
-                if (checkbox.checked) {
-                    // Cek apakah nilai masih sama dengan pemesan
-                    const teleponPemesan = document.getElementById('telepon_pemesan').value;
-                    if (this.value !== teleponPemesan) {
-                        checkbox.checked = false;
-                        clearPenumpangData(index);
-                    }
+            const originalTeleponValue = teleponInput.value;
+            teleponInput.addEventListener('input', debounce(function() {
+                if (this.value !== originalTeleponValue) {
+                    checkIfValueChanged('telepon', this.value);
                 }
-            });
+            }, 500));
         }
-    });
+
+        if (nikInput) {
+            const originalNikValue = nikInput.value;
+            nikInput.addEventListener('input', debounce(function() {
+                if (this.value !== originalNikValue) {
+                    checkIfValueChanged('nik', this.value);
+                }
+            }, 500));
+        }
+
+        if (jkInput) {
+            const originalJkValue = jkInput.value;
+            jkInput.addEventListener('change', debounce(function() {
+                if (this.value !== originalJkValue) {
+                    checkIfValueChanged('jk', this.value);
+                }
+            }, 500));
+        }
+    }
+
+    // Fungsi untuk remove event listeners
+    function removeInputListeners(index) {
+        const namaInput = document.getElementById(`nama-penumpang-${index}`);
+        const teleponInput = document.getElementById(`telepon-${index}`);
+        const nikInput = document.getElementById(`nik-${index}`);
+        const jkInput = document.getElementById(`jk-${index}`);
+
+        // Clone dan replace element untuk menghapus event listeners
+        if (namaInput) {
+            const newNamaInput = namaInput.cloneNode(true);
+            namaInput.parentNode.replaceChild(newNamaInput, namaInput);
+        }
+
+        if (teleponInput) {
+            const newTeleponInput = teleponInput.cloneNode(true);
+            teleponInput.parentNode.replaceChild(newTeleponInput, teleponInput);
+        }
+
+        if (nikInput) {
+            const newNikInput = nikInput.cloneNode(true);
+            nikInput.parentNode.replaceChild(newNikInput, nikInput);
+        }
+
+        if (jkInput) {
+            const newJkInput = jkInput.cloneNode(true);
+            jkInput.parentNode.replaceChild(newJkInput, jkInput);
+        }
+    }
+
+    // Fungsi debounce untuk mencegah trigger berlebihan
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func.apply(this, args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Fungsi untuk menampilkan feedback ketika field diubah
+    function showFieldChangeFeedback(index, fieldType) {
+        const fieldNames = {
+            'nama': 'Nama',
+            'telepon': 'Nomor Telepon',
+            'nik': 'NIK',
+            'jk': 'Jenis Kelamin'
+        };
+
+        // Tampilkan pesan kecil di bawah field
+        const fieldElement = document.getElementById(`${fieldType}-${index}`);
+        if (fieldElement) {
+            // Hapus feedback sebelumnya jika ada
+            const existingFeedback = fieldElement.parentNode.querySelector('.field-feedback');
+            if (existingFeedback) {
+                existingFeedback.remove();
+            }
+
+            const feedback = document.createElement('small');
+            feedback.className = 'field-feedback';
+            feedback.innerHTML = `<i class="fas fa-info-circle"></i> Perubahan ${fieldNames[fieldType]} menghapus otomatisasi`;
+            fieldElement.parentNode.appendChild(feedback);
+
+            // Hapus setelah 3 detik
+            setTimeout(() => {
+                if (feedback.parentNode) {
+                    feedback.remove();
+                }
+            }, 3000);
+        }
+    }
+
+    // ========== FORMAT TELEPON PEMESAN ==========
+    // Auto format untuk input telepon pemesan
+    const teleponPemesanInput = document.getElementById('telepon_pemesan');
+    if (teleponPemesanInput) {
+        teleponPemesanInput.addEventListener('input', function() {
+            // Hapus semua karakter selain angka
+            let value = this.value.replace(/\D/g, '');
+
+            // Format: 0812-3456-7890
+            if (value.length > 4 && value.length <= 8) {
+                value = value.replace(/(\d{4})(\d{0,4})/, '$1-$2');
+            } else if (value.length > 8) {
+                value = value.replace(/(\d{4})(\d{4})(\d{0,7})/, '$1-$2-$3');
+            }
+
+            this.value = value;
+
+            // Validasi real-time
+            const teleponValue = this.value.replace(/\D/g, '');
+            if (teleponValue && !validateTelepon(teleponValue)) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+            } else if (teleponValue && validateTelepon(teleponValue)) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                this.classList.remove('is-invalid', 'is-valid');
+            }
+        });
+    }
 
     // ========== PROMO FUNCTIONS ==========
 
@@ -1821,6 +2239,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let isValid = true;
         const nikInputs = document.querySelectorAll('.nik-input');
         const teleponInputs = document.querySelectorAll('.telepon-input');
+        const teleponPemesanInput = document.getElementById('telepon_pemesan');
 
         // Reset error messages NIK
         nikInputs.forEach(input => {
@@ -1841,6 +2260,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 errorElement.textContent = '';
             }
         });
+
+        // Validasi telepon pemesan
+        if (teleponPemesanInput) {
+            const teleponPemesanValue = teleponPemesanInput.value.replace(/\D/g, '');
+            if (!teleponPemesanValue) {
+                isValid = false;
+                teleponPemesanInput.classList.add('is-invalid');
+            } else if (!validateTelepon(teleponPemesanValue)) {
+                isValid = false;
+                teleponPemesanInput.classList.add('is-invalid');
+            } else {
+                teleponPemesanInput.classList.remove('is-invalid');
+                teleponPemesanInput.classList.add('is-valid');
+            }
+        }
 
         // Validasi setiap NIK
         nikInputs.forEach(input => {
@@ -1871,6 +2305,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Validasi setiap Telepon
         teleponInputs.forEach(input => {
             const teleponValue = input.value.trim();
+            const teleponCleanValue = teleponValue.replace(/\D/g, '');
             const penumpangIndex = input.dataset.index;
             const errorElement = document.getElementById(`telepon-error-${penumpangIndex}`);
 
@@ -1881,7 +2316,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     errorElement.style.display = 'block';
                 }
                 input.classList.add('is-invalid');
-            } else if (!validateTelepon(teleponValue)) {
+            } else if (!validateTelepon(teleponCleanValue)) {
                 isValid = false;
                 if (errorElement) {
                     errorElement.textContent = 'Nomor telepon minimal 10 digit dan maksimal 15 digit';
@@ -1938,7 +2373,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Auto format untuk input telepon
+    // Auto format untuk input telepon penumpang
     const teleponInputs = document.querySelectorAll('.telepon-input');
     teleponInputs.forEach(input => {
         input.addEventListener('input', function() {
@@ -2003,6 +2438,15 @@ document.addEventListener('DOMContentLoaded', function() {
             this.submit();
         });
     }
+
+    // ========== INITIALIZE FORM FIELDS ==========
+    // Jika ada data dari profil, format telepon pemesan
+    if (teleponPemesanInput && teleponPemesanInput.value) {
+        // Trigger input event untuk format
+        teleponPemesanInput.dispatchEvent(new Event('input'));
+    }
+
+    console.log('Form initialization complete');
 });
 </script>
 @endpush

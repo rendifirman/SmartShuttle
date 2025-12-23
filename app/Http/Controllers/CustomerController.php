@@ -32,6 +32,7 @@ use App\Models\HargaPaket;
 use App\Models\PengirimanPaket;
 use Carbon\Carbon;
 use App\Models\Review;
+use Spatie\Permission\Models\Role;
 
 // Helper function untuk mendapatkan inisial nama
 if (!function_exists('getInitials')) {
@@ -200,10 +201,17 @@ class CustomerController extends Controller
             $request->session()->regenerate();
             $user = Auth::user();
 
+            // Cek status user
+            if ($user->status === 'inactive') {
+                Auth::logout();
+                return back()->withErrors(['message' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.'])->withInput();
+            }
+
             session()->put('user', [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'phone' => $user->phone,
                 'avatar' => $user->avatar,
                 'membership_status' => $user->membership_status,
                 'membership_level' => $user->membership_level,
@@ -236,7 +244,7 @@ class CustomerController extends Controller
     }
 
     /**
-     * Proses register
+     * Proses register - TIDAK login otomatis
      */
     public function register(Request $request)
     {
@@ -252,13 +260,18 @@ class CustomerController extends Controller
             // Buat user baru TANPA login otomatis
             $user = User::create([
                 'name' => $validated['name'],
+                'username' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => bcrypt($validated['password']),
+                'status' => 'active',
                 'membership_status' => 'non_member',
                 'membership_level' => 'Bronze',
                 'member_point' => 0,
                 'loyalty_point' => 0,
             ]);
+
+            // Berikan role customer
+            $user->assignRole('customer');
 
             // Tidak login otomatis, langsung redirect ke halaman login
             return redirect()->route('customer.login')
@@ -782,6 +795,9 @@ class CustomerController extends Controller
 
             $kodeBooking = $this->generateKodeBooking();
 
+            // Bersihkan format telepon (hapus karakter non-digit)
+            $teleponPemesan = preg_replace('/\D/', '', $request->telepon_pemesan);
+
             $pemesanan = Pemesanan::create([
                 'kode_booking' => $kodeBooking,
                 'customer_id' => Auth::id(),
@@ -791,7 +807,7 @@ class CustomerController extends Controller
                 'diskon' => $diskon + $diskonLoyalty,
                 'total_bayar' => $totalBayar,
                 'nama_pemesan' => $request->nama_pemesan,
-                'telepon_pemesan' => $request->telepon_pemesan,
+                'telepon_pemesan' => $teleponPemesan,
                 'email_pemesan' => $request->email_pemesan,
                 'catatan' => $request->catatan,
                 'kode_promo' => $request->kode_promo,
@@ -1178,6 +1194,8 @@ class CustomerController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'phone' => $user->phone,
+                'nik' => $user->nik,
                 'avatar' => $user->avatar,
                 'membership_status' => $user->membership_status,
                 'membership_level' => $user->membership_level,

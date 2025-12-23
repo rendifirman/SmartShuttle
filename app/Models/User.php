@@ -34,7 +34,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'membership_payment_status',
         'membership_transaction_id',
         'two_factor_enabled',
-        'status'
+        'status',
+        'google_id', // TAMBAHKAN INI
+        'provider'   // TAMBAHKAN INI
     ];
 
     protected $hidden = [
@@ -59,7 +61,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'member_point' => 0,
         'loyalty_point' => 0,
         'membership_level' => 'Bronze',
-        'membership_status' => 'non_member'
+        'membership_status' => 'non_member',
+        'google_id' => null, // TAMBAHKAN INI
+        'provider' => null   // TAMBAHKAN INI
     ];
 
     // Relasi
@@ -73,7 +77,31 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(MembershipPayment::class);
     }
 
-    // Helper methods
+    // Helper methods untuk Google Auth
+    public function isGoogleUser()
+    {
+        return !empty($this->google_id) && $this->provider === 'google';
+    }
+
+    // Helper method untuk cek status user
+    public function isActive()
+    {
+        return $this->status === 'active';
+    }
+
+    public function isInactive()
+    {
+        return $this->status === 'inactive';
+    }
+
+    public function isMemberActive()
+    {
+        return $this->membership_status === 'active' &&
+               $this->membership_end_date &&
+               $this->membership_end_date->isFuture();
+    }
+
+    // Method lainnya tetap sama seperti yang Anda berikan
     public function calculateLoyaltyPointsToAdd()
     {
         // Hanya tambah loyalty point jika membership aktif
@@ -190,14 +218,6 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return $initials;
-    }
-
-    // Membership helper methods
-    public function isMemberActive()
-    {
-        return $this->membership_status === 'active' &&
-               $this->membership_end_date &&
-               $this->membership_end_date->isFuture();
     }
 
     public function getMembershipStatusLabelAttribute()

@@ -134,6 +134,7 @@
         .nav-auth {
             display: flex;
             justify-content: flex-end;
+            align-items: center;
         }
 
         .btn-login {
@@ -146,11 +147,17 @@
             cursor: pointer;
             transition: all 0.3s;
             white-space: nowrap;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            font-family: inherit;
         }
 
         .btn-login:hover {
             background-color: var(--secondary-color);
             transform: translateY(-2px);
+            text-decoration: none;
+            color: white;
         }
 
         /* Navbar saat di-scroll - LEBIH TRANSPARAN */
@@ -163,15 +170,6 @@
             background: rgba(255, 255, 255, 0.8);
             box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1);
         }
-
-        /* HAPUS: Warna link saat di-scroll karena sudah baik */
-        /* .custom-navbar.scrolled .nav-links a {
-            color: var(--primary-color);
-        }
-
-        .custom-navbar.scrolled .btn-login {
-            background-color: var(--secondary-color);
-        } */
 
         /* Hero Section */
         .hero-section {
@@ -1215,7 +1213,7 @@
             margin: 0;
         }
 
-        /* Feedback Section */
+        /* === REVIEW SECTION YANG DIRAPIHKAN === */
         .feedback-section {
             padding: 80px 40px;
             background: white;
@@ -1248,57 +1246,280 @@
 
         .review-wrapper {
             display: grid;
-            grid-template-columns: 1fr 0.9fr;
+            grid-template-columns: 1.2fr 0.8fr;
             gap: 40px;
+            align-items: start;
         }
 
-        /* LEFT REVIEW LIST */
-        .review-card {
+        /* KIRI: REVIEW LIST CONTAINER */
+        .review-list-container {
+            background: #fff;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+
+        /* FILTER SECTION */
+        .star-filter-section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .filter-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .star-filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .star-filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
             background: white;
-            border: 1px solid #e2e2e2;
+            border-radius: 25px;
+            color: #666;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .star-filter-btn:hover {
+            border-color: var(--secondary-color);
+            color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .star-filter-btn.active {
+            background: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+
+        .star-filter-btn i {
+            font-size: 12px;
+        }
+
+        /* REVIEW STATS */
+        .review-stats {
+            display: flex;
+            gap: 25px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--secondary-color);
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* REVIEWS LIST */
+        .reviews-list {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .reviews-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .reviews-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .reviews-list::-webkit-scrollbar-thumb {
+            background: var(--secondary-color);
+            border-radius: 3px;
+        }
+
+        .review-item {
+            background: #f9f9f9;
             border-radius: 12px;
             padding: 20px;
-            display: flex;
-            gap: 18px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--secondary-color);
             transition: all 0.3s ease;
         }
 
-        .review-card:hover {
+        .review-item:hover {
+            background: #fff;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            border-color: #FF581E;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .reviewer-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .review-avatar {
-            width: 60px;
-            height: 60px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             object-fit: cover;
-            flex-shrink: 0;
-            border: 2px solid #FF581E;
+            border: 2px solid var(--secondary-color);
         }
 
-        .review-name {
-            font-weight: bold;
-            font-size: 18px;
-            margin-top: 3px;
-            color: #123352;
+        .reviewer-details {
+            flex: 1;
         }
 
-        .review-text {
-            margin-top: 8px;
-            line-height: 1.5;
+        .reviewer-name {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 3px;
+        }
+
+        .review-date {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .review-stars {
+            color: #ffc107;
+            font-size: 16px;
+            letter-spacing: 1px;
+        }
+
+        .review-content {
             color: #444;
+            line-height: 1.6;
             font-size: 14px;
+            margin-top: 10px;
         }
 
-        .stars {
-            color: #ff9d00;
-            font-size: 20px;
-            letter-spacing: 3px;
+        /* NO REVIEWS */
+        .no-reviews {
+            text-align: center;
+            padding: 40px;
+            color: #666;
         }
 
-        /* RIGHT REVIEW FORM */
+        .no-reviews i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #ddd;
+        }
+
+        .no-reviews h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .no-reviews p {
+            font-size: 14px;
+            color: #888;
+        }
+
+        /* LOADING STATE */
+        .loading-reviews {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading-reviews i {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* PAGINATION */
+        .review-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .page-btn {
+            width: 35px;
+            height: 35px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            color: #666;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover {
+            border-color: var(--secondary-color);
+            color: var(--secondary-color);
+        }
+
+        .page-btn.active {
+            background: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+
+        .page-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-dots {
+            color: #999;
+            padding: 0 5px;
+        }
+
+        /* KANAN: REVIEW FORM */
+        .review-form-container {
+            background: #fff;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 100px;
+        }
+
         .form-title {
             font-size: 22px;
             font-weight: bold;
@@ -1306,41 +1527,87 @@
             color: var(--secondary-color);
         }
 
-        .star-input {
-            font-size: 32px;
-            color: #ff9d00;
-            margin-bottom: 20px;
-            letter-spacing: 3px;
-            cursor: pointer;
+        .form-subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 25px;
+            line-height: 1.5;
         }
 
-        .star-input i {
-            margin-right: 5px;
+        /* RATING INPUT */
+        .rating-input-container {
+            margin-bottom: 25px;
+        }
+
+        .rating-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .star-rating-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .star-rating-input i {
+            font-size: 32px;
+            color: #ddd;
+            cursor: pointer;
             transition: all 0.2s ease;
         }
 
-        .star-input i:hover {
+        .star-rating-input i:hover {
             transform: scale(1.1);
+        }
+
+        .star-rating-input i.active {
+            color: #ffc107;
+        }
+
+        .rating-text {
+            font-size: 14px;
+            color: #666;
+            margin-left: 10px;
+            font-weight: 500;
+        }
+
+        /* FORM GROUP */
+        .form-group {
+            margin-bottom: 25px;
         }
 
         .form-textarea {
             width: 100%;
-            height: 130px;
             padding: 15px;
-            border-radius: 12px;
-            border: 1px solid #d1d1d1;
-            font-size: 15px;
-            resize: none;
-            outline: none;
-            font-family: inherit;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 120px;
             transition: all 0.3s ease;
         }
 
         .form-textarea:focus {
-            border-color: #FF581E;
-            box-shadow: 0 0 0 2px rgba(255, 88, 30, 0.2);
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(255, 88, 30, 0.1);
         }
 
+        .char-count {
+            text-align: right;
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .char-count.limit {
+            color: #dc3545;
+        }
+
+        /* BUTTONS */
         .btn-primary {
             width: 100%;
             background: white;
@@ -1389,11 +1656,87 @@
             transform: translateY(-2px);
         }
 
+        /* FORM NOTICE */
+        .form-notice {
+            background: #f0f7ff;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: var(--primary-color);
+            border-left: 3px solid var(--secondary-color);
+        }
+
+        .form-notice i {
+            color: var(--secondary-color);
+            margin-right: 8px;
+        }
+
+        /* Style untuk hasil perhitungan yang lebih sederhana - SAMA DENGAN TOMBOL CEK HARGA + 3px */
+        .total-harga-container {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 14px 20px;
+            margin: 15px 0;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+            min-height: 51px; /* 48px (tombol) + 3px */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .total-harga-label {
+            font-size: 12px;
+            color: #ccc;
+            margin-bottom: 4px;
+            display: block;
+            line-height: 1.2;
+        }
+
+        .total-harga-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--secondary-color);
+            margin-bottom: 4px;
+            display: block;
+            line-height: 1.2;
+        }
+
+        .total-harga-desc {
+            font-size: 10px;
+            color: #aaa;
+            margin-top: 4px;
+            display: block;
+            line-height: 1.2;
+        }
+
+        .success-icon {
+            font-size: 24px;
+            color: #28a745;
+            margin-bottom: 6px;
+        }
+
         /* Responsive Styles */
         @media (max-width: 1024px) {
             .review-wrapper {
                 grid-template-columns: 1fr;
                 gap: 30px;
+            }
+
+            .review-form-container {
+                position: static;
+            }
+
+            .review-stats {
+                gap: 15px;
+            }
+
+            .stat-value {
+                font-size: 20px;
             }
 
             .feedback-container {
@@ -1415,7 +1758,7 @@
 
             .service-card {
                 width: 100%;
-                    max-width: 400px;
+                max-width: 400px;
             }
 
             .features-grid-6 {
@@ -1537,20 +1880,30 @@
                 font-size: 28px;
             }
 
-            .review-card {
-                padding: 15px;
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .review-avatar {
-                width: 50px;
-                height: 50px;
-                margin: 0 auto;
-            }
-
-            .stars {
+            .star-filter-buttons {
                 justify-content: center;
+            }
+
+            .review-stats {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+
+            .stat-item {
+                flex: 0 0 calc(50% - 15px);
+            }
+
+            .review-item {
+                padding: 15px;
+            }
+
+            .review-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .review-form-container {
+                padding: 20px;
             }
 
             .total-harga-container {
@@ -1634,7 +1987,7 @@
                 font-size: 20px;
             }
 
-            .star-input {
+            .star-rating-input i {
                 font-size: 28px;
             }
 
@@ -1642,6 +1995,21 @@
             .btn-close {
                 padding: 12px;
                 font-size: 16px;
+            }
+
+            .star-filter-btn {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+
+            .stat-item {
+                flex: 0 0 100%;
+            }
+
+            .reviewer-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
             }
 
             .nav-links a {
@@ -1812,10 +2180,11 @@
             }
         }
 
-        /* Profile icon + small name */
+        /* Profile icon + small name - PERBAIKAN */
         .profile-wrapper {
             position: relative;
             display: inline-block;
+            z-index: 100;
         }
 
         .profile-btn {
@@ -1828,6 +2197,8 @@
             border-radius: 999px;
             cursor: pointer;
             transition: all 0.3s ease;
+            z-index: 101;
+            position: relative;
         }
 
         .profile-btn:hover,
@@ -1870,9 +2241,9 @@
             white-space: nowrap;
         }
 
-        /* Dropdown Menu */
+        /* Dropdown Menu - PERBAIKAN */
         .dropdown-menu {
-            z-index: 3000;
+            z-index: 1000;
             display: none;
             position: absolute;
             top: calc(100% + 8px);
@@ -1881,45 +2252,55 @@
             background: white;
             border-radius: 10px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            padding: 10px;
+            padding: 10px 0;
             border: 1px solid #e0e0e0;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .dropdown-menu a {
             display: block;
-            padding: 8px 12px;
-            color: var(--secondary-color);
+            padding: 8px 16px;
+            color: var(--primary-color);
             text-decoration: none;
-            border-radius: 5px;
-            margin-bottom: 5px;
+            border-radius: 0;
+            margin: 0;
             transition: background-color 0.2s;
+            font-size: 14px;
         }
 
         .dropdown-menu a:hover {
             background-color: rgba(255, 88, 30, 0.1);
+            color: var(--secondary-color);
         }
 
         .dropdown-menu form {
             margin: 0;
+            border-top: 1px solid #eee;
+            padding-top: 5px;
         }
 
         .dropdown-menu button[type="submit"] {
             display: block;
             width: 100%;
             text-align: left;
-            padding: 8px 12px;
+            padding: 8px 16px;
             background: none;
             border: none;
-            color: var(--secondary-color);
+            color: var(--primary-color);
             cursor: pointer;
-            border-radius: 5px;
             font-family: inherit;
-            font-size: inherit;
+            font-size: 14px;
             transition: background-color 0.2s;
         }
 
         .dropdown-menu button[type="submit"]:hover {
             background-color: rgba(255, 88, 30, 0.1);
+            color: var(--secondary-color);
         }
 
         /* Tambahkan class untuk show */
@@ -1927,194 +2308,106 @@
             display: block;
         }
 
-        /* Style untuk hasil perhitungan yang lebih sederhana - SAMA DENGAN TOMBOL CEK HARGA + 3px */
-        .total-harga-container {
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            padding: 14px 20px;
-            margin: 15px 0;
-            border: 1px solid rgba(255,255,255,0.1);
-            text-align: center;
-            width: 100%;
-            box-sizing: border-box;
-            min-height: 51px; /* 48px (tombol) + 3px */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .total-harga-label {
-            font-size: 12px;
-            color: #ccc;
-            margin-bottom: 4px;
-            display: block;
-            line-height: 1.2;
-        }
-
-        .total-harga-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--secondary-color);
-            margin-bottom: 4px;
-            display: block;
-            line-height: 1.2;
-        }
-
-        .total-harga-desc {
-            font-size: 10px;
-            color: #aaa;
-            margin-top: 4px;
-            display: block;
-            line-height: 1.2;
-        }
-
-        .success-icon {
-            font-size: 24px;
-            color: #28a745;
-            margin-bottom: 6px;
-        }
-
-        /* === REVIEW SLIDER STYLES (DARI PROMPT TERBARU) === */
-        /* Review Slider Styles */
-        .review-slider-container {
+        /* Pastikan tombol login di navbar bisa diklik */
+        .nav-auth a.btn-login {
+            pointer-events: auto !important;
             position: relative;
-            width: 100%;
-            overflow: hidden;
-            border-radius: 12px;
-        }
-
-        .review-slider {
-            display: flex;
-            transition: transform 0.5s ease-in-out;
-            gap: 20px;
-        }
-
-        .review-slide {
-            flex: 0 0 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .slider-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(255, 255, 255, 0.9);
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
             z-index: 10;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            color: var(--secondary-color);
-            font-size: 18px;
         }
-
-        .slider-btn:hover {
-            background: var(--secondary-color);
-            color: white;
-            transform: translateY(-50%) scale(1.1);
-        }
-
-        .prev-btn {
-            left: 10px;
-        }
-
-        .next-btn {
-            right: 10px;
-        }
-
-        .slider-dots {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 20px;
-        }
-
-        .slider-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .slider-dot.active {
-            background: var(--secondary-color);
-            transform: scale(1.2);
-        }
-
-        /* Review Card in Slider */
-        .review-slide .review-card {
-            background: white;
-            border: 1px solid #e2e2e2;
-            border-radius: 12px;
-            padding: 20px;
-            display: flex;
-            gap: 18px;
-            margin-bottom: 0;
-            transition: all 0.3s ease;
-            min-height: 180px;
-        }
-
-        .review-slide .review-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            border-color: #FF581E;
-        }
-
-        /* Responsive for Slider */
-        @media (max-width: 1024px) {
-            .review-wrapper {
-                grid-template-columns: 1fr;
-                gap: 30px;
-            }
-
-            .review-slider-container {
-                margin-bottom: 20px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .slider-btn {
-                width: 35px;
-                height: 35px;
-                font-size: 16px;
-            }
-
-            .prev-btn {
-                left: 5px;
-            }
-
-            .next-btn {
-                right: 5px;
-            }
-
-            .review-slide .review-card {
-                flex-direction: column;
-                text-align: center;
-                padding: 15px;
-                min-height: 200px;
-            }
-
-            .review-slide .review-avatar {
-                margin: 0 auto;
-            }
-        }
-        /* === END REVIEW SLIDER STYLES === */
     </style>
     @php
         use App\Models\MProfilePerusahaan;
         $profile = MProfilePerusahaan::first();
+
+        // Data user dari session
+        $user = session()->get('user', null);
+
+        // Data review dan statistik (contoh data statis)
+        $totalReviews = 24;
+        $averageRating = 4.8;
+        $reviewStats = [
+            5 => 18,
+            4 => 4,
+            3 => 1,
+            2 => 1,
+            1 => 0
+        ];
+
+        // Data review dari database (contoh)
+        $reviews = collect([
+            [
+                'id' => 1,
+                'avatar' => 'https://randomuser.me/api/portraits/women/32.jpg',
+                'name' => 'Luna Ayna',
+                'rating' => 5,
+                'date' => '2024-03-15',
+                'content' => 'Servisnya bagus, drivernya sopan dan nyetirnya halus jadi bisa tidur selama perjalanan. Tracking lokasinya juga akurat. Bakal jadi langganan.'
+            ],
+            [
+                'id' => 2,
+                'avatar' => 'https://randomuser.me/api/portraits/men/54.jpg',
+                'name' => 'Rizky Pratama',
+                'rating' => 4,
+                'date' => '2024-03-14',
+                'content' => 'Pertama kali coba SmartShuttle dan langsung puas. Mobilnya bersih, AC dingin, kursinya empuk. Berangkat juga sesuai jadwal. Recommended banget!'
+            ],
+            [
+                'id' => 3,
+                'avatar' => 'https://randomuser.me/api/portraits/women/68.jpg',
+                'name' => 'Sari Dewi',
+                'rating' => 5,
+                'date' => '2024-03-13',
+                'content' => 'Harganya menurut saya cukup murah dibanding shuttle lain, tapi kualitas layanannya tetap bagus. Pemesanan lewat aplikasi juga gampang.'
+            ],
+            [
+                'id' => 4,
+                'avatar' => 'https://randomuser.me/api/portraits/men/45.jpg',
+                'name' => 'Budi Santoso',
+                'rating' => 5,
+                'date' => '2024-03-12',
+                'content' => 'Sangat puas dengan layanan SmartShuttle. Armada bersih, driver ramah, dan tepat waktu. Sudah beberapa kali menggunakan dan selalu puas.'
+            ],
+            [
+                'id' => 5,
+                'avatar' => 'https://randomuser.me/api/portraits/women/55.jpg',
+                'name' => 'Maya Indah',
+                'rating' => 4,
+                'date' => '2024-03-11',
+                'content' => 'Pelayanan bagus, harga terjangkau. Cuma kadang agak telat sedikit, tapi masih dalam batas wajar. Overall recommended!'
+            ],
+            [
+                'id' => 6,
+                'avatar' => 'https://randomuser.me/api/portraits/men/32.jpg',
+                'name' => 'Ahmad Fauzi',
+                'rating' => 5,
+                'date' => '2024-03-10',
+                'content' => 'SmartShuttle membantu sekali untuk perjalanan bisnis saya. Jadwal fleksibel, booking mudah, dan selalu on time. Terima kasih!'
+            ],
+            [
+                'id' => 7,
+                'avatar' => 'https://randomuser.me/api/portraits/women/44.jpg',
+                'name' => 'Siti Rahayu',
+                'rating' => 5,
+                'date' => '2024-03-09',
+                'content' => 'Pengiriman paket sangat cepat dan aman. Driver ramah dan profesional. Harga juga terjangkau. Sangat recommended!'
+            ],
+            [
+                'id' => 8,
+                'avatar' => 'https://randomuser.me/api/portraits/men/65.jpg',
+                'name' => 'Hendra Wijaya',
+                'rating' => 4,
+                'date' => '2024-03-08',
+                'content' => 'Layanan shuttle sangat nyaman, AC dingin, kursi empuk. Perjalanan Jakarta-Bandung jadi tidak melelahkan.'
+            ],
+            [
+                'id' => 9,
+                'avatar' => 'https://randomuser.me/api/portraits/women/29.jpg',
+                'name' => 'Dewi Lestari',
+                'rating' => 5,
+                'date' => '2024-03-07',
+                'content' => 'Sudah langganan 2 tahun, selalu puas. Tidak pernah telat dan armada selalu dalam kondisi bersih.'
+            ]
+        ]);
     @endphp
 </head>
 <body>
@@ -2135,10 +2428,10 @@
                 </div>
                 <!-- BAGIAN NAV-AUTH -->
                 <div class="nav-auth">
-                    @if(isset($user) && $user)
+                    @if($user && isset($user['id']) && $user['id'])
                         <div class="profile-wrapper">
                             <button id="profile-dropdown" class="profile-btn" type="button" aria-expanded="false">
-                                @if(!empty($user['avatar'] ?? null))
+                                @if(!empty($user['avatar']))
                                     <span class="profile-avatar">
                                         <img src="{{ $user['avatar'] }}" alt="avatar">
                                     </span>
@@ -2149,6 +2442,7 @@
                             </button>
                             <div id="dropdown-menu" class="dropdown-menu">
                                 <a href="{{ route('customer.dashboardprofile') }}">Profil</a>
+                                <a href="{{ route('customer.riwayat') }}">Riwayat</a>
                                 <form action="{{ route('customer.logout') }}" method="POST">
                                     @csrf
                                     <button type="submit">Logout</button>
@@ -2156,7 +2450,7 @@
                             </div>
                         </div>
                     @else
-                        <a href="{{ route('customer.login') }}" class="btn-login">Login</a>
+                        <a href="{{ route('customer.login') }}" class="btn-login" id="login-btn">Login</a>
                     @endif
                 </div>
             </div>
@@ -2551,51 +2845,109 @@
         </div>
     </div>
 
-    <!-- === FEEDBACK SECTION DENGAN SLIDER VERTIKAL === -->
+    <!-- === FEEDBACK SECTION YANG DIRAPIHKAN DENGAN FILTER === -->
     <section class="feedback-section">
         <div class="feedback-container">
-            <h2 class="feedback-title">Review</h2>
+            <h2 class="feedback-title">Review Pelanggan</h2>
             <div class="feedback-line"></div>
+
             <div class="review-wrapper">
-                <!-- LEFT REVIEW SLIDER -->
-                <div class="review-slider-container">
-                    <div class="review-slider" id="review-slider">
-                        <!-- Reviews akan diisi oleh JavaScript -->
+                <!-- KIRI: DAFTAR REVIEW DENGAN FILTER -->
+                <div class="review-list-container">
+                    <!-- FILTER BINTANG -->
+                    <div class="star-filter-section">
+                        <h4 class="filter-title">Filter berdasarkan Rating:</h4>
+                        <div class="star-filter-buttons">
+                            <button class="star-filter-btn active" data-rating="0">Semua</button>
+                            <button class="star-filter-btn" data-rating="5">
+                                <i class="fas fa-star"></i> 5 ({{ $reviewStats[5] ?? 0 }})
+                            </button>
+                            <button class="star-filter-btn" data-rating="4">
+                                <i class="fas fa-star"></i> 4 ({{ $reviewStats[4] ?? 0 }})
+                            </button>
+                            <button class="star-filter-btn" data-rating="3">
+                                <i class="fas fa-star"></i> 3 ({{ $reviewStats[3] ?? 0 }})
+                            </button>
+                            <button class="star-filter-btn" data-rating="2">
+                                <i class="fas fa-star"></i> 2 ({{ $reviewStats[2] ?? 0 }})
+                            </button>
+                            <button class="star-filter-btn" data-rating="1">
+                                <i class="fas fa-star"></i> 1 ({{ $reviewStats[1] ?? 0 }})
+                            </button>
+                        </div>
+
+                        <!-- INFO STATISTIK -->
+                        <div class="review-stats">
+                            <div class="stat-item">
+                                <span class="stat-value">{{ $totalReviews ?? 0 }}</span>
+                                <span class="stat-label">Total Review</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">{{ $averageRating ?? '5.0' }}</span>
+                                <span class="stat-label">Rating Rata-rata</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">{{ $totalReviews > 0 ? round(($reviewStats[5] / $totalReviews) * 100) : 0 }}%</span>
+                                <span class="stat-label">5 Bintang</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Navigation buttons -->
-                    <button class="slider-btn prev-btn" id="prev-btn">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <button class="slider-btn next-btn" id="next-btn">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
+                    <!-- DAFTAR REVIEW -->
+                    <div class="reviews-list" id="reviews-list">
+                        <!-- Review akan dimuat via JavaScript -->
+                        <div class="loading-reviews">
+                            <i class="fas fa-spinner fa-spin"></i> Memuat review...
+                        </div>
+                    </div>
 
-                    <!-- Dots indicator -->
-                    <div class="slider-dots" id="slider-dots">
-                        <!-- Dots akan diisi oleh JavaScript -->
+                    <!-- PAGINATION -->
+                    <div class="review-pagination" id="review-pagination">
+                        <!-- Pagination akan di-generate oleh JavaScript -->
                     </div>
                 </div>
 
-                <!-- RIGHT REVIEW FORM -->
-                <div>
-                    <div class="form-title">Berikan Review Anda</div>
-                    <div class="star-input" id="star-rating">
-                        <i class="fas fa-star" data-rating="1"></i>
-                        <i class="fas fa-star" data-rating="2"></i>
-                        <i class="fas fa-star" data-rating="3"></i>
-                        <i class="fas fa-star" data-rating="4"></i>
-                        <i class="fas fa-star" data-rating="5"></i>
+                <!-- KANAN: FORM REVIEW -->
+                <div class="review-form-container">
+                    <div class="form-title">Berikan Penilaian Anda</div>
+                    <p class="form-subtitle">Bagikan pengalaman Anda menggunakan layanan kami</p>
+
+                    <!-- RATING INPUT -->
+                    <div class="rating-input-container">
+                        <div class="rating-label">Rating:</div>
+                        <div class="star-rating-input" id="star-rating">
+                            <i class="fas fa-star" data-rating="1"></i>
+                            <i class="fas fa-star" data-rating="2"></i>
+                            <i class="fas fa-star" data-rating="3"></i>
+                            <i class="fas fa-star" data-rating="4"></i>
+                            <i class="fas fa-star" data-rating="5"></i>
+                            <span class="rating-text" id="rating-text">Pilih bintang</span>
+                        </div>
                     </div>
-                    <textarea class="form-textarea" id="review-text" placeholder="Tulis pendapat anda..."></textarea>
+
+                    <!-- INPUT REVIEW -->
+                    <div class="form-group">
+                        <textarea class="form-textarea" id="review-text"
+                                  placeholder="Ceritakan pengalaman Anda menggunakan layanan kami... (Minimal 10 karakter)"
+                                  rows="5"></textarea>
+                        <div class="char-count" id="char-count">0/500 karakter</div>
+                    </div>
+
+                    <!-- BUTTONS -->
                     <button class="btn-primary" id="submit-review">
                         <i class="fas fa-paper-plane"></i>
                         Kirim Review
                     </button>
-                    <button class="btn-close" id="close-review">
-                        <i class="fas fa-times"></i>
-                        Tutup
+                    <button class="btn-close" id="reset-review">
+                        <i class="fas fa-redo"></i>
+                        Reset Form
                     </button>
+
+                    <!-- NOTICE -->
+                    <div class="form-notice">
+                        <i class="fas fa-info-circle"></i>
+                        Review Anda akan membantu kami meningkatkan layanan
+                    </div>
                 </div>
             </div>
         </div>
@@ -2712,7 +3064,7 @@
             });
         }
 
-        /* ---------- PROFILE DROPDOWN ---------- */
+        /* ---------- PROFILE DROPDOWN - PERBAIKAN ---------- */
         const dropdownButton = document.getElementById('profile-dropdown');
         const dropdownMenu = document.getElementById('dropdown-menu');
 
@@ -2726,28 +3078,31 @@
                 dropdownButton.setAttribute('aria-expanded', isShown ? 'true' : 'false');
             });
 
+            // Hanya tutup dropdown jika klik di luar dropdown DAN tombol profile
             document.addEventListener('click', function (e) {
-                if (!dropdownButton.contains(e.target) && !dropdownMenu.contains(e.target)) {
-                    if (dropdownMenu.classList.contains('show')) {
+                if (dropdownMenu.classList.contains('show')) {
+                    // Jika klik di luar dropdown DAN di luar tombol profile
+                    if (!dropdownMenu.contains(e.target) && !dropdownButton.contains(e.target)) {
                         dropdownMenu.classList.remove('show');
                         dropdownButton.setAttribute('aria-expanded', 'false');
                     }
                 }
             });
 
-            dropdownMenu.addEventListener('click', function (e) {
-                const tag = e.target.tagName;
-                if (tag === 'A' || tag === 'BUTTON') {
-                    dropdownMenu.classList.remove('show');
-                    dropdownButton.setAttribute('aria-expanded', 'false');
-                }
-            });
-
+            // Tutup dropdown saat tombol Escape ditekan
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape' && dropdownMenu.classList.contains('show')) {
                     dropdownMenu.classList.remove('show');
                     dropdownButton.setAttribute('aria-expanded', 'false');
                     dropdownButton.focus();
+                }
+            });
+
+            // Tutup dropdown saat item dipilih
+            dropdownMenu.addEventListener('click', function (e) {
+                if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') {
+                    dropdownMenu.classList.remove('show');
+                    dropdownButton.setAttribute('aria-expanded', 'false');
                 }
             });
         }
@@ -3114,318 +3469,365 @@
             alert(errorMsg);
         }
 
-        /* === REVIEW SLIDER FUNCTIONALITY (DARI PROMPT TERBARU) === */
-        /* ---------- REVIEW SLIDER ---------- */
-        const reviewSlider = document.getElementById('review-slider');
-        const prevBtn = document.getElementById('prev-btn');
-        const nextBtn = document.getElementById('next-btn');
-        const sliderDots = document.getElementById('slider-dots');
+        /* === REVIEW MANAGEMENT SCRIPT === */
+        // Data review (gunakan data dari server jika ada)
+        let allReviews = @json($reviews ?? []);
 
-        // Data review - ganti dengan data dari database jika ada
-        @php
-            $reviews = isset($profile->reviews) ? json_decode($profile->reviews, true) : [];
-        @endphp
-
-        // Gunakan data dari PHP jika ada, jika tidak gunakan fallback
-        let reviewsData = @json($reviews ?? []);
-
-        // Jika tidak ada data, gunakan fallback
-        if (reviewsData.length === 0) {
-            reviewsData = [
+        // Jika tidak ada data dari server, gunakan fallback
+        if (!allReviews || allReviews.length === 0) {
+            allReviews = [
                 {
+                    id: 1,
                     avatar: 'https://randomuser.me/api/portraits/women/32.jpg',
                     name: 'Luna Ayna',
-                    stars: 5,
-                    text: 'Servisnya bagus, drivernya sopan dan nyetirnya halus jadi bisa tidur selama perjalanan. Tracking lokasinya juga akurat. Bakal jadi langganan.'
+                    rating: 5,
+                    date: '2024-03-15',
+                    content: 'Servisnya bagus, drivernya sopan dan nyetirnya halus jadi bisa tidur selama perjalanan. Tracking lokasinya juga akurat. Bakal jadi langganan.'
                 },
                 {
+                    id: 2,
                     avatar: 'https://randomuser.me/api/portraits/men/54.jpg',
                     name: 'Rizky Pratama',
-                    stars: 4,
-                    text: 'Pertama kali coba SmartShuttle dan langsung puas. Mobilnya bersih, AC dingin, kursinya empuk. Berangkat juga sesuai jadwal. Recommended banget!'
+                    rating: 4,
+                    date: '2024-03-14',
+                    content: 'Pertama kali coba SmartShuttle dan langsung puas. Mobilnya bersih, AC dingin, kursinya empuk. Berangkat juga sesuai jadwal. Recommended banget!'
                 },
                 {
+                    id: 3,
                     avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
                     name: 'Sari Dewi',
-                    stars: 5,
-                    text: 'Harganya menurut saya cukup murah dibanding shuttle lain, tapi kualitas layanannya tetap bagus. Pemesanan lewat aplikasi juga gampang.'
+                    rating: 5,
+                    date: '2024-03-13',
+                    content: 'Harganya menurut saya cukup murah dibanding shuttle lain, tapi kualitas layanannya tetap bagus. Pemesanan lewat aplikasi juga gampang.'
                 },
                 {
+                    id: 4,
                     avatar: 'https://randomuser.me/api/portraits/men/45.jpg',
                     name: 'Budi Santoso',
-                    stars: 5,
-                    text: 'Sangat puas dengan layanan SmartShuttle. Armada bersih, driver ramah, dan tepat waktu. Sudah beberapa kali menggunakan dan selalu puas.'
+                    rating: 5,
+                    date: '2024-03-12',
+                    content: 'Sangat puas dengan layanan SmartShuttle. Armada bersih, driver ramah, dan tepat waktu. Sudah beberapa kali menggunakan dan selalu puas.'
                 },
                 {
+                    id: 5,
                     avatar: 'https://randomuser.me/api/portraits/women/55.jpg',
                     name: 'Maya Indah',
-                    stars: 4,
-                    text: 'Pelayanan bagus, harga terjangkau. Cuma kadang agak telat sedikit, tapi masih dalam batas wajar. Overall recommended!'
+                    rating: 4,
+                    date: '2024-03-11',
+                    content: 'Pelayanan bagus, harga terjangkau. Cuma kadang agak telat sedikit, tapi masih dalam batas wajar. Overall recommended!'
                 },
                 {
+                    id: 6,
                     avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
                     name: 'Ahmad Fauzi',
-                    stars: 5,
-                    text: 'SmartShuttle membantu sekali untuk perjalanan bisnis saya. Jadwal fleksibel, booking mudah, dan selalu on time. Terima kasih!'
+                    rating: 5,
+                    date: '2024-03-10',
+                    content: 'SmartShuttle membantu sekali untuk perjalanan bisnis saya. Jadwal fleksibel, booking mudah, dan selalu on time. Terima kasih!'
                 },
                 {
+                    id: 7,
                     avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
                     name: 'Siti Rahayu',
-                    stars: 5,
-                    text: 'Pengiriman paket sangat cepat dan aman. Driver ramah dan profesional. Harga juga terjangkau. Sangat recommended!'
+                    rating: 5,
+                    date: '2024-03-09',
+                    content: 'Pengiriman paket sangat cepat dan aman. Driver ramah dan profesional. Harga juga terjangkau. Sangat recommended!'
                 },
                 {
+                    id: 8,
                     avatar: 'https://randomuser.me/api/portraits/men/65.jpg',
                     name: 'Hendra Wijaya',
-                    stars: 4,
-                    text: 'Layanan shuttle sangat nyaman, AC dingin, kursi empuk. Perjalanan Jakarta-Bandung jadi tidak melelahkan.'
+                    rating: 4,
+                    date: '2024-03-08',
+                    content: 'Layanan shuttle sangat nyaman, AC dingin, kursi empuk. Perjalanan Jakarta-Bandung jadi tidak melelahkan.'
                 },
                 {
+                    id: 9,
                     avatar: 'https://randomuser.me/api/portraits/women/29.jpg',
                     name: 'Dewi Lestari',
-                    stars: 5,
-                    text: 'Sudah langganan 2 tahun, selalu puas. Tidak pernah telat dan armada selalu dalam kondisi bersih.'
+                    rating: 5,
+                    date: '2024-03-07',
+                    content: 'Sudah langganan 2 tahun, selalu puas. Tidak pernah telat dan armada selalu dalam kondisi bersih.'
                 }
             ];
         }
 
-        let currentSlide = 0;
-        const reviewsPerSlide = 3;
-        const totalSlides = Math.ceil(reviewsData.length / reviewsPerSlide);
-
-        // Initialize slider
-        function initSlider() {
-            reviewSlider.innerHTML = '';
-            sliderDots.innerHTML = '';
-
-            // Create slides
-            for (let i = 0; i < totalSlides; i++) {
-                const slide = document.createElement('div');
-                slide.className = 'review-slide';
-
-                // Get reviews for this slide
-                const startIdx = i * reviewsPerSlide;
-                const endIdx = startIdx + reviewsPerSlide;
-                const slideReviews = reviewsData.slice(startIdx, endIdx);
-
-                // Add reviews to slide
-                slideReviews.forEach(review => {
-                    const reviewCard = document.createElement('div');
-                    reviewCard.className = 'review-card';
-
-                    // Create stars HTML
-                    let starsHtml = '';
-                    for (let j = 0; j < 5; j++) {
-                        starsHtml += j < review.stars ? '★' : '☆';
-                    }
-
-                    reviewCard.innerHTML = `
-                        <img src="${review.avatar}" class="review-avatar" alt="${review.name}"
-                             onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(review.name)}&background=FF581E&color=fff'">
-                        <div>
-                            <div class="stars">${starsHtml}</div>
-                            <div class="review-name">${review.name}</div>
-                            <div class="review-text">${review.text}</div>
-                        </div>
-                    `;
-
-                    slide.appendChild(reviewCard);
-                });
-
-                reviewSlider.appendChild(slide);
-
-                // Create dot
-                const dot = document.createElement('button');
-                dot.className = 'slider-dot';
-                if (i === 0) dot.classList.add('active');
-                dot.addEventListener('click', () => goToSlide(i));
-                sliderDots.appendChild(dot);
-            }
-
-            updateSlider();
-        }
-
-        // Update slider position
-        function updateSlider() {
-            const slideWidth = 100; // 100% per slide
-            reviewSlider.style.transform = `translateX(-${currentSlide * slideWidth}%)`;
-
-            // Update active dot
-            document.querySelectorAll('.slider-dot').forEach((dot, index) => {
-                dot.classList.toggle('active', index === currentSlide);
-            });
-
-            // Update button states
-            if (prevBtn) prevBtn.disabled = currentSlide === 0;
-            if (nextBtn) nextBtn.disabled = currentSlide === totalSlides - 1;
-        }
-
-        // Navigate to specific slide
-        function goToSlide(slideIndex) {
-            currentSlide = slideIndex;
-            updateSlider();
-        }
-
-        // Next slide
-        function nextSlide() {
-            if (currentSlide < totalSlides - 1) {
-                currentSlide++;
-                updateSlider();
-            }
-        }
-
-        // Previous slide
-        function prevSlide() {
-            if (currentSlide > 0) {
-                currentSlide--;
-                updateSlider();
-            }
-        }
-
-        // Auto slide (optional)
-        let autoSlideInterval;
-        function startAutoSlide() {
-            autoSlideInterval = setInterval(() => {
-                nextSlide();
-            }, 5000); // Change slide every 5 seconds
-        }
-
-        function stopAutoSlide() {
-            clearInterval(autoSlideInterval);
-        }
-
-        // Event listeners
-        if (prevBtn) prevBtn.addEventListener('click', prevSlide);
-        if (nextBtn) nextBtn.addEventListener('click', nextSlide);
-
-        // Pause auto slide on hover
-        if (reviewSlider) {
-            reviewSlider.addEventListener('mouseenter', stopAutoSlide);
-            reviewSlider.addEventListener('mouseleave', startAutoSlide);
-        }
-
-        // Initialize
-        initSlider();
-
-        // Start auto slide if more than one slide
-        if (totalSlides > 1) {
-            startAutoSlide();
-        }
-
-        /* ---------- REVIEW FORM SUBMISSION ---------- */
-        const submitReviewBtn = document.getElementById('submit-review');
-        const starRating = document.getElementById('star-rating');
-        const reviewText = document.getElementById('review-text');
-        const closeReviewBtn = document.getElementById('close-review');
-
+        // State variables
+        let currentFilter = 0; // 0 = semua
+        let currentPage = 1;
+        const reviewsPerPage = 4;
         let selectedRating = 0;
 
-        // Star rating selection
-        if (starRating) {
-            const stars = starRating.querySelectorAll('i');
-            stars.forEach(star => {
-                star.addEventListener('click', function() {
-                    const rating = parseInt(this.getAttribute('data-rating'));
-                    selectedRating = rating;
+        // DOM Elements
+        const reviewsList = document.getElementById('reviews-list');
+        const reviewPagination = document.getElementById('review-pagination');
+        const filterButtons = document.querySelectorAll('.star-filter-btn');
+        const starRatingInput = document.getElementById('star-rating');
+        const ratingText = document.getElementById('rating-text');
+        const reviewText = document.getElementById('review-text');
+        const charCount = document.getElementById('char-count');
+        const submitReviewBtn = document.getElementById('submit-review');
+        const resetReviewBtn = document.getElementById('reset-review');
 
-                    // Update star display
-                    stars.forEach((s, index) => {
-                        if (index < rating) {
-                            s.classList.add('fas');
-                            s.classList.remove('far');
-                            s.style.color = '#ff9d00';
-                        } else {
-                            s.classList.add('far');
-                            s.classList.remove('fas');
-                            s.style.color = '#ccc';
-                        }
-                    });
-                });
+        // Initialize
+        initReviewSection();
 
-                // Hover effect
-                star.addEventListener('mouseover', function() {
-                    const rating = parseInt(this.getAttribute('data-rating'));
-                    stars.forEach((s, index) => {
-                        if (index < rating) {
-                            s.style.transform = 'scale(1.1)';
-                            s.style.color = '#ff9d00';
-                        }
-                    });
-                });
+        function initReviewSection() {
+            // Setup filter buttons
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Update active state
+                    filterButtons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
 
-                star.addEventListener('mouseout', function() {
-                    stars.forEach((s, index) => {
-                        s.style.transform = 'scale(1)';
-                        // Reset to selected rating
-                        if (selectedRating > 0 && index >= selectedRating) {
-                            s.style.color = '#ccc';
-                        }
-                    });
+                    // Update filter
+                    currentFilter = parseInt(this.dataset.rating);
+                    currentPage = 1;
+
+                    // Reload reviews
+                    loadReviews();
                 });
             });
-        }
 
-        // Submit review
-        if (submitReviewBtn) {
-            submitReviewBtn.addEventListener('click', function() {
-                if (selectedRating === 0) {
-                    alert('Silakan berikan rating!');
-                    return;
-                }
-
-                if (!reviewText.value.trim()) {
-                    alert('Silakan tulis review Anda!');
-                    reviewText.focus();
-                    return;
-                }
-
-                // Simulate submission (replace with actual AJAX call)
-                const newReview = {
-                    avatar: 'https://ui-avatars.com/api/?name={{ $user["name"] ?? "Guest" }}&background=FF581E&color=fff',
-                    name: '{{ $user["name"] ?? "Guest" }}',
-                    stars: selectedRating,
-                    text: reviewText.value
-                };
-
-                // Add to reviewsData (in real app, send to server)
-                reviewsData.unshift(newReview);
-
-                // Reset form
-                reviewText.value = '';
-                selectedRating = 0;
-
-                // Reset stars
-                const stars = starRating.querySelectorAll('i');
+            // Setup star rating input
+            if (starRatingInput) {
+                const stars = starRatingInput.querySelectorAll('i');
                 stars.forEach(star => {
-                    star.classList.add('fas');
-                    star.classList.remove('far');
-                    star.style.color = '#ff9d00';
-                    star.style.transform = 'scale(1)';
+                    star.addEventListener('click', function() {
+                        const rating = parseInt(this.dataset.rating);
+                        selectedRating = rating;
+
+                        // Update star display
+                        stars.forEach((s, index) => {
+                            if (index < rating) {
+                                s.classList.add('active');
+                            } else {
+                                s.classList.remove('active');
+                            }
+                        });
+
+                        // Update rating text
+                        const ratingTexts = [
+                            'Pilih bintang',
+                            'Sangat Buruk',
+                            'Buruk',
+                            'Cukup',
+                            'Baik',
+                            'Sangat Baik'
+                        ];
+                        ratingText.textContent = ratingTexts[rating];
+                    });
                 });
+            }
 
-                // Reinitialize slider with new data
-                currentSlide = 0;
-                initSlider();
+            // Setup character counter
+            if (reviewText) {
+                reviewText.addEventListener('input', function() {
+                    const length = this.value.length;
+                    charCount.textContent = `${length}/500 karakter`;
 
-                alert('Terima kasih atas review Anda! Review sedang diproses.');
-            });
+                    if (length > 500) {
+                        charCount.classList.add('limit');
+                        this.value = this.value.substring(0, 500);
+                    } else {
+                        charCount.classList.remove('limit');
+                    }
+                });
+            }
+
+            // Setup submit button
+            if (submitReviewBtn) {
+                submitReviewBtn.addEventListener('click', submitReview);
+            }
+
+            // Setup reset button
+            if (resetReviewBtn) {
+                resetReviewBtn.addEventListener('click', resetReviewForm);
+            }
+
+            // Load initial reviews
+            loadReviews();
         }
 
-        // Close review form
-        if (closeReviewBtn) {
-            closeReviewBtn.addEventListener('click', function() {
+        function loadReviews() {
+            // Filter reviews
+            let filteredReviews = allReviews;
+            if (currentFilter > 0) {
+                filteredReviews = allReviews.filter(review => review.rating === currentFilter);
+            }
+
+            // Calculate pagination
+            const totalPages = Math.ceil(filteredReviews.length / reviewsPerPage);
+            const startIndex = (currentPage - 1) * reviewsPerPage;
+            const endIndex = startIndex + reviewsPerPage;
+            const pageReviews = filteredReviews.slice(startIndex, endIndex);
+
+            // Render reviews
+            renderReviews(pageReviews);
+
+            // Render pagination
+            renderPagination(totalPages);
+        }
+
+        function renderReviews(reviews) {
+            if (!reviewsList) return;
+
+            if (reviews.length === 0) {
+                reviewsList.innerHTML = `
+                    <div class="no-reviews">
+                        <i class="fas fa-comment-slash"></i>
+                        <h3>Tidak ada review</h3>
+                        <p>Belum ada review untuk rating yang dipilih.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            reviewsList.innerHTML = reviews.map(review => `
+                <div class="review-item">
+                    <div class="review-header">
+                        <div class="reviewer-info">
+                            <img src="${review.avatar}"
+                                 class="review-avatar"
+                                 alt="${review.name}"
+                                 onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(review.name)}&background=FF581E&color=fff'">
+                            <div class="reviewer-details">
+                                <div class="reviewer-name">${review.name}</div>
+                                <div class="review-date">${formatDate(review.date)}</div>
+                            </div>
+                        </div>
+                        <div class="review-stars">
+                            ${getStarIcons(review.rating)}
+                        </div>
+                    </div>
+                    <div class="review-content">
+                        ${review.content}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderPagination(totalPages) {
+            if (!reviewPagination) return;
+
+            if (totalPages <= 1) {
+                reviewPagination.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+
+            // Previous button
+            paginationHTML += `
+                <button class="page-btn ${currentPage === 1 ? 'disabled' : ''}"
+                        onclick="goToPage(${currentPage - 1})"
+                        ${currentPage === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            `;
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    paginationHTML += `
+                        <button class="page-btn ${i === currentPage ? 'active' : ''}"
+                                onclick="goToPage(${i})">
+                            ${i}
+                        </button>
+                    `;
+                } else if (i === 2 || i === totalPages - 1) {
+                    paginationHTML += `<span class="page-dots">...</span>`;
+                }
+            }
+
+            // Next button
+            paginationHTML += `
+                <button class="page-btn ${currentPage === totalPages ? 'disabled' : ''}"
+                        onclick="goToPage(${currentPage + 1})"
+                        ${currentPage === totalPages ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            `;
+
+            reviewPagination.innerHTML = paginationHTML;
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            loadReviews();
+            reviewsList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function submitReview() {
+            // Validation
+            if (selectedRating === 0) {
+                alert('Silakan berikan rating terlebih dahulu!');
+                return;
+            }
+
+            if (!reviewText.value.trim() || reviewText.value.trim().length < 10) {
+                alert('Silakan tulis review Anda minimal 10 karakter!');
+                reviewText.focus();
+                return;
+            }
+
+            // Simulate API call
+            const newReview = {
+                id: allReviews.length + 1,
+                avatar: 'https://ui-avatars.com/api/?name={{ $user["name"] ?? "Guest" }}&background=FF581E&color=fff',
+                name: '{{ $user["name"] ?? "Guest" }}',
+                rating: selectedRating,
+                date: new Date().toISOString().split('T')[0],
+                content: reviewText.value.trim()
+            };
+
+            // Add to reviews (in real app, this would be an AJAX call)
+            allReviews.unshift(newReview);
+
+            // Reset form
+            resetReviewForm();
+
+            // Reload reviews
+            currentPage = 1;
+            loadReviews();
+
+            // Show success message
+            alert('Terima kasih atas review Anda! Review telah berhasil dikirim.');
+        }
+
+        function resetReviewForm() {
+            // Reset stars
+            if (starRatingInput) {
+                const stars = starRatingInput.querySelectorAll('i');
+                stars.forEach(star => star.classList.remove('active'));
+            }
+
+            // Reset rating
+            selectedRating = 0;
+            ratingText.textContent = 'Pilih bintang';
+
+            // Reset textarea
+            if (reviewText) {
                 reviewText.value = '';
-                selectedRating = 0;
-
-                // Reset stars
-                const stars = starRating.querySelectorAll('i');
-                stars.forEach(star => {
-                    star.classList.add('fas');
-                    star.classList.remove('far');
-                    star.style.color = '#ff9d00';
-                });
-            });
+                charCount.textContent = '0/500 karakter';
+                charCount.classList.remove('limit');
+            }
         }
+
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString('id-ID', options);
+        }
+
+        function getStarIcons(rating) {
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                stars += i <= rating ? '★' : '☆';
+            }
+            return stars;
+        }
+
+        // Make goToPage available globally
+        window.goToPage = goToPage;
     });
 
     /* ---------- CEK HARGA PAKET AJAX ---------- */

@@ -684,7 +684,7 @@
                     <!-- LEFT BROWN CARD -->
                     <div class="membership-badge">
                         <i class="fas fa-crown membership-icon"></i>
-                        <span>BRONZE<br>MEMBER</span>
+                        <span>{{ $user->membership_level ?? 'Bronze' }}<br>MEMBER</span>
                     </div>
 
                     <!-- RIGHT INFO -->
@@ -693,14 +693,14 @@
                         <div class="points-container">
                             <div class="point-card">
                                 <p class="point-value">
-                                    {{ $user->member_point ?? 300 }}
+                                    {{ $user->member_point ?? 0 }}
                                 </p>
                                 <p class="point-label">Member Points</p>
                             </div>
 
                             <div class="point-card">
                                 <p class="point-value">
-                                    {{ $user->loyalty_point ?? 150 }}
+                                    {{ $user->loyalty_point ?? 0 }}
                                 </p>
                                 <p class="point-label">Loyalty Points</p>
                             </div>

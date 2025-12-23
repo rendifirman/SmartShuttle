@@ -75,6 +75,11 @@ class PembayaranController extends Controller
         $rutePertama = $pemesanan->jadwal->rutes->first();
         $ruteTerakhir = $pemesanan->jadwal->rutes->last();
 
+        // Hitung sisa waktu dalam detik
+        $waktu_kadaluarsa = Carbon::parse($pembayaran->waktu_kadaluarsa);
+        $sekarang = Carbon::now();
+        $sisa_waktu_detik = max(0, $sekarang->diffInSeconds($waktu_kadaluarsa, false));
+
         $data = [
             'pemesanan' => $pemesanan,
             'pembayaran' => $pembayaran,
@@ -88,7 +93,8 @@ class PembayaranController extends Controller
             'customer_email' => $pemesanan->email_pemesan ?? 'Email',
             'total' => $pemesanan->total_bayar,
             'penumpang' => $pemesanan->detailPenumpang,
-            'shuttle' => $pemesanan->jadwal->shuttle
+            'shuttle' => $pemesanan->jadwal->shuttle,
+            'sisa_waktu_detik' => $sisa_waktu_detik, // Data sisa waktu dalam detik
         ];
 
         return view('customer.pembayaran', $data);
@@ -105,7 +111,7 @@ class PembayaranController extends Controller
             'jumlah' => $pemesanan->total_bayar,
             'metode' => 'qris', // Default metode
             'status' => 'menunggu',
-            'waktu_kadaluarsa' => now()->addMinutes(30),
+            'waktu_kadaluarsa' => now()->addMinutes(20),
         ]);
 
         // Create Paylabs payment request for default method
@@ -148,7 +154,7 @@ class PembayaranController extends Controller
             // Update metode pembayaran
             $pembayaran->update([
                 'metode' => $request->metode,
-                'waktu_kadaluarsa' => now()->addMinutes(30),
+                'waktu_kadaluarsa' => now()->addMinutes(20),
             ]);
 
             // Get payment method
@@ -338,22 +344,22 @@ class PembayaranController extends Controller
             $pembayaran = Pembayaran::where('kode_pembayaran', $kodePembayaran)
                 ->firstOrFail();
 
-            // Jika menggunakan Paylabs, cek status terbaru
-            if ($pembayaran->paylabs_transaction_id) {
-                $status = $this->paylabsSimulator->checkStatus($pembayaran->paylabs_transaction_id);
-            } else {
-                $status = ['status' => $pembayaran->status];
-            }
+            // Hitung sisa waktu dengan benar
+            $sekarang = Carbon::now();
+            $kadaluarsa = Carbon::parse($pembayaran->waktu_kadaluarsa);
+            $remaining_seconds = max(0, $sekarang->diffInSeconds($kadaluarsa, false));
 
             return response()->json([
                 'success' => true,
-                'status' => $pembayaran->status,
-                'paylabs_status' => $pembayaran->paylabs_status,
-                'status_text' => $pembayaran->status_text,
-                'waktu_kadaluarsa' => $pembayaran->waktu_kadaluarsa,
-                'is_kadaluarsa' => $pembayaran->waktu_kadaluarsa < now(),
-                'remaining_time' => max(0, now()->diffInSeconds($pembayaran->waktu_kadaluarsa)),
-                'is_paid' => $pembayaran->status === 'berhasil'
+                'data' => [
+                    'status' => $pembayaran->status,
+                    'paylabs_status' => $pembayaran->paylabs_status,
+                    'status_text' => $pembayaran->status_text,
+                    'waktu_kadaluarsa' => $pembayaran->waktu_kadaluarsa,
+                    'is_kadaluarsa' => $remaining_seconds <= 0,
+                    'remaining_time' => $remaining_seconds,
+                    'is_paid' => $pembayaran->status === 'berhasil'
+                ]
             ]);
 
         } catch (\Exception $e) {

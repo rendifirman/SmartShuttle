@@ -325,6 +325,13 @@
             box-shadow: 0 6px 20px rgba(255, 107, 44, 0.4);
         }
 
+        .btn-pay:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         .status-indicator {
             display: inline-flex;
             align-items: center;
@@ -384,6 +391,61 @@
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        .error-message {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #DC2626;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .payment-details {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+            display: none;
+        }
+
+        .payment-details.show {
+            display: block;
+        }
+
+        .qris-code {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .qris-code img {
+            max-width: 200px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 10px;
+            background: white;
+        }
+
+        .va-number {
+            background: white;
+            border: 2px dashed #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: bold;
+            color: #00274D;
+            margin: 15px 0;
         }
 
         /* Responsive */
@@ -508,7 +570,7 @@
 
                 <div class="info-row">
                     <div class="info-label">Kode Member</div>
-                    <div class="badge-code">SS-MBS-{{ date('dmy') }}</div>
+                    <div class="badge-code">SS-MBS-{{ date('dmy') }}-{{ strtoupper(substr(md5(Auth::id()), 0, 4)) }}</div>
                 </div>
 
                 <div class="info-row">
@@ -551,6 +613,7 @@
 
                 <form action="{{ route('customer.membership.payment.submit') }}" method="POST" id="paymentForm">
                     @csrf
+                    <input type="hidden" name="transaction_id" value="{{ $payment->transaction_id ?? '' }}">
 
                     <label class="payment-option">
                         <input type="radio" name="payment_method" value="qris" checked>
@@ -562,10 +625,63 @@
                         <span>BCA Virtual Account</span>
                     </label>
 
+                    <label class="payment-option">
+                        <input type="radio" name="payment_method" value="manual_transfer">
+                        <span>Manual Transfer Bank</span>
+                    </label>
+
+                    <!-- QRIS Details (hidden by default) -->
+                    <div class="payment-details" id="qrisDetails">
+                        <div class="qris-code">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode('SS-MEMBERSHIP-' . ($payment->transaction_id ?? 'TEST') . '-Rp20000') }}" alt="QR Code">
+                            <p style="margin-top: 10px; font-size: 14px;">Scan QR Code di atas untuk pembayaran</p>
+                        </div>
+                        <p style="text-align: center; font-size: 13px; color: #666;">
+                            QR Code akan kadaluarsa dalam 24 jam
+                        </p>
+                    </div>
+
+                    <!-- BCA VA Details (hidden by default) -->
+                    <div class="payment-details" id="bcaDetails">
+                        <p style="margin-bottom: 10px;">Silakan transfer ke Virtual Account berikut:</p>
+                        <div class="va-number">
+                            1234567890123456
+                        </div>
+                        <p style="font-size: 13px; color: #666;">
+                            <strong>Bank:</strong> BCA<br>
+                            <strong>Atas Nama:</strong> SMART SHUTTLE<br>
+                            <strong>Jumlah:</strong> Rp 20.000<br>
+                            <strong>Masa berlaku:</strong> 24 jam
+                        </p>
+                    </div>
+
+                    <!-- Manual Transfer Details (hidden by default) -->
+                    <div class="payment-details" id="manualTransferDetails">
+                        <p style="margin-bottom: 10px;">Silakan transfer ke salah satu rekening berikut:</p>
+                        <div style="background: white; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                            <p><strong>Bank BCA</strong><br>
+                            123-456-7890<br>
+                            PT. Smart Shuttle Indonesia</p>
+                        </div>
+                        <div style="background: white; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                            <p><strong>Bank Mandiri</strong><br>
+                            098-765-4321<br>
+                            PT. Smart Shuttle Indonesia</p>
+                        </div>
+                        <p style="font-size: 13px; color: #666;">
+                            Setelah transfer, silakan konfirmasi dengan mengirim bukti transfer ke WhatsApp: 0858-1122-4321
+                        </p>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div class="error-message" id="errorMessage">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span id="errorText"></span>
+                    </div>
+
+                    <!-- Success Message -->
                     <div class="success-message" id="successMessage">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
-                        </svg>
+                        <i class="fas fa-check-circle"></i>
                         Pembayaran berhasil! Membership Anda akan segera aktif.
                     </div>
 
@@ -576,7 +692,7 @@
 
                 <div style="text-align: center; margin-top: 12px; font-size: 12px; color: #9ca3af;">
                     Dengan melanjutkan, Anda menyetujui
-                    <a href="#" style="color: #FF6B2C; text-decoration: none;">Syarat dan Ketentuan</a>
+                    <a href="{{ route('customer.syarat.ketentuan.membership') }}" target="_blank" style="color: #FF6B2C; text-decoration: none;">Syarat dan Ketentuan Membership</a>
                 </div>
             </div>
         </div>
@@ -588,45 +704,110 @@
         // Payment form submission
         const paymentForm = document.getElementById('paymentForm');
         const payButton = document.getElementById('payButton');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
         const successMessage = document.getElementById('successMessage');
+
+        // Payment method details sections
+        const qrisDetails = document.getElementById('qrisDetails');
+        const bcaDetails = document.getElementById('bcaDetails');
+        const manualTransferDetails = document.getElementById('manualTransferDetails');
+
+        // Payment method selection
+        const paymentOptions = document.querySelectorAll('input[name="payment_method"]');
+
+        // Show/hide payment details based on selected method
+        function showPaymentDetails(method) {
+            // Hide all details first
+            qrisDetails.classList.remove('show');
+            bcaDetails.classList.remove('show');
+            manualTransferDetails.classList.remove('show');
+
+            // Show selected method details
+            if (method === 'qris') {
+                qrisDetails.classList.add('show');
+            } else if (method === 'bca') {
+                bcaDetails.classList.add('show');
+            } else if (method === 'manual_transfer') {
+                manualTransferDetails.classList.add('show');
+            }
+        }
+
+        // Initialize with selected method
+        const initialMethod = document.querySelector('input[name="payment_method"]:checked');
+        if (initialMethod) {
+            showPaymentDetails(initialMethod.value);
+        }
+
+        // Add change listeners to payment options
+        paymentOptions.forEach(option => {
+            option.addEventListener('change', function() {
+                showPaymentDetails(this.value);
+            });
+        });
 
         if (paymentForm) {
             paymentForm.addEventListener('submit', function(e) {
-                e.preventDefault();
+                // Hide previous messages
+                errorMessage.classList.remove('show');
+                successMessage.classList.remove('show');
+
+                // Validate payment method
+                const selectedMethod = document.querySelector('input[name="payment_method"]:checked');
+                if (!selectedMethod) {
+                    e.preventDefault();
+                    errorText.textContent = 'Pilih metode pembayaran terlebih dahulu!';
+                    errorMessage.classList.add('show');
+                    return;
+                }
+
+                // Validate transaction ID
+                const transactionId = document.querySelector('input[name="transaction_id"]');
+                if (!transactionId || !transactionId.value) {
+                    e.preventDefault();
+                    errorText.textContent = 'Data transaksi tidak valid! Silakan refresh halaman.';
+                    errorMessage.classList.add('show');
+                    return;
+                }
 
                 // Show loading state
                 const buttonText = document.getElementById('buttonText');
                 const originalText = buttonText.innerHTML;
-                buttonText.innerHTML = '<span class="loading"></span> Memproses...';
+                buttonText.innerHTML = '<span class="loading"></span> Memproses Pembayaran...';
                 payButton.disabled = true;
 
-                // Simulate API call delay
+                // Show success message briefly
+                successMessage.classList.add('show');
+
+                // Form will submit normally - allow it to proceed
+                console.log('Form sedang dikirim dengan metode:', selectedMethod.value);
+
+                // In case form takes too long, re-enable button after 10 seconds
                 setTimeout(() => {
-                    // In real implementation, submit form
-                    // For demo, show success message
-                    successMessage.classList.add('show');
-
-                    // Update status
-                    const statusElement = document.querySelector('.status-indicator');
-                    if (statusElement) {
-                        statusElement.textContent = 'Processing';
+                    if (payButton.disabled) {
+                        buttonText.innerHTML = originalText;
+                        payButton.disabled = false;
+                        successMessage.classList.remove('show');
+                        errorText.textContent = 'Proses pembayaran timeout. Silakan coba lagi.';
+                        errorMessage.classList.add('show');
                     }
-
-                    // Submit form after 2 seconds
-                    setTimeout(() => {
-                        paymentForm.submit();
-                    }, 2000);
-                }, 1500);
+                }, 10000);
             });
         }
 
-        // Payment method selection
-        const paymentOptions = document.querySelectorAll('input[name="payment_method"]');
-        paymentOptions.forEach(option => {
-            option.addEventListener('change', function() {
-                console.log('Selected payment method:', this.value);
-            });
-        });
+        // Check if there are any validation errors from server
+        @if($errors->any())
+            errorText.textContent = '{{ $errors->first() }}';
+            errorMessage.classList.add('show');
+        @endif
+
+        // Check if there's a success message from server
+        @if(session('success'))
+            successMessage.classList.add('show');
+            setTimeout(() => {
+                successMessage.classList.remove('show');
+            }, 5000);
+        @endif
     });
 </script>
 </body>

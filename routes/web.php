@@ -79,6 +79,7 @@ Route::middleware(['auth.customer'])->group(function () {
 
     // ★★★ PROFIL & DASHBOARD ★★★
     Route::get('/customer/dashboardprofile', [CustomerController::class, 'profil'])->name('customer.dashboardprofile');
+    Route::get('/customer/profil', [CustomerController::class, 'profil'])->name('customer.profil');
     Route::get('/customer/profilcust', [CustomerController::class, 'profilDetail'])->name('customer.profilcust');
     Route::put('/customer/profilcust/update', [CustomerController::class, 'updateProfile'])->name('customer.profilcust.update');
 
@@ -179,9 +180,10 @@ Route::get('/debug/e-ticket/{kode_booking}', function($kode_booking) {
     return redirect()->route('customer.e_ticket', ['kode_booking' => $kode_booking]);
 })->name('debug.e_ticket');
 
+// Route untuk review
+Route::post('/customer/review', [CustomerController::class, 'storeReview'])->name('customer.review.store');
+
 // ★★★ ROUTE FALLBACK ★★★
 Route::fallback(function () {
     return redirect()->route('customer.beranda');
 });
-// Route untuk review
-Route::post('/customer/review', [CustomerController::class, 'storeReview'])->name('customer.review.store');
