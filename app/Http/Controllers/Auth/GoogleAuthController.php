@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Auth/GoogleAuthController.php
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -61,16 +60,16 @@ class GoogleAuthController extends Controller
                             'name' => $googleUser->getName(),
                             'username' => $this->generateUsername($googleUser->getEmail()),
                             'email' => $googleUser->getEmail(),
-                            'password' => Hash::make(Str::random(16)), // Random password
+                            'password' => Hash::make(Str::random(16)),
                             'google_id' => $googleUser->getId(),
                             'provider' => 'google',
                             'avatar' => $googleUser->getAvatar(),
-                            'email_verified_at' => now(), // Auto verify karena dari Google
+                            'email_verified_at' => now(),
                             'membership_status' => 'non_member',
                             'membership_level' => 'Bronze',
                             'member_point' => 0,
                             'loyalty_point' => 0,
-                            'status' => 'active', // Set status aktif default
+                            'status' => 'active',
                         ]);
 
                         // Berikan role 'customer'

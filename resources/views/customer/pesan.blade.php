@@ -11,6 +11,8 @@
     <title>Pemesanan - Smart Shuttle</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- Font Awesome untuk ikon sosial media -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -1021,6 +1023,133 @@
             margin-top: 5px;
             display: block;
         }
+
+        /* Modal Promo Styling */
+        .promo-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .promo-card:hover {
+            transform: translateY(-5px);
+            border-color: #FF581E;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .promo-card.selected {
+            border-color: #FF581E;
+            background-color: rgba(255, 88, 30, 0.05);
+        }
+
+        .promo-card.promo-inactive {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .promo-card.promo-inactive:hover {
+            transform: none !important;
+            border-color: transparent !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.12) !important;
+        }
+
+        .bg-orange {
+            background-color: #FF581E !important;
+        }
+
+        .text-orange {
+            color: #FF581E !important;
+        }
+
+        .btn-orange {
+            background-color: #FF581E;
+            color: white;
+            border: none;
+        }
+
+        .btn-orange:hover {
+            background-color: #e54e1a;
+            color: white;
+        }
+
+        /* Modal specific styles */
+        #promoModal .modal-header {
+            background: linear-gradient(135deg, #00215E 0%, #1a3d7c 100%);
+            color: white;
+        }
+
+        #promoModal .modal-title {
+            font-weight: 600;
+        }
+
+        #promoModal .btn-close {
+            filter: invert(1);
+        }
+
+        /* Promo card badge */
+        .promo-badge {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+        }
+
+        /* Active/Inactive promo styling */
+        .promo-inactive {
+            opacity: 0.7;
+            filter: grayscale(0.5);
+        }
+
+        /* Modal footer buttons */
+        .modal-footer .btn {
+            min-width: 120px;
+        }
+
+        /* Promo search in modal */
+        .promo-search {
+            margin-bottom: 20px;
+        }
+
+        /* Promo filter buttons */
+        .promo-filter {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .promo-filter-btn {
+            border-radius: 20px;
+            padding: 5px 15px;
+            font-size: 14px;
+        }
+
+        /* Promo details in card */
+        .promo-details {
+            font-size: 0.85rem;
+        }
+
+        .promo-details i {
+            width: 16px;
+            text-align: center;
+            margin-right: 5px;
+        }
+
+        /* Style untuk promo card yang dipilih */
+        .promo-card.selected {
+            border-color: #FF581E !important;
+            box-shadow: 0 0 0 3px rgba(255, 88, 30, 0.2) !important;
+        }
+
+        /* Style untuk tombol pilih promo langsung */
+        .promo-select-btn {
+            width: 100%;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .promo-card:hover .promo-select-btn {
+            display: block;
+        }
     </style>
 @endpush
 
@@ -1351,6 +1480,13 @@
                         <div class="promo-section">
                             <h6 class="promo-title">Kode Promo</h6>
 
+                            <!-- Tombol lihat promo -->
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="lihat-promo-btn" data-bs-toggle="modal" data-bs-target="#promoModal">
+                                    <i class="fas fa-eye me-1"></i> Lihat Promo Tersedia
+                                </button>
+                            </div>
+
                             @if(isset($appliedPromo) && $diskon > 0)
                             <!-- Jika promo sudah diterapkan -->
                             <div class="promo-applied" id="promo-applied">
@@ -1394,7 +1530,7 @@
                             </div>
 
                             <div class="promo-info">
-                                <small><i class="fas fa-info-circle"></i> Mohon Masukan Kode Promo Yang Sedia</small>
+                                <small><i class="fas fa-info-circle"></i> Klik "Lihat Promo Tersedia" untuk melihat semua promo yang tersedia</small>
                             </div>
                         </div>
 
@@ -1442,9 +1578,198 @@
         @endif
     </div>
 </div>
+
+<!-- Modal Daftar Promo -->
+<div class="modal fade" id="promoModal" tabindex="-1" aria-labelledby="promoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="promoModalLabel">
+                    <i class="fas fa-tags text-orange me-2"></i>Promo Tersedia
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Search and Filter -->
+                <div class="promo-search mb-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0" id="promoSearch" placeholder="Cari promo...">
+                        <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter Buttons -->
+                <div class="promo-filter mb-4">
+                    <button class="btn btn-sm btn-outline-primary promo-filter-btn active" data-filter="all">
+                        Semua Promo
+                    </button>
+                    <button class="btn btn-sm btn-outline-success promo-filter-btn" data-filter="active">
+                        <i class="fas fa-check-circle me-1"></i>Aktif
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning promo-filter-btn" data-filter="shuttle">
+                        <i class="fas fa-bus me-1"></i>Shuttle
+                    </button>
+                    <button class="btn btn-sm btn-outline-info promo-filter-btn" data-filter="persentase">
+                        <i class="fas fa-percent me-1"></i>Diskon %
+                    </button>
+                </div>
+
+                <!-- Promo List -->
+                <div class="row" id="promoListContainer">
+                    @forelse($promos as $promo)
+                    @php
+                        $isActive = $promo->status &&
+                                   $promo->tanggal_berakhir >= now() &&
+                                   ($promo->kuota === null || $promo->terpakai < $promo->kuota);
+                        $cardClass = $isActive ? '' : 'promo-inactive';
+                    @endphp
+
+                    <div class="col-md-6 mb-3 promo-card-item"
+                         data-filter="
+                         {{ $isActive ? 'active ' : 'inactive ' }}
+                         {{ $promo->tipe_promo }}
+                         {{ $promo->jenis_diskon }}
+                         {{ strtolower($promo->nama_promo) }}
+                         {{ strtolower($promo->kode_promo) }}
+                         "
+                         data-status="{{ $isActive ? 'active' : 'inactive' }}">
+                        <div class="card promo-card h-100 border-0 shadow-sm {{ $cardClass }}"
+                             data-code="{{ $promo->kode_promo }}"
+                             data-name="{{ $promo->nama_promo }}"
+                             data-description="{{ $promo->deskripsi }}"
+                             data-discount-type="{{ $promo->jenis_diskon }}"
+                             data-discount-value="{{ $promo->nilai_diskon }}"
+                             data-min-purchase="{{ $promo->minimal_pembelian }}"
+                             data-max-discount="{{ $promo->maksimal_diskon }}"
+                             data-expired="{{ \Carbon\Carbon::parse($promo->tanggal_berakhir)->format('d M Y') }}"
+                             data-active="{{ $isActive ? 'true' : 'false' }}">
+
+                            <!-- Status Badge -->
+                            <div class="position-absolute top-0 end-0 m-2">
+                                @if($isActive)
+                                    <span class="badge bg-success promo-badge">
+                                        <i class="fas fa-bolt me-1"></i>Aktif
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary promo-badge">
+                                        <i class="fas fa-ban me-1"></i>Tidak Aktif
+                                    </span>
+                                @endif
+                            </div>
+
+                            <div class="card-body">
+                                <!-- Promo Type Badge -->
+                                <div class="mb-2">
+                                    <span class="badge
+                                        @if($promo->tipe_promo == 'shuttle') bg-primary
+                                        @elseif($promo->tipe_promo == 'paket') bg-info
+                                        @elseif($promo->tipe_promo == 'sewa') bg-warning
+                                        @else bg-secondary @endif">
+                                        {{ ucfirst($promo->tipe_promo) }}
+                                    </span>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title fw-bold text-dark mb-0">
+                                        {{ $promo->nama_promo }}
+                                    </h6>
+                                </div>
+
+                                <!-- Kode Promo dengan highlight -->
+                                <div class="mb-3">
+                                    <span class="badge bg-orange text-white fs-6 px-3 py-2">
+                                        <i class="fas fa-ticket-alt me-2"></i>{{ $promo->kode_promo }}
+                                    </span>
+                                </div>
+
+                                <!-- Detail Diskon -->
+                                <div class="promo-details mb-3">
+                                    <small class="text-muted d-block mb-1">
+                                        <i class="fas @if($promo->jenis_diskon == 'persentase') fa-percentage text-success @else fa-money-bill-wave text-success @endif me-1"></i>
+                                        @if($promo->jenis_diskon == 'persentase')
+                                            Diskon: <span class="fw-bold text-success">{{ $promo->nilai_diskon }}%</span>
+                                            @if($promo->maksimal_diskon)
+                                                <br><small class="ms-4">(Maks: Rp {{ number_format($promo->maksimal_diskon, 0, ',', '.') }})</small>
+                                            @endif
+                                        @else
+                                            Diskon: <span class="fw-bold text-success">Rp {{ number_format($promo->nilai_diskon, 0, ',', '.') }}</span>
+                                        @endif
+                                    </small>
+
+                                    @if($promo->minimal_pembelian > 0)
+                                    <small class="text-muted d-block mb-1">
+                                        <i class="fas fa-shopping-cart text-info me-1"></i>
+                                        Min. belanja: <span class="fw-bold">Rp {{ number_format($promo->minimal_pembelian, 0, ',', '.') }}</span>
+                                    </small>
+                                    @endif
+
+                                    <small class="text-muted d-block mb-1">
+                                        <i class="fas fa-calendar-alt text-warning me-1"></i>
+                                        Berlaku hingga: <span class="fw-bold">{{ \Carbon\Carbon::parse($promo->tanggal_berakhir)->translatedFormat('d F Y') }}</span>
+                                    </small>
+
+                                    @if($promo->kuota !== null)
+                                    <small class="text-muted d-block mb-1">
+                                        <i class="fas fa-users text-primary me-1"></i>
+                                        Kuota: <span class="fw-bold">{{ $promo->terpakai }}/{{ $promo->kuota }}</span> promo
+                                    </small>
+                                    @endif
+                                </div>
+
+                                <!-- Deskripsi -->
+                                <p class="card-text small text-secondary mb-0">
+                                    {{ $promo->deskripsi }}
+                                </p>
+                            </div>
+
+                            @if($isActive)
+                            <!-- Tombol Pilih Promo Langsung -->
+                            <div class="card-footer bg-transparent border-top-0">
+                                <button type="button" class="btn btn-sm btn-orange promo-select-btn" data-promo-code="{{ $promo->kode_promo }}">
+                                    <i class="fas fa-check me-1"></i>Pilih & Terapkan Promo Ini
+                                </button>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                    @empty
+                    <div class="col-12 text-center py-4">
+                        <div class="py-5">
+                            <i class="fas fa-tag fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Tidak ada promo tersedia saat ini</p>
+                        </div>
+                    </div>
+                    @endforelse
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="w-100 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small" id="promoCount">
+                            {{ count($promos) }} promo tersedia
+                        </span>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Tutup
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
+<!-- Bootstrap JS Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('JavaScript loaded for booking page');
@@ -1456,6 +1781,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const promoSuccess = document.getElementById('promo-success');
     const promoError = document.getElementById('promo-error');
     const promoApplied = document.getElementById('promo-applied');
+    const promoModal = document.getElementById('promoModal');
+    const promoSearch = document.getElementById('promoSearch');
+    const clearSearch = document.getElementById('clearSearch');
+    const promoFilterBtns = document.querySelectorAll('.promo-filter-btn');
+    const promoListContainer = document.getElementById('promoListContainer');
+    const promoSelectBtns = document.querySelectorAll('.promo-select-btn');
 
     // Initialize variables from PHP
     const originalTotal = {{ $totalHarga ?? 0 }};
@@ -1471,6 +1802,200 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Original Total:', originalTotal);
     console.log('Current Total:', currentTotal);
     console.log('Current Diskon:', currentDiskon);
+
+    // ========== FUNGSI UNTUK PROMO MODAL ==========
+
+    // Fungsi untuk menerapkan promo langsung dari tombol di modal
+    function applyPromoFromButton(promoCode) {
+        console.log('Menerapkan promo dari tombol:', promoCode);
+
+        // Tutup modal
+        const modal = bootstrap.Modal.getInstance(promoModal);
+        if (modal) {
+            modal.hide();
+        }
+
+        // Tunggu modal ditutup, lalu isi input dan terapkan
+        setTimeout(() => {
+            applyPromoFromModal(promoCode);
+        }, 500);
+    }
+
+    // Fungsi untuk menerapkan promo dari modal
+    function applyPromoFromModal(promoCode) {
+        console.log('Menerapkan promo dari modal:', promoCode);
+
+        // Cek apakah input promo terlihat? Jika tidak, tampilkan input promo
+        const promoAppliedDiv = document.getElementById('promo-applied');
+        const promoInputGroup = document.querySelector('.promo-input-group');
+
+        if (promoAppliedDiv && promoAppliedDiv.style.display !== 'none') {
+            promoAppliedDiv.style.display = 'none';
+        }
+
+        if (promoInputGroup && promoInputGroup.style.display === 'none') {
+            promoInputGroup.style.display = 'flex';
+        }
+
+        // Isi input promo
+        if (promoInput) {
+            promoInput.value = promoCode;
+        }
+
+        // Terapkan promo
+        applyPromo();
+    }
+
+    // Event listener untuk tombol pilih promo langsung
+    promoSelectBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation(); // Mencegah event bubbling ke card
+            const promoCode = this.getAttribute('data-promo-code');
+            console.log('Tombol promo diklik:', promoCode);
+            applyPromoFromButton(promoCode);
+        });
+    });
+
+    // Event delegation untuk klik pada kartu promo
+    if (promoListContainer) {
+        promoListContainer.addEventListener('click', function(e) {
+            // Cari elemen promo-card terdekat
+            const promoCard = e.target.closest('.promo-card');
+            if (promoCard && !e.target.closest('.promo-select-btn')) {
+                // Cek apakah promo aktif
+                const active = promoCard.dataset.active === 'true';
+                const name = promoCard.dataset.name || '';
+                const code = promoCard.dataset.code || '';
+
+                if (active) {
+                    // Hapus class selected dari semua card
+                    document.querySelectorAll('.promo-card').forEach(card => {
+                        card.classList.remove('selected');
+                    });
+
+                    // Tambah class selected ke card yang dipilih
+                    promoCard.classList.add('selected');
+
+                    // Terapkan promo setelah 1 detik (untuk memberi feedback visual)
+                    setTimeout(() => {
+                        applyPromoFromButton(code);
+                    }, 1000);
+                } else {
+                    const msg = `Promo "${name || code}" tidak dapat dipilih (non-aktif atau sudah kadaluarsa).`;
+                    alert(msg);
+                }
+            }
+        });
+    }
+
+    // Fungsi untuk search promo
+    if (promoSearch) {
+        promoSearch.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+
+            document.querySelectorAll('.promo-card-item').forEach(item => {
+                const filterData = item.getAttribute('data-filter') || '';
+                const cardText = item.textContent.toLowerCase();
+
+                if (searchTerm === '' || filterData.includes(searchTerm) || cardText.includes(searchTerm)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            updatePromoCount();
+        });
+    }
+
+    // Fungsi untuk clear search
+    if (clearSearch) {
+        clearSearch.addEventListener('click', function() {
+            promoSearch.value = '';
+            promoSearch.dispatchEvent(new Event('input'));
+        });
+    }
+
+    // Fungsi untuk filter promo
+    promoFilterBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Update active button
+            promoFilterBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+
+            const filter = this.dataset.filter;
+
+            document.querySelectorAll('.promo-card-item').forEach(item => {
+                const filterData = item.getAttribute('data-filter') || '';
+                const status = item.dataset.status;
+
+                switch(filter) {
+                    case 'all':
+                        item.style.display = 'block';
+                        break;
+                    case 'active':
+                        item.style.display = status === 'active' ? 'block' : 'none';
+                        break;
+                    case 'shuttle':
+                        item.style.display = filterData.includes('shuttle') ? 'block' : 'none';
+                        break;
+                    case 'persentase':
+                        item.style.display = filterData.includes('persentase') ? 'block' : 'none';
+                        break;
+                    default:
+                        item.style.display = 'block';
+                }
+            });
+
+            updatePromoCount();
+        });
+    });
+
+    // Fungsi untuk update promo count
+    function updatePromoCount() {
+        const visiblePromos = document.querySelectorAll('.promo-card-item[style="display: block"]').length;
+        const totalPromos = document.querySelectorAll('.promo-card-item').length;
+
+        const promoCountElement = document.getElementById('promoCount');
+        if (promoCountElement) {
+            promoCountElement.textContent = `${visiblePromos} dari ${totalPromos} promo`;
+        }
+    }
+
+    // Reset selected promo saat modal ditutup
+    if (promoModal) {
+        promoModal.addEventListener('hidden.bs.modal', function () {
+            // Reset semua card selected
+            document.querySelectorAll('.promo-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // Reset search
+            if (promoSearch) {
+                promoSearch.value = '';
+                promoSearch.dispatchEvent(new Event('input'));
+            }
+
+            // Reset filter
+            promoFilterBtns.forEach(btn => {
+                if (btn.dataset.filter === 'all') {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Tampilkan semua promo
+            document.querySelectorAll('.promo-card-item').forEach(item => {
+                item.style.display = 'block';
+            });
+
+            updatePromoCount();
+        });
+    }
+
+    // Inisialisasi promo count
+    updatePromoCount();
 
     // ========== FUNGSI UNTUK "SAMA DENGAN PEMESAN" (EXCLUSIVE) ==========
 
@@ -1707,9 +2232,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`Mengosongkan data auto-filled untuk penumpang ${index}`);
     }
 
-    // ========== MODIFIED: EVENT LISTENERS UNTUK MANUAL INPUT ==========
-
-    // Event listener untuk input manual pada field penumpang
+    // ========== EVENT LISTENERS UNTUK CHECKBOX ==========
     sameAsPemesanCheckboxes.forEach(checkbox => {
         const index = checkbox.dataset.index;
 
@@ -1722,7 +2245,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (currentlyCheckedCheckbox && currentlyCheckedCheckbox !== this) {
                     currentlyCheckedCheckbox.checked = false;
                     clearPenumpangData(currentlyCheckedCheckbox.dataset.index);
-                    removeInputListeners(currentlyCheckedCheckbox.dataset.index);
                 }
 
                 // Set current checkbox sebagai yang aktif
@@ -1733,24 +2255,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Isi dengan data pemesan DAN profil
                 fillPenumpangWithPemesan(index);
-
-                // Attach input event listeners
-                attachInputListeners(index);
             } else {
                 // Aktifkan semua checkbox
                 enableAllCheckboxes();
 
                 // Kosongkan data
                 clearPenumpangData(index);
-
-                // Remove input event listeners
-                removeInputListeners(index);
             }
         });
 
-        // Jika checkbox sudah dicentang dari awal (old data), attach listeners
+        // Jika checkbox sudah dicentang dari awal (old data), isi data
         if (checkbox.checked) {
-            attachInputListeners(index);
+            fillPenumpangWithPemesan(index);
         }
     });
 
@@ -1768,160 +2284,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
-
-    // Fungsi untuk attach event listeners ke input field dengan debounce
-    function attachInputListeners(index) {
-        const namaInput = document.getElementById(`nama-penumpang-${index}`);
-        const teleponInput = document.getElementById(`telepon-${index}`);
-        const nikInput = document.getElementById(`nik-${index}`);
-        const jkInput = document.getElementById(`jk-${index}`);
-        const checkbox = document.querySelector(`#same-as-pemesan-${index}`);
-
-        // Helper function untuk check jika nilai sudah berbeda
-        function checkIfValueChanged(fieldType, newValue) {
-            if (!checkbox || !checkbox.checked) return;
-
-            const profileData = getProfileData();
-            let shouldUncheck = false;
-
-            switch(fieldType) {
-                case 'nama':
-                    shouldUncheck = (newValue !== profileData.nama);
-                    break;
-                case 'telepon':
-                    const cleanedNewValue = newValue.replace(/\D/g, '');
-                    shouldUncheck = (cleanedNewValue !== profileData.telepon);
-                    break;
-                case 'nik':
-                    // Hanya uncheck jika profile memiliki NIK DAN user mengubahnya
-                    shouldUncheck = (profileData.nik && newValue !== profileData.nik);
-                    break;
-                case 'jk':
-                    // Hanya uncheck jika profile memiliki jenis kelamin DAN user mengubahnya
-                    shouldUncheck = (profileData.jenis_kelamin && newValue !== profileData.jenis_kelamin);
-                    break;
-            }
-
-            if (shouldUncheck) {
-                checkbox.checked = false;
-                checkbox.dispatchEvent(new Event('change'));
-
-                // Tambahkan pesan feedback
-                showFieldChangeFeedback(index, fieldType);
-            }
-        }
-
-        // Attach listeners dengan debounce untuk menghindari trigger berlebihan
-        if (namaInput) {
-            const originalNamaValue = namaInput.value;
-            namaInput.addEventListener('input', debounce(function() {
-                if (this.value !== originalNamaValue) {
-                    checkIfValueChanged('nama', this.value);
-                }
-            }, 500));
-        }
-
-        if (teleponInput) {
-            const originalTeleponValue = teleponInput.value;
-            teleponInput.addEventListener('input', debounce(function() {
-                if (this.value !== originalTeleponValue) {
-                    checkIfValueChanged('telepon', this.value);
-                }
-            }, 500));
-        }
-
-        if (nikInput) {
-            const originalNikValue = nikInput.value;
-            nikInput.addEventListener('input', debounce(function() {
-                if (this.value !== originalNikValue) {
-                    checkIfValueChanged('nik', this.value);
-                }
-            }, 500));
-        }
-
-        if (jkInput) {
-            const originalJkValue = jkInput.value;
-            jkInput.addEventListener('change', debounce(function() {
-                if (this.value !== originalJkValue) {
-                    checkIfValueChanged('jk', this.value);
-                }
-            }, 500));
-        }
-    }
-
-    // Fungsi untuk remove event listeners
-    function removeInputListeners(index) {
-        const namaInput = document.getElementById(`nama-penumpang-${index}`);
-        const teleponInput = document.getElementById(`telepon-${index}`);
-        const nikInput = document.getElementById(`nik-${index}`);
-        const jkInput = document.getElementById(`jk-${index}`);
-
-        // Clone dan replace element untuk menghapus event listeners
-        if (namaInput) {
-            const newNamaInput = namaInput.cloneNode(true);
-            namaInput.parentNode.replaceChild(newNamaInput, namaInput);
-        }
-
-        if (teleponInput) {
-            const newTeleponInput = teleponInput.cloneNode(true);
-            teleponInput.parentNode.replaceChild(newTeleponInput, teleponInput);
-        }
-
-        if (nikInput) {
-            const newNikInput = nikInput.cloneNode(true);
-            nikInput.parentNode.replaceChild(newNikInput, nikInput);
-        }
-
-        if (jkInput) {
-            const newJkInput = jkInput.cloneNode(true);
-            jkInput.parentNode.replaceChild(newJkInput, jkInput);
-        }
-    }
-
-    // Fungsi debounce untuk mencegah trigger berlebihan
-    function debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func.apply(this, args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-
-    // Fungsi untuk menampilkan feedback ketika field diubah
-    function showFieldChangeFeedback(index, fieldType) {
-        const fieldNames = {
-            'nama': 'Nama',
-            'telepon': 'Nomor Telepon',
-            'nik': 'NIK',
-            'jk': 'Jenis Kelamin'
-        };
-
-        // Tampilkan pesan kecil di bawah field
-        const fieldElement = document.getElementById(`${fieldType}-${index}`);
-        if (fieldElement) {
-            // Hapus feedback sebelumnya jika ada
-            const existingFeedback = fieldElement.parentNode.querySelector('.field-feedback');
-            if (existingFeedback) {
-                existingFeedback.remove();
-            }
-
-            const feedback = document.createElement('small');
-            feedback.className = 'field-feedback';
-            feedback.innerHTML = `<i class="fas fa-info-circle"></i> Perubahan ${fieldNames[fieldType]} menghapus otomatisasi`;
-            fieldElement.parentNode.appendChild(feedback);
-
-            // Hapus setelah 3 detik
-            setTimeout(() => {
-                if (feedback.parentNode) {
-                    feedback.remove();
-                }
-            }, 3000);
-        }
-    }
 
     // ========== FORMAT TELEPON PEMESAN ==========
     // Auto format untuk input telepon pemesan

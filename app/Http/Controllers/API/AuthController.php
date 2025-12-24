@@ -19,8 +19,6 @@ use Spatie\Permission\Models\Role;
 
 class AuthController extends Controller
 {
-    // ... (existing methods tetap sama)
-
     public function performLogin(array $data)
     {
         // Validasi manual
@@ -70,7 +68,7 @@ class AuthController extends Controller
         ];
     }
 
-    // PERBAIKAN: Method untuk handle registrasi Google via API
+    // Method untuk handle registrasi Google via API
     public function googleAuth(Request $request)
     {
         \Log::info('Google Auth API Request:', $request->all());
@@ -179,8 +177,6 @@ class AuthController extends Controller
 
         return $finalUsername;
     }
-
-    // ... (sisanya sama seperti sebelumnya)
 
     public function showForgotForm()
     {
@@ -388,6 +384,7 @@ class AuthController extends Controller
         }
     }
 
+    // API REGISTER - TIDAK LOGIN OTOMATIS
     public function register(Request $request)
     {
         \Log::info('AuthController::register API - Starting', $request->all());
@@ -431,6 +428,7 @@ class AuthController extends Controller
         }
     }
 
+    // API LOGIN
     public function login(Request $request)
     {
         \Log::info('AuthController::login API - Starting', $request->all());
@@ -475,8 +473,6 @@ class AuthController extends Controller
             ], 500);
         }
     }
-
-    // ... (metode lainnya tetap sama)
 
     public function logout(Request $request)
     {

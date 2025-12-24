@@ -35,8 +35,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'membership_transaction_id',
         'two_factor_enabled',
         'status',
-        'google_id', // TAMBAHKAN INI
-        'provider'   // TAMBAHKAN INI
+        'google_id',    // Field untuk Google Auth
+        'provider'      // Field untuk Google Auth
     ];
 
     protected $hidden = [
@@ -62,8 +62,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'loyalty_point' => 0,
         'membership_level' => 'Bronze',
         'membership_status' => 'non_member',
-        'google_id' => null, // TAMBAHKAN INI
-        'provider' => null   // TAMBAHKAN INI
+        'google_id' => null,
+        'provider' => null
     ];
 
     // Relasi
@@ -101,7 +101,7 @@ class User extends Authenticatable implements MustVerifyEmail
                $this->membership_end_date->isFuture();
     }
 
-    // Method lainnya tetap sama seperti yang Anda berikan
+    // Method lainnya tetap sama
     public function calculateLoyaltyPointsToAdd()
     {
         // Hanya tambah loyalty point jika membership aktif

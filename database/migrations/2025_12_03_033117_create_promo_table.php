@@ -1,3 +1,4 @@
+// 2025_12_03_033117_create_promo_table.php - UPDATE
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -25,8 +26,10 @@ return new class extends Migration
             $table->integer('terpakai')->default(0);
             $table->boolean('status')->default(true);
             $table->text('deskripsi')->nullable();
+            $table->string('gambar')->nullable(); // TAMBAH KOLOM INI
+            $table->string('tipe_promo')->default('all'); // TAMBAH: all, shuttle, paket, sewa
             $table->timestamps();
-            
+
             $table->index(['kode_promo', 'status']);
         });
     }

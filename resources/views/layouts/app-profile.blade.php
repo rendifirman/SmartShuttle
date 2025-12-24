@@ -4,21 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'SmartShuttle - Customer')</title>
+
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- CSRF Token -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <style>
+        :root {
+            --primary: #FF6B2C;
+            --primary-soft: rgba(255,107,44,.12);
+            --dark: #00274D;
+            --bg: #F4F6F9;
+            --text: #1f2937;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
         }
 
         body {
-            background: #f5f5f5;
+            background: var(--bg);
+            color: var(--text);
         }
 
         .container {
@@ -26,166 +35,165 @@
             min-height: 100vh;
         }
 
-        /* SIDEBAR */
+        /* ================= SIDEBAR ================= */
         .sidebar {
-            width: 300px;
-            background: #00274D;
+            width: 280px;
+            background: var(--dark);
             color: #fff;
-            padding: 30px 0;
-            flex-shrink: 0;
             position: fixed;
             height: 100vh;
-            overflow-y: auto;
+            padding: 28px 20px 110px;
+            box-shadow: 4px 0 18px rgba(0,0,0,.08);
         }
 
         .logo {
-            font-size: 24px;
-            font-weight: bold;
+            font-size: 22px;
+            font-weight: 700;
             text-align: center;
-            color: #FF6B2C;
-            margin-bottom: 40px;
-            padding: 0 20px;
+            color: var(--primary);
+            margin-bottom: 36px;
             cursor: pointer;
-            transition: transform 0.3s, color 0.3s;
-        }
-
-        .logo:hover {
-            transform: scale(1.05);
-            color: #FF8E53;
+            letter-spacing: .8px;
         }
 
         .menu {
             list-style: none;
-            padding-left: 0;
         }
 
         .menu li {
-            padding: 0;
-            margin: 5px 15px;
-            border-radius: 5px;
-            overflow: hidden;
+            margin-bottom: 8px;
         }
 
-        .menu a.menu-link {
+        .menu-link {
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding: 18px 30px;
-            color: inherit;
+            gap: 14px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: rgba(255,255,255,.85);
             text-decoration: none;
-            font-size: 16px;
-            transition: background 0.3s;
-            width: 100%;
+            transition: all .25s ease;
+            font-size: 15px;
         }
 
-        .menu a.menu-link:hover {
-            background: rgba(255, 107, 44, 0.1);
-        }
-
-        .menu li.active a.menu-link {
-            background: #FF6B2C;
-            border-radius: 5px;
-        }
-
-        .menu-icon {
-            width: 25px;
-            text-align: center;
+        .menu-link i {
             font-size: 18px;
+            width: 22px;
+            text-align: center;
         }
 
+        .menu-link:hover {
+            background: rgba(255,255,255,.06);
+            color: #fff;
+        }
+
+        .menu li.active .menu-link {
+            background: var(--primary-soft);
+            color: #fff;
+            position: relative;
+        }
+
+        .menu li.active .menu-link::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 8px;
+            bottom: 8px;
+            width: 4px;
+            background: var(--primary);
+            border-radius: 4px;
+        }
+
+        /* ===== Sidebar Footer ===== */
         .sidebar-footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            position: absolute;
+            bottom: 28px;
+            left: 20px;
+            right: 20px;
         }
 
-        .logout-link {
-            color: #ff6b6b !important;
-        }
-
-        .logout-link:hover {
-            background: rgba(255, 107, 44, 0.1) !important;
+        .sidebar-footer .menu-link {
+            font-size: 14.5px;
         }
 
         .beranda-link {
-            color: #FF6B2C !important;
+            color: var(--primary) !important;
         }
 
-        .beranda-link:hover {
-            background: rgba(255, 107, 44, 0.1) !important;
+        .logout-link {
+            color: #ff9b9b !important;
         }
 
-        /* CONTENT AREA */
+        /* ================= CONTENT ================= */
         .content {
-            flex: 1;
-            padding: 30px;
-            position: relative;
-            margin-left: 300px;
-            width: calc(100% - 300px);
-            min-height: 100vh;
+            margin-left: 280px;
+            width: calc(100% - 280px);
+            padding: 28px 32px;
         }
 
-        /* HEADER */
+        /* ================= HEADER ================= */
         .top-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
             background: #fff;
-            padding: 20px 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 14px;
+            padding: 18px 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 10px 25px rgba(0,0,0,.05);
+            margin-bottom: 26px;
         }
 
         .header {
-            font-size: 28px;
-            font-weight: 700;
-            color: #00274D;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 14px;
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--dark);
         }
 
         .header i {
-            color: #FF6B2C;
-            font-size: 24px;
+            color: var(--primary);
+            font-size: 22px;
         }
 
         .profile-icon {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, #FF6B2C, #FF8E53);
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
+            background: linear-gradient(135deg, #FF6B2C, #FF8E53);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 20px;
+            color: #fff;
             cursor: pointer;
-            transition: transform 0.3s;
+            transition: transform .2s;
         }
 
         .profile-icon:hover {
-            transform: scale(1.05);
+            transform: scale(1.06);
         }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-            }
-
+        /* ================= RESPONSIVE ================= */
+        @media (max-width: 992px) {
             .sidebar {
+                position: relative;
                 width: 100%;
                 height: auto;
-                position: relative;
-                margin-left: 0;
             }
 
             .content {
                 margin-left: 0;
                 width: 100%;
                 padding: 20px;
+            }
+
+            .sidebar-footer {
+                position: relative;
+                bottom: auto;
+                left: auto;
+                right: auto;
+                margin-top: 20px;
             }
         }
     </style>
@@ -196,129 +204,88 @@
 
 <div class="container">
     <!-- SIDEBAR -->
-    <div class="sidebar">
-        <!-- LOGO YANG BISA DIKLIK UNTUK KE HALAMAN BERANDA -->
+    <aside class="sidebar">
         <div class="logo" onclick="location.href='{{ route('customer.beranda') }}'">
             SMART SHUTTLE
         </div>
 
         <ul class="menu">
-            <li>
+            <li class="{{ request()->routeIs('customer.dashboardprofile') ? 'active' : '' }}">
                 <a href="{{ route('customer.dashboardprofile') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-home"></i></span>
-                    <span>Dashboard</span>
+                    <i class="fa-solid fa-grid-2"></i>
+                    Dashboard
                 </a>
             </li>
 
-            <li>
+            <li class="{{ request()->routeIs('customer.profilcust') ? 'active' : '' }}">
                 <a href="{{ route('customer.profilcust') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-user-circle"></i></span>
-                    <span>Profil Saya</span>
+                    <i class="fa-regular fa-user"></i>
+                    Profil Saya
                 </a>
             </li>
 
-            <li>
+            <li class="{{ request()->routeIs('customer.riwayat') ? 'active' : '' }}">
                 <a href="{{ route('customer.riwayat') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-history"></i></span>
-                    <span>Riwayat Pesanan</span>
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    Riwayat Pesanan
                 </a>
             </li>
 
-            <li>
+            <li class="{{ request()->routeIs('customer.membership') ? 'active' : '' }}">
                 <a href="{{ route('customer.membership') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-crown"></i></span>
-                    <span>Membership</span>
-                </a>
-            </li>
-
-            <!-- TOMBOL BERANDA DI BAWAH LOGOUT -->
-            <li class="sidebar-footer">
-                <a href="{{ route('customer.beranda') }}" class="menu-link beranda-link">
-                    <span class="menu-icon"><i class="fas fa-arrow-left"></i></span>
-                    <span>Beranda</span>
-                </a>
-            </li>
-
-            <li class="sidebar-footer">
-                <form id="logout-form" action="{{ route('customer.logout') }}" method="POST" style="display: none;">
-                    @csrf
-                </form>
-                <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="menu-link logout-link">
-                    <span class="menu-icon"><i class="fas fa-sign-out-alt"></i></span>
-                    <span>Logout</span>
+                    <i class="fa-solid fa-crown"></i>
+                    Membership
                 </a>
             </li>
         </ul>
-    </div>
 
-    <!-- CONTENT AREA -->
-    <div class="content">
-        <!-- HEADER - OTOMATIS BERDASARKAN ROUTE -->
+        <div class="sidebar-footer">
+            <a href="{{ route('customer.beranda') }}" class="menu-link beranda-link">
+                <i class="fa-solid fa-arrow-left"></i>
+                Beranda
+            </a>
+
+            <form id="logout-form" action="{{ route('customer.logout') }}" method="POST" style="display:none;">
+                @csrf
+            </form>
+
+            <a href="#" class="menu-link logout-link"
+               onclick="event.preventDefault(); if(confirm('Yakin ingin logout?')) document.getElementById('logout-form').submit();">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="content">
         <div class="top-header">
             <div class="header">
                 @php
-                    // Mendapatkan nama route saat ini
-                    $currentRoute = Route::currentRouteName();
-
-                    // Mapping icon dan judul berdasarkan route
                     $headers = [
-                        'customer.dashboardprofile' => ['icon' => 'fa-home', 'title' => 'Dashboard'],
-                        'customer.profilcust' => ['icon' => 'fa-user-circle', 'title' => 'Profil Saya'],
-                        'customer.riwayat' => ['icon' => 'fa-history', 'title' => 'Riwayat Pesanan'],
+                        'customer.dashboardprofile' => ['icon' => 'fa-grid-2', 'title' => 'Dashboard'],
+                        'customer.profilcust' => ['icon' => 'fa-user', 'title' => 'Profil Saya'],
+                        'customer.riwayat' => ['icon' => 'fa-clock-rotate-left', 'title' => 'Riwayat Pesanan'],
                         'customer.membership' => ['icon' => 'fa-crown', 'title' => 'Membership'],
-                        'customer.beranda' => ['icon' => 'fa-home', 'title' => 'Beranda'],
+                        'customer.membership.payment' => ['icon' => 'fa-credit-card', 'title' => 'Pembayaran Membership'],
+                        'customer.membership.pending' => ['icon' => 'fa-clock', 'title' => 'Menunggu Pembayaran'],
+                        'customer.membership.form' => ['icon' => 'fa-crown', 'title' => 'Daftar Membership'],
                     ];
-
-                    // Default jika route tidak dikenali
-                    $header = $headers[$currentRoute] ?? ['icon' => 'fa-home', 'title' => 'Dashboard'];
+                    $header = $headers[Route::currentRouteName()] ?? ['icon' => 'fa-grid-2', 'title' => 'Dashboard'];
                 @endphp
 
-                <i class="fas {{ $header['icon'] }}"></i>
+                <i class="fa-solid {{ $header['icon'] }}"></i>
                 {{ $header['title'] }}
             </div>
 
-            <div class="profile-icon" title="Lihat Profil" onclick="location.href='{{ route('customer.profilcust') }}'">
-                <i class="fas fa-user"></i>
+            <div class="profile-icon" onclick="location.href='{{ route('customer.profilcust') }}'">
+                <i class="fa-solid fa-user"></i>
             </div>
         </div>
 
-        <!-- MAIN CONTENT -->
         @yield('content')
-    </div>
+    </main>
 </div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Logout confirmation
-        const logoutLink = document.querySelector('.logout-link');
-        if (logoutLink) {
-            logoutLink.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (confirm('Apakah Anda yakin ingin logout?')) {
-                    document.getElementById('logout-form').submit();
-                }
-            });
-        }
-
-        // Highlight active menu berdasarkan URL saat ini
-        const currentPath = window.location.pathname;
-        const menuLinks = document.querySelectorAll('.menu a.menu-link');
-
-        menuLinks.forEach(link => {
-            const href = link.getAttribute('href');
-            if (href && currentPath.includes(href.replace(/^https?:\/\/[^\/]+/, ''))) {
-                link.parentElement.classList.add('active');
-            } else {
-                link.parentElement.classList.remove('active');
-            }
-        });
-
-        // Fallback untuk dashboard jika tidak ada menu aktif
-        if (currentPath.includes('dashboard') && !document.querySelector('.menu li.active')) {
-            menuLinks[0]?.parentElement?.classList.add('active');
-        }
-    });
-</script>
 
 @stack('scripts')
 </body>

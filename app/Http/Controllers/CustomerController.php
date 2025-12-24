@@ -614,6 +614,8 @@ class CustomerController extends Controller
             'diskonLoyalty' => $diskonLoyalty,
             'totalAfterDiscount' => $totalAfterDiscount,
             'appliedPromo' => $appliedPromo,
+            'availablePromos' => Promo::active()->get(),
+            'promos' => Promo::orderByDesc('status')->get(),
             'loyaltyDiscount' => $loyaltyDiscount,
             'user' => $user,
         ]);
@@ -712,6 +714,27 @@ class CustomerController extends Controller
                 'message' => 'Terjadi kesalahan saat menghapus promo'
             ]);
         }
+    }
+
+    /**
+     * Halaman detail promo
+     */
+    public function showPromoDetail($id)
+    {
+        $user = session()->get('user');
+
+        $promo = Promo::where('id', $id)
+            ->where('status', true)
+            ->whereDate('tanggal_mulai', '<=', now())
+            ->whereDate('tanggal_berakhir', '>=', now())
+            ->first();
+
+        if (!$promo) {
+            return redirect()->route('customer.beranda')
+                ->with('error', 'Promo tidak ditemukan atau sudah kadaluarsa.');
+        }
+
+        return view('customer.promo_detail', compact('user', 'promo'));
     }
 
     /**
@@ -1970,4 +1993,102 @@ class CustomerController extends Controller
             ], 500);
         }
     }
+     public function getPromos(Request $request)
+    {
+        try {
+            // Get current date
+            $now = Carbon::now();
+
+            // Get all active promos
+            $activePromos = Promo::where('status', true)
+                ->whereDate('tanggal_mulai', '<=', $now)
+                ->whereDate('tanggal_berakhir', '>=', $now)
+                ->where(function($query) {
+                    $query->whereNull('kuota')
+                          ->orWhereRaw('terpakai < kuota');
+                })
+                ->orderBy('tanggal_berakhir', 'asc')
+                ->get();
+
+            // Get inactive/expired promos (within last 30 days)
+            $thirtyDaysAgo = Carbon::now()->subDays(30);
+            $inactivePromos = Promo::where(function($query) use ($now) {
+                    $query->where('status', false)
+                          ->orWhere('tanggal_berakhir', '<', $now);
+                })
+                ->where('tanggal_berakhir', '>=', $thirtyDaysAgo)
+                ->orderBy('tanggal_berakhir', 'desc')
+                ->get();
+
+            // Combine and format promos
+            $promos = [];
+
+            // Format active promos
+            foreach ($activePromos as $promo) {
+                $promos[] = $this->formatPromoData($promo, true);
+            }
+
+            // Format inactive promos
+            foreach ($inactivePromos as $promo) {
+                $promos[] = $this->formatPromoData($promo, false);
+            }
+
+            return response()->json([
+                'success' => true,
+                'promos' => $promos,
+                'message' => 'Promos loaded successfully',
+                'total_active' => $activePromos->count(),
+                'total_inactive' => $inactivePromos->count(),
+                'total' => count($promos)
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error getting promos: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load promos: ' . $e->getMessage(),
+                'promos' => [],
+                'total_active' => 0,
+                'total_inactive' => 0,
+                'total' => 0
+            ], 500);
+        }
+    }
+
+    /**
+     * Format promo data for JSON response
+     */
+    private function formatPromoData($promo, $isActive)
+    {
+        $now = Carbon::now();
+        $endDate = Carbon::parse($promo->tanggal_berakhir);
+        $isExpired = $endDate < $now;
+        $quotaExceeded = $promo->kuota && $promo->terpakai >= $promo->kuota;
+        $canUse = $isActive && !$isExpired && !$quotaExceeded;
+
+        return [
+            'id' => $promo->id,
+            'kode_promo' => $promo->kode_promo,
+            'nama_promo' => $promo->nama_promo,
+            'jenis_diskon' => $promo->jenis_diskon,
+            'nilai_diskon' => (float) $promo->nilai_diskon,
+            'maksimal_diskon' => (float) $promo->maksimal_diskon,
+            'minimal_pembelian' => (float) $promo->minimal_pembelian,
+            'tanggal_mulai' => $promo->tanggal_mulai->format('Y-m-d'),
+            'tanggal_berakhir' => $promo->tanggal_berakhir->format('Y-m-d'),
+            'kuota' => $promo->kuota,
+            'terpakai' => $promo->terpakai,
+            'status' => $promo->status,
+            'deskripsi' => $promo->deskripsi,
+            'tipe_promo' => $promo->tipe_promo,
+            'is_active' => $isActive,
+            'is_expired' => $isExpired,
+            'quota_exceeded' => $quotaExceeded,
+            'can_use' => $canUse,
+            'remaining_quota' => $promo->kuota ? ($promo->kuota - $promo->terpakai) : null,
+            'days_remaining' => $isActive ? max(0, $now->diffInDays($endDate, false)) : 0
+        ];
+    }
+
 }

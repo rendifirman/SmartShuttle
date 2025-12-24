@@ -133,7 +133,8 @@
     .form-control,
     .form-control-select,
     input[type="date"],
-    input[type="number"] {
+    input[type="number"],
+    .searchable-select {
         display: block;
         width: 100%;
         box-sizing: border-box;
@@ -162,7 +163,7 @@
 
     /* Custom arrow untuk select */
     .form-control-select {
-        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23123352' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-image: url("data:image/svg+xml;charset=UTF8,%3csvg xmlns='http://www.w3.org2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23123352' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
         background-repeat: no-repeat;
         background-position: right 15px center;
         background-size: 16px;
@@ -184,7 +185,8 @@
     .form-control:focus,
     .form-control-select:focus,
     input[type="date"]:focus,
-    input[type="number"]:focus {
+    input[type="number"]:focus,
+    .searchable-select:focus {
         outline: none;
         border-color: var(--secondary-color);
         box-shadow: 0 0 0 4px rgba(255, 88, 30, 0.12);
@@ -194,7 +196,8 @@
     /* Placeholder styling */
     .form-control::placeholder,
     input[type="date"]::placeholder,
-    input[type="number"]::placeholder {
+    input[type="number"]::placeholder,
+    .searchable-select::placeholder {
         color: #999;
         opacity: 0.8;
     }
@@ -650,44 +653,249 @@
         margin-top: 4px;
     }
 
+    /* OUTLET SELECTION - UKURAN AWAL YANG LEBIH KECIL DAN RAPI */
     .outlet-selection {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 16px;
+        background: rgba(255, 88, 31, 0.08);
+        border: 1px solid rgba(255, 88, 31, 0.15);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+        transition: all 0.3s ease;
+    }
+
+    .outlet-selection:hover {
+        background: rgba(255, 88, 31, 0.12);
+        border-color: rgba(255, 88, 31, 0.25);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.06);
     }
 
     .outlet-info {
         display: flex;
         align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .outlet-info::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 70%;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 88, 31, 0.2), transparent);
+        z-index: 1;
+    }
+
+    .outlet-item {
+        display: flex;
+        align-items: center;
         gap: 12px;
-        margin-bottom: 8px;
+        flex: 1;
+        min-width: 0;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 10px 12px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        position: relative;
+        z-index: 2;
+    }
+
+    .outlet-item:hover {
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     }
 
     .outlet-icon {
-        width: 40px;
-        height: 40px;
-        background: linear-gradient(135deg, var(--secondary-color) 0%, var(--accent-color) 100%);
+        width: 36px;
+        height: 36px;
+        background: rgba(255, 88, 31, 0.1);
         border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        font-size: 18px;
+        flex-shrink: 0;
+        border: 1px solid rgba(255, 88, 31, 0.15);
+        transition: all 0.3s ease;
+    }
+
+    .outlet-item:hover .outlet-icon {
+        background: rgba(255, 88, 31, 0.15);
+        border-color: rgba(255, 88, 31, 0.25);
+        transform: scale(1.05);
+    }
+
+    .outlet-icon i {
+        font-size: 14px;
+        color: var(--secondary-color);
+    }
+
+    .outlet-details {
+        flex: 1;
+        min-width: 0;
     }
 
     .outlet-details h5 {
-        margin: 0;
+        margin: 0 0 4px 0;
         font-size: 14px;
-        color: var(--primary-color);
         font-weight: 600;
+        color: var(--primary-color);
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .outlet-details p {
         margin: 0;
-        font-size: 12px;
+        font-size: 11px;
         color: var(--muted-text);
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .arrow-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 5px;
+        flex-shrink: 0;
+        z-index: 2;
+    }
+
+    .arrow-container i {
+        font-size: 14px;
+        color: var(--secondary-color);
+        background: rgba(255, 255, 255, 0.9);
+        padding: 5px;
+        border-radius: 50%;
+        box-shadow: 0 2px 5px rgba(255, 88, 31, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .arrow-container:hover i {
+        transform: scale(1.1);
+        box-shadow: 0 3px 8px rgba(255, 88, 31, 0.2);
+    }
+
+    .search-meta {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 15px;
+        font-size: 11px;
+        color: var(--primary-color);
+        font-weight: 500;
+    }
+
+    .meta-item i {
+        color: var(--secondary-color);
+        font-size: 10px;
+    }
+
+    /* Responsive untuk outlet selection */
+    @media (max-width: 992px) {
+        .outlet-info {
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .outlet-info::before {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(90deg);
+            width: 60%;
+        }
+
+        .outlet-item {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .arrow-container {
+            transform: rotate(90deg);
+            padding: 8px 0;
+        }
+
+        .arrow-container i {
+            transform: rotate(-90deg);
+        }
+
+        .search-meta {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .meta-item {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .outlet-selection {
+            padding: 12px;
+            gap: 10px;
+        }
+
+        .outlet-item {
+            padding: 8px 10px;
+            gap: 10px;
+        }
+
+        .outlet-icon {
+            width: 32px;
+            height: 32px;
+        }
+
+        .outlet-icon i {
+            font-size: 12px;
+        }
+
+        .outlet-details h5 {
+            font-size: 13px;
+        }
+
+        .outlet-details p {
+            font-size: 10px;
+        }
+
+        .arrow-container i {
+            font-size: 12px;
+            padding: 4px;
+        }
+
+        .meta-item {
+            font-size: 10px;
+            padding: 3px 8px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .outlet-info::before {
+            display: none;
+        }
     }
 
     .search-filters {
@@ -1098,6 +1306,172 @@
         box-shadow: none;
     }
 
+    /* STYLES UNTUK KOMBINASI DROPDOWN DAN SEARCH */
+    .combo-dropdown {
+        position: relative;
+    }
+
+    .combo-input-wrapper {
+        position: relative;
+    }
+
+    .combo-input {
+        width: 100%;
+        padding-right: 40px;
+        cursor: pointer;
+    }
+
+    .combo-dropdown-toggle {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #999;
+        cursor: pointer;
+        font-size: 14px;
+        transition: color 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 4px;
+    }
+
+    .combo-dropdown-toggle:hover {
+        color: var(--secondary-color);
+        background: rgba(255, 88, 30, 0.1);
+    }
+
+    .combo-dropdown-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        display: none;
+        margin-top: 5px;
+    }
+
+    .combo-dropdown-results.show {
+        display: block;
+    }
+
+    .combo-search-input {
+        padding: 12px 15px;
+        border-bottom: 1px solid #e9ecef;
+        background: #f8f9fa;
+    }
+
+    .combo-search-input input {
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.3s;
+    }
+
+    .combo-search-input input:focus {
+        border-color: var(--secondary-color);
+    }
+
+    .combo-options {
+        max-height: 250px;
+        overflow-y: auto;
+    }
+
+    .combo-optgroup {
+        padding: 8px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .combo-optgroup-header {
+        padding: 8px 15px;
+        background: #f8f9fa;
+        font-weight: 600;
+        color: var(--primary-color);
+        font-size: 13px;
+        border-top: 1px solid #e9ecef;
+        border-bottom: 1px solid #e9ecef;
+        margin-top: 5px;
+    }
+
+    .combo-optgroup-header:first-child {
+        border-top: none;
+        margin-top: 0;
+    }
+
+    .combo-option {
+        padding: 10px 15px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-bottom: 1px solid #f8f9fa;
+    }
+
+    .combo-option:hover {
+        background-color: rgba(255, 88, 30, 0.08);
+    }
+
+    .combo-option.selected {
+        background-color: rgba(255, 88, 30, 0.12);
+        color: var(--secondary-color);
+        font-weight: 500;
+    }
+
+    .combo-option:last-child {
+        border-bottom: none;
+    }
+
+    .combo-option-main {
+        font-weight: 600;
+        font-size: 13px;
+        color: #333;
+        margin-bottom: 2px;
+    }
+
+    .combo-option-detail {
+        font-size: 11px;
+        color: var(--muted-text);
+        line-height: 1.4;
+    }
+
+    .combo-no-results {
+        padding: 20px;
+        text-align: center;
+        color: var(--muted-text);
+        font-size: 14px;
+    }
+
+    /* Clear button */
+    .combo-clear-btn {
+        position: absolute;
+        right: 45px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #999;
+        cursor: pointer;
+        display: none;
+        font-size: 14px;
+        padding: 5px;
+        z-index: 2;
+    }
+
+    .combo-clear-btn:hover {
+        color: var(--secondary-color);
+    }
+
     /* Responsive Design */
     @media (max-width: 1200px) {
         .left-panel {
@@ -1141,7 +1515,8 @@
         .form-control,
         .form-control-select,
         input[type="date"],
-        input[type="number"] {
+        input[type="number"],
+        .combo-input {
             height: 48px !important;
             min-height: 48px;
             font-size: 15px;
@@ -1247,6 +1622,11 @@
         .info-row {
             grid-template-columns: repeat(2, 1fr);
         }
+
+        /* Combo dropdown responsive */
+        .combo-dropdown-results {
+            max-height: 250px;
+        }
     }
 
     @media (max-width: 480px) {
@@ -1288,7 +1668,8 @@
         .form-control,
         .form-control-select,
         input[type="date"],
-        input[type="number"] {
+        input[type="number"],
+        .combo-input {
             height: 46px !important;
             min-height: 46px;
             padding: 8px 12px !important;
@@ -1313,6 +1694,15 @@
             flex-direction: column;
             align-items: flex-start;
             gap: 10px;
+        }
+
+        .combo-option {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .combo-clear-btn {
+            right: 40px;
         }
     }
 
@@ -1352,50 +1742,90 @@
             <div class="search-section">
                 <h4 class="mb-0" style="color: var(--primary-color); margin-bottom: 16px !important; font-weight: 600; font-size: 16px;">Cari Shuttle</h4>
                 <form id="search-form" action="{{ route('customer.search') }}" method="GET">
-                    <div class="form-group">
+                    <!-- Outlet Asal dengan Combo Box -->
+                    <div class="form-group combo-dropdown">
                         <label class="form-label">Outlet Asal</label>
-                        <select class="form-control-select" id="departure-outlet" name="departure_outlet" required>
-                            <option value="">Pilih Outlet Asal</option>
-                            @foreach($outletsGrouped as $kota => $outletGroup)
-                                <optgroup label="{{ $kota }}">
-                                    @foreach($outletGroup as $outlet)
-                                        <option value="{{ $outlet['id'] }}"
-                                            {{ isset($validated['departure_outlet']) && $validated['departure_outlet'] == $outlet['id'] ? 'selected' :
-                                            (request('departure_outlet') == $outlet['id'] ? 'selected' : '') }}>
-                                            {{ $outlet['nama_outlet'] }} - {{ $outlet['alamat'] }}
-                                        </option>
-                                    @endforeach
-                                </optgroup>
-                            @endforeach
-                        </select>
+                        <div class="combo-input-wrapper">
+                            <input type="text"
+                                   class="form-control combo-input"
+                                   id="departure-outlet-input"
+                                   placeholder="Pilih outlet asal..."
+                                   value="{{ isset($validated['departure_outlet_data']) ? $validated['departure_outlet_data']->nama_outlet : '' }}"
+                                   readonly
+                                   required>
+                            <input type="hidden" id="departure-outlet" name="departure_outlet" value="{{ isset($validated['departure_outlet']) ? $validated['departure_outlet'] : request('departure_outlet') }}">
+
+                            <button type="button" class="combo-clear-btn" id="clear-departure-combo">
+                                <i class="fas fa-times"></i>
+                            </button>
+
+                            <button type="button" class="combo-dropdown-toggle" id="toggle-departure-dropdown">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+
+                        <!-- Dropdown untuk outlet asal -->
+                        <div class="combo-dropdown-results" id="departure-dropdown">
+                            <div class="combo-search-input">
+                                <input type="text"
+                                       id="departure-search"
+                                       placeholder="Cari outlet asal..."
+                                       autocomplete="off">
+                            </div>
+                            <div class="combo-options" id="departure-options">
+                                <!-- Options akan diisi oleh JavaScript -->
+                            </div>
+                        </div>
+
                         @if(isset($validated['departure_outlet_data']))
                             <small class="text-muted" style="font-size: 11px; display: block; margin-top: 4px;">
                                 <i class="fas fa-map-marker-alt"></i> {{ $validated['departure_outlet_data']->alamat_lengkap }}
                             </small>
                         @endif
                     </div>
-                    <div class="form-group">
+
+                    <!-- Outlet Tujuan dengan Combo Box -->
+                    <div class="form-group combo-dropdown">
                         <label class="form-label">Outlet Tujuan</label>
-                        <select class="form-control-select" id="destination-outlet" name="destination_outlet" required>
-                            <option value="">Pilih Outlet Tujuan</option>
-                            @foreach($outletsGrouped as $kota => $outletGroup)
-                                <optgroup label="{{ $kota }}">
-                                    @foreach($outletGroup as $outlet)
-                                        <option value="{{ $outlet['id'] }}"
-                                            {{ isset($validated['destination_outlet']) && $validated['destination_outlet'] == $outlet['id'] ? 'selected' :
-                                            (request('destination_outlet') == $outlet['id'] ? 'selected' : '') }}>
-                                            {{ $outlet['nama_outlet'] }} - {{ $outlet['alamat'] }}
-                                        </option>
-                                    @endforeach
-                                </optgroup>
-                            @endforeach
-                        </select>
+                        <div class="combo-input-wrapper">
+                            <input type="text"
+                                   class="form-control combo-input"
+                                   id="destination-outlet-input"
+                                   placeholder="Pilih outlet tujuan..."
+                                   value="{{ isset($validated['destination_outlet_data']) ? $validated['destination_outlet_data']->nama_outlet : '' }}"
+                                   readonly
+                                   required>
+                            <input type="hidden" id="destination-outlet" name="destination_outlet" value="{{ isset($validated['destination_outlet']) ? $validated['destination_outlet'] : request('destination_outlet') }}">
+
+                            <button type="button" class="combo-clear-btn" id="clear-destination-combo">
+                                <i class="fas fa-times"></i>
+                            </button>
+
+                            <button type="button" class="combo-dropdown-toggle" id="toggle-destination-dropdown">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+
+                        <!-- Dropdown untuk outlet tujuan -->
+                        <div class="combo-dropdown-results" id="destination-dropdown">
+                            <div class="combo-search-input">
+                                <input type="text"
+                                       id="destination-search"
+                                       placeholder="Cari outlet tujuan..."
+                                       autocomplete="off">
+                            </div>
+                            <div class="combo-options" id="destination-options">
+                                <!-- Options akan diisi oleh JavaScript -->
+                            </div>
+                        </div>
+
                         @if(isset($validated['destination_outlet_data']))
                             <small class="text-muted" style="font-size: 11px; display: block; margin-top: 4px;">
                                 <i class="fas fa-map-marker-alt"></i> {{ $validated['destination_outlet_data']->alamat_lengkap }}
                             </small>
                         @endif
                     </div>
+
                     <div class="form-group">
                         <label class="form-label">Tanggal</label>
                         <input type="date" class="form-control" id="departure-date" name="departure_date"
@@ -1403,12 +1833,14 @@
                                        (request('departure_date') ? request('departure_date') : \Carbon\Carbon::today()->format('Y-m-d')) }}"
                                min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" required>
                     </div>
+
                     <div class="form-group">
                         <label class="form-label">Penumpang</label>
                         <input type="number" class="form-control" id="passenger-count" name="passenger_count"
                                value="{{ isset($validated['passenger_count']) ? $validated['passenger_count'] :
                                        (request('passenger_count') ? request('passenger_count') : 1) }}" min="1" max="10" required>
                     </div>
+
                     <button type="submit" class="btn-search" id="search-button">
                         <span id="search-text">CARI SHUTTLE</span>
                         <div class="spinner" id="search-spinner" style="display: none;"></div>
@@ -1424,29 +1856,44 @@
                 @if(isset($validated) && isset($validated['departure_outlet_data']) && isset($validated['destination_outlet_data']))
                 <div class="outlet-selection">
                     <div class="outlet-info">
-                        <div class="outlet-icon">
-                            <i class="fas fa-map-marker-alt"></i>
+                        <!-- Outlet Asal -->
+                        <div class="outlet-item">
+                            <div class="outlet-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="outlet-details">
+                                <h5>{{ $validated['departure_outlet_data']->nama_outlet ?? 'Outlet Asal' }}</h5>
+                                <p>{{ $validated['departure_outlet_data']->alamat_lengkap ?? '' }}</p>
+                            </div>
                         </div>
-                        <div class="outlet-details">
-                            <h5>{{ $validated['departure_outlet_data']->nama_outlet ?? 'Outlet Asal' }}</h5>
-                            <p>{{ $validated['departure_outlet_data']->alamat_lengkap ?? '' }}</p>
+
+                        <!-- Arrow -->
+                        <div class="arrow-container">
+                            <i class="fas fa-arrow-right"></i>
                         </div>
-                        <div style="flex: 1; text-align: center;">
-                            <i class="fas fa-arrow-right" style="color: var(--secondary-color); font-size: 20px;"></i>
-                        </div>
-                        <div class="outlet-icon">
-                            <i class="fas fa-flag-checkered"></i>
-                        </div>
-                        <div class="outlet-details">
-                            <h5>{{ $validated['destination_outlet_data']->nama_outlet ?? 'Outlet Tujuan' }}</h5>
-                            <p>{{ $validated['destination_outlet_data']->alamat_lengkap ?? '' }}</p>
+
+                        <!-- Outlet Tujuan -->
+                        <div class="outlet-item">
+                            <div class="outlet-icon">
+                                <i class="fas fa-flag-checkered"></i>
+                            </div>
+                            <div class="outlet-details">
+                                <h5>{{ $validated['destination_outlet_data']->nama_outlet ?? 'Outlet Tujuan' }}</h5>
+                                <p>{{ $validated['destination_outlet_data']->alamat_lengkap ?? '' }}</p>
+                            </div>
                         </div>
                     </div>
-                    <div style="text-align: center; margin-top: 8px;">
-                      <span style="font-size: 12px; color: var(--muted-text);">
-    {{ \Carbon\Carbon::parse($validated['departure_date'])->locale('id')->isoFormat('dddd, D MMMM YYYY') }} •
-    {{ $validated['passenger_count'] }} Penumpang
-</span>
+
+                    <!-- Search Meta Info -->
+                    <div class="search-meta">
+                        <div class="meta-item">
+                            <i class="far fa-calendar"></i>
+                            <span>{{ \Carbon\Carbon::parse($validated['departure_date'])->locale('id')->isoFormat('dddd, D MMMM YYYY') }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-users"></i>
+                            <span>{{ $validated['passenger_count'] }} Penumpang</span>
+                        </div>
                     </div>
                 </div>
 
@@ -1500,6 +1947,7 @@
                                 @php
                                     $shuttle = $jadwal->shuttle;
                                     $fasilitasArray = $shuttle->fasilitas_array ?? [];
+                                    $seatGrid = $shuttle->getSeatGrid();
                                 @endphp
                                 <div class="result-card" data-departure-time="{{ \Carbon\Carbon::parse($jadwal->waktu_keberangkatan)->format('H:i') }}">
                                     <div class="shuttle-header">
@@ -1522,7 +1970,7 @@
                                                 <div class="time-info" style="font-size: 16px;">
                                                     {{ \Carbon\Carbon::parse($jadwal->waktu_keberangkatan)->format('H:i') }}
                                                     <span style="font-size: 12px; color: var(--muted-text); margin-left: 4px;">
-                                                        {{ $validated['departure_city'] }}
+                                                        {{ $validated['departure_city'] ?? '' }}
                                                     </span>
                                                 </div>
                                                 <div class="route-arrow" style="margin: 0 12px;">
@@ -1531,7 +1979,7 @@
                                                 <div class="time-info" style="font-size: 16px;">
                                                     {{ \Carbon\Carbon::parse($jadwal->waktu_kedatangan)->format('H:i') }}
                                                     <span style="font-size: 12px; color: var(--muted-text); margin-left: 4px;">
-                                                        {{ $validated['destination_city'] }}
+                                                        {{ $validated['destination_city'] ?? '' }}
                                                     </span>
                                                 </div>
                                             </div>
@@ -1637,7 +2085,7 @@
 
                                     <!-- Route Details (Collapsed) -->
                                     <div class="route-details" id="route-details-{{ $jadwal->id }}" style="display: none;">
-                                        <h4>Rincian Perjalanan</h4>
+                                        <h2>Rincian Perjalanan</h2>
                                         @if($jadwal->rutes && $jadwal->rutes->count() > 0)
                                             @foreach($jadwal->rutes as $index => $rute)
                                                 <div style="margin-bottom: 16px;">
@@ -1801,19 +2249,24 @@
                                                 <i class="fas fa-chair"></i>
                                                 Layout Kursi ({{ $shuttle->total_kursi ?? 9 }} Kursi)
                                                 <small style="font-size: 12px; color: #666; margin-left: 8px;">
-                                                    {{ $shuttle->seat_rows ?? 3 }} Baris × {{ $shuttle->seat_columns ?? 3 }} Kolom
+                                                    @php
+                                                        $rows = ceil(($shuttle->total_kursi ?? 9) / 3);
+                                                    @endphp
+                                                    {{ $rows }} Baris × 3 Kolom
                                                 </small>
                                             </h6>
 
                                             <div class="dynamic-seat-layout">
-                                                @if(isset($shuttle->seat_grid) && !empty($shuttle->seat_grid))
-                                                    @foreach($shuttle->seat_grid as $rowIndex => $row)
+                                                @if(!empty($seatGrid))
+                                                    @foreach($seatGrid as $rowIndex => $row)
                                                     <div class="seat-row-dynamic">
                                                         @foreach($row as $seat)
-                                                        <div class="seat-dynamic
-                                                            @if(($seat['tipe'] ?? 'reguler') === 'premium') seat-premium @endif
-                                                            @if(($seat['posisi'] ?? '') === 'tengah') seat-middle @endif">
-
+                                                        @php
+                                                            $seatClass = '';
+                                                            if(($seat['tipe'] ?? 'reguler') === 'premium') $seatClass .= ' seat-premium';
+                                                            if(($seat['posisi'] ?? '') === 'tengah') $seatClass .= ' seat-middle';
+                                                        @endphp
+                                                        <div class="seat-dynamic {{ $seatClass }}">
                                                             <div class="seat-number">{{ $seat['nomor'] ?? '?' }}</div>
 
                                                             @if(($seat['tipe'] ?? 'reguler') === 'premium')
@@ -1894,23 +2347,24 @@
                                                         </div>
                                                     </div>
 
-                                                    @if(isset($shuttle->dynamic_seat_layout) && is_array($shuttle->dynamic_seat_layout))
-                                                        @php
-                                                            $premiumCount = collect($shuttle->dynamic_seat_layout)
+                                                    @php
+                                                        $premiumCount = 0;
+                                                        if(isset($shuttle->layout_kursi_array) && is_array($shuttle->layout_kursi_array)) {
+                                                            $premiumCount = collect($shuttle->layout_kursi_array)
                                                                 ->where('tipe', 'premium')
                                                                 ->count();
-                                                        @endphp
-                                                        @if($premiumCount > 0)
-                                                        <div class="info-item">
-                                                            <div class="info-icon premium">
-                                                                <i class="fas fa-crown"></i>
-                                                            </div>
-                                                            <div class="info-text">
-                                                                <div class="info-label">Kursi Premium</div>
-                                                                <div class="info-value">{{ $premiumCount }} kursi</div>
-                                                            </div>
+                                                        }
+                                                    @endphp
+                                                    @if($premiumCount > 0)
+                                                    <div class="info-item">
+                                                        <div class="info-icon premium">
+                                                            <i class="fas fa-crown"></i>
                                                         </div>
-                                                        @endif
+                                                        <div class="info-text">
+                                                            <div class="info-label">Kursi Premium</div>
+                                                            <div class="info-value">{{ $premiumCount }} kursi</div>
+                                                        </div>
+                                                    </div>
                                                     @endif
                                                 </div>
 
@@ -1967,6 +2421,382 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Data outlet dari PHP
+    const outletsData = @json($outletsGrouped ?? []);
+
+    // Konversi data outlet ke format yang mudah dicari
+    let allOutlets = [];
+    let outletsByCity = {};
+
+    if (outletsData) {
+        Object.keys(outletsData).forEach(city => {
+            outletsData[city].forEach(outlet => {
+                const outletItem = {
+                    id: outlet.id,
+                    nama_outlet: outlet.nama_outlet,
+                    kota: city,
+                    alamat: outlet.alamat,
+                    alamat_lengkap: outlet.alamat_lengkap || outlet.alamat,
+                    searchText: `${outlet.nama_outlet} ${city} ${outlet.alamat}`.toLowerCase()
+                };
+                allOutlets.push(outletItem);
+
+                if (!outletsByCity[city]) {
+                    outletsByCity[city] = [];
+                }
+                outletsByCity[city].push(outletItem);
+            });
+        });
+    }
+
+    // Fungsi untuk membuat opsi dropdown
+    function createDropdownOptions(filteredOutlets = null) {
+        const outlets = filteredOutlets || allOutlets;
+        let optionsHTML = '';
+        let currentCity = null;
+
+        if (outlets.length === 0) {
+            return '<div class="combo-no-results">Tidak ada outlet yang ditemukan</div>';
+        }
+
+        outlets.forEach(outlet => {
+            // Tambahkan header kota jika berbeda
+            if (outlet.kota !== currentCity) {
+                currentCity = outlet.kota;
+                optionsHTML += `
+                    <div class="combo-optgroup">
+                        <div class="combo-optgroup-header">${outlet.kota}</div>
+                `;
+            }
+
+            optionsHTML += `
+                <div class="combo-option" data-id="${outlet.id}" data-name="${outlet.nama_outlet}" data-alamat="${outlet.alamat_lengkap}">
+                    <div class="combo-option-main">${outlet.nama_outlet}</div>
+                    <div class="combo-option-detail">${outlet.alamat_lengkap}</div>
+                </div>
+            `;
+
+            // Tutup optgroup jika kota berikutnya berbeda
+            const nextOutlet = outlets[outlets.indexOf(outlet) + 1];
+            if (!nextOutlet || nextOutlet.kota !== currentCity) {
+                optionsHTML += `</div>`;
+            }
+        });
+
+        return optionsHTML;
+    }
+
+    // Setup untuk departure combo box
+    const departureInput = document.getElementById('departure-outlet-input');
+    const departureHidden = document.getElementById('departure-outlet');
+    const departureDropdown = document.getElementById('departure-dropdown');
+    const departureOptions = document.getElementById('departure-options');
+    const departureSearch = document.getElementById('departure-search');
+    const toggleDepartureBtn = document.getElementById('toggle-departure-dropdown');
+    const clearDepartureBtn = document.getElementById('clear-departure-combo');
+
+    // Setup untuk destination combo box
+    const destinationInput = document.getElementById('destination-outlet-input');
+    const destinationHidden = document.getElementById('destination-outlet');
+    const destinationDropdown = document.getElementById('destination-dropdown');
+    const destinationOptions = document.getElementById('destination-options');
+    const destinationSearch = document.getElementById('destination-search');
+    const toggleDestinationBtn = document.getElementById('toggle-destination-dropdown');
+    const clearDestinationBtn = document.getElementById('clear-destination-combo');
+
+    // Inisialisasi dropdown dengan semua opsi
+    if (departureOptions) departureOptions.innerHTML = createDropdownOptions();
+    if (destinationOptions) destinationOptions.innerHTML = createDropdownOptions();
+
+    // Fungsi untuk menampilkan/sembunyikan dropdown
+    function toggleDropdown(dropdown, input) {
+        const isVisible = dropdown.classList.contains('show');
+
+        // Tutup semua dropdown yang terbuka
+        document.querySelectorAll('.combo-dropdown-results.show').forEach(d => {
+            d.classList.remove('show');
+        });
+
+        if (!isVisible) {
+            dropdown.classList.add('show');
+            if (input) input.focus();
+
+            // Scroll ke opsi yang dipilih jika ada
+            const selectedOption = dropdown.querySelector('.combo-option.selected');
+            if (selectedOption) {
+                selectedOption.scrollIntoView({ block: 'nearest' });
+            }
+        }
+    }
+
+    // Fungsi untuk memilih opsi
+    function selectOption(option, inputElement, hiddenInput, dropdown) {
+        const outletId = option.dataset.id;
+        const outletName = option.dataset.name;
+        const outletAlamat = option.dataset.alamat;
+
+        // Update input value
+        inputElement.value = outletName;
+
+        // Update hidden input
+        hiddenInput.value = outletId;
+
+        // Update clear button visibility
+        const clearBtn = inputElement.parentNode.querySelector('.combo-clear-btn');
+        if (clearBtn) {
+            clearBtn.style.display = 'block';
+        }
+
+        // Update toggle button icon
+        const toggleBtn = inputElement.parentNode.querySelector('.combo-dropdown-toggle');
+        if (toggleBtn) {
+            toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
+        }
+
+        // Hilangkan class selected dari semua opsi
+        dropdown.querySelectorAll('.combo-option.selected').forEach(opt => {
+            opt.classList.remove('selected');
+        });
+
+        // Tambahkan class selected ke opsi yang dipilih
+        option.classList.add('selected');
+
+        // Tutup dropdown
+        dropdown.classList.remove('show');
+
+        // Tampilkan info alamat jika ada
+        const formGroup = inputElement.closest('.form-group');
+        let infoElement = formGroup.querySelector('.outlet-info-text');
+
+        if (!infoElement) {
+            infoElement = document.createElement('small');
+            infoElement.className = 'text-muted outlet-info-text';
+            infoElement.style.fontSize = '11px';
+            infoElement.style.display = 'block';
+            infoElement.style.marginTop = '4px';
+            formGroup.appendChild(infoElement);
+        }
+
+        infoElement.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${outletAlamat}`;
+    }
+
+    // Fungsi untuk mencari outlet
+    function searchOutlets(query, currentId = null) {
+        const searchTerm = query.toLowerCase().trim();
+
+        if (!searchTerm) {
+            return allOutlets;
+        }
+
+        const results = [];
+        let exactMatches = [];
+        let partialMatches = [];
+
+        allOutlets.forEach(outlet => {
+            if (currentId && outlet.id == currentId) return;
+
+            const outletText = outlet.searchText;
+            const outletName = outlet.nama_outlet.toLowerCase();
+
+            // Cek apakah query cocok dengan nama outlet
+            if (outletName.includes(searchTerm)) {
+                exactMatches.push(outlet);
+            }
+            // Cek apakah query cocok dengan kota
+            else if (outlet.kota.toLowerCase().includes(searchTerm)) {
+                partialMatches.push(outlet);
+            }
+            // Cek apakah query cocok dengan alamat
+            else if (outlet.alamat.toLowerCase().includes(searchTerm)) {
+                partialMatches.push(outlet);
+            }
+            // Cek apakah query cocok dengan teks pencarian lengkap
+            else if (outletText.includes(searchTerm)) {
+                partialMatches.push(outlet);
+            }
+        });
+
+        return [...exactMatches, ...partialMatches];
+    }
+
+    // Fungsi untuk mengupdate opsi dropdown berdasarkan pencarian
+    function updateDropdownOptions(searchInput, optionsContainer, currentId) {
+        const query = searchInput.value;
+        const results = searchOutlets(query, currentId);
+        optionsContainer.innerHTML = createDropdownOptions(results);
+
+        // Attach event listeners ke opsi baru
+        attachOptionListeners(optionsContainer);
+    }
+
+    // Fungsi untuk attach event listeners ke opsi
+    function attachOptionListeners(optionsContainer) {
+        optionsContainer.querySelectorAll('.combo-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const comboBox = optionsContainer.closest('.combo-dropdown');
+                const input = comboBox.querySelector('.combo-input');
+                const hiddenInput = comboBox.querySelector('input[type="hidden"]');
+
+                selectOption(this, input, hiddenInput, optionsContainer.closest('.combo-dropdown-results'));
+            });
+        });
+    }
+
+    // Initial attach listeners
+    if (departureOptions) attachOptionListeners(departureOptions);
+    if (destinationOptions) attachOptionListeners(destinationOptions);
+
+    // Event listeners untuk departure combo box
+    if (toggleDepartureBtn) {
+        toggleDepartureBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleDropdown(departureDropdown, departureSearch);
+        });
+    }
+
+    if (departureInput) {
+        departureInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleDropdown(departureDropdown, departureSearch);
+        });
+    }
+
+    if (departureSearch) {
+        departureSearch.addEventListener('input', function() {
+            updateDropdownOptions(departureSearch, departureOptions, departureHidden.value);
+        });
+
+        departureSearch.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+
+    if (clearDepartureBtn) {
+        clearDepartureBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            departureInput.value = '';
+            departureHidden.value = '';
+            if (departureDropdown) departureDropdown.classList.remove('show');
+
+            // Hapus info alamat
+            const infoElement = departureInput.closest('.form-group').querySelector('.outlet-info-text');
+            if (infoElement) {
+                infoElement.remove();
+            }
+
+            // Reset dropdown options
+            if (departureOptions) {
+                departureOptions.innerHTML = createDropdownOptions();
+                attachOptionListeners(departureOptions);
+            }
+
+            // Hide clear button
+            this.style.display = 'none';
+        });
+    }
+
+    // Event listeners untuk destination combo box
+    if (toggleDestinationBtn) {
+        toggleDestinationBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleDropdown(destinationDropdown, destinationSearch);
+        });
+    }
+
+    if (destinationInput) {
+        destinationInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleDropdown(destinationDropdown, destinationSearch);
+        });
+    }
+
+    if (destinationSearch) {
+        destinationSearch.addEventListener('input', function() {
+            updateDropdownOptions(destinationSearch, destinationOptions, destinationHidden.value);
+        });
+
+        destinationSearch.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+
+    if (clearDestinationBtn) {
+        clearDestinationBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            destinationInput.value = '';
+            destinationHidden.value = '';
+            if (destinationDropdown) destinationDropdown.classList.remove('show');
+
+            // Hapus info alamat
+            const infoElement = destinationInput.closest('.form-group').querySelector('.outlet-info-text');
+            if (infoElement) {
+                infoElement.remove();
+            }
+
+            // Reset dropdown options
+            if (destinationOptions) {
+                destinationOptions.innerHTML = createDropdownOptions();
+                attachOptionListeners(destinationOptions);
+            }
+
+            // Hide clear button
+            this.style.display = 'none';
+        });
+    }
+
+    // Close dropdown ketika klik di luar
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.combo-dropdown')) {
+            document.querySelectorAll('.combo-dropdown-results').forEach(dropdown => {
+                dropdown.classList.remove('show');
+            });
+        }
+    });
+
+    // Handle ESC key to close dropdown
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            document.querySelectorAll('.combo-dropdown-results').forEach(dropdown => {
+                dropdown.classList.remove('show');
+            });
+        }
+    });
+
+    // Set initial values jika ada data sebelumnya
+    const initialDepartureId = departureHidden ? departureHidden.value : null;
+    if (initialDepartureId && departureInput) {
+        const outlet = allOutlets.find(o => o.id == initialDepartureId);
+        if (outlet) {
+            departureInput.value = outlet.nama_outlet;
+            if (clearDepartureBtn) clearDepartureBtn.style.display = 'block';
+
+            // Mark as selected in dropdown
+            setTimeout(() => {
+                const option = departureOptions ? departureOptions.querySelector(`[data-id="${initialDepartureId}"]`) : null;
+                if (option) {
+                    option.classList.add('selected');
+                }
+            }, 100);
+        }
+    }
+
+    const initialDestinationId = destinationHidden ? destinationHidden.value : null;
+    if (initialDestinationId && destinationInput) {
+        const outlet = allOutlets.find(o => o.id == initialDestinationId);
+        if (outlet) {
+            destinationInput.value = outlet.nama_outlet;
+            if (clearDestinationBtn) clearDestinationBtn.style.display = 'block';
+
+            // Mark as selected in dropdown
+            setTimeout(() => {
+                const option = destinationOptions ? destinationOptions.querySelector(`[data-id="${initialDestinationId}"]`) : null;
+                if (option) {
+                    option.classList.add('selected');
+                }
+            }, 100);
+        }
+    }
+
     // Handle filter buttons
     const filterButtons = document.querySelectorAll('.filter-btn');
     const resultCards = document.querySelectorAll('.result-card');
@@ -2057,11 +2887,25 @@ document.addEventListener('DOMContentLoaded', function() {
         searchForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            const departureOutlet = document.getElementById('departure-outlet').value;
-            const destinationOutlet = document.getElementById('destination-outlet').value;
+            const departureOutlet = departureHidden ? departureHidden.value : '';
+            const destinationOutlet = destinationHidden ? destinationHidden.value : '';
 
             if (departureOutlet && destinationOutlet && departureOutlet === destinationOutlet) {
                 alert('Outlet keberangkatan dan tujuan tidak boleh sama!');
+                return;
+            }
+
+            if (!departureOutlet) {
+                alert('Silakan pilih outlet asal!');
+                if (departureInput) departureInput.focus();
+                if (departureDropdown) toggleDropdown(departureDropdown, departureSearch);
+                return;
+            }
+
+            if (!destinationOutlet) {
+                alert('Silakan pilih outlet tujuan!');
+                if (destinationInput) destinationInput.focus();
+                if (destinationDropdown) toggleDropdown(destinationDropdown, destinationSearch);
                 return;
             }
 
@@ -2071,7 +2915,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const searchSpinner = document.getElementById('search-spinner');
             const loadingResults = document.getElementById('loading-results');
 
-            searchText.style.display = 'none';
+            if (searchText) searchText.style.display = 'none';
             if (searchSpinner) searchSpinner.style.display = 'block';
             if (searchButton) searchButton.disabled = true;
             if (loadingResults) loadingResults.style.display = 'block';
@@ -2091,9 +2935,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Force uniform height for form controls (additional safety)
+    // Force uniform height for form controls
     function enforceUniformHeight() {
-        const formControls = document.querySelectorAll('.form-control, .form-control-select, input[type="date"], input[type="number"]');
+        const formControls = document.querySelectorAll('.form-control, .form-control-select, input[type="date"], input[type="number"], .combo-input');
         formControls.forEach(control => {
             control.style.height = '44px';
             control.style.minHeight = '44px';

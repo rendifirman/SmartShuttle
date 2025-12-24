@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Shuttle - Beranda</title>
+    <!-- Font Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
@@ -20,7 +24,7 @@
         body {
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
@@ -91,7 +95,7 @@
 
         .nav-links {
             display: flex;
-            gap: 35px;
+            gap: 25px; /* Diperkecil sedikit agar semua menu muat */
             list-style: none;
             margin: 0;
             padding: 0;
@@ -101,10 +105,11 @@
             text-decoration: none;
             color: var(--primary-color);
             font-weight: 500;
-            font-size: 1rem;
+            font-size: 0.95rem; /* Diperkecil sedikit */
             transition: color 0.3s;
             position: relative;
             white-space: nowrap;
+            font-family: 'Roboto', sans-serif;
         }
 
         .nav-links a:hover {
@@ -150,7 +155,7 @@
             text-decoration: none;
             display: inline-block;
             text-align: center;
-            font-family: inherit;
+            font-family: 'Roboto', sans-serif;
         }
 
         .btn-login:hover {
@@ -194,12 +199,16 @@
             font-size: 54px;
             font-weight: 700;
             margin-bottom: 20px;
+            font-family: 'Roboto', sans-serif;
+            letter-spacing: -0.5px;
         }
 
         .hero-desc {
             font-size: 18px;
             line-height: 1.7;
             max-width: 520px;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 400;
         }
 
         .hero-services {
@@ -226,6 +235,7 @@
             flex: 1;
             min-width: 110px;
             border: 2px solid transparent;
+            font-family: 'Roboto', sans-serif;
         }
 
         .hero-service:hover {
@@ -247,6 +257,7 @@
         .hero-service span {
             color: #fff;
             font-weight: 600;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* Search Section */
@@ -295,6 +306,7 @@
             font-weight: bold;
             padding: 0 12px;
             box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
         }
 
         .search-input:focus {
@@ -310,6 +322,7 @@
             border-radius: 6px !important;
             background: #ffffff !important;
             font-weight: bold !important;
+            font-family: 'Roboto', sans-serif !important;
         }
 
         .select2-container--default .select2-selection--single .select2-selection__rendered {
@@ -317,6 +330,7 @@
             color: black !important;
             font-size: 14px !important;
             padding-left: 12px !important;
+            font-family: 'Roboto', sans-serif !important;
         }
 
         .select2-container--default .select2-selection--single .select2-selection__arrow {
@@ -327,6 +341,7 @@
             border: 2px solid #e0e0e0 !important;
             border-radius: 6px !important;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+            font-family: 'Roboto', sans-serif !important;
         }
 
         /* BUTTON */
@@ -349,6 +364,7 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* Tombol dengan layout vertikal (teks rata kiri, tanpa ikon) */
@@ -362,6 +378,7 @@
             min-height: fit-content;
             text-align: left;
             width: 100%;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* Container untuk teks (tanpa container ikon) */
@@ -386,6 +403,7 @@
             color: inherit;
             text-align: left;
             width: 100%;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* Label di bawah teks utama */
@@ -397,6 +415,7 @@
             font-weight: 500;
             max-width: 100%;
             text-align: left;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* Untuk tombol Cek Paket (default state) */
@@ -526,6 +545,7 @@
             color: var(--secondary-color);
             text-align: left;
             width: 100%;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* Label di bawah teks utama */
@@ -537,6 +557,7 @@
             font-weight: 500;
             max-width: 100%;
             text-align: left;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* Garis pemisah */
@@ -594,11 +615,13 @@
             text-align: left;
             transition: all 0.3s ease;
             min-width: 0;
+            font-family: 'Roboto', sans-serif;
         }
 
         .form-control::placeholder {
             color: rgba(87, 65, 65, 0.7);
             text-align: left;
+            font-family: 'Roboto', sans-serif;
         }
 
         .form-control:focus {
@@ -627,6 +650,7 @@
             white-space: nowrap;
             flex-shrink: 0;
             height: 48px;
+            font-family: 'Roboto', sans-serif;
         }
 
         .btn-cek-resi:hover {
@@ -653,6 +677,7 @@
             font-size: 18px;
             transition: all 0.3s ease;
             z-index: 20;
+            font-family: 'Roboto', sans-serif;
         }
 
         .close-modal:hover {
@@ -717,6 +742,7 @@
             min-width: 120px;
             white-space: nowrap;
             flex-shrink: 0;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* Input container - DIUBAH: mengambil sisa space */
@@ -735,6 +761,7 @@
             border: 2px solid rgba(255,255,255,0.3) !important;
             border-radius: 8px !important;
             background: white !important;
+            font-family: 'Roboto', sans-serif !important;
         }
 
         .select2-container--default .select2-selection--single.select2-modal .select2-selection__rendered {
@@ -742,6 +769,7 @@
             color: #333 !important;
             font-size: 15px !important;
             padding-left: 18px !important;
+            font-family: 'Roboto', sans-serif !important;
         }
 
         /* Input dengan suffix (kg, cm) - DIUBAH: lebih kompak */
@@ -771,6 +799,7 @@
             transform: translateY(-50%) !important;
             z-index: 100 !important;
             font-weight: 500;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* Volume container - 3 input dalam satu baris - DIUBAH: lebih kompak */
@@ -800,6 +829,7 @@
             font-size: 14px;
             font-weight: 500;
             pointer-events: none;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* Harga total display - DIUBAH: tetap di satu baris */
@@ -820,6 +850,7 @@
             font-weight: 600;
             color: white;
             white-space: nowrap;
+            font-family: 'Roboto', sans-serif;
         }
 
         .harga-value {
@@ -827,6 +858,7 @@
             font-weight: 700;
             color: var(--secondary-color);
             white-space: nowrap;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* Tombol Cek Harga di tengah - UKURAN REFERENSI */
@@ -849,6 +881,7 @@
             flex-shrink: 0;
             height: 48px;
             margin-top: 20px;
+            font-family: 'Roboto', sans-serif;
         }
 
         .btn-cek-harga:hover {
@@ -1051,6 +1084,7 @@
             font-weight: 700;
             color: var(--secondary-color);
             margin-bottom: 10px;
+            font-family: 'Roboto', sans-serif;
         }
 
         .services-subtitle {
@@ -1059,6 +1093,7 @@
             line-height: 1.6;
             max-width: 780px;
             margin: 0 auto 50px;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* GRID */
@@ -1119,6 +1154,7 @@
             color: #17375f;
             line-height: 1.5;
             transition: 0.35s ease;
+            font-family: 'Roboto', sans-serif;
         }
 
         .service-card:hover .service-desc {
@@ -1131,6 +1167,171 @@
             background: linear-gradient(90deg, transparent 0%, #FF581E 50%, transparent 100%);
             margin: 50px 0;
             opacity: 0.6;
+        }
+
+        /* === PROMO SECTION BARU === */
+        .promo-section {
+            padding: 80px 0;
+            background: #f9f9f9;
+            text-align: center;
+            position: relative;
+        }
+
+        .promo-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .promo-subtitle {
+            font-size: 14px;
+            color: #444;
+            line-height: 1.6;
+            max-width: 780px;
+            margin: 0 auto 50px;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        /* Promo Slider Container */
+        .promo-slider-container {
+            position: relative;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 60px;
+        }
+
+        .promo-slider {
+            overflow: hidden;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .promo-track {
+            display: flex;
+            transition: transform 0.5s ease;
+        }
+
+        .promo-slide {
+            flex: 0 0 100%;
+            min-width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .promo-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: 100%;
+            border: 2px solid #e0e0e0;
+        }
+
+        .promo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+            border-color: var(--secondary-color);
+        }
+
+        .promo-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .promo-content {
+            padding: 20px;
+            text-align: left;
+        }
+
+        .promo-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .promo-desc {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .promo-period {
+            font-size: 12px;
+            color: var(--secondary-color);
+            font-weight: 600;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        /* Promo Badge */
+        .promo-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--secondary-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            z-index: 2;
+        }
+
+        /* Slider Controls */
+        .slider-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 30px;
+            gap: 20px;
+        }
+
+        .slider-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid var(--secondary-color);
+            color: var(--secondary-color);
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .slider-btn:hover {
+            background: var(--secondary-color);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .slider-dots {
+            display: flex;
+            gap: 10px;
+        }
+
+        .slider-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ddd;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .slider-dot.active {
+            background: var(--secondary-color);
+            transform: scale(1.2);
         }
 
         /* Features Section */
@@ -1149,6 +1350,7 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             line-height: 1.3;
+            font-family: 'Roboto', sans-serif;
         }
 
         .features-grid-6 {
@@ -1204,6 +1406,7 @@
             margin-bottom: 20px;
             color: var(--secondary-color);
             line-height: 1.4;
+            font-family: 'Roboto', sans-serif;
         }
 
         .feature-desc {
@@ -1211,6 +1414,150 @@
             color: #666;
             line-height: 1.6;
             margin: 0;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        /* === ARTIKEL/BERITA SECTION === */
+        .articles-section {
+            padding: 80px 40px;
+            background: #f8f9fa;
+            text-align: center;
+        }
+
+        .articles-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .articles-subtitle {
+            font-size: 14px;
+            color: #444;
+            line-height: 1.6;
+            max-width: 780px;
+            margin: 0 auto 50px;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .articles-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .article-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            text-align: left;
+            height: 100%;
+            border: 1px solid #e0e0e0;
+        }
+
+        .article-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            border-color: var(--secondary-color);
+        }
+
+        .article-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .article-content {
+            padding: 25px;
+        }
+
+        .article-category {
+            display: inline-block;
+            background: var(--secondary-color);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .article-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 12px;
+            line-height: 1.4;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .article-excerpt {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .article-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #888;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 15px;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .article-date {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .article-read-more {
+            color: var(--secondary-color);
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.3s;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .article-read-more:hover {
+            color: var(--primary-color);
+            text-decoration: underline;
+        }
+
+        .view-all-articles {
+            display: inline-block;
+            margin-top: 40px;
+            padding: 12px 30px;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .view-all-articles:hover {
+            background: #E54E1A;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 88, 30, 0.3);
+            text-decoration: none;
+            color: white;
         }
 
         /* === REVIEW SECTION YANG DIRAPIHKAN === */
@@ -1235,6 +1582,7 @@
             margin-bottom: 10px;
             font-weight: 700;
             text-align: left;
+            font-family: 'Roboto', sans-serif;
         }
 
         .feedback-line {
@@ -1271,6 +1619,7 @@
             font-weight: 600;
             color: var(--primary-color);
             margin-bottom: 15px;
+            font-family: 'Roboto', sans-serif;
         }
 
         .star-filter-buttons {
@@ -1292,6 +1641,7 @@
             display: flex;
             align-items: center;
             gap: 5px;
+            font-family: 'Roboto', sans-serif;
         }
 
         .star-filter-btn:hover {
@@ -1329,11 +1679,13 @@
             color: var(--secondary-color);
             line-height: 1;
             margin-bottom: 5px;
+            font-family: 'Roboto', sans-serif;
         }
 
         .stat-label {
             font-size: 12px;
             color: #666;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* REVIEWS LIST */
@@ -1401,11 +1753,13 @@
             font-weight: 600;
             color: var(--primary-color);
             margin-bottom: 3px;
+            font-family: 'Roboto', sans-serif;
         }
 
         .review-date {
             font-size: 12px;
             color: #888;
+            font-family: 'Roboto', sans-serif;
         }
 
         .review-stars {
@@ -1419,6 +1773,7 @@
             line-height: 1.6;
             font-size: 14px;
             margin-top: 10px;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* NO REVIEWS */
@@ -1438,11 +1793,13 @@
             font-size: 18px;
             margin-bottom: 10px;
             color: #666;
+            font-family: 'Roboto', sans-serif;
         }
 
         .no-reviews p {
             font-size: 14px;
             color: #888;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* LOADING STATE */
@@ -1487,6 +1844,7 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
+            font-family: 'Roboto', sans-serif;
         }
 
         .page-btn:hover {
@@ -1508,6 +1866,7 @@
         .page-dots {
             color: #999;
             padding: 0 5px;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* KANAN: REVIEW FORM */
@@ -1525,6 +1884,7 @@
             font-weight: bold;
             margin-bottom: 15px;
             color: var(--secondary-color);
+            font-family: 'Roboto', sans-serif;
         }
 
         .form-subtitle {
@@ -1532,6 +1892,7 @@
             font-size: 14px;
             margin-bottom: 25px;
             line-height: 1.5;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* RATING INPUT */
@@ -1544,6 +1905,7 @@
             font-weight: 600;
             color: var(--primary-color);
             margin-bottom: 10px;
+            font-family: 'Roboto', sans-serif;
         }
 
         .star-rating-input {
@@ -1572,6 +1934,7 @@
             color: #666;
             margin-left: 10px;
             font-weight: 500;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* FORM GROUP */
@@ -1588,6 +1951,7 @@
             resize: vertical;
             min-height: 120px;
             transition: all 0.3s ease;
+            font-family: 'Roboto', sans-serif;
         }
 
         .form-textarea:focus {
@@ -1601,6 +1965,7 @@
             font-size: 12px;
             color: #888;
             margin-top: 5px;
+            font-family: 'Roboto', sans-serif;
         }
 
         .char-count.limit {
@@ -1624,6 +1989,7 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
+            font-family: 'Roboto', sans-serif;
         }
 
         .btn-primary:hover {
@@ -1648,6 +2014,7 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
+            font-family: 'Roboto', sans-serif;
         }
 
         .btn-close:hover {
@@ -1665,6 +2032,7 @@
             font-size: 13px;
             color: var(--primary-color);
             border-left: 3px solid var(--secondary-color);
+            font-family: 'Roboto', sans-serif;
         }
 
         .form-notice i {
@@ -1695,6 +2063,7 @@
             margin-bottom: 4px;
             display: block;
             line-height: 1.2;
+            font-family: 'Roboto', sans-serif;
         }
 
         .total-harga-value {
@@ -1704,6 +2073,7 @@
             margin-bottom: 4px;
             display: block;
             line-height: 1.2;
+            font-family: 'Roboto', sans-serif;
         }
 
         .total-harga-desc {
@@ -1712,6 +2082,7 @@
             margin-top: 4px;
             display: block;
             line-height: 1.2;
+            font-family: 'Roboto', sans-serif;
         }
 
         .success-icon {
@@ -1748,7 +2119,7 @@
             }
 
             .nav-links {
-                gap: 25px;
+                gap: 20px; /* Lebih kecil di tablet */
             }
 
             .services-grid {
@@ -1763,6 +2134,21 @@
 
             .features-grid-6 {
                 grid-template-columns: repeat(2, 1fr);
+            }
+
+            /* Articles Responsive */
+            .articles-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 25px;
+            }
+
+            /* Promo Responsive */
+            .promo-slider-container {
+                padding: 0 40px;
+            }
+
+            .promo-image {
+                height: 250px;
             }
         }
 
@@ -1832,6 +2218,59 @@
                 width: 100%;
                 max-width: 330px;
                 padding: 30px 15px 25px 15px;
+            }
+
+            /* Articles Responsive */
+            .articles-section {
+                padding: 40px 20px;
+            }
+
+            .articles-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .article-image {
+                height: 180px;
+            }
+
+            .article-content {
+                padding: 20px;
+            }
+
+            .article-title {
+                font-size: 16px;
+            }
+
+            /* Promo Responsive */
+            .promo-section {
+                padding: 40px 20px;
+            }
+
+            .promo-slider-container {
+                padding: 0 30px;
+            }
+
+            .promo-image {
+                height: 200px;
+            }
+
+            .promo-content {
+                padding: 15px;
+            }
+
+            .promo-name {
+                font-size: 16px;
+            }
+
+            .promo-desc {
+                font-size: 13px;
+            }
+
+            .slider-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
             }
 
             .features-section {
@@ -1962,6 +2401,51 @@
                 padding: 15px;
             }
 
+            /* Articles Responsive */
+            .article-image {
+                height: 160px;
+            }
+
+            .article-content {
+                padding: 15px;
+            }
+
+            .article-category {
+                font-size: 11px;
+                padding: 3px 10px;
+            }
+
+            .article-title {
+                font-size: 15px;
+            }
+
+            .article-excerpt {
+                font-size: 13px;
+            }
+
+            /* Promo Responsive */
+            .promo-slider-container {
+                padding: 0 20px;
+            }
+
+            .promo-image {
+                height: 180px;
+            }
+
+            .promo-name {
+                font-size: 14px;
+            }
+
+            .promo-desc {
+                font-size: 12px;
+            }
+
+            .slider-btn {
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+            }
+
             .features-title {
                 font-size: 24px;
             }
@@ -2058,6 +2542,7 @@
             font-weight: 700;
             margin-bottom: 15px;
             color: var(--secondary-color);
+            font-family: 'Roboto', sans-serif;
         }
 
         .footer-subtitle {
@@ -2065,6 +2550,7 @@
             font-weight: 600;
             margin-bottom: 15px;
             color: var(--secondary-color);
+            font-family: 'Roboto', sans-serif;
         }
 
         .footer-text {
@@ -2072,6 +2558,7 @@
             color: #ffffffff;
             line-height: 1.6;
             margin-bottom: 15px;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* Contact List */
@@ -2085,11 +2572,13 @@
             font-size: 14px;
             color: #ffffffff;
             line-height: 1.4;
+            font-family: 'Roboto', sans-serif;
         }
 
         .address {
             font-size: 13px;
             line-height: 1.5;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* Social Buttons */
@@ -2139,6 +2628,7 @@
             font-size: 14px;
             color: #ffffffff;
             margin: 0;
+            font-family: 'Roboto', sans-serif;
         }
 
         .footer-links {
@@ -2152,6 +2642,7 @@
             color: #ffffffff;
             text-decoration: none;
             transition: color 0.3s ease;
+            font-family: 'Roboto', sans-serif;
         }
 
         .footer-link:hover {
@@ -2199,6 +2690,7 @@
             transition: all 0.3s ease;
             z-index: 101;
             position: relative;
+            font-family: 'Roboto', sans-serif;
         }
 
         .profile-btn:hover,
@@ -2222,6 +2714,7 @@
             flex-shrink: 0;
             font-size: 16px;
             text-transform: uppercase;
+            font-family: 'Roboto', sans-serif;
         }
 
         .profile-avatar img {
@@ -2239,6 +2732,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            font-family: 'Roboto', sans-serif;
         }
 
         /* Dropdown Menu - PERBAIKAN */
@@ -2255,6 +2749,7 @@
             padding: 10px 0;
             border: 1px solid #e0e0e0;
             animation: fadeIn 0.2s ease-out;
+            font-family: 'Roboto', sans-serif;
         }
 
         @keyframes fadeIn {
@@ -2271,6 +2766,7 @@
             margin: 0;
             transition: background-color 0.2s;
             font-size: 14px;
+            font-family: 'Roboto', sans-serif;
         }
 
         .dropdown-menu a:hover {
@@ -2293,7 +2789,7 @@
             border: none;
             color: var(--primary-color);
             cursor: pointer;
-            font-family: inherit;
+            font-family: 'Roboto', sans-serif;
             font-size: 14px;
             transition: background-color 0.2s;
         }
@@ -2317,6 +2813,9 @@
     </style>
     @php
         use App\Models\MProfilePerusahaan;
+        use App\Models\Promo;
+        use App\Models\MLayanan;
+
         $profile = MProfilePerusahaan::first();
 
         // Data user dari session
@@ -2408,6 +2907,86 @@
                 'content' => 'Sudah langganan 2 tahun, selalu puas. Tidak pernah telat dan armada selalu dalam kondisi bersih.'
             ]
         ]);
+
+        // Data promo dari database
+        $promos = Promo::active()
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function($promo) {
+                return [
+                    'id' => $promo->id,
+                    'nama' => $promo->nama_promo,
+                    'deskripsi' => $promo->deskripsi,
+                    'gambar' => $promo->gambar ? asset($promo->gambar) : asset('images/default-promo.jpg'),
+                    'periode' => $promo->tanggal_mulai->format('d M Y') . ' - ' . $promo->tanggal_berakhir->format('d M Y'),
+                    'kode_promo' => $promo->kode_promo,
+                    'jenis_diskon' => $promo->jenis_diskon,
+                    'nilai_diskon' => $promo->nilai_diskon,
+                    'tipe_promo' => $promo->tipe_promo
+                ];
+            });
+
+        // Data layanan dari database
+        $layanan = MLayanan::where('status_aktif', true)->get();
+
+        // Data artikel/berita (bisa juga dari database jika ada)
+        $articles = collect([
+            [
+                'id' => 1,
+                'title' => 'Tips Perjalanan Aman dengan Shuttle Selama Liburan',
+                'excerpt' => 'Pelajari cara mempersiapkan perjalanan shuttle yang aman dan nyaman selama musim liburan untuk pengalaman terbaik.',
+                'category' => 'Tips & Trik',
+                'image' => asset('images/articles/cobacoba.jpg'),
+                'date' => '15 Maret 2024',
+                'read_time' => '3 min read'
+            ],
+            [
+                'id' => 2,
+                'title' => 'SmartShuffle Perkenalkan Fitur Baru: SmartSend',
+                'excerpt' => 'Kami dengan bangga memperkenalkan layanan pengiriman paket antar kota dengan fitur tracking real-time.',
+                'category' => 'Berita',
+                'image' => asset('images/articles/new-feature.jpg'),
+                'date' => '10 Maret 2024',
+                'read_time' => '4 min read'
+            ],
+            [
+                'id' => 3,
+                'title' => 'Mengapa Memilih Shuttle untuk Perjalanan Bisnis?',
+                'excerpt' => 'Temukan keuntungan menggunakan layanan shuttle untuk kebutuhan perjalanan bisnis Anda. Efisien dan hemat waktu.',
+                'category' => 'Bisnis',
+                'image' => asset('images/articles/business-travel.jpg'),
+                'date' => '5 Maret 2024',
+                'read_time' => '5 min read'
+            ],
+            [
+                'id' => 4,
+                'title' => 'Cara Memilih Armada Sewa yang Tepat',
+                'excerpt' => 'Panduan lengkap memilih armada sewa sesuai kebutuhan, dari keluarga kecil hingga rombongan besar.',
+                'category' => 'Panduan',
+                'image' => asset('images/articles/fleet-selection.jpg'),
+                'date' => '28 Februari 2024',
+                'read_time' => '4 min read'
+            ],
+            [
+                'id' => 5,
+                'title' => 'Promo Spesial: Nikmati Diskon 30% Shuttle',
+                'excerpt' => 'Manfaatkan promo spesial kami untuk perjalanan shuttle antar kota dengan diskon hingga 30%.',
+                'category' => 'Promo',
+                'image' => asset('images/articles/special-promo.jpg'),
+                'date' => '25 Februari 2024',
+                'read_time' => '2 min read'
+            ],
+            [
+                'id' => 6,
+                'title' => 'Kisah Sukses: Mitra Driver SmartShuttle',
+                'excerpt' => 'Baca kisah inspiratif dari driver mitra kami yang berhasil meningkatkan penghasilan melalui platform SmartShuttle.',
+                'category' => 'Kisah Sukses',
+                'image' => asset('images/articles/success-story.jpg'),
+                'date' => '20 Februari 2024',
+                'read_time' => '6 min read'
+            ]
+        ]);
     @endphp
 </head>
 <body>
@@ -2423,7 +3002,11 @@
                         <li><a href="/customer/beranda" class="active">Beranda</a></li>
                         <li><a href="{{ route('customer.search') }}">Cari Tiket</a></li>
                         <li><a href="{{ route('customer.outlet') }}">Outlet</a></li>
-                        <li><a href="/customer/contact">Kontak</a></li>
+                        <li><a href="{{ route('customer.contact') }}">Kontak</a></li>
+                        <!-- Menu baru ditambahkan di sini -->
+                        <li><a href="#" onclick="alert('Fitur Kirim Paket akan segera hadir!'); return false;">Kirim Paket</a></li>
+                        <li><a href="#" onclick="alert('Fitur Sewa Armada akan segera hadir!'); return false;">Sewa Armada</a></li>
+                        <li><a href="{{ route('customer.cek-reservasi')}}">Cek Reservasi</a></li>
                     </ul>
                 </div>
                 <!-- BAGIAN NAV-AUTH -->
@@ -2780,6 +3363,60 @@
         </div>
     </div>
 
+    <!-- === PROMO SECTION BARU === -->
+    <div class="promo-section">
+        <h2 class="promo-title">Promo Spesial {{ $profile->nama_dagang ?? 'Smart Shuttle' }}</h2>
+        <p class="promo-subtitle">
+            Nikmati berbagai penawaran menarik khusus untuk Anda. Dapatkan diskon dan promo eksklusif untuk layanan kami.
+        </p>
+
+        @if($promos && count($promos) > 0)
+            <div class="promo-slider-container">
+                <div class="promo-slider">
+                    <div class="promo-track" id="promo-track">
+                        @foreach($promos as $promo)
+                        <div class="promo-slide">
+                            <div class="promo-card" onclick="window.location.href='{{ route('customer.promo.detail', ['id' => $promo['id']]) }}'" style="cursor: pointer;">
+                                <img src="{{ $promo['gambar'] }}" alt="{{ $promo['nama'] }}" class="promo-image"
+                                     onerror="this.onerror=null; this.src='{{ asset('images/default-promo.jpg') }}';">
+                                <div class="promo-content">
+                                    <h3 class="promo-name">{{ $promo['nama'] }}</h3>
+                                    <p class="promo-desc">{{ $promo['deskripsi'] }}</p>
+                                    <p class="promo-period">Periode: {{ $promo['periode'] }}</p>
+                                    @if($promo['jenis_diskon'] == 'persentase')
+                                        <div class="promo-badge">
+                                            {{ $promo['nilai_diskon'] }}% OFF
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <!-- Slider Controls -->
+                <div class="slider-controls">
+                    <button class="slider-btn" id="prev-btn">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="slider-dots" id="slider-dots">
+                        <!-- Dots will be generated by JavaScript -->
+                    </div>
+                    <button class="slider-btn" id="next-btn">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        @else
+            <div style="text-align: center; padding: 40px; background: #f9f9f9; border-radius: 10px; margin: 20px auto; max-width: 600px;">
+                <i class="fas fa-tag" style="font-size: 48px; color: #ddd; margin-bottom: 15px;"></i>
+                <h3 style="color: #666; margin-bottom: 10px;">Belum ada promo saat ini</h3>
+                <p style="color: #888;">Nantikan promo menarik dari kami di waktu mendatang.</p>
+            </div>
+        @endif
+    </div>
+
     <!-- Features Section -->
     <div class="features-section">
         <h2 class="features-title">{{ strtoupper($profile->nama_dagang ?? 'SMART SHUTTLE') }} {{ $profile->features_title ?? 'SIAP MENEMANI SETIAP PERJALANANMU!' }}</h2>
@@ -2820,7 +3457,7 @@
                     <h3 class="feature-label">Sewa Fleksibel</h3>
                     <p class="feature-desc">Butuh kendaraan pribadi atau bisnis? SmartRent siap kapan pun kamu butuh.</p>
                 </div>
-                <div class="feature-card {
+                <div class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-shipping-fast"></i>
                     </div>
@@ -2834,7 +3471,7 @@
                     <h3 class="feature-label">Satu Aplikasi, Semua Bisa!</h3>
                     <p class="feature-desc">Perjalanan, sewa, dan kirim barang – semua dalam satu platform SmartShuttle.</p>
                 </div>
-                <div class="feature-card {
+                <div class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-headset"></i>
                     </div>
@@ -2844,6 +3481,39 @@
             @endif
         </div>
     </div>
+
+    <!-- === ARTIKEL/BERITA SECTION === -->
+    <section class="articles-section">
+        <h2 class="articles-title">Artikel & Berita Terbaru</h2>
+        <p class="articles-subtitle">
+            Dapatkan informasi terbaru seputar layanan transportasi, tips perjalanan, dan berita terbaru dari Smart Shuttle.
+        </p>
+
+        <div class="articles-grid">
+            @foreach($articles as $article)
+            <div class="article-card">
+                <img src="{{ $article['image'] }}" alt="{{ $article['title'] }}" class="article-image"
+                     onerror="this.onerror=null; this.src='{{ asset('images/default-article.jpg') }}';">
+                <div class="article-content">
+                    <span class="article-category">{{ $article['category'] }}</span>
+                    <h3 class="article-title">{{ $article['title'] }}</h3>
+                    <p class="article-excerpt">{{ $article['excerpt'] }}</p>
+                    <div class="article-meta">
+                        <div class="article-date">
+                            <i class="far fa-calendar-alt"></i>
+                            {{ $article['date'] }}
+                        </div>
+                        <a href="#" class="article-read-more">Baca Selengkapnya →</a>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+
+        <a href="#" class="view-all-articles">
+            Lihat Semua Artikel <i class="fas fa-arrow-right"></i>
+        </a>
+    </section>
 
     <!-- === FEEDBACK SECTION YANG DIRAPIHKAN DENGAN FILTER === -->
     <section class="feedback-section">
@@ -3828,6 +4498,138 @@
 
         // Make goToPage available globally
         window.goToPage = goToPage;
+    });
+
+    /* ---------- PROMO SLIDER SCRIPT ---------- */
+    const promoSlider = {
+        track: document.getElementById('promo-track'),
+        slides: document.querySelectorAll('.promo-slide'),
+        dotsContainer: document.getElementById('slider-dots'),
+        prevBtn: document.getElementById('prev-btn'),
+        nextBtn: document.getElementById('next-btn'),
+        currentIndex: 0,
+        totalSlides: 0,
+        autoSlideInterval: null,
+
+        init: function() {
+            this.totalSlides = this.slides.length;
+
+            // Create dots
+            for (let i = 0; i < this.totalSlides; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'slider-dot';
+                if (i === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => this.goToSlide(i));
+                this.dotsContainer.appendChild(dot);
+            }
+
+            // Event listeners for buttons
+            this.prevBtn.addEventListener('click', () => this.prevSlide());
+            this.nextBtn.addEventListener('click', () => this.nextSlide());
+
+            // Auto slide every 5 seconds
+            this.startAutoSlide();
+
+            // Pause auto slide on hover
+            this.track.parentElement.addEventListener('mouseenter', () => this.stopAutoSlide());
+            this.track.parentElement.addEventListener('mouseleave', () => this.startAutoSlide());
+
+            // Touch events for mobile
+            this.track.addEventListener('touchstart', this.handleTouchStart.bind(this));
+            this.track.addEventListener('touchmove', this.handleTouchMove.bind(this));
+
+            // Initialize
+            this.updateSlider();
+        },
+
+        goToSlide: function(index) {
+            this.currentIndex = index;
+            this.updateSlider();
+            this.resetAutoSlide();
+        },
+
+        prevSlide: function() {
+            this.currentIndex = (this.currentIndex - 1 + this.totalSlides) % this.totalSlides;
+            this.updateSlider();
+            this.resetAutoSlide();
+        },
+
+        nextSlide: function() {
+            this.currentIndex = (this.currentIndex + 1) % this.totalSlides;
+            this.updateSlider();
+            this.resetAutoSlide();
+        },
+
+        updateSlider: function() {
+            // Move track
+            this.track.style.transform = `translateX(-${this.currentIndex * 100}%)`;
+
+            // Update dots
+            const dots = this.dotsContainer.querySelectorAll('.slider-dot');
+            dots.forEach((dot, index) => {
+                if (index === this.currentIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        },
+
+        startAutoSlide: function() {
+            this.stopAutoSlide();
+            this.autoSlideInterval = setInterval(() => this.nextSlide(), 5000);
+        },
+
+        stopAutoSlide: function() {
+            if (this.autoSlideInterval) {
+                clearInterval(this.autoSlideInterval);
+                this.autoSlideInterval = null;
+            }
+        },
+
+        resetAutoSlide: function() {
+            this.stopAutoSlide();
+            this.startAutoSlide();
+        },
+
+        // Touch events for mobile
+        touchStartX: 0,
+        touchEndX: 0,
+
+        handleTouchStart: function(e) {
+            this.touchStartX = e.changedTouches[0].screenX;
+        },
+
+        handleTouchMove: function(e) {
+            this.touchEndX = e.changedTouches[0].screenX;
+            this.handleSwipe();
+        },
+
+        handleSwipe: function() {
+            const threshold = 50; // Minimum swipe distance
+            const diff = this.touchStartX - this.touchEndX;
+
+            if (Math.abs(diff) > threshold) {
+                if (diff > 0) {
+                    // Swipe left - next slide
+                    this.nextSlide();
+                } else {
+                    // Swipe right - previous slide
+                    this.prevSlide();
+                }
+            }
+
+            // Reset
+            this.touchStartX = 0;
+            this.touchEndX = 0;
+        }
+    };
+
+    // Initialize promo slider when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('promo-track')) {
+            promoSlider.init();
+        }
     });
 
     /* ---------- CEK HARGA PAKET AJAX ---------- */

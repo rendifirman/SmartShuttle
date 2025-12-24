@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use App\Models\Pemesanan;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\OutletController;
@@ -9,6 +11,7 @@ use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\KursiController;
 use App\Http\Controllers\ETicketController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Customer\CekReservasiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,6 +41,18 @@ Route::get('/cari-shuttle', [CustomerController::class, 'showSearch'])->name('cu
 Route::post('/cari-shuttle', [CustomerController::class, 'search'])->name('customer.search.post');
 Route::get('/customer/search', [CustomerController::class, 'showSearch'])->name('customer.search');
 Route::post('/customer/search', [CustomerController::class, 'search'])->name('customer.search.post');
+
+// ★★★ CEK RESERVASI - BISA DIAKSES TANPA LOGIN ★★★
+Route::get('/customer/cek-reservasi', function() {
+    return view('customer.cek-reservasi');
+})->name('customer.cek-reservasi');
+
+Route::post('/customer/cek-reservasi', [CekReservasiController::class, 'proses'])
+    ->name('customer.cek-reservasi.proses');
+
+// Route untuk hasil reservasi (bisa diakses tanpa login)
+Route::get('/customer/cek-reservasi/hasil/{kode}', [CekReservasiController::class, 'hasil'])
+    ->name('customer.cek-reservasi.hasil');
 
 // ★★★ AUTH ROUTES - HANYA UNTUK TAMU ★★★
 Route::middleware(['guest.customer'])->group(function () {
@@ -105,26 +120,21 @@ Route::middleware(['auth.customer'])->group(function () {
     Route::post('/customer/pemesanan/proses', [CustomerController::class, 'prosesPemesanan'])->name('customer.pemesanan.proses');
 
     // ★★★ PROMO ★★★
+    Route::get('/customer/promo/{id}', [CustomerController::class, 'showPromoDetail'])->name('customer.promo.detail');
     Route::post('/apply-promo', [CustomerController::class, 'validatePromo'])->name('customer.apply-promo');
     Route::post('/remove-promo', [CustomerController::class, 'removePromo'])->name('customer.remove-promo');
+    Route::get('/get-promos', [CustomerController::class, 'getPromos'])->name('customer.get-promos');
 
     // ★★★ KURSI ★★★
     Route::get('/customer/kursi', [CustomerController::class, 'showPemilihanKursi'])->name('customer.kursi');
     Route::post('/customer/kursi/proses', [CustomerController::class, 'prosesPemilihanKursi'])->name('customer.kursi.proses');
 
     // ★★★ PEMBAYARAN ★★★
-    // KOREKSI: Gunakan PembayaranController untuk halaman pembayaran
     Route::get('/customer/pembayaran/{kode_booking}', [PembayaranController::class, 'index'])->name('customer.pembayaran');
     Route::post('/customer/pembayaran/pilih-metode/{kode_booking}', [PembayaranController::class, 'pilihMetode'])->name('customer.pembayaran.pilih_metode');
     Route::get('/customer/pembayaran/simulasi/{kodePembayaran}/{status?}', [PembayaranController::class, 'simulasiPembayaran'])->name('customer.pembayaran.simulasi');
     Route::get('/customer/pembayaran/cek-status/{kodePembayaran}', [PembayaranController::class, 'cekStatus'])->name('customer.pembayaran.cek_status');
     Route::get('/customer/pembayaran/qr-code/{kodePembayaran}', [PembayaranController::class, 'generateQRCode'])->name('customer.pembayaran.qrcode');
-
-    // Hapus route yang bermasalah di CustomerController
-    // Route::get('/customer/pembayaran/{kode_booking}', [CustomerController::class, 'showPembayaran'])->name('customer.pembayaran');
-    // Route::post('/customer/pembayaran/proses', [CustomerController::class, 'prosesPembayaran'])->name('customer.pembayaran.proses');
-    // Route::get('/customer/konfirmasi-pembayaran/{kode_transaksi}', [CustomerController::class, 'showKonfirmasiPembayaran'])->name('customer.konfirmasi-pembayaran');
-    // Route::post('/customer/konfirmasi-pembayaran/proses', [CustomerController::class, 'prosesKonfirmasiPembayaran'])->name('customer.konfirmasi-pembayaran.proses');
 
     // ★★★ RIWAYAT ★★★
     Route::get('/customer/riwayat', [CustomerController::class, 'showRiwayat'])->name('customer.riwayat');
