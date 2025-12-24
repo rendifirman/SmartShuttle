@@ -1271,20 +1271,6 @@
             font-family: 'Roboto', sans-serif;
         }
 
-        /* Promo Badge */
-        .promo-badge {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: var(--secondary-color);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 14px;
-            z-index: 2;
-        }
-
         /* Slider Controls */
         .slider-controls {
             display: flex;
@@ -1361,62 +1347,135 @@
             margin: 0 auto;
         }
 
-        .feature-card {
-            background: white;
-            padding: 40px 30px;
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-            transition: all 0.3s ease;
-            text-align: center;
-            color: #333;
-            position: relative;
-            overflow: hidden;
-            border: 2px solid #e0e0e0;
-        }
+   /* Features Section - 6 KOTAK FITUR DIUBAH KE BIRU TANPA BAYANGAN LAIN */
+.feature-card {
+    background: #00215E;
+    padding: 40px 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    text-align: center;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid #00215E;
+}
 
-        .feature-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
-            border-color: var(--secondary-color);
-        }
+.feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+    border-color: #00215E;
+    background: #001a4a; /* Sedikit lebih gelap saat hover */
+}
 
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: #FF581E;
-        }
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #001a4a;
+}
 
-        .feature-icon {
-            font-size: 48px;
-            margin-bottom: 25px;
-            color: var(--secondary-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 80px;
-        }
+.feature-icon {
+    font-size: 48px;
+    margin-bottom: 25px;
+    color: white !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80px;
+}
 
-        .feature-label {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            color: var(--secondary-color);
-            line-height: 1.4;
-            font-family: 'Roboto', sans-serif;
-        }
+.feature-label {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: white !important;
+    line-height: 1.4;
+    font-family: 'Roboto', sans-serif;
+}
 
-        .feature-desc {
-            font-size: 14px;
-            color: #666;
-            line-height: 1.6;
-            margin: 0;
-            font-family: 'Roboto', sans-serif;
-        }
+.feature-desc {
+    font-size: 14px;
+    color: #e0e8ff !important; /* Warna biru muda terang */
+    line-height: 1.6;
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+}
 
+/* PAKSA SEMUA WARNA TETAP BIRU DAN PUTIH */
+.feature-card:hover .feature-icon,
+.feature-card .feature-icon {
+    color: white !important;
+}
+
+.feature-card:hover .feature-label,
+.feature-card .feature-label {
+    color: white !important;
+}
+
+.feature-card:hover .feature-desc,
+.feature-card .feature-desc {
+    color: #e0e8ff !important; /* Tetap biru muda */
+}
+
+/* Responsive untuk kotak fitur */
+@media (max-width: 768px) {
+    .feature-card {
+        padding: 30px 25px;
+    }
+
+    .feature-icon {
+        font-size: 40px;
+        margin-bottom: 20px;
+        height: 70px;
+    }
+
+    .feature-label {
+        font-size: 18px;
+        margin-bottom: 15px;
+    }
+
+    .feature-desc {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .feature-card {
+        padding: 25px 20px;
+    }
+
+    .feature-icon {
+        font-size: 36px;
+        height: 60px;
+    }
+
+    .feature-label {
+        font-size: 16px;
+    }
+}
+
+.feature-title {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 60px;
+    color: #00215E; /* Gunakan warna biru untuk judul */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    line-height: 1.3;
+    font-family: 'Roboto', sans-serif;
+}
+
+.feature-desc {
+    font-size: 14px;
+    color: #e0e8ff !important; /* Biru muda */
+    line-height: 1.6;
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+}
         /* === ARTIKEL/BERITA SECTION === */
         .articles-section {
             padding: 80px 40px;
@@ -2813,9 +2872,6 @@
     </style>
     @php
         use App\Models\MProfilePerusahaan;
-        use App\Models\Promo;
-        use App\Models\MLayanan;
-
         $profile = MProfilePerusahaan::first();
 
         // Data user dari session
@@ -2908,29 +2964,46 @@
             ]
         ]);
 
-        // Data promo dari database
-        $promos = Promo::active()
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get()
-            ->map(function($promo) {
-                return [
-                    'id' => $promo->id,
-                    'nama' => $promo->nama_promo,
-                    'deskripsi' => $promo->deskripsi,
-                    'gambar' => $promo->gambar ? asset($promo->gambar) : asset('images/default-promo.jpg'),
-                    'periode' => $promo->tanggal_mulai->format('d M Y') . ' - ' . $promo->tanggal_berakhir->format('d M Y'),
-                    'kode_promo' => $promo->kode_promo,
-                    'jenis_diskon' => $promo->jenis_diskon,
-                    'nilai_diskon' => $promo->nilai_diskon,
-                    'tipe_promo' => $promo->tipe_promo
-                ];
-            });
+        // Data promo (contoh statis, nanti bisa dari database)
+        $promos = collect([
+            [
+                'id' => 1,
+                'nama' => 'Promo Awal Tahun',
+                'deskripsi' => 'Diskon 30% untuk semua layanan shuttle selama bulan Januari',
+                'gambar' => asset('images/promo/bali.jpg'),
+                'periode' => '1 - 31 Januari 2024'
+            ],
+            [
+                'id' => 2,
+                'nama' => 'Paket Keluarga',
+                'deskripsi' => 'Diskon 25% untuk pemesanan tiket shuttle minimal 4 orang',
+                'gambar' => asset('images/promo/promo2.jpg'),
+                'periode' => '1 Februari - 31 Maret 2024'
+            ],
+            [
+                'id' => 3,
+                'nama' => 'Member Baru',
+                'deskripsi' => 'Dapatkan 2 tiket gratis untuk pendaftaran member baru',
+                'gambar' => asset('images/promo/promo3.jpg'),
+                'periode' => 'Sepanjang Tahun 2024'
+            ],
+            [
+                'id' => 4,
+                'nama' => 'Weekend Special',
+                'deskripsi' => 'Diskon 20% untuk perjalanan hari Sabtu dan Minggu',
+                'gambar' => asset('images/promo/promo4.jpg'),
+                'periode' => 'Setiap Weekend'
+            ],
+            [
+                'id' => 5,
+                'nama' => 'Kirim Paket Murah',
+                'deskripsi' => 'Gratis ongkir untuk pengiriman paket pertama kali',
+                'gambar' => asset('images/promo/promo5.jpg'),
+                'periode' => '1 - 30 April 2024'
+            ]
+        ]);
 
-        // Data layanan dari database
-        $layanan = MLayanan::where('status_aktif', true)->get();
-
-        // Data artikel/berita (bisa juga dari database jika ada)
+        // Data artikel/berita
         $articles = collect([
             [
                 'id' => 1,
@@ -3006,7 +3079,7 @@
                         <!-- Menu baru ditambahkan di sini -->
                         <li><a href="#" onclick="alert('Fitur Kirim Paket akan segera hadir!'); return false;">Kirim Paket</a></li>
                         <li><a href="#" onclick="alert('Fitur Sewa Armada akan segera hadir!'); return false;">Sewa Armada</a></li>
-                        <li><a href="{{ route('customer.cek-reservasi')}}">Cek Reservasi</a></li>
+                        <li><a href="#" >Cek Reservasi</a></li>
                     </ul>
                 </div>
                 <!-- BAGIAN NAV-AUTH -->
@@ -3370,51 +3443,38 @@
             Nikmati berbagai penawaran menarik khusus untuk Anda. Dapatkan diskon dan promo eksklusif untuk layanan kami.
         </p>
 
-        @if($promos && count($promos) > 0)
-            <div class="promo-slider-container">
-                <div class="promo-slider">
-                    <div class="promo-track" id="promo-track">
-                        @foreach($promos as $promo)
-                        <div class="promo-slide">
-                            <div class="promo-card" onclick="window.location.href='{{ route('customer.promo.detail', ['id' => $promo['id']]) }}'" style="cursor: pointer;">
-                                <img src="{{ $promo['gambar'] }}" alt="{{ $promo['nama'] }}" class="promo-image"
-                                     onerror="this.onerror=null; this.src='{{ asset('images/default-promo.jpg') }}';">
-                                <div class="promo-content">
-                                    <h3 class="promo-name">{{ $promo['nama'] }}</h3>
-                                    <p class="promo-desc">{{ $promo['deskripsi'] }}</p>
-                                    <p class="promo-period">Periode: {{ $promo['periode'] }}</p>
-                                    @if($promo['jenis_diskon'] == 'persentase')
-                                        <div class="promo-badge">
-                                            {{ $promo['nilai_diskon'] }}% OFF
-                                        </div>
-                                    @endif
-                                </div>
+        <div class="promo-slider-container">
+            <div class="promo-slider">
+                <div class="promo-track" id="promo-track">
+                    @foreach($promos as $promo)
+                    <div class="promo-slide">
+                        <div class="promo-card">
+                            <img src="{{ $promo['gambar'] }}" alt="{{ $promo['nama'] }}" class="promo-image"
+                                 onerror="this.onerror=null; this.src='{{ asset('images/default-promo.jpg') }}';">
+                            <div class="promo-content">
+                                <h3 class="promo-name">{{ $promo['nama'] }}</h3>
+                                <p class="promo-desc">{{ $promo['deskripsi'] }}</p>
+                                <p class="promo-period">Periode: {{ $promo['periode'] }}</p>
                             </div>
                         </div>
-                        @endforeach
                     </div>
+                    @endforeach
                 </div>
+            </div>
 
-                <!-- Slider Controls -->
-                <div class="slider-controls">
-                    <button class="slider-btn" id="prev-btn">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <div class="slider-dots" id="slider-dots">
-                        <!-- Dots will be generated by JavaScript -->
-                    </div>
-                    <button class="slider-btn" id="next-btn">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
+            <!-- Slider Controls -->
+            <div class="slider-controls">
+                <button class="slider-btn" id="prev-btn">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="slider-dots" id="slider-dots">
+                    <!-- Dots will be generated by JavaScript -->
                 </div>
+                <button class="slider-btn" id="next-btn">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
             </div>
-        @else
-            <div style="text-align: center; padding: 40px; background: #f9f9f9; border-radius: 10px; margin: 20px auto; max-width: 600px;">
-                <i class="fas fa-tag" style="font-size: 48px; color: #ddd; margin-bottom: 15px;"></i>
-                <h3 style="color: #666; margin-bottom: 10px;">Belum ada promo saat ini</h3>
-                <p style="color: #888;">Nantikan promo menarik dari kami di waktu mendatang.</p>
-            </div>
-        @endif
+        </div>
     </div>
 
     <!-- Features Section -->

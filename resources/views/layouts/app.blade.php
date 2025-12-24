@@ -423,7 +423,7 @@
                                 <!-- Menu baru ditambahkan di sini -->
                                 <li><a href="#" onclick="alert('Fitur Kirim Paket akan segera hadir!'); return false;">Kirim Paket</a></li>
                                 <li><a href="#" onclick="alert('Fitur Sewa Armada akan segera hadir!'); return false;">Sewa Armada</a></li>
-                                <li><a href="#" onclick="alert('Fitur Cek Reservasi akan segera hadir!'); return false;">Cek Reservasi</a></li>
+                                <li><a href="{{ route('customer.cek-reservasi')}}">Cek Reservasi</a></li>
                             </ul>
                         </div>
                         <!-- BAGIAN NAV-AUTH -->

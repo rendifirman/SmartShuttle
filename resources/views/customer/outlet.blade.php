@@ -5,44 +5,47 @@
 @push('styles')
 <style>
     /* Tombol Reset Filter */
-.btn-secondary {
-    background: linear-gradient(135deg, #6c757d 0%, #868e96 100%);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    font-weight: 500;
-}
+    .btn-secondary {
+        background: linear-gradient(135deg, #0C2D48 0%, #1A4A6E 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 14px;
+        min-width: 120px; /* Lebar minimal untuk tombol */
+    }
 
-.btn-secondary:hover {
-    background: linear-gradient(135deg, #5a6268 0%, #727b84 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
-}
+    .btn-secondary:hover {
+        background: linear-gradient(135deg, #FF581E 0%, #FF7A4A 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+    }
 
-.btn-secondary:active {
-    transform: translateY(0);
-}
+    .btn-secondary:active {
+        transform: translateY(0);
+    }
 
-.btn-secondary i {
-    margin-right: 8px;
-}
+    .btn-secondary i {
+        margin-right: 8px;
+    }
 
-/* Style untuk input dengan datalist */
-input[list] {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%230C2D48' class='bi bi-chevron-down' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 15px center;
-    background-size: 12px;
-    padding-right: 40px;
-    cursor: pointer;
-}
+    /* Style untuk input dengan datalist */
+    input[list] {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%230C2D48' class='bi bi-chevron-down' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 15px center;
+        background-size: 12px;
+        padding-right: 40px;
+        cursor: pointer;
+    }
 
-input[list]:hover {
-    border-color: #FF581E;
-}
+    input[list]:hover {
+        border-color: #FF581E;
+    }
+
     /* Outlet Page Styles dengan Background Foto */
     .outlet-page {
         background:
@@ -89,45 +92,86 @@ input[list]:hover {
         text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.8);
     }
 
-    /* Filter Section */
+    /* FILTER SECTION - DIRAPIKAN */
     .filter-section {
         background: rgba(255, 255, 255, 0.95);
-        padding: 20px;
+        padding: 30px;
         border-radius: 12px;
         margin-bottom: 40px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.08);
         backdrop-filter: blur(5px);
+        width: 100%;
+        max-width: 1140px;
+        margin-left: auto;
+        margin-right: auto;
     }
+
     .filter-section h4 {
         color: #0C2D48;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
         font-size: 18px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid rgba(12, 45, 72, 0.1);
     }
+
     .form-control {
         border: 1px solid #ddd;
         border-radius: 8px;
-        padding: 10px 15px;
+        padding: 12px 15px;
         background: white;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        width: 100%;
+        height: 44px;
     }
+
     .form-control:focus {
         border-color: #FF581E;
         box-shadow: 0 0 0 2px rgba(255, 88, 30, 0.2);
     }
-    .row {
+
+    /* LAYOUT FILTER YANG SEIMBANG - Filter item lebih panjang, button lebih pendek */
+    .filter-grid {
+        display: grid;
+        grid-template-columns: 2fr 2fr 1fr; /* Kolom pertama dan kedua lebih panjang, kolom ketiga lebih pendek */
+        gap: 70px;
+        align-items: end;
+    }
+
+    .filter-item {
         display: flex;
-        flex-wrap: wrap;
-        margin: 0 -10px;
+        flex-direction: column;
+        flex: 1;
     }
-    .col-md-4 {
-        padding: 0 10px;
-        flex: 0 0 33.333%;
-        max-width: 33.333%;
-    }
-    label {
+
+    .filter-item label {
         display: block;
-        margin-bottom: 5px;
+        margin-bottom: 8px;
         color: #555;
         font-weight: 500;
+        font-size: 14px;
+        white-space: nowrap;
+    }
+
+    .filter-button {
+        display: flex;
+        margin-right: 35px;
+        margin-bottom: 2px;
+        align-items: flex-end;
+        height: 100%;
+        justify-content: flex-end; /* Tombol di sebelah kanan */
+    }
+
+    .filter-button .btn-secondary {
+        height: 65px;
+        width: auto; /* Lebar otomatis berdasarkan konten */
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        white-space: nowrap;
+        font-size: 16px;
     }
 
     /* Outlet Grid */
@@ -138,9 +182,11 @@ input[list]:hover {
         margin: 0 auto;
     }
 
-    /* Outlet Card */
+    /* Outlet Card - DIRAPIKAN */
     .outlet-card {
         display: block;
+        text-decoration: none;
+        color: inherit;
     }
 
     .outlet-card-inner {
@@ -153,6 +199,7 @@ input[list]:hover {
         display: flex;
         flex-direction: column;
         backdrop-filter: blur(5px);
+        position: relative;
     }
 
     .outlet-card-inner:hover {
@@ -171,6 +218,18 @@ input[list]:hover {
         font-size: 18px;
         order: 1;
         letter-spacing: 0.5px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card-header::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, rgba(255, 88, 30, 0.5), transparent);
     }
 
     /* Card Image */
@@ -179,6 +238,18 @@ input[list]:hover {
         height: 200px;
         overflow: hidden;
         order: 2;
+        position: relative;
+    }
+
+    .card-image::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 100%;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.1), transparent);
+        z-index: 1;
     }
 
     .outlet-img {
@@ -192,25 +263,108 @@ input[list]:hover {
         transform: scale(1.05);
     }
 
-    /* Card Body */
+    /* Card Body yang DIRAPIKAN */
     .card-body {
         padding: 24px;
         flex: 1;
         display: flex;
         flex-direction: column;
         order: 3;
+        background: #fff;
     }
 
-    .card-text {
+    /* Grid untuk informasi outlet - LAYOUT RAPI */
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px 15px;
         margin-bottom: 20px;
-        color: #444;
-        line-height: 1.6;
-        flex: 1;
-        font-size: 15px;
     }
 
-    .card-text strong {
-        color: #0C2D48;
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .info-item.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .info-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .info-label i {
+        color: #FF581E;
+        font-size: 10px;
+        width: 12px;
+        text-align: center;
+    }
+
+    .info-value {
+        font-size: 13px;
+        color: #333;
+        line-height: 1.4;
+        font-weight: 500;
+    }
+
+    .info-value.address {
+        color: #555;
+        font-weight: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Contact & Hours Section */
+    .contact-hours {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+    }
+
+    .contact-hours-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .contact-item, .hours-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .contact-label, .hours-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #666;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .contact-label i, .hours-label i {
+        color: #FF581E;
+        font-size: 10px;
+    }
+
+    .contact-value, .hours-value {
+        font-size: 13px;
+        color: #333;
+        font-weight: 500;
     }
 
     .btn-detail {
@@ -222,22 +376,42 @@ input[list]:hover {
         transition: all 0.3s ease;
         font-weight: 500;
         cursor: pointer;
-        margin-top: auto;
-        align-self: flex-start;
-        box-shadow: 0 4px 15px rgba(12, 45, 72, 0.2);
+        margin-top: 20px;
+        width: 100%;
+        text-align: center;
+        font-size: 14px;
+        letter-spacing: 0.5px;
         position: relative;
         overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-detail::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: 0.5s;
     }
 
     .btn-detail:hover {
         background: linear-gradient(135deg, #FF581E 0%, #FF7A4A 100%);
-        color: white;
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(255, 88, 30, 0.3);
     }
 
-    .btn-detail:active {
-        transform: translateY(0);
+    .btn-detail:hover::before {
+        left: 100%;
+    }
+
+    .btn-detail i {
+        font-size: 12px;
     }
 
     /* ============ POPUP LAYOUT: FOTO DI ATAS, INFO DI BAWAH ============ */
@@ -459,6 +633,36 @@ input[list]:hover {
         border-left: 4px solid #0C2D48;
     }
 
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    .empty-state h3 {
+        color: #666;
+        margin-bottom: 10px;
+        font-weight: 500;
+    }
+
+    .empty-state p {
+        color: #888;
+        margin-bottom: 20px;
+    }
+
+    .empty-state a {
+        color: #FF581E;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .empty-state a:hover {
+        text-decoration: underline;
+    }
+
     /* Animasi */
     @keyframes fadeIn {
         from { opacity: 0; }
@@ -494,12 +698,18 @@ input[list]:hover {
 
         .filter-section {
             margin-bottom: 30px;
+            padding: 20px;
         }
 
-        .col-md-4 {
-            flex: 0 0 100%;
-            max-width: 100%;
-            margin-bottom: 15px;
+        .filter-grid {
+            grid-template-columns: 1fr; /* Di mobile jadi 1 kolom */
+            gap: 15px;
+        }
+
+        .filter-button .btn-secondary {
+            height: 44px;
+            width: 100%; /* Di mobile tombol full width */
+            justify-content: center;
         }
 
         .card-image {
@@ -513,6 +723,15 @@ input[list]:hover {
         .card-header {
             padding: 16px;
             font-size: 16px;
+        }
+
+        .info-grid {
+            gap: 10px;
+        }
+
+        .contact-hours-grid {
+            grid-template-columns: 1fr;
+            gap: 10px;
         }
 
         .btn-detail {
@@ -569,6 +788,18 @@ input[list]:hover {
         }
     }
 
+    @media (min-width: 769px) and (max-width: 1024px) {
+        .filter-grid {
+            grid-template-columns: 2fr 2fr 1fr; /* Tetap 2:2:1 di tablet */
+            gap: 15px;
+        }
+
+        .filter-button .btn-secondary {
+            padding: 12px 15px; /* Sedikit lebih kecil di tablet */
+            font-size: 13px;
+        }
+    }
+
     @media (max-width: 480px) {
         .outlet-container {
             padding: 16px 12px;
@@ -615,58 +846,58 @@ input[list]:hover {
     <div class="outlet-container">
         <h1 class="outlet-title">LOKASI OUTLET SMARTSHUTTLE</h1>
 
-       <!-- Filter Section -->
-<div class="filter-section">
-    <h4>Filter Outlet</h4>
-    <form method="GET" action="{{ route('customer.outlet.filter') }}" id="filterForm">
-        <div class="row">
-            <!-- Filter Kota dengan Input Datalist -->
-            <div class="col-md-4">
-                <label>Filter berdasarkan Kota:</label>
-                <input type="text"
-                       name="kota"
-                       class="form-control"
-                       id="kotaInput"
-                       list="kotaOptions"
-                       placeholder="Ketik atau pilih kota"
-                       value="{{ request('kota') }}"
-                       onchange="submitFilterForm()">
-                <datalist id="kotaOptions">
-                    @foreach($kotaList as $kota)
-                        <option value="{{ $kota }}">
-                    @endforeach
-                </datalist>
-            </div>
+        <!-- FILTER SECTION - DIRAPIKAN -->
+        <div class="filter-section">
+            <h4>Filter Outlet</h4>
+            <form method="GET" action="{{ route('customer.outlet.filter') }}" id="filterForm">
+                <div class="filter-grid">
+                    <!-- Filter Kota dengan Input Datalist - LEBAR PANJANG -->
+                    <div class="filter-item">
+                        <label for="kotaInput">Filter berdasarkan Kota:</label>
+                        <input type="text"
+                               name="kota"
+                               class="form-control"
+                               id="kotaInput"
+                               list="kotaOptions"
+                               placeholder="Ketik atau pilih kota"
+                               value="{{ request('kota') }}"
+                               onchange="submitFilterForm()">
+                        <datalist id="kotaOptions">
+                            @foreach($kotaList as $kota)
+                                <option value="{{ $kota }}">
+                            @endforeach
+                        </datalist>
+                    </div>
 
-            <!-- Filter Cabang dengan Input Datalist -->
-            <div class="col-md-4">
-                <label>Filter berdasarkan Cabang:</label>
-                <input type="text"
-                       name="branch_name"
-                       class="form-control"
-                       id="branchInput"
-                       list="branchOptions"
-                       placeholder="Ketik atau pilih cabang"
-                       value="{{ request('branch_name') }}"
-                       onchange="submitFilterForm()">
-                <input type="hidden" name="branch_id" id="branchIdInput" value="{{ request('branch_id') }}">
-                <datalist id="branchOptions">
-                    @foreach($branches as $branch)
-                        <option value="{{ $branch->nama_cabang }} - {{ $branch->kota }}"
-                                data-id="{{ $branch->id }}">
-                    @endforeach
-                </datalist>
-            </div>
+                    <!-- Filter Cabang dengan Input Datalist - LEBAR PANJANG -->
+                    <div class="filter-item">
+                        <label for="branchInput">Filter berdasarkan Cabang:</label>
+                        <input type="text"
+                               name="branch_name"
+                               class="form-control"
+                               id="branchInput"
+                               list="branchOptions"
+                               placeholder="Ketik atau pilih cabang"
+                               value="{{ request('branch_name') }}"
+                               onchange="submitFilterForm()">
+                        <input type="hidden" name="branch_id" id="branchIdInput" value="{{ request('branch_id') }}">
+                        <datalist id="branchOptions">
+                            @foreach($branches as $branch)
+                                <option value="{{ $branch->nama_cabang }} - {{ $branch->kota }}"
+                                        data-id="{{ $branch->id }}">
+                            @endforeach
+                        </datalist>
+                    </div>
 
-            <!-- Tombol Reset Filter -->
-            <div class="col-md-4" style="display: flex; align-items: flex-end;">
-                <button type="button" class="btn btn-secondary" onclick="resetFilter()" style="height: 42px; width: 100%;">
-                    <i class="fas fa-redo"></i> Reset Filter
-                </button>
-            </div>
+                    <!-- Tombol Reset Filter - LEBAR PENDEK -->
+                    <div class="filter-button">
+                        <button type="button" class="btn btn-secondary" onclick="resetFilter()">
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
-    </form>
-</div>
 
         <!-- Grid Outlet -->
         <div class="outlet-grid">
@@ -688,14 +919,68 @@ input[list]:hover {
                                  onerror="this.onerror=null;this.src='{{ asset('images/placeholder-outlet.jpg') }}'">
                         </div>
                         <div class="card-body">
-                            <div class="card-text">
-                                <strong>Cabang:</strong> {{ $outlet->branch ? $outlet->branch->nama_cabang : 'Tidak diketahui' }}<br>
-                                <strong>Kota:</strong> {{ $outlet->branch ? $outlet->branch->kota : 'Tidak diketahui' }}<br>
-                                <strong>Alamat:</strong> {{ \Illuminate\Support\Str::limit($outlet->alamat_lengkap ?? $outlet->alamat, 100) }}<br>
-                                <strong>Telepon:</strong> {{ $outlet->telepon ?? '-' }}<br>
-                                <strong>Jam Operasional:</strong> {{ $outlet->jam_operasional ?? '24 Jam' }}
+                            <!-- Grid informasi outlet -->
+                            <div class="info-grid">
+                                <!-- Cabang -->
+                                <div class="info-item">
+                                    <div class="info-label">
+                                        <i class="fas fa-store"></i> CABANG
+                                    </div>
+                                    <div class="info-value">
+                                        {{ $outlet->branch ? $outlet->branch->nama_cabang : 'Tidak diketahui' }}
+                                    </div>
+                                </div>
+
+                                <!-- Kota -->
+                                <div class="info-item">
+                                    <div class="info-label">
+                                        <i class="fas fa-city"></i> KOTA
+                                    </div>
+                                    <div class="info-value">
+                                        {{ $outlet->branch ? $outlet->branch->kota : 'Tidak diketahui' }}
+                                    </div>
+                                </div>
+
+                                <!-- Alamat (Full Width) -->
+                                <div class="info-item full-width">
+                                    <div class="info-label">
+                                        <i class="fas fa-map-marker-alt"></i> ALAMAT
+                                    </div>
+                                    <div class="info-value address">
+                                        {{ $outlet->alamat_lengkap ?? $outlet->alamat }}
+                                    </div>
+                                </div>
                             </div>
-                            <button class="btn-detail" onclick="showOutletPopup({{ $outlet->id }})">Lihat Detail</button>
+
+                            <!-- Contact & Hours -->
+                            <div class="contact-hours">
+                                <div class="contact-hours-grid">
+                                    <!-- Telepon -->
+                                    <div class="contact-item">
+                                        <div class="contact-label">
+                                            <i class="fas fa-phone"></i> TELEPON
+                                        </div>
+                                        <div class="contact-value">
+                                            {{ $outlet->telepon ?? '-' }}
+                                        </div>
+                                    </div>
+
+                                    <!-- Jam Operasional -->
+                                    <div class="hours-item">
+                                        <div class="hours-label">
+                                            <i class="fas fa-clock"></i> JAM OPERASIONAL
+                                        </div>
+                                        <div class="hours-value">
+                                            {{ $outlet->jam_operasional ?? '24 Jam' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Button Detail -->
+                            <button class="btn-detail" onclick="showOutletPopup({{ $outlet->id }})">
+                                <i class="fas fa-eye"></i> Lihat Detail
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -704,7 +989,7 @@ input[list]:hover {
 
         <!-- Jika tidak ada outlet -->
         @if($outlets->isEmpty())
-        <div style="text-align: center; padding: 40px; background: white; border-radius: 12px;">
+        <div class="empty-state">
             <h3>Tidak ada outlet ditemukan</h3>
             <p>Silakan coba filter lain atau <a href="{{ route('customer.outlet') }}">reset filter</a></p>
         </div>
@@ -797,75 +1082,79 @@ $outletsArray = $outlets->map(function($o) {
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 <script>
     // Fungsi untuk submit form filter
-function submitFilterForm() {
-    document.getElementById('filterForm').submit();
-}
+    function submitFilterForm() {
+        document.getElementById('filterForm').submit();
+    }
 
-// Fungsi untuk reset filter
-function resetFilter() {
-    // Reset input values
-    document.getElementById('kotaInput').value = '';
-    document.getElementById('branchInput').value = '';
-    document.getElementById('branchIdInput').value = '';
+    // Fungsi untuk reset filter
+    function resetFilter() {
+        // Reset input values
+        document.getElementById('kotaInput').value = '';
+        document.getElementById('branchInput').value = '';
+        document.getElementById('branchIdInput').value = '';
 
-    // Submit form
-    document.getElementById('filterForm').submit();
-}
+        // Submit form
+        document.getElementById('filterForm').submit();
+    }
 
-// Handle branch selection from datalist
-document.addEventListener('DOMContentLoaded', function() {
-    const branchInput = document.getElementById('branchInput');
-    const branchIdInput = document.getElementById('branchIdInput');
-    const branchOptions = document.getElementById('branchOptions');
+    // Handle branch selection from datalist
+    document.addEventListener('DOMContentLoaded', function() {
+        const branchInput = document.getElementById('branchInput');
+        const branchIdInput = document.getElementById('branchIdInput');
+        const branchOptions = document.getElementById('branchOptions');
 
-    branchInput.addEventListener('input', function() {
-        // Cari branch yang sesuai dengan input
-        const inputValue = this.value.toLowerCase();
-        let foundBranchId = null;
+        branchInput.addEventListener('input', function() {
+            // Cari branch yang sesuai dengan input
+            const inputValue = this.value.toLowerCase();
+            let foundBranchId = null;
 
-        // Loop melalui semua option di datalist
-        Array.from(branchOptions.options).forEach(option => {
-            if (option.value.toLowerCase() === inputValue) {
-                foundBranchId = option.getAttribute('data-id');
+            // Loop melalui semua option di datalist
+            Array.from(branchOptions.options).forEach(option => {
+                if (option.value.toLowerCase() === inputValue) {
+                    foundBranchId = option.getAttribute('data-id');
+                }
+            });
+
+            // Set hidden input untuk branch_id
+            branchIdInput.value = foundBranchId || '';
+
+            // Jika tidak ada yang cocok, clear hidden input
+            if (!foundBranchId) {
+                // Optional: submit form untuk mencari cabang berdasarkan nama
+                setTimeout(() => {
+                    branchIdInput.value = '';
+                }, 100);
             }
         });
 
-        // Set hidden input untuk branch_id
-        branchIdInput.value = foundBranchId || '';
+        // Tambahkan event listener untuk enter key
+        branchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitFilterForm();
+            }
+        });
 
-        // Jika tidak ada yang cocok, clear hidden input
-        if (!foundBranchId) {
-            // Optional: submit form untuk mencari cabang berdasarkan nama
-            setTimeout(() => {
-                branchIdInput.value = '';
-            }, 100);
+        const kotaInput = document.getElementById('kotaInput');
+        kotaInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitFilterForm();
+            }
+        });
+
+        // Auto-submit ketika memilih dari datalist (untuk browser yang support)
+        branchInput.addEventListener('change', function() {
+            setTimeout(submitFilterForm, 100);
+        });
+
+        if (kotaInput) {
+            kotaInput.addEventListener('change', function() {
+                setTimeout(submitFilterForm, 100);
+            });
         }
     });
 
-    // Tambahkan event listener untuk enter key
-    branchInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            submitFilterForm();
-        }
-    });
-
-    kotaInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            submitFilterForm();
-        }
-    });
-
-    // Auto-submit ketika memilih dari datalist (untuk browser yang support)
-    branchInput.addEventListener('change', function() {
-        setTimeout(submitFilterForm, 100);
-    });
-
-    kotaInput.addEventListener('change', function() {
-        setTimeout(submitFilterForm, 100);
-    });
-});
     // Data outlets diambil dari server (Blade -> JS)
     const outletsData = @json($outletsArray);
     const placeholderImage = "{{ asset('images/placeholder-outlet.jpg') }}";
@@ -904,7 +1193,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return 'fas fa-check-circle';
     }
 
-    // Tampilkan popup dengan layout: Foto di ATAS, Info di BAWAH
+    // Tampilkan popup dengan layout: Foto di ATAS, INFO DI BAWAH
     function showOutletPopup(id) {
         const outlet = getOutletById(id);
         const popupCard = document.getElementById('popupCard');
