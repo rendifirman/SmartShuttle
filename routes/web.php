@@ -193,6 +193,11 @@ Route::get('/debug/e-ticket/{kode_booking}', function($kode_booking) {
 // Route untuk review
 Route::post('/customer/review', [CustomerController::class, 'storeReview'])->name('customer.review.store');
 
+// Route artikel (placeholder) — jika belum ada halaman artikel, redirect ke beranda
+Route::get('/customer/artikel', function () {
+    return redirect()->route('customer.beranda');
+})->name('customer.artikel');
+
 // ★★★ ROUTE FALLBACK ★★★
 Route::fallback(function () {
     return redirect()->route('customer.beranda');

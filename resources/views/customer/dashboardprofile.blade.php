@@ -634,8 +634,8 @@
         <div class="profile-card">
             <div class="profile-image-container">
                 <div class="profile-image">
-                    @if(!empty($user->avatar) && file_exists(public_path('storage/' . $user->avatar)))
-                        <img src="{{ asset('storage/' . $user->avatar) }}" alt="{{ $user->name }}">
+                    @if(!empty($user->avatar_url))
+                        <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}">
                     @else
                         <div class="profile-image-initials">
                             {{ getInitials($user->name ?? 'LA') }}
@@ -760,3 +760,4 @@
     });
 </script>
 @endpush
+    

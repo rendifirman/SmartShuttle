@@ -38,7 +38,9 @@ class DatabaseSeeder extends Seeder
             PromoSeeder::class,
             MasterKontakSeeder::class,
             MetodePembayaranSeeder::class,
-            JadwalSeeder::class,          // TERAKHIR! (butuh Rute & Shuttle)
+            JadwalSeeder::class,
+            ArtikelSeeder::class,
+   // TERAKHIR! (butuh Rute & Shuttle)
         ]);
     }
 }

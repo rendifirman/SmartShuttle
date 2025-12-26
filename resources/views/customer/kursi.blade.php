@@ -366,6 +366,27 @@
 
     .seat-box.sold {
         background: #D9D9D9;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .seat-box.sold::before,
+    .seat-box.sold::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 80%;
+        height: 3px;
+        background: #ff4444;
+    }
+
+    .seat-box.sold::before {
+        transform: translate(-50%, -50%) rotate(45deg);
+    }
+
+    .seat-box.sold::after {
+        transform: translate(-50%, -50%) rotate(-45deg);
     }
 
     .seat-box.selected {
@@ -522,6 +543,8 @@
         transition: all 0.2s ease;
         user-select: none;
         position: relative;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     .seat.available {
@@ -533,17 +556,79 @@
     .seat.available:hover {
         background: #f8f9fa;
         border-color: #FF581E;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
 
+    /* PERBAIKAN: Styling untuk kursi terpesan agar tidak bisa diklik */
     .seat.sold {
-        background: #D9D9D9;
-        color: white;
-        cursor: not-allowed;
+        background: #D9D9D9 !important;
+        color: #999 !important;
+        cursor: not-allowed !important;
+        border: 2px solid #c0c0c0 !important;
+        opacity: 0.8;
+        filter: grayscale(80%);
+        position: relative;
+        pointer-events: none;
     }
 
+    .seat.sold::before,
+    .seat.sold::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 80%;
+        height: 3px;
+        background: #ff4444;
+        transform: translate(-50%, -50%);
+    }
+
+    .seat.sold::before {
+        transform: translate(-50%, -50%) rotate(45deg);
+    }
+
+    .seat.sold::after {
+        transform: translate(-50%, -50%) rotate(-45deg);
+    }
+
+    .seat.sold .seat-number {
+        opacity: 0.4;
+        position: relative;
+        z-index: 1;
+    }
+
+    .seat.sold .seat-status-icon {
+        color: #ff4444 !important;
+        opacity: 1 !important;
+        z-index: 1;
+    }
+
+    .seat.sold .seat-premium-badge,
+    .seat.sold .seat-price-extra {
+        opacity: 0.3;
+        z-index: 1;
+    }
+
+    /* Styling untuk kursi yang dipilih */
     .seat.selected {
         background: #FF581E;
         color: white;
+        border: 2px solid #FF581E;
+        box-shadow: 0 0 12px rgba(255, 88, 30, 0.4);
+        animation: pulse-selected 2s infinite;
+    }
+
+    @keyframes pulse-selected {
+        0% {
+            box-shadow: 0 0 0 0 rgba(255, 88, 30, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(255, 88, 30, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(255, 88, 30, 0);
+        }
     }
 
     /* Selected Seats */
@@ -580,6 +665,16 @@
         display: flex;
         align-items: center;
         gap: 4px;
+    }
+
+    .seat-badge-item .remove-seat {
+        font-size: 10px;
+        opacity: 0.8;
+        cursor: pointer;
+    }
+
+    .seat-badge-item .remove-seat:hover {
+        opacity: 1;
     }
 
     .total-price {
@@ -654,7 +749,7 @@
     }
 
     .seat.sold .seat-status-icon {
-        color: white;
+        color: #ff4444;
     }
 
     .seat-number {
@@ -679,18 +774,48 @@
         font-weight: bold;
     }
 
-    .seat-badge-item .remove-seat {
-        font-size: 10px;
-        opacity: 0.8;
-    }
-
-    .seat-badge-item .remove-seat:hover {
-        opacity: 1;
-    }
-
     .payment-btn.disabled {
         background: #D9D9D9;
         cursor: not-allowed;
+    }
+
+    /* Pesan Validasi */
+    .validation-message {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-top: 16px;
+        display: none;
+    }
+
+    .validation-message.show {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .validation-message.danger {
+        background: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+    }
+
+    .validation-message.success {
+        background: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+    }
+
+    .validation-message.info {
+        background: #d1ecf1;
+        border-color: #bee5eb;
+        color: #0c5460;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     /* Responsive Design */
@@ -753,12 +878,18 @@
 
         .seat-grid {
             max-width: 200px;
+            gap: 12px;
         }
 
         .seat {
             width: 45px;
             height: 45px;
             font-size: 14px;
+        }
+
+        .seat.sold::before,
+        .seat.sold::after {
+            height: 2px;
         }
 
         .fasilitas-badges {
@@ -778,6 +909,29 @@
 
         .price-item.total .price-value {
             font-size: 18px;
+        }
+    }
+
+    /* Responsive untuk layar sangat kecil */
+    @media (max-width: 360px) {
+        .seat-grid {
+            max-width: 180px;
+            gap: 10px;
+        }
+
+        .seat {
+            width: 40px;
+            height: 40px;
+            font-size: 12px;
+        }
+
+        .seat-premium-badge {
+            font-size: 8px;
+            padding: 1px 3px;
+        }
+
+        .seat-price-extra {
+            font-size: 8px;
         }
     }
 </style>
@@ -1067,7 +1221,7 @@
                             </div>
                             <div class="legend-item">
                                 <div class="seat-box sold"></div>
-                                <span class="legend-text">Terjual</span>
+                                <span class="legend-text">Terpesan</span>
                             </div>
                             <div class="legend-item">
                                 <div class="seat-box selected"></div>
@@ -1127,7 +1281,7 @@
                         <h2 class="card-title">DATA KURSI</h2>
 
                         @if(!isset($pemesanan))
-                            <div class="alert alert-danger">
+                            <div class="validation-message danger">
                                 <i class="fas fa-exclamation-triangle"></i> Data pemesanan tidak ditemukan.
                                 <a href="{{ route('customer.search') }}" class="alert-link">Kembali ke pencarian</a>
                             </div>
@@ -1189,23 +1343,32 @@
                                             // Tentukan status: 'terpesan' atau 'tersedia'
                                             // Status sudah ada di $layoutKursi dari controller
                                             $status = $kursi['status'] ?? 'tersedia';
-                                            $terpesan = $status === 'terpesan';
+                                            $terpesan = $status === 'terpesan' || $status === 'terisi';
+                                            $nomorKursi = $kursi['nomor'] ?? '';
+                                            $hargaTambahan = $kursi['harga_tambahan'] ?? 0;
+                                            $tipe = $kursi['tipe'] ?? 'reguler';
                                         @endphp
 
-                                        <div class="seat {{ $terpesan ? 'sold' : 'available' }}"
-                                             data-seat="{{ $kursi['nomor'] }}"
-                                             data-harga="{{ $pemesanan->harga_total + ($kursi['harga_tambahan'] ?? 0) }}"
+                                        <div class="seat {{ $terpesan ? 'sold' : 'available' }} {{ $tipe === 'premium' ? 'seat-premium' : '' }}"
+                                             data-seat="{{ $nomorKursi }}"
+                                             data-harga="{{ $pemesanan->harga_total + $hargaTambahan }}"
                                              data-status="{{ $status }}"
-                                             onclick="selectSeat(this, {{ !$terpesan ? 'true' : 'false' }}, '{{ $kursi['nomor'] }}')">
+                                             data-nomor="{{ $nomorKursi }}"
+                                             @if(!$terpesan)
+                                                onclick="selectSeat(this, '{{ $nomorKursi }}')"
+                                             @else
+                                                title="Kursi {{ $nomorKursi }} sudah terpesan"
+                                                style="cursor: not-allowed; pointer-events: none;"
+                                             @endif>
 
-                                            <span class="seat-number">{{ $kursi['nomor'] }}</span>
+                                            <span class="seat-number">{{ $nomorKursi }}</span>
 
-                                            @if(isset($kursi['tipe']) && $kursi['tipe'] === 'premium')
+                                            @if($tipe === 'premium')
                                                 <small class="seat-premium-badge">PREMIUM</small>
                                             @endif
 
-                                            @if(isset($kursi['harga_tambahan']) && $kursi['harga_tambahan'] > 0)
-                                                <small class="seat-price-extra">+{{ number_format($kursi['harga_tambahan'], 0, ',', '.') }}</small>
+                                            @if($hargaTambahan > 0)
+                                                <small class="seat-price-extra">+{{ number_format($hargaTambahan, 0, ',', '.') }}</small>
                                             @endif
 
                                             <!-- Icon status -->
@@ -1237,7 +1400,13 @@
                                                      data-seat="{{ $seatNumber }}"
                                                      data-harga="{{ $pemesanan->harga_total }}"
                                                      data-status="{{ $isTerpesan ? 'terpesan' : 'tersedia' }}"
-                                                     onclick="selectSeat(this, {{ !$isTerpesan ? 'true' : 'false' }}, '{{ $seatNumber }}')">
+                                                     data-nomor="{{ $seatNumber }}"
+                                                     @if(!$isTerpesan)
+                                                        onclick="selectSeat(this, '{{ $seatNumber }}')"
+                                                     @else
+                                                        title="Kursi {{ $seatNumber }} sudah terpesan"
+                                                        style="cursor: not-allowed; pointer-events: none;"
+                                                     @endif>
 
                                                     <span class="seat-number">{{ $seatNumber }}</span>
 
@@ -1274,6 +1443,12 @@
                                 </div>
                             </div>
 
+                            <!-- Pesan validasi -->
+                            <div class="validation-message" id="validation-message">
+                                <i class="fas fa-info-circle"></i>
+                                <span id="validation-text"></span>
+                            </div>
+
                             <!-- Action Button -->
                             <div class="action-buttons">
                                 <button type="button" class="btn-secondary" onclick="window.history.back()">
@@ -1303,10 +1478,33 @@
         const pemesananId = {{ $pemesanan->id }};
         const jadwalId = {{ $pemesanan->jadwal_id }};
 
+        // DOM Elements
+        const validationMessage = document.getElementById('validation-message');
+        const validationText = document.getElementById('validation-text');
+        const paymentBtn = document.getElementById('payment-btn');
+
+        // Fungsi untuk menampilkan pesan validasi
+        function showValidationMessage(message, type = 'info') {
+            validationText.textContent = message;
+            validationMessage.className = `validation-message ${type} show`;
+
+            // Sembunyikan pesan setelah 5 detik untuk pesan info/success
+            if (type === 'info' || type === 'success') {
+                setTimeout(() => {
+                    validationMessage.classList.remove('show');
+                }, 5000);
+            }
+        }
+
         // Fungsi untuk memilih kursi
-        window.selectSeat = function(seatElement, isAvailable, seatNumber) {
-            if (!isAvailable) {
-                alert(`Kursi ${seatNumber} sudah terpesan. Silakan pilih kursi lain.`);
+        window.selectSeat = function(seatElement, seatNumber) {
+            // Cek status dari data attribute
+            const status = seatElement.getAttribute('data-status');
+            const isSold = status === 'terpesan' || status === 'terisi';
+
+            // Validasi kursi terpesan
+            if (isSold) {
+                showValidationMessage(`Kursi ${seatNumber} sudah terpesan oleh penumpang lain. Silakan pilih kursi lain.`, 'danger');
                 return;
             }
 
@@ -1321,13 +1519,17 @@
                 selectedSeats.splice(seatIndex, 1);
                 seatElement.classList.remove('selected');
                 seatElement.classList.add('available');
+
+                // Update icon
                 if (seatElement.querySelector('.seat-status-icon')) {
                     seatElement.querySelector('.seat-status-icon').className = 'fas fa-check seat-status-icon available-icon';
                 }
+
+                showValidationMessage(`Kursi ${seatNumber} dibatalkan`, 'info');
             } else {
                 // Cek apakah sudah mencapai batas maksimal
                 if (selectedSeats.length >= maxSeats) {
-                    alert(`Anda hanya dapat memilih maksimal ${maxSeats} kursi.`);
+                    showValidationMessage(`Anda hanya dapat memilih maksimal ${maxSeats} kursi.`, 'warning');
                     return;
                 }
 
@@ -1340,14 +1542,27 @@
 
                 seatElement.classList.remove('available');
                 seatElement.classList.add('selected');
+
+                // Update icon
                 if (seatElement.querySelector('.seat-status-icon')) {
                     seatElement.querySelector('.seat-status-icon').className = 'fas fa-user seat-status-icon selected-icon';
                 }
+
+                showValidationMessage(`Kursi ${seatNumber} dipilih`, 'success');
             }
 
             updateSelectedSeatsDisplay();
             updateFormInputs();
             updatePaymentButton();
+        }
+
+        // Fungsi untuk menghapus kursi yang dipilih
+        window.removeSelectedSeat = function(seatId) {
+            const seatElement = document.querySelector(`[data-seat="${seatId}"]`);
+            if (seatElement) {
+                const seatNumber = seatElement.getAttribute('data-nomor') || seatElement.querySelector('.seat-number')?.textContent;
+                window.selectSeat(seatElement, seatNumber);
+            }
         }
 
         // Fungsi untuk memperbarui tampilan kursi yang dipilih
@@ -1386,16 +1601,6 @@
             }
         }
 
-        // Fungsi untuk menghapus kursi yang dipilih
-        window.removeSelectedSeat = function(seatId) {
-            const seatElement = document.querySelector(`[data-seat="${seatId}"]`);
-            if (seatElement) {
-                const isAvailable = seatElement.getAttribute('data-status') === 'tersedia';
-                const seatNumber = seatElement.querySelector('.seat-number')?.textContent || seatElement.textContent.trim();
-                selectSeat(seatElement, isAvailable, seatNumber);
-            }
-        }
-
         // Fungsi untuk memperbarui input form
         function updateFormInputs() {
             const container = document.getElementById('selected-seats-inputs');
@@ -1412,8 +1617,6 @@
 
         // Fungsi untuk memperbarui status tombol pembayaran
         function updatePaymentButton() {
-            const paymentBtn = document.getElementById('payment-btn');
-
             if (selectedSeats.length === maxSeats) {
                 paymentBtn.disabled = false;
                 paymentBtn.textContent = 'Lanjutkan ke Detail Pesanan';
@@ -1441,26 +1644,74 @@
             }
         }
 
-        // Validasi form sebelum submit - VERSI SEDERHANA
+        // Validasi form sebelum submit
         document.getElementById('kursi-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
             // Validasi jumlah kursi
             if (selectedSeats.length !== maxSeats) {
-                e.preventDefault();
-                alert(`Silakan pilih ${maxSeats} kursi terlebih dahulu.`);
+                showValidationMessage(`Silakan pilih ${maxSeats} kursi terlebih dahulu.`, 'warning');
+                return;
+            }
+
+            // Validasi kursi ganda
+            const seatNumbers = selectedSeats.map(s => s.id);
+            const uniqueSeats = [...new Set(seatNumbers)];
+            if (uniqueSeats.length !== selectedSeats.length) {
+                showValidationMessage('Terdapat kursi yang dipilih dua kali. Silakan periksa kembali.', 'danger');
                 return;
             }
 
             // Tampilkan loading
-            const paymentBtn = document.getElementById('payment-btn');
+            const originalText = paymentBtn.innerHTML;
             paymentBtn.disabled = true;
-            paymentBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...';
+            paymentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
 
-            // Submit form secara normal (tanpa validasi AJAX)
-            // Form akan dikirim ke route 'customer.kursi.proses'
+            // Validasi API sebelum submit
+            fetch('/api/validasi-kursi', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    jadwal_id: jadwalId,
+                    kursi: seatNumbers,
+                    pemesanan_id: pemesananId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Submit form jika validasi berhasil
+                    showValidationMessage('Validasi kursi berhasil. Mengirim data...', 'success');
+                    setTimeout(() => {
+                        this.submit();
+                    }, 1000);
+                } else {
+                    // Tampilkan error
+                    showValidationMessage(data.message || 'Terjadi kesalahan validasi kursi.', 'danger');
+                    paymentBtn.disabled = false;
+                    paymentBtn.innerHTML = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showValidationMessage('Terjadi kesalahan jaringan. Silakan coba lagi.', 'danger');
+                paymentBtn.disabled = false;
+                paymentBtn.innerHTML = originalText;
+            });
         });
 
         // Inisialisasi
         updatePaymentButton();
+
+        // Nonaktifkan semua kursi yang sudah terpesan
+        const soldSeats = document.querySelectorAll('.seat.sold');
+        soldSeats.forEach(seat => {
+            seat.style.pointerEvents = 'none';
+            seat.style.cursor = 'not-allowed';
+        });
 
         // Debug info
         console.log('Pemesanan ID:', pemesananId);

@@ -2,10 +2,17 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Smart Shuttle | Login</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    :root{
+      --primary-blue: #123352; /* Biru utama */
+      --accent-orange: #FF581E; /* Oren */
+      --white: #ffffff;
+      --text-gray: #4a5568; /* teks abu */
+    }
+
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
     * {
@@ -17,6 +24,7 @@
     html, body {
       height: 100%;
       font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
     }
 
     body {
@@ -30,6 +38,7 @@
     @media (max-width: 768px) {
       body {
         background-position: 70% center;
+        background-attachment: scroll;
       }
     }
 
@@ -41,30 +50,121 @@
 
     .left-overlay {
       background: rgba(255, 254, 254, 0.85);
-      backdrop-filter: blur(2px);
     }
 
     .right-overlay {
       background: rgba(59, 59, 59, 0.7);
-      backdrop-filter: blur(10px);
     }
 
     @media (max-width: 768px) {
       .right-overlay {
-        background: rgba(59, 59, 59, 0.8);
+        background: rgba(59, 59, 59, 0.85);
+      }
+      .left-overlay {
+        display: none;
       }
     }
+
+    /* Mobile logo and header */
+    .mobile-header {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .mobile-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px 0 15px;
+        background: rgba(255, 254, 254, 0.9);
+        backdrop-filter: blur(5px);
+        border-bottom: 1px solid rgba(0, 33, 94, 0.1);
+      }
+    }
+
+    /* Mobile Navigation */
+    .mobile-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(18, 51, 82, 0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255, 88, 30, 0.2);
+      z-index: 100;
+      padding: 10px 15px;
+    }
+
+    /* Password toggle */
+    .password-toggle {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+    }
+
+    .password-container {
+      position: relative;
+    }
+
+    /* Style untuk alignment judul */
+    .title-alignment {
+      min-height: 180px; /* Sesuaikan tinggi dengan bagian kiri */
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start; /* Mulai dari atas */
+    }
+
+    @media (max-width: 768px) {
+      .title-alignment {
+        min-height: auto;
+        margin-top: 20px;
+      }
+    }
+
+    /* Posisi teks deskripsi */
+    .description-text {
+      margin-top: 1.5rem; /* mt-6 */
+      line-height: 1.6;
+    }
+
+    /* Alignment judul kanan agar sejajar dengan judul kiri */
+    .right-title-align {
+      margin-top: 4.5rem; /* desktop baseline */
+    }
+
+    @media (max-width: 768px) {
+      .right-title-align {
+        margin-top: 0;
+      }
+    }
+
   </style>
 </head>
 <body class="bg-gray-50">
+  <!-- Mobile Header (Sama seperti di halaman register) -->
+  <div class="mobile-header md:hidden">
+    <div class="text-center">
+      <h1 class="text-2xl font-bold text-[#00215E]">Smart Shuttle</h1>
+      <div class="w-16 h-1 bg-[#FF581E] mx-auto rounded-full mt-1"></div>
+      <p class="text-[#00215E] text-sm mt-2 font-medium">
+        Bergabung Bersama Kami
+      </p>
+    </div>
+  </div>
+
   <!-- Container Utama -->
   <div class="flex flex-col min-h-screen md:flex-row">
     <!-- LEFT SIDE - Hanya ditampilkan di desktop -->
     <div class="hidden md:w-1/2 md:flex flex-col justify-center px-8 lg:px-16 relative left-overlay">
       <!-- Logo di kiri atas -->
       <div class="absolute top-4 left-4 lg:top-6 lg:left-6 flex items-center space-x-3">
-        <div class="w-24 h-24 lg:w-32 lg:h-32 flex items-center justify-center">
-          <img src="/images/smartshuttleogo.png" alt="Smart Shuttle" class="w-full h-full object-contain">
+        <div class="w-20 h-20 lg:w-20 lg:h-20 flex items-center justify-center">
+          <img src="/images/smartshuttlelogo.png" alt="Smart Shuttle" class="w-full h-full object-contain">
         </div>
       </div>
 
@@ -127,41 +227,31 @@
     </div>
 
     <!-- RIGHT SIDE FORM LOGIN - Mobile & Desktop -->
-    <div class="w-full md:w-1/2 flex flex-col justify-center px-6 sm:px-8 md:px-12 lg:px-20 text-white relative right-overlay min-h-screen md:min-h-0">
-      <!-- Header untuk mobile -->
-      <div class="md:hidden flex flex-col items-center py-6">
-        <!-- Logo untuk mobile -->
-        <div class="w-20 h-20 flex items-center justify-center mb-4">
-          <img src="/images/smartshuttleogo.png" alt="Smart Shuttle" class="w-full h-full object-contain">
-        </div>
-
-        <div class="w-full text-center mb-6">
-          <h1 class="text-3xl font-bold text-[#00215E] mb-2">Smart Shuttle</h1>
-          <div class="w-16 h-1 bg-[#FF581E] mx-auto rounded-full"></div>
-          <p class="text-[#00215E] text-sm mt-3 font-medium">
-            Bergabung Bersama Kami
+    <div class="w-full md:w-1/2 flex items-start justify-center px-6 sm:px-8 md:px-12 lg:px-20 text-white relative right-overlay min-h-screen pt-16">
+      <!-- Form container -->
+      <div class="w-full max-w-md mx-auto md:mx-0">
+      <!-- JUDUL FORM -->
+      <div class="flex flex-col items-center mb-6 md:mb-8 right-title-align">
+        <div class="w-full text-center">
+          <h2 class="text-xl sm:text-2xl md:text-4xl font-bold mb-3 md:mb-4 text-white tracking-tight">
+            Masuk ke Akun Anda
+          </h2>
+          <p class="text-white/70 text-sm md:text-base">
+            Masukkan kredensial Anda untuk mengakses layanan
           </p>
         </div>
       </div>
 
-      <!-- Form container -->
-      <div class="w-full max-w-md mx-auto md:mx-0">
-        <!-- Judul Form -->
-        <div class="flex flex-col items-center mb-6 md:mb-8">
-          <div class="w-full text-center">
-            <h2 class="text-2xl md:text-3xl font-bold mb-6 md:mb-10 text-white">Masuk ke Akun Anda</h2>
-          </div>
-        </div>
 
         <!-- TAMPILKAN PESAN SUKSES JIKA ADA -->
         @if(session('success'))
-        <div class="mb-4 p-3 md:p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm md:text-base">
+        <div class="mb-4 mt-6 md:mt-8 p-3 md:p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm md:text-base">
           {{ session('success') }}
         </div>
         @endif
 
         <!-- FORM -->
-        <form action="{{ route('customer.login.post') }}" method="POST" class="space-y-4 md:space-y-5">
+        <form action="{{ route('customer.login.post') }}" method="POST" class="space-y-4 md:space-y-5 mt-6 md:mt-8">
           @csrf
 
           <!-- Email -->
@@ -175,18 +265,18 @@
             <input
               type="email"
               name="email"
-              class="w-full p-3 text-sm md:text-base md:p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300"
+              class="w-full p-3 text-sm md:text-base md:p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300 bg-white/95 border border-white/30"
               placeholder="Masukkan email Anda"
               required
               value="{{ old('email') }}"
             />
             @error('email')
-              <p class="text-red-500 text-xs md:text-sm mt-1">{{ $message }}</p>
+              <p class="text-red-300 text-xs md:text-sm mt-1">{{ $message }}</p>
             @enderror
           </div>
 
           <!-- Password -->
-          <div>
+          <div class="password-container">
             <label class="block mb-2 text-white/80 flex items-center gap-2 text-sm md:text-base">
               <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
@@ -196,12 +286,19 @@
             <input
               type="password"
               name="password"
-              class="w-full p-3 text-sm md:text-base md:p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300"
+              id="password"
+              class="w-full p-3 text-sm md:text-base md:p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300 bg-white/95 border border-white/30 pr-10"
               placeholder="Masukkan password Anda"
               required
             />
+            <button type="button" class="password-toggle" id="togglePassword">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeIcon">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+            </button>
             @error('password')
-              <p class="text-red-500 text-xs md:text-sm mt-1">{{ $message }}</p>
+              <p class="text-red-300 text-xs md:text-sm mt-1">{{ $message }}</p>
             @enderror
           </div>
 
@@ -212,20 +309,21 @@
               <span class="ml-2 text-white/80">Ingat saya</span>
             </label>
 
-            <a href="{{ route('password.request') }}" class="text-[#FF581E] hover:underline text-sm md:text-base">
+            <a href="{{ route('password.request') }}" class="text-[#FF581E] hover:text-white hover:underline text-sm md:text-base">
               Lupa password?
             </a>
           </div>
 
           @error('message')
-            <div class="bg-red-100 border border-red-400 text-red-700 px-3 py-2 md:px-4 md:py-3 rounded relative text-sm md:text-base" role="alert">
+            <div class="bg-red-900/50 border border-red-700 text-red-200 px-3 py-2 md:px-4 md:py-3 rounded-lg text-sm md:text-base" role="alert">
               <span class="block sm:inline">{{ $message }}</span>
             </div>
           @enderror
 
           <button
             type="submit"
-            class="w-full bg-[#FF581E] hover:bg-[#FF581E]/90 text-white font-bold py-3 text-sm md:text-base rounded-lg mt-3 md:mt-5 transition-all duration-300 transform hover:scale-105 active:scale-95"
+            class="w-full bg-gradient-to-r from-[#FF581E] to-[#FF581E] hover:from-[#FF581E] hover:to-[#FF581E] text-white font-bold py-3 md:py-4 rounded-lg mt-3 md:mt-5 transition-all duration-300 transform hover:scale-[1.02] active:scale-95 shadow-lg hover:shadow-xl text-sm md:text-base"
+            id="submitButton"
           >
             Masuk
           </button>
@@ -270,29 +368,55 @@
     </div>
   </div>
 
-  <!-- Mobile Bottom Navigation (Opsional) -->
-  <div class="md:hidden fixed bottom-0 left-0 right-0 bg-[#00215E] text-white p-3 flex justify-between items-center">
-    <div class="text-center flex-1">
-      <p class="text-xs">© 2023 Smart Shuttle</p>
-    </div>
-    <div class="text-center flex-1">
-      <p class="text-xs">Butuh Bantuan?</p>
-      <p class="text-xs font-bold">0800-1234-5678</p>
+  <!-- Mobile Bottom Navigation -->
+  <div class="mobile-nav md:hidden">
+    <div class="flex justify-between items-center">
+      <div class="text-center flex-1">
+        <p class="text-white text-xs">© 2023 Smart Shuttle</p>
+      </div>
+      <div class="text-center flex-1">
+        <p class="text-white text-xs font-medium">Butuh Bantuan?</p>
+        <p class="text-[#FF581E] text-xs font-bold">0800-1234-5678</p>
+      </div>
     </div>
   </div>
 
   <!-- JavaScript untuk interaksi mobile -->
   <script>
-    // Script untuk handle form submission dengan feedback visual
     document.addEventListener('DOMContentLoaded', function() {
       const form = document.querySelector('form');
-      const submitButton = form.querySelector('button[type="submit"]');
+      const submitButton = document.getElementById('submitButton');
+      const passwordInput = document.getElementById('password');
+      const togglePassword = document.getElementById('togglePassword');
+      const eyeIcon = document.getElementById('eyeIcon');
 
+      // Toggle password visibility
+      function togglePasswordVisibility(input, icon) {
+        const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+        input.setAttribute('type', type);
+
+        // Toggle icon
+        if (type === 'text') {
+          icon.innerHTML = `
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+          `;
+        } else {
+          icon.innerHTML = `
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+          `;
+        }
+      }
+
+      // Event listener untuk toggle password visibility
+      togglePassword.addEventListener('click', () => togglePasswordVisibility(passwordInput, eyeIcon));
+
+      // Script untuk handle form submission dengan feedback visual
       form.addEventListener('submit', function() {
         // Disable button dan tampilkan loading state
         submitButton.disabled = true;
         submitButton.innerHTML = 'Memproses...';
-        submitButton.classList.remove('hover:scale-105');
+        submitButton.classList.remove('hover:scale-[1.02]');
       });
 
       // Validasi form sebelum submit
@@ -305,6 +429,24 @@
         } else {
           submitButton.classList.add('opacity-50');
         }
+      });
+
+      // Prevent zoom on input focus on mobile
+      const inputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"]');
+      inputs.forEach(input => {
+        input.addEventListener('focus', () => {
+          // Add a small timeout to ensure the focus event is processed
+          setTimeout(() => {
+            window.scrollTo(0, 0);
+            document.body.style.height = '100%';
+            document.body.style.overflow = 'hidden';
+          }, 100);
+        });
+
+        input.addEventListener('blur', () => {
+          document.body.style.height = '';
+          document.body.style.overflow = '';
+        });
       });
     });
   </script>

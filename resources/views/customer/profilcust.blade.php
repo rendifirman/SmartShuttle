@@ -470,8 +470,8 @@
 <!-- Profile Header with Avatar -->
 <div class="profile-header">
     <div style="position: relative;">
-        @if(!empty($user->avatar) && file_exists(public_path('storage/' . $user->avatar)))
-            <img src="{{ asset('storage/' . $user->avatar) }}" alt="Profile Picture" class="profile-avatar">
+        @if(!empty($user->avatar_url))
+            <img src="{{ $user->avatar_url }}" alt="Profile Picture" class="profile-avatar">
         @else
             <div class="profile-avatar-initials">
                 {{ getInitials($user->name) }}

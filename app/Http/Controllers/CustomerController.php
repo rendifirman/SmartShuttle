@@ -30,8 +30,10 @@ use App\Models\Faq;
 use App\Models\MembershipPayment;
 use App\Models\HargaPaket;
 use App\Models\PengirimanPaket;
+use App\Models\Artikel;
 use Carbon\Carbon;
 use App\Models\Review;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 // Helper function untuk mendapatkan inisial nama
@@ -89,11 +91,11 @@ class CustomerController extends Controller
             ->where('status', 'approved')
             ->orderBy('created_at', 'desc')
             ->limit(3)
-            ->get()
+                ->get()
             ->map(function($review) {
                 return [
                     'name' => $review->user->name ?? 'User',
-                    'avatar' => $review->user->avatar ?? null,
+                    'avatar' => $review->user?->avatar_url ?? null,
                     'stars' => $review->rating,
                     'text' => $review->review,
                     'date' => $review->created_at->format('d M Y')
@@ -124,7 +126,91 @@ class CustomerController extends Controller
             ]);
         }
 
-        return view('customer.beranda', compact('user', 'outletsGrouped', 'layanan', 'profile', 'reviews'));
+        // Ambil data promo yang aktif dan dalam periode
+        $promos = Promo::where('status', true)
+            ->where('tanggal_mulai', '<=', now())
+            ->where('tanggal_berakhir', '>=', now())
+            ->where(function ($q) {
+                $q->whereNull('kuota')
+                  ->orWhereColumn('terpakai', '<', 'kuota');
+            })
+            ->orderBy('tanggal_mulai', 'desc')
+            ->limit(6)
+            ->get()
+            ->map(function ($p) {
+                return [
+                    'id' => $p->id,
+                    'kode' => $p->kode_promo ?? null,
+                    'nama' => $p->nama_promo ?? $p->nama ?? '',
+                    'deskripsi' => $p->deskripsi ?? '',
+                    'gambar' => asset($p->gambar ?? 'images/default-promo.jpg'),
+                    'periode' => ($p->tanggal_mulai ? $p->tanggal_mulai->format('d M Y') : '') . ' - ' . ($p->tanggal_berakhir ? $p->tanggal_berakhir->format('d M Y') : ''),
+                ];
+            })
+            ;
+
+        // Ambil artikel terbaru yang aktif (diambil dari ArtikelSeeder)
+        $articles = Artikel::aktif()
+            ->terbaru()
+            ->limit(4)
+            ->get()
+            ->map(function ($a) {
+                return [
+                    'id' => $a->id,
+                    'image' => $a->gambar_url ?? ($a->gambar ? asset('storage/' . $a->gambar) : asset('images/default-article.jpg')),
+                    'title' => $a->judul,
+                    'category' => $a->kategori ?? '',
+                    'excerpt' => $a->excerpt ?? strip_tags(Str::limit($a->konten ?? '', 150)),
+                    'date' => $a->tanggal_publikasi ? $a->tanggal_publikasi->format('d M Y') : '',
+                ];
+            })
+            ->toArray();
+
+        // Jika tidak ada promo aktif, gunakan contoh data (opsional)
+        if ($promos->isEmpty()) {
+            $promos = collect([
+                [
+                    'id' => 1,
+                    'nama' => 'Promo Awal Tahun',
+                    'deskripsi' => 'Diskon 30% untuk semua layanan shuttle selama bulan Januari',
+                    'gambar' => asset('images/promo/bali.jpg'),
+                    'periode' => '1 Jan 2024 - 31 Mar 2024'
+                ],
+                [
+                    'id' => 2,
+                    'nama' => 'Paket Keluarga',
+                    'deskripsi' => 'Diskon 25% untuk pemesanan tiket shuttle minimal 4 orang',
+                    'gambar' => asset('images/promo/promo2.jpg'),
+                    'periode' => '1 Feb 2024 - 31 Mar 2024'
+                ],
+                [
+                    'id' => 3,
+                    'nama' => 'Member Baru',
+                    'deskripsi' => 'Dapatkan 2 tiket gratis untuk pendaftaran member baru',
+                    'gambar' => asset('images/promo/promo3.jpg'),
+                    'periode' => 'Sepanjang Tahun 2024'
+                ],
+            ]);
+        }
+        $articles = Artikel::aktif()
+        ->terbaru()
+        ->get()
+        ->map(function ($artikel) {
+            return [
+                'id' => $artikel->id,
+                'title' => $artikel->judul,
+                'excerpt' => $artikel->excerpt,
+                'full_content' => $artikel->konten,
+                'category' => $artikel->kategori,
+                'image' => $artikel->gambar_url,
+                'date' => $artikel->tanggal_format,
+                'read_time' => $artikel->waktu_baca,
+                'tags' => explode(',', $artikel->meta_keywords ?? ''),
+                'slug' => $artikel->slug
+            ];
+        });
+
+        return view('customer.beranda', compact('user', 'outletsGrouped', 'layanan', 'profile', 'reviews', 'promos', 'articles'));
     }
 
     /**
@@ -212,7 +298,7 @@ class CustomerController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'avatar' => $user->avatar,
+                'avatar' => $user->avatar_url,
                 'membership_status' => $user->membership_status,
                 'membership_level' => $user->membership_level,
             ]);
@@ -1219,7 +1305,7 @@ class CustomerController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'nik' => $user->nik,
-                'avatar' => $user->avatar,
+                'avatar' => $user->avatar_url,
                 'membership_status' => $user->membership_status,
                 'membership_level' => $user->membership_level,
             ]);
@@ -1548,7 +1634,7 @@ class CustomerController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'avatar' => $user->avatar,
+                    'avatar' => $user->avatar_url,
                     'membership_status' => 'active',
                     'membership_level' => 'Bronze',
                 ]);

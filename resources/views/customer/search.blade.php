@@ -1947,7 +1947,6 @@
                                 @php
                                     $shuttle = $jadwal->shuttle;
                                     $fasilitasArray = $shuttle->fasilitas_array ?? [];
-                                    $seatGrid = $shuttle->getSeatGrid();
                                 @endphp
                                 <div class="result-card" data-departure-time="{{ \Carbon\Carbon::parse($jadwal->waktu_keberangkatan)->format('H:i') }}">
                                     <div class="shuttle-header">
@@ -1970,7 +1969,7 @@
                                                 <div class="time-info" style="font-size: 16px;">
                                                     {{ \Carbon\Carbon::parse($jadwal->waktu_keberangkatan)->format('H:i') }}
                                                     <span style="font-size: 12px; color: var(--muted-text); margin-left: 4px;">
-                                                        {{ $validated['departure_city'] ?? '' }}
+                                                        {{ $validated['departure_city'] }}
                                                     </span>
                                                 </div>
                                                 <div class="route-arrow" style="margin: 0 12px;">
@@ -1979,7 +1978,7 @@
                                                 <div class="time-info" style="font-size: 16px;">
                                                     {{ \Carbon\Carbon::parse($jadwal->waktu_kedatangan)->format('H:i') }}
                                                     <span style="font-size: 12px; color: var(--muted-text); margin-left: 4px;">
-                                                        {{ $validated['destination_city'] ?? '' }}
+                                                        {{ $validated['destination_city'] }}
                                                     </span>
                                                 </div>
                                             </div>
@@ -2249,24 +2248,19 @@
                                                 <i class="fas fa-chair"></i>
                                                 Layout Kursi ({{ $shuttle->total_kursi ?? 9 }} Kursi)
                                                 <small style="font-size: 12px; color: #666; margin-left: 8px;">
-                                                    @php
-                                                        $rows = ceil(($shuttle->total_kursi ?? 9) / 3);
-                                                    @endphp
-                                                    {{ $rows }} Baris × 3 Kolom
+                                                    {{ $shuttle->seat_rows ?? 3 }} Baris × {{ $shuttle->seat_columns ?? 3 }} Kolom
                                                 </small>
                                             </h6>
 
                                             <div class="dynamic-seat-layout">
-                                                @if(!empty($seatGrid))
-                                                    @foreach($seatGrid as $rowIndex => $row)
+                                                @if(isset($shuttle->seat_grid) && !empty($shuttle->seat_grid))
+                                                    @foreach($shuttle->seat_grid as $rowIndex => $row)
                                                     <div class="seat-row-dynamic">
                                                         @foreach($row as $seat)
-                                                        @php
-                                                            $seatClass = '';
-                                                            if(($seat['tipe'] ?? 'reguler') === 'premium') $seatClass .= ' seat-premium';
-                                                            if(($seat['posisi'] ?? '') === 'tengah') $seatClass .= ' seat-middle';
-                                                        @endphp
-                                                        <div class="seat-dynamic {{ $seatClass }}">
+                                                        <div class="seat-dynamic
+                                                            @if(($seat['tipe'] ?? 'reguler') === 'premium') seat-premium @endif
+                                                            @if(($seat['posisi'] ?? '') === 'tengah') seat-middle @endif">
+
                                                             <div class="seat-number">{{ $seat['nomor'] ?? '?' }}</div>
 
                                                             @if(($seat['tipe'] ?? 'reguler') === 'premium')
@@ -2347,24 +2341,23 @@
                                                         </div>
                                                     </div>
 
-                                                    @php
-                                                        $premiumCount = 0;
-                                                        if(isset($shuttle->layout_kursi_array) && is_array($shuttle->layout_kursi_array)) {
-                                                            $premiumCount = collect($shuttle->layout_kursi_array)
+                                                    @if(isset($shuttle->dynamic_seat_layout) && is_array($shuttle->dynamic_seat_layout))
+                                                        @php
+                                                            $premiumCount = collect($shuttle->dynamic_seat_layout)
                                                                 ->where('tipe', 'premium')
                                                                 ->count();
-                                                        }
-                                                    @endphp
-                                                    @if($premiumCount > 0)
-                                                    <div class="info-item">
-                                                        <div class="info-icon premium">
-                                                            <i class="fas fa-crown"></i>
+                                                        @endphp
+                                                        @if($premiumCount > 0)
+                                                        <div class="info-item">
+                                                            <div class="info-icon premium">
+                                                                <i class="fas fa-crown"></i>
+                                                            </div>
+                                                            <div class="info-text">
+                                                                <div class="info-label">Kursi Premium</div>
+                                                                <div class="info-value">{{ $premiumCount }} kursi</div>
+                                                            </div>
                                                         </div>
-                                                        <div class="info-text">
-                                                            <div class="info-label">Kursi Premium</div>
-                                                            <div class="info-value">{{ $premiumCount }} kursi</div>
-                                                        </div>
-                                                    </div>
+                                                        @endif
                                                     @endif
                                                 </div>
 
@@ -2422,32 +2415,30 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Data outlet dari PHP
-    const outletsData = @json($outletsGrouped ?? []);
+    const outletsData = @json($outletsGrouped);
 
     // Konversi data outlet ke format yang mudah dicari
     let allOutlets = [];
     let outletsByCity = {};
 
-    if (outletsData) {
-        Object.keys(outletsData).forEach(city => {
-            outletsData[city].forEach(outlet => {
-                const outletItem = {
-                    id: outlet.id,
-                    nama_outlet: outlet.nama_outlet,
-                    kota: city,
-                    alamat: outlet.alamat,
-                    alamat_lengkap: outlet.alamat_lengkap || outlet.alamat,
-                    searchText: `${outlet.nama_outlet} ${city} ${outlet.alamat}`.toLowerCase()
-                };
-                allOutlets.push(outletItem);
+    Object.keys(outletsData).forEach(city => {
+        outletsData[city].forEach(outlet => {
+            const outletItem = {
+                id: outlet.id,
+                nama_outlet: outlet.nama_outlet,
+                kota: city,
+                alamat: outlet.alamat,
+                alamat_lengkap: outlet.alamat_lengkap || outlet.alamat,
+                searchText: `${outlet.nama_outlet} ${city} ${outlet.alamat}`.toLowerCase()
+            };
+            allOutlets.push(outletItem);
 
-                if (!outletsByCity[city]) {
-                    outletsByCity[city] = [];
-                }
-                outletsByCity[city].push(outletItem);
-            });
+            if (!outletsByCity[city]) {
+                outletsByCity[city] = [];
+            }
+            outletsByCity[city].push(outletItem);
         });
-    }
+    });
 
     // Fungsi untuk membuat opsi dropdown
     function createDropdownOptions(filteredOutlets = null) {
@@ -2505,8 +2496,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearDestinationBtn = document.getElementById('clear-destination-combo');
 
     // Inisialisasi dropdown dengan semua opsi
-    if (departureOptions) departureOptions.innerHTML = createDropdownOptions();
-    if (destinationOptions) destinationOptions.innerHTML = createDropdownOptions();
+    departureOptions.innerHTML = createDropdownOptions();
+    destinationOptions.innerHTML = createDropdownOptions();
 
     // Fungsi untuk menampilkan/sembunyikan dropdown
     function toggleDropdown(dropdown, input) {
@@ -2519,7 +2510,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!isVisible) {
             dropdown.classList.add('show');
-            if (input) input.focus();
+            input.focus();
 
             // Scroll ke opsi yang dipilih jika ada
             const selectedOption = dropdown.querySelector('.combo-option.selected');
@@ -2643,8 +2634,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Initial attach listeners
-    if (departureOptions) attachOptionListeners(departureOptions);
-    if (destinationOptions) attachOptionListeners(destinationOptions);
+    attachOptionListeners(departureOptions);
+    attachOptionListeners(destinationOptions);
 
     // Event listeners untuk departure combo box
     if (toggleDepartureBtn) {
@@ -2676,7 +2667,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
             departureInput.value = '';
             departureHidden.value = '';
-            if (departureDropdown) departureDropdown.classList.remove('show');
+            departureDropdown.classList.remove('show');
 
             // Hapus info alamat
             const infoElement = departureInput.closest('.form-group').querySelector('.outlet-info-text');
@@ -2685,10 +2676,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Reset dropdown options
-            if (departureOptions) {
-                departureOptions.innerHTML = createDropdownOptions();
-                attachOptionListeners(departureOptions);
-            }
+            departureOptions.innerHTML = createDropdownOptions();
+            attachOptionListeners(departureOptions);
 
             // Hide clear button
             this.style.display = 'none';
@@ -2725,7 +2714,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
             destinationInput.value = '';
             destinationHidden.value = '';
-            if (destinationDropdown) destinationDropdown.classList.remove('show');
+            destinationDropdown.classList.remove('show');
 
             // Hapus info alamat
             const infoElement = destinationInput.closest('.form-group').querySelector('.outlet-info-text');
@@ -2734,10 +2723,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Reset dropdown options
-            if (destinationOptions) {
-                destinationOptions.innerHTML = createDropdownOptions();
-                attachOptionListeners(destinationOptions);
-            }
+            destinationOptions.innerHTML = createDropdownOptions();
+            attachOptionListeners(destinationOptions);
 
             // Hide clear button
             this.style.display = 'none';
@@ -2763,16 +2750,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Set initial values jika ada data sebelumnya
-    const initialDepartureId = departureHidden ? departureHidden.value : null;
-    if (initialDepartureId && departureInput) {
+    const initialDepartureId = departureHidden.value;
+    if (initialDepartureId) {
         const outlet = allOutlets.find(o => o.id == initialDepartureId);
         if (outlet) {
             departureInput.value = outlet.nama_outlet;
-            if (clearDepartureBtn) clearDepartureBtn.style.display = 'block';
+            clearDepartureBtn.style.display = 'block';
 
             // Mark as selected in dropdown
             setTimeout(() => {
-                const option = departureOptions ? departureOptions.querySelector(`[data-id="${initialDepartureId}"]`) : null;
+                const option = departureOptions.querySelector(`[data-id="${initialDepartureId}"]`);
                 if (option) {
                     option.classList.add('selected');
                 }
@@ -2780,16 +2767,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    const initialDestinationId = destinationHidden ? destinationHidden.value : null;
-    if (initialDestinationId && destinationInput) {
+    const initialDestinationId = destinationHidden.value;
+    if (initialDestinationId) {
         const outlet = allOutlets.find(o => o.id == initialDestinationId);
         if (outlet) {
             destinationInput.value = outlet.nama_outlet;
-            if (clearDestinationBtn) clearDestinationBtn.style.display = 'block';
+            clearDestinationBtn.style.display = 'block';
 
             // Mark as selected in dropdown
             setTimeout(() => {
-                const option = destinationOptions ? destinationOptions.querySelector(`[data-id="${initialDestinationId}"]`) : null;
+                const option = destinationOptions.querySelector(`[data-id="${initialDestinationId}"]`);
                 if (option) {
                     option.classList.add('selected');
                 }
@@ -2887,8 +2874,8 @@ document.addEventListener('DOMContentLoaded', function() {
         searchForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            const departureOutlet = departureHidden ? departureHidden.value : '';
-            const destinationOutlet = destinationHidden ? destinationHidden.value : '';
+            const departureOutlet = departureHidden.value;
+            const destinationOutlet = destinationHidden.value;
 
             if (departureOutlet && destinationOutlet && departureOutlet === destinationOutlet) {
                 alert('Outlet keberangkatan dan tujuan tidak boleh sama!');
@@ -2897,15 +2884,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!departureOutlet) {
                 alert('Silakan pilih outlet asal!');
-                if (departureInput) departureInput.focus();
-                if (departureDropdown) toggleDropdown(departureDropdown, departureSearch);
+                departureInput.focus();
+                toggleDropdown(departureDropdown, departureSearch);
                 return;
             }
 
             if (!destinationOutlet) {
                 alert('Silakan pilih outlet tujuan!');
-                if (destinationInput) destinationInput.focus();
-                if (destinationDropdown) toggleDropdown(destinationDropdown, destinationSearch);
+                destinationInput.focus();
+                toggleDropdown(destinationDropdown, destinationSearch);
                 return;
             }
 
@@ -2915,7 +2902,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const searchSpinner = document.getElementById('search-spinner');
             const loadingResults = document.getElementById('loading-results');
 
-            if (searchText) searchText.style.display = 'none';
+            searchText.style.display = 'none';
             if (searchSpinner) searchSpinner.style.display = 'block';
             if (searchButton) searchButton.disabled = true;
             if (loadingResults) loadingResults.style.display = 'block';

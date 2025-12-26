@@ -47,9 +47,9 @@
     @auth
         <div class="profile-wrapper">
             <button id="profile-dropdown" class="profile-btn" type="button" aria-expanded="false">
-                @if(!empty(Auth::user()->avatar))
+                @if(!empty(Auth::user()->avatar_url))
                     <span class="profile-avatar">
-                        <img src="{{ Auth::user()->avatar }}" alt="avatar">
+                        <img src="{{ Auth::user()->avatar_url }}" alt="avatar">
                     </span>
                 @else
                     <span class="profile-avatar">
@@ -58,9 +58,9 @@
                 @endif
 
                 <span class="profile-name">
-                    {{ strlen(Auth::user()->name ?? '') > 12 
-                        ? substr(Auth::user()->name, 0, 12).'...' 
-                        : (Auth::user()->name ?? 'User') 
+                    {{ strlen(Auth::user()->name ?? '') > 12
+                        ? substr(Auth::user()->name, 0, 12).'...'
+                        : (Auth::user()->name ?? 'User')
                     }}
                 </span>
             </button>

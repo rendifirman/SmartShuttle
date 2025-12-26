@@ -13,7 +13,7 @@
     <style>
         /* CSS Variables */
         :root {
-            --primary-color: #00215E;
+            --primary-color: #123352;
             --secondary-color: #FF581E;
             --success-color: #28a745;
             --danger-color: #dc3545;
@@ -902,174 +902,194 @@
             transform: translateY(0);
         }
 
-        /* Hover effect untuk rows tabel */
-        .hasil-harga-container tr:hover td {
-            background-color: rgba(255, 255, 255, 0.05);
+        /* === STYLE UNTUK MODAL ARTIKEL === */
+        .modal-artikel {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            overflow-y: auto;
         }
 
-        /* Responsive untuk tabel hasil */
-        @media (max-width: 768px) {
-            .hasil-harga-container table {
-                font-size: 12px;
-            }
-
-            .harga-container {
-                flex-direction: column;
-                text-align: center;
-                gap: 10px;
-            }
-
-            .harga-label {
-                font-size: 16px;
-            }
-
-            .harga-value {
-                font-size: 20px;
-            }
+        .modal-artikel.show {
+            display: block;
         }
 
-        /* Responsive untuk modal */
-        @media (max-width: 900px) {
-            .search-row {
-                grid-template-columns: repeat(2, 1fr);
-            }
+        .modal-artikel-content {
+            background-color: white;
+            margin: 50px auto;
+            width: 90%;
+            max-width: 900px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: modalFadeIn 0.3s ease;
+        }
 
-            .search-btn-container {
-                grid-column: span 2;
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
             }
-
-            .search-btn {
-                width: 100%;
-            }
-
-            #kirim-paket-form .search-row {
-                grid-template-columns: 1fr !important;
-                gap: 15px !important;
-            }
-
-            .modal-cek-paket,
-            .modal-kirim-paket {
-                position: relative;
-                top: auto;
-                left: auto;
-                right: auto;
-                margin-top: 15px;
-                min-height: fit-content;
-            }
-
-            .search-container {
-                padding: 20px;
-            }
-
-            #kirim-paket-form .search-btn {
-                height: auto !important;
-                min-height: fit-content;
-            }
-
-            .modal-header {
-                padding: 20px;
-            }
-
-            .modal-body {
-                padding: 20px;
-            }
-
-            /* Responsive untuk form horizontal */
-            .resi-input-group {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .btn-cek-resi,
-            .btn-cek-harga {
-                width: 100%;
-            }
-
-            /* Responsive untuk form group dalam satu baris */
-            .form-group {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
-
-            .form-label {
-                min-width: 100%;
-                margin-bottom: 0;
-            }
-
-            .form-input-container {
-                width: 100%;
-            }
-
-            /* Responsive untuk volume container */
-            .volume-container {
-                flex-direction: column;
-                gap: 10px;
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
 
-        @media (max-width: 480px) {
-            .search-row {
-                grid-template-columns: 1fr;
-            }
+        .modal-artikel-header {
+            padding: 25px 30px;
+            background: linear-gradient(135deg, var(--primary-color), #00308F);
+            color: white;
+            position: relative;
+        }
 
-            .search-btn-container {
-                grid-column: span 1;
-            }
+        .modal-artikel-category {
+            display: inline-block;
+            background: var(--secondary-color);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
 
-            .modal-cek-paket,
-            .modal-kirim-paket {
-                min-height: fit-content;
-            }
+        .modal-artikel-title {
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 10px;
+        }
 
-            .modal-header {
-                padding: 15px;
-            }
+        .modal-artikel-meta {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+        }
 
-            .modal-main-text {
-                font-size: 16px;
-            }
+        .modal-artikel-date {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
 
-            .modal-label {
-                font-size: 12px;
-            }
+        .close-modal-artikel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s ease;
+        }
 
-            .modal-body {
-                padding: 15px;
-            }
+        .close-modal-artikel:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
 
-            .form-control {
-                padding: 12px 15px;
-                font-size: 14px;
-            }
+        .modal-artikel-body {
+            padding: 30px;
+            line-height: 1.8;
+            color: #333;
+        }
 
-            .btn-cek-resi,
-            .btn-cek-harga {
-                padding: 12px 15px;
-                font-size: 14px;
-                width: 100%;
-                height: 44px;
-            }
+        .modal-artikel-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
 
-            #kirim-paket-form .search-btn {
-                padding: 12px 15px;
-                min-height: fit-content;
-            }
+        .modal-artikel-content-text {
+            font-size: 16px;
+            margin-bottom: 20px;
+            text-align: justify;
+        }
 
-            .harga-container {
-                padding: 12px 15px;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
+        .modal-artikel-content-text h3 {
+            color: var(--primary-color);
+            margin-top: 25px;
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
 
-            .harga-label {
-                font-size: 14px;
-            }
+        .modal-artikel-content-text p {
+            margin-bottom: 15px;
+        }
 
-            .harga-value {
-                font-size: 18px;
-            }
+        .modal-artikel-footer {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+        }
+
+        .modal-artikel-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .modal-artikel-tag {
+            background: #e9ecef;
+            color: var(--primary-color);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .modal-artikel-share {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .modal-artikel-share-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-decoration: none;
+            transition: transform 0.3s ease;
+        }
+
+        .modal-artikel-share-btn:hover {
+            transform: translateY(-3px);
+        }
+
+        .modal-artikel-share-btn.facebook {
+            background-color: #3b5998;
+        }
+
+        .modal-artikel-share-btn.twitter {
+            background-color: #1da1f2;
+        }
+
+        .modal-artikel-share-btn.whatsapp {
+            background-color: #25d366;
         }
 
         /* Services Section */
@@ -1347,135 +1367,80 @@
             margin: 0 auto;
         }
 
-   /* Features Section - 6 KOTAK FITUR DIUBAH KE BIRU TANPA BAYANGAN LAIN */
-.feature-card {
-    background: #00215E;
-    padding: 40px 30px;
-    border-radius: 15px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease;
-    text-align: center;
-    color: white;
-    position: relative;
-    overflow: hidden;
-    border: 2px solid #00215E;
-}
+        /* Features Section - 6 KOTAK FITUR DIUBAH KE BIRU TANPA BAYANGAN LAIN */
+        .feature-card {
+            background: var(--primary-color);
+            padding: 40px 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid var(--primary-color);
+        }
 
-.feature-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
-    border-color: #00215E;
-    background: #001a4a; /* Sedikit lebih gelap saat hover */
-}
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+            border-color: var(--primary-color);
+            background: #0f2942ff; /* Sedikit lebih gelap saat hover */
+        }
 
-.feature-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: #001a4a;
-}
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #001a4a;
+        }
 
-.feature-icon {
-    font-size: 48px;
-    margin-bottom: 25px;
-    color: white !important;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 80px;
-}
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 25px;
+            color: white !important;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+        }
 
-.feature-label {
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 20px;
-    color: white !important;
-    line-height: 1.4;
-    font-family: 'Roboto', sans-serif;
-}
+        .feature-label {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: white !important;
+            line-height: 1.4;
+            font-family: 'Roboto', sans-serif;
+        }
 
-.feature-desc {
-    font-size: 14px;
-    color: #e0e8ff !important; /* Warna biru muda terang */
-    line-height: 1.6;
-    margin: 0;
-    font-family: 'Roboto', sans-serif;
-}
+        .feature-desc {
+            font-size: 14px;
+            color: #e0e8ff !important; /* Warna biru muda terang */
+            line-height: 1.6;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+        }
 
-/* PAKSA SEMUA WARNA TETAP BIRU DAN PUTIH */
-.feature-card:hover .feature-icon,
-.feature-card .feature-icon {
-    color: white !important;
-}
+        /* PAKSA SEMUA WARNA TETAP BIRU DAN PUTIH */
+        .feature-card:hover .feature-icon,
+        .feature-card .feature-icon {
+            color: white !important;
+        }
 
-.feature-card:hover .feature-label,
-.feature-card .feature-label {
-    color: white !important;
-}
+        .feature-card:hover .feature-label,
+        .feature-card .feature-label {
+            color: white !important;
+        }
 
-.feature-card:hover .feature-desc,
-.feature-card .feature-desc {
-    color: #e0e8ff !important; /* Tetap biru muda */
-}
+        .feature-card:hover .feature-desc,
+        .feature-card .feature-desc {
+            color: #e0e8ff !important; /* Tetap biru muda */
+        }
 
-/* Responsive untuk kotak fitur */
-@media (max-width: 768px) {
-    .feature-card {
-        padding: 30px 25px;
-    }
-
-    .feature-icon {
-        font-size: 40px;
-        margin-bottom: 20px;
-        height: 70px;
-    }
-
-    .feature-label {
-        font-size: 18px;
-        margin-bottom: 15px;
-    }
-
-    .feature-desc {
-        font-size: 13px;
-    }
-}
-
-@media (max-width: 480px) {
-    .feature-card {
-        padding: 25px 20px;
-    }
-
-    .feature-icon {
-        font-size: 36px;
-        height: 60px;
-    }
-
-    .feature-label {
-        font-size: 16px;
-    }
-}
-
-.feature-title {
-    font-size: 36px;
-    font-weight: 700;
-    margin-bottom: 60px;
-    color: #00215E; /* Gunakan warna biru untuk judul */
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    line-height: 1.3;
-    font-family: 'Roboto', sans-serif;
-}
-
-.feature-desc {
-    font-size: 14px;
-    color: #e0e8ff !important; /* Biru muda */
-    line-height: 1.6;
-    margin: 0;
-    font-family: 'Roboto', sans-serif;
-}
         /* === ARTIKEL/BERITA SECTION === */
         .articles-section {
             padding: 80px 40px;
@@ -1588,6 +1553,7 @@
             text-decoration: none;
             transition: color 0.3s;
             font-family: 'Roboto', sans-serif;
+            cursor: pointer;
         }
 
         .article-read-more:hover {
@@ -1622,22 +1588,21 @@
         /* === REVIEW SECTION YANG DIRAPIHKAN === */
         .feedback-section {
             padding: 80px 40px;
-            background: white;
+            background: var(--primary-color);
         }
 
         .feedback-container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
+            background: rgba(255, 253, 253, 0.1);
             border-radius: 25px;
             box-shadow: 0 25px 60px rgba(0,0,0,0.12);
             padding: 50px;
-            border: 2px solid #e0e0e0;
         }
 
         .feedback-title {
             font-size: 32px;
-            color: var(--secondary-color);
+            color: white;
             margin-bottom: 10px;
             font-weight: 700;
             text-align: left;
@@ -1660,7 +1625,7 @@
 
         /* KIRI: REVIEW LIST CONTAINER */
         .review-list-container {
-            background: #fff;
+            background:rgba(255, 253, 253, 0.1);
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.08);
@@ -1676,7 +1641,7 @@
         .filter-title {
             font-size: 16px;
             font-weight: 600;
-            color: var(--primary-color);
+            color: white;
             margin-bottom: 15px;
             font-family: 'Roboto', sans-serif;
         }
@@ -1691,9 +1656,9 @@
         .star-filter-btn {
             padding: 8px 16px;
             border: 1px solid #ddd;
-            background: white;
+            background: rgba(255, 253, 253, 0.1);
             border-radius: 25px;
-            color: #666;
+            color: white;
             font-size: 14px;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -1743,7 +1708,7 @@
 
         .stat-label {
             font-size: 12px;
-            color: #666;
+            color: white;
             font-family: 'Roboto', sans-serif;
         }
 
@@ -1769,7 +1734,7 @@
         }
 
         .review-item {
-            background: #f9f9f9;
+            background: rgba(255, 253, 253, 0.1);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 15px;
@@ -1778,7 +1743,7 @@
         }
 
         .review-item:hover {
-            background: #fff;
+            background: rgba(255, 253, 253, 0.3);
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             transform: translateY(-3px);
         }
@@ -1810,14 +1775,14 @@
 
         .reviewer-name {
             font-weight: 600;
-            color: var(--primary-color);
+            color: white;
             margin-bottom: 3px;
             font-family: 'Roboto', sans-serif;
         }
 
         .review-date {
             font-size: 12px;
-            color: #888;
+            color: white;
             font-family: 'Roboto', sans-serif;
         }
 
@@ -1828,7 +1793,7 @@
         }
 
         .review-content {
-            color: #444;
+            color: white;
             line-height: 1.6;
             font-size: 14px;
             margin-top: 10px;
@@ -1894,10 +1859,9 @@
         .page-btn {
             width: 35px;
             height: 35px;
-            border: 1px solid #ddd;
-            background: white;
+            background: rgba(255, 253, 253, 0.1);
             border-radius: 8px;
-            color: #666;
+            color: white;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -1930,7 +1894,7 @@
 
         /* KANAN: REVIEW FORM */
         .review-form-container {
-            background: #fff;
+            background: rgba(255, 253, 253, 0.1);
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.08);
@@ -1942,12 +1906,12 @@
             font-size: 22px;
             font-weight: bold;
             margin-bottom: 15px;
-            color: var(--secondary-color);
+            color: white;
             font-family: 'Roboto', sans-serif;
         }
 
         .form-subtitle {
-            color: #666;
+            color: white;
             font-size: 14px;
             margin-bottom: 25px;
             line-height: 1.5;
@@ -1990,7 +1954,7 @@
 
         .rating-text {
             font-size: 14px;
-            color: #666;
+            color: white;
             margin-left: 10px;
             font-weight: 500;
             font-family: 'Roboto', sans-serif;
@@ -2005,24 +1969,28 @@
             width: 100%;
             padding: 15px;
             border-radius: 10px;
-            border: 1px solid #ddd;
             font-size: 14px;
+            background: rgba(255, 253, 253, 0.1);
             resize: vertical;
             min-height: 120px;
+            color: white;
             transition: all 0.3s ease;
             font-family: 'Roboto', sans-serif;
         }
 
+        .form-textarea::placeholder{
+            color:white;
+        }
+
         .form-textarea:focus {
             outline: none;
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 3px rgba(255, 88, 30, 0.1);
+            border-color: white;
         }
 
         .char-count {
             text-align: right;
             font-size: 12px;
-            color: #888;
+            color: white;
             margin-top: 5px;
             font-family: 'Roboto', sans-serif;
         }
@@ -2208,6 +2176,32 @@
 
             .promo-image {
                 height: 250px;
+            }
+
+            /* Modal Artikel Responsive */
+            .modal-artikel-content {
+                width: 95%;
+                margin: 20px auto;
+            }
+
+            .modal-artikel-header {
+                padding: 20px;
+            }
+
+            .modal-artikel-title {
+                font-size: 22px;
+            }
+
+            .modal-artikel-body {
+                padding: 20px;
+            }
+
+            .modal-artikel-image {
+                height: 250px;
+            }
+
+            .modal-artikel-content-text {
+                font-size: 14px;
             }
         }
 
@@ -2572,11 +2566,11 @@
 
         /* Footer Styles */
         .site-footer {
-            background: #00215E;
-            color: #00215E;
+            background: #123352;
+            color: #123352;
             padding: 50px 40px 20px;
             margin-top: auto;
-            border-top: 2px solid #00215E;
+            border-top: 2px solid #123352;
         }
 
         .footer-container {
@@ -2872,6 +2866,9 @@
     </style>
     @php
         use App\Models\MProfilePerusahaan;
+        use App\Models\Promo;
+        use App\Models\Artikel;
+        use Carbon\Carbon;
         $profile = MProfilePerusahaan::first();
 
         // Data user dari session
@@ -2965,101 +2962,111 @@
         ]);
 
         // Data promo (contoh statis, nanti bisa dari database)
-        $promos = collect([
-            [
-                'id' => 1,
-                'nama' => 'Promo Awal Tahun',
-                'deskripsi' => 'Diskon 30% untuk semua layanan shuttle selama bulan Januari',
-                'gambar' => asset('images/promo/bali.jpg'),
-                'periode' => '1 - 31 Januari 2024'
-            ],
-            [
-                'id' => 2,
-                'nama' => 'Paket Keluarga',
-                'deskripsi' => 'Diskon 25% untuk pemesanan tiket shuttle minimal 4 orang',
-                'gambar' => asset('images/promo/promo2.jpg'),
-                'periode' => '1 Februari - 31 Maret 2024'
-            ],
-            [
-                'id' => 3,
-                'nama' => 'Member Baru',
-                'deskripsi' => 'Dapatkan 2 tiket gratis untuk pendaftaran member baru',
-                'gambar' => asset('images/promo/promo3.jpg'),
-                'periode' => 'Sepanjang Tahun 2024'
-            ],
-            [
-                'id' => 4,
-                'nama' => 'Weekend Special',
-                'deskripsi' => 'Diskon 20% untuk perjalanan hari Sabtu dan Minggu',
-                'gambar' => asset('images/promo/promo4.jpg'),
-                'periode' => 'Setiap Weekend'
-            ],
-            [
-                'id' => 5,
-                'nama' => 'Kirim Paket Murah',
-                'deskripsi' => 'Gratis ongkir untuk pengiriman paket pertama kali',
-                'gambar' => asset('images/promo/promo5.jpg'),
-                'periode' => '1 - 30 April 2024'
-            ]
-        ]);
+        $promos = Promo::where('status', true)
+            ->orderBy('created_at', 'desc')
+            ->take(3)
+            ->get()
+            ->map(function($promo) {
+                return [
+                    'id' => $promo->id,
+                    'nama' => $promo->nama_promo,
+                    'deskripsi' => $promo->deskripsi,
+                    'gambar' => asset('storage/' . $promo->gambar_promo),
+                    'periode' => Carbon::parse($promo->tanggal_mulai)->format('d M') . ' - ' . Carbon::parse($promo->tanggal_selesai)->format('d M Y'),
+                ];
+            })
+            ->toArray();
 
-        // Data artikel/berita
-        $articles = collect([
-            [
-                'id' => 1,
-                'title' => 'Tips Perjalanan Aman dengan Shuttle Selama Liburan',
-                'excerpt' => 'Pelajari cara mempersiapkan perjalanan shuttle yang aman dan nyaman selama musim liburan untuk pengalaman terbaik.',
-                'category' => 'Tips & Trik',
-                'image' => asset('images/articles/cobacoba.jpg'),
-                'date' => '15 Maret 2024',
-                'read_time' => '3 min read'
-            ],
-            [
-                'id' => 2,
-                'title' => 'SmartShuffle Perkenalkan Fitur Baru: SmartSend',
-                'excerpt' => 'Kami dengan bangga memperkenalkan layanan pengiriman paket antar kota dengan fitur tracking real-time.',
-                'category' => 'Berita',
-                'image' => asset('images/articles/new-feature.jpg'),
-                'date' => '10 Maret 2024',
-                'read_time' => '4 min read'
-            ],
-            [
-                'id' => 3,
-                'title' => 'Mengapa Memilih Shuttle untuk Perjalanan Bisnis?',
-                'excerpt' => 'Temukan keuntungan menggunakan layanan shuttle untuk kebutuhan perjalanan bisnis Anda. Efisien dan hemat waktu.',
-                'category' => 'Bisnis',
-                'image' => asset('images/articles/business-travel.jpg'),
-                'date' => '5 Maret 2024',
-                'read_time' => '5 min read'
-            ],
-            [
-                'id' => 4,
-                'title' => 'Cara Memilih Armada Sewa yang Tepat',
-                'excerpt' => 'Panduan lengkap memilih armada sewa sesuai kebutuhan, dari keluarga kecil hingga rombongan besar.',
-                'category' => 'Panduan',
-                'image' => asset('images/articles/fleet-selection.jpg'),
-                'date' => '28 Februari 2024',
-                'read_time' => '4 min read'
-            ],
-            [
-                'id' => 5,
-                'title' => 'Promo Spesial: Nikmati Diskon 30% Shuttle',
-                'excerpt' => 'Manfaatkan promo spesial kami untuk perjalanan shuttle antar kota dengan diskon hingga 30%.',
-                'category' => 'Promo',
-                'image' => asset('images/articles/special-promo.jpg'),
-                'date' => '25 Februari 2024',
-                'read_time' => '2 min read'
-            ],
-            [
-                'id' => 6,
-                'title' => 'Kisah Sukses: Mitra Driver SmartShuttle',
-                'excerpt' => 'Baca kisah inspiratif dari driver mitra kami yang berhasil meningkatkan penghasilan melalui platform SmartShuttle.',
-                'category' => 'Kisah Sukses',
-                'image' => asset('images/articles/success-story.jpg'),
-                'date' => '20 Februari 2024',
-                'read_time' => '6 min read'
-            ]
-        ]);
+        // Jika tidak ada promo, gunakan data default
+        if (empty($promos)) {
+            $promos = [
+                [
+                    'id' => 1,
+                    'nama' => 'Diskon 30% Shuttle',
+                    'deskripsi' => 'Nikmati diskon 30% untuk semua rute shuttle reguler. Berlaku untuk pemesanan minimal 2 tiket.',
+                    'gambar' => asset('images/promo1.jpg'),
+                    'periode' => '1 Mar - 31 Mar 2024',
+                ],
+                [
+                    'id' => 2,
+                    'nama' => 'SmartSend Free Ongkir',
+                    'deskripsi' => 'Gratis ongkir pengiriman paket untuk pengguna pertama SmartSend. Syarat dan ketentuan berlaku.',
+                    'gambar' => asset('images/promo2.jpg'),
+                    'periode' => '15 Mar - 30 Apr 2024',
+                ],
+                [
+                    'id' => 3,
+                    'nama' => 'SmartRent Weekend Promo',
+                    'deskripsi' => 'Special price untuk sewa armada di akhir pekan. Dapatkan harga spesial untuk perjalanan liburan.',
+                    'gambar' => asset('images/promo3.jpg'),
+                    'periode' => 'Mar - Apr 2024',
+                ],
+            ];
+        }
+
+        // Data artikel dari database
+        $artikelsFromDB = Artikel::orderBy('tanggal_publikasi', 'desc')->take(3)->get();
+        $articles = [];
+
+        foreach ($artikelsFromDB as $artikel) {
+            $articles[] = [
+                'id' => $artikel->id,
+                'image' => asset('images/default-article.jpg'),
+                'category' => $artikel->kategori,
+                'title' => $artikel->judul,
+                'excerpt' => substr(strip_tags($artikel->konten), 0, 100) . '...',
+                'date' => Carbon::parse($artikel->tanggal_publikasi)->translatedFormat('d F Y'),
+                'read_time' => '5 min read',
+                'tags' => explode(', ', $artikel->meta_keywords),
+                'full_content' => $artikel->konten,
+                'author' => $artikel->penulis
+            ];
+        }
+
+        // Jika tidak ada artikel di database, gunakan fallback
+        if (empty($articles)) {
+            $articles = [
+                [
+                    'id' => 1,
+                    'image' => asset('images/default-article.jpg'),
+                    'category' => 'Tips & Trik',
+                    'title' => 'Tips Perjalanan Aman dengan Shuttle Selama Liburan',
+                    'excerpt' => 'Pelajari cara mempersiapkan perjalanan shuttle yang aman dan nyaman selama musim liburan untuk pengalaman terbaik.',
+                    'date' => '15 Maret 2024',
+                    'read_time' => '5 min read',
+                    'tags' => ['Perjalanan', 'Tips', 'Liburan'],
+                    'full_content' => '<h3>Persiapan Sebelum Perjalanan</h3><p>Perjalanan dengan shuttle selama liburan memerlukan persiapan yang matang. Pastikan Anda memesan tiket jauh-jauh hari untuk mendapatkan harga terbaik dan kursi pilihan. Smart Shuttle menawarkan pemesanan online yang mudah melalui website atau aplikasi kami.</p><h3>Packing yang Tepat</h3><p>Bawalah barang secukupnya sesuai durasi perjalanan. Gunakan tas yang mudah disimpan di bagasi shuttle. Jangan lupa membawa charger ponsel, makanan ringan, dan baju hangat karena AC shuttle biasanya cukup dingin.</p>',
+                    'author' => 'Admin SmartShuttle'
+                ],
+                [
+                    'id' => 2,
+                    'image' => asset('images/default-article.jpg'),
+                    'category' => 'Berita',
+                    'title' => 'SmartShuttle Perkenalkan Fitur Baru: SmartSend',
+                    'excerpt' => 'Kami dengan bangga memperkenalkan layanan pengiriman paket antar kota dengan fitur tracking real-time.',
+                    'date' => '10 Maret 2024',
+                    'read_time' => '4 min read',
+                    'tags' => ['Fitur Baru', 'Pengiriman', 'Inovasi'],
+                    'full_content' => '<h3>SmartSend - Solusi Pengiriman Paket</h3><p>SmartSend adalah layanan terbaru dari Smart Shuttle yang memungkinkan Anda mengirim paket antar kota dengan mudah, cepat, dan aman. Dengan fitur tracking real-time, Anda dapat memantau perjalanan paket Anda kapan saja dan di mana saja.</p><h3>Keunggulan SmartSend</h3><p>1. <strong>Tracking Real-time</strong>: Pantau lokasi paket Anda secara real-time melalui aplikasi<br>2. <strong>Harga Terjangkau</strong>: Tarif yang kompetitif dengan kualitas terjamin<br>3. <strong>Pengiriman Cepat</strong>: Didukung oleh armada shuttle yang sudah terintegrasi</p>',
+                    'author' => 'Admin SmartShuttle'
+                ],
+                [
+                    'id' => 3,
+                    'image' => asset('images/default-article.jpg'),
+                    'category' => 'Bisnis',
+                    'title' => 'Mengapa Memilih Shuttle untuk Perjalanan Bisnis?',
+                    'excerpt' => 'Temukan keuntungan menggunakan layanan shuttle untuk kebutuhan perjalanan bisnis Anda. Efisien dan hemat waktu.',
+                    'date' => '5 Maret 2024',
+                    'read_time' => '6 min read',
+                    'tags' => ['Bisnis', 'Efisiensi', 'Perjalanan'],
+                    'full_content' => '<h3>Efisiensi Waktu dan Biaya</h3><p>Untuk perjalanan bisnis, waktu adalah uang. Dengan menggunakan layanan shuttle, Anda dapat menghindari kemacetan dengan rute yang sudah teroptimasi.</p><h3>Kenyamanan dan Produktivitas</h3><p>Smart Shuttle menyediakan fasilitas yang mendukung produktivitas Anda seperti Wi-Fi gratis dan stop kontak untuk mengisi daya perangkat.</p>',
+                    'author' => 'Admin SmartShuttle'
+                ]
+            ];
+        }
+
+        // Mendapatkan service aktif dari URL atau default 'shuttle'
+        $activeService = request()->get('service', 'shuttle');
     @endphp
 </head>
 <body>
@@ -3072,14 +3079,14 @@
                 </div>
                 <div class="nav-menu">
                     <ul class="nav-links">
-                        <li><a href="/customer/beranda" class="active">Beranda</a></li>
-                        <li><a href="{{ route('customer.search') }}">Cari Tiket</a></li>
+                        <li><a href="/customer/beranda" class="{{ $activeService === 'shuttle' ? 'active' : '' }}">Beranda</a></li>
+                        <li><a href="{{ route('customer.search') }}" class="{{ $activeService === 'shuttle' ? '' : '' }}">Cari Tiket</a></li>
                         <li><a href="{{ route('customer.outlet') }}">Outlet</a></li>
-                        <li><a href="{{ route('customer.contact') }}">Kontak</a></li>
-                        <!-- Menu baru ditambahkan di sini -->
-                        <li><a href="#" onclick="alert('Fitur Kirim Paket akan segera hadir!'); return false;">Kirim Paket</a></li>
+                        <!-- Menu Kirim Paket - akan diaktifkan jika service=kirim-paket -->
+                        <li><a href="{{ url()->current() }}?service=kirim-paket" class="{{ $activeService === 'kirim-paket' ? 'active' : '' }}" id="nav-kirim-paket">Kirim Paket</a></li>
                         <li><a href="#" onclick="alert('Fitur Sewa Armada akan segera hadir!'); return false;">Sewa Armada</a></li>
-                        <li><a href="#" >Cek Reservasi</a></li>
+                        <li><a href="{{ route('customer.contact') }}">Kontak</a></li>
+                        <li><a href="{{ route('customer.cek-reservasi') }}">Cek Reservasi</a></li>
                     </ul>
                 </div>
                 <!-- BAGIAN NAV-AUTH -->
@@ -3121,11 +3128,11 @@
                 {{ $profile->deskripsi_singkat ?? 'Menghubungkan kota, menyatukan perjalanan – Solusi cerdas untuk mobilitas anda' }}
             </p>
             <div class="hero-services">
-                <a href="{{ url()->current() }}?service=shuttle" class="hero-service" id="shuttle-link">
+                <a href="{{ url()->current() }}?service=shuttle" class="hero-service {{ $activeService === 'shuttle' ? 'active' : '' }}" id="shuttle-link">
                     <i class="fas fa-shuttle-van"></i>
                     <span>Tiket Shuttle</span>
                 </a>
-                <a href="{{ url()->current() }}?service=kirim-paket" class="hero-service" id="kirim-paket-link">
+                <a href="{{ url()->current() }}?service=kirim-paket" class="hero-service {{ $activeService === 'kirim-paket' ? 'active' : '' }}" id="kirim-paket-link">
                     <i class="fas fa-box"></i>
                     <span>Kirim Paket</span>
                 </a>
@@ -3141,7 +3148,7 @@
     <div class="search-section">
         <div class="search-container">
             <!-- Form Tiket Shuttle (Default) -->
-            <form action="{{ route('customer.search') }}" method="GET" id="search-form" class="service-form" data-service="shuttle">
+            <form action="{{ route('customer.search') }}" method="GET" id="search-form" class="service-form" data-service="shuttle" style="{{ $activeService === 'shuttle' ? 'display: block;' : 'display: none;' }}">
                 <div class="search-row">
                     <div class="search-field">
                         <div class="autocomplete-container">
@@ -3194,7 +3201,7 @@
             </form>
 
             <!-- Form Kirim Paket (Hidden by Default) -->
-            <form action="{{ route('customer.kirim-paket') }}" method="GET" id="kirim-paket-form" class="service-form" data-service="kirim-paket" style="display: none;">
+            <form action="{{ route('customer.kirim-paket') }}" method="GET" id="kirim-paket-form" class="service-form" data-service="kirim-paket" style="{{ $activeService === 'kirim-paket' ? 'display: block;' : 'display: none;' }}">
                 <div class="search-row" style="grid-template-columns: 1fr 1fr; gap: 20px;">
                     <!-- Tombol Cek Paket -->
                     <div class="search-field">
@@ -3550,7 +3557,7 @@
         </p>
 
         <div class="articles-grid">
-            @foreach($articles as $article)
+            @foreach($articles as $index => $article)
             <div class="article-card">
                 <img src="{{ $article['image'] }}" alt="{{ $article['title'] }}" class="article-image"
                      onerror="this.onerror=null; this.src='{{ asset('images/default-article.jpg') }}';">
@@ -3563,17 +3570,29 @@
                             <i class="far fa-calendar-alt"></i>
                             {{ $article['date'] }}
                         </div>
-                        <a href="#" class="article-read-more">Baca Selengkapnya →</a>
+                        <a href="#" class="article-read-more" data-article-id="{{ $article['id'] }}">Baca Selengkapnya →</a>
                     </div>
                 </div>
             </div>
             @endforeach
         </div>
 
-        <a href="#" class="view-all-articles">
+        <a href="{{ route('customer.artikel') }}" class="view-all-articles">
             Lihat Semua Artikel <i class="fas fa-arrow-right"></i>
         </a>
     </section>
+
+    <!-- === MODAL ARTIKEL === -->
+    <div class="modal-artikel" id="modal-artikel">
+        <div class="modal-artikel-content">
+            <button class="close-modal-artikel" id="close-modal-artikel">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <!-- Konten modal akan diisi oleh JavaScript -->
+            <div id="modal-artikel-content"></div>
+        </div>
+    </div>
 
     <!-- === FEEDBACK SECTION YANG DIRAPIHKAN DENGAN FILTER === -->
     <section class="feedback-section">
@@ -4042,15 +4061,35 @@
             }
         });
 
-        /* ---------- SERVICE SWITCHER ---------- */
+        /* ---------- SERVICE SWITCHER DENGAN UPDATE NAVBAR ---------- */
         const shuttleLink = document.getElementById('shuttle-link');
         const kirimPaketLink = document.getElementById('kirim-paket-link');
+        const navKirimPaket = document.getElementById('nav-kirim-paket');
         const serviceForms = document.querySelectorAll('.service-form');
         const heroServices = document.querySelectorAll('.hero-service');
         const heroTitle = document.querySelector('.hero-title');
         const heroDesc = document.querySelector('.hero-desc');
+        const navLinks = document.querySelectorAll('.nav-links a');
         const urlParams = new URLSearchParams(window.location.search);
         const activeService = urlParams.get('service') || 'shuttle';
+
+        // Function to update navbar active state
+        function updateNavbarActiveState(serviceType) {
+            // Reset semua menu
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+
+                // Jika ini adalah halaman beranda dan service shuttle aktif
+                if (serviceType === 'shuttle' && link.getAttribute('href') === '/customer/beranda') {
+                    link.classList.add('active');
+                }
+
+                // Jika ini adalah menu Kirim Paket dan service kirim-paket aktif
+                if (serviceType === 'kirim-paket' && link.id === 'nav-kirim-paket') {
+                    link.classList.add('active');
+                }
+            });
+        }
 
         // Function to switch between forms
         function switchService(serviceType) {
@@ -4064,6 +4103,9 @@
             if (activeForm) {
                 activeForm.style.display = 'block';
             }
+
+            // Update navbar active state
+            updateNavbarActiveState(serviceType);
 
             // Tutup kedua modal jika terbuka
             if (modalCekPaket) {
@@ -4116,6 +4158,20 @@
                         allowClear: true,
                         width: '100%'
                     });
+                } else if (serviceType === 'kirim-paket') {
+                    // Initialize Select2 untuk modal Kirim Paket jika belum diinisialisasi
+                    if ($('#asal-paket').data('select2') === undefined) {
+                        $('#asal-paket').select2({
+                            placeholder: "Pilih Kota Asal",
+                            allowClear: true,
+                            width: '100%'
+                        });
+                        $('#tujuan-paket').select2({
+                            placeholder: "Pilih Kota Tujuan",
+                            allowClear: true,
+                            width: '100%'
+                        });
+                    }
                 }
             }, 100);
         }
@@ -4181,6 +4237,19 @@
             });
         }
 
+        // Handle click on Kirim Paket navbar link
+        if (navKirimPaket) {
+            navKirimPaket.addEventListener('click', function(e) {
+                e.preventDefault();
+                switchService('kirim-paket');
+
+                // Scroll to search section
+                document.querySelector('.search-section').scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        }
+
         // Handle browser back/forward buttons
         window.addEventListener('popstate', function() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -4188,16 +4257,129 @@
             switchService(service);
         });
 
-        // Session messages
-        const successMsg = @json(session('success'));
-        const errorMsg = @json(session('error'));
+        /* === MODAL ARTIKEL === */
+        const modalArtikel = document.getElementById('modal-artikel');
+        const closeModalArtikel = document.getElementById('close-modal-artikel');
+        const modalArtikelContent = document.getElementById('modal-artikel-content');
+        const readMoreButtons = document.querySelectorAll('.article-read-more');
 
-        if (successMsg) {
-            alert(successMsg);
+        // Data artikel (diambil dari PHP)
+        const articlesData = @json($articles);
+
+        // Fungsi untuk menampilkan modal artikel
+        function showArticleModal(articleId) {
+            // Cari artikel berdasarkan ID
+            const article = articlesData.find(a => a.id == articleId);
+
+            if (!article) {
+                alert('Artikel tidak ditemukan!');
+                return;
+            }
+
+            // Isi konten modal
+            modalArtikelContent.innerHTML = `
+                <div class="modal-artikel-header">
+                    <span class="modal-artikel-category">${article.category}</span>
+                    <h2 class="modal-artikel-title">${article.title}</h2>
+                    <div class="modal-artikel-meta">
+                        <div class="modal-artikel-date">
+                            <i class="far fa-calendar-alt"></i>
+                            ${article.date}
+                        </div>
+                        <div>
+                            <i class="far fa-clock"></i>
+                            ${article.read_time}
+                        </div>
+                        <div>
+                            <i class="fas fa-user"></i>
+                            ${article.author}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-artikel-body">
+                    ${article.image.includes('default') ?
+                        `<div class="default-article-img" style="background: linear-gradient(135deg, var(--primary-color), #00308F); width: 100%; height: 400px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold; text-align: center; padding: 20px; border-radius: 10px; margin-bottom: 25px;">
+                            ${article.title}
+                        </div>` :
+                        `<img src="${article.image}" alt="${article.title}" class="modal-artikel-image"
+                             onerror="this.onerror=null; this.src='{{ asset('images/default-article.jpg') }}';">`
+                    }
+                    <div class="modal-artikel-content-text">
+                        ${article.full_content}
+                    </div>
+                </div>
+                <div class="modal-artikel-footer">
+                    <div class="modal-artikel-tags">
+                        ${article.tags.map(tag => `<span class="modal-artikel-tag">${tag}</span>`).join('')}
+                    </div>
+                    <div class="modal-artikel-share">
+                        <a href="#" class="modal-artikel-share-btn facebook" onclick="shareOnFacebook('${article.title}', window.location.href)">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="modal-artikel-share-btn twitter" onclick="shareOnTwitter('${article.title}', window.location.href)">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="modal-artikel-share-btn whatsapp" onclick="shareOnWhatsApp('${article.title}', window.location.href)">
+                            <i class="fab fa-whatsapp"></i>
+                        </a>
+                    </div>
+                </div>
+            `;
+
+            // Tampilkan modal
+            modalArtikel.classList.add('show');
+            document.body.style.overflow = 'hidden'; // Mencegah scroll di background
         }
-        if (errorMsg) {
-            alert(errorMsg);
+
+        // Fungsi untuk menutup modal
+        function closeArticleModal() {
+            modalArtikel.classList.remove('show');
+            document.body.style.overflow = 'auto'; // Kembalikan scroll
         }
+
+        // Event listener untuk tombol "Baca Selengkapnya"
+        readMoreButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const articleId = this.getAttribute('data-article-id');
+                showArticleModal(articleId);
+            });
+        });
+
+        // Event listener untuk tombol close modal
+        if (closeModalArtikel) {
+            closeModalArtikel.addEventListener('click', closeArticleModal);
+        }
+
+        // Tutup modal ketika klik di luar konten modal
+        modalArtikel.addEventListener('click', function(e) {
+            if (e.target === modalArtikel) {
+                closeArticleModal();
+            }
+        });
+
+        // Tutup modal dengan tombol Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modalArtikel.classList.contains('show')) {
+                closeArticleModal();
+            }
+        });
+
+        // Fungsi untuk berbagi artikel
+        window.shareOnFacebook = function(title, url) {
+            const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(title)}`;
+            window.open(shareUrl, '_blank', 'width=600,height=400');
+        };
+
+        window.shareOnTwitter = function(title, url) {
+            const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`;
+            window.open(shareUrl, '_blank', 'width=600,height=400');
+        };
+
+        window.shareOnWhatsApp = function(title, url) {
+            const shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(title + ' ' + url)}`;
+            window.open(shareUrl, '_blank', 'width=600,height=400');
+        };
 
         /* === REVIEW MANAGEMENT SCRIPT === */
         // Data review (gunakan data dari server jika ada)
@@ -4558,6 +4740,17 @@
 
         // Make goToPage available globally
         window.goToPage = goToPage;
+
+        // Session messages
+        const successMsg = @json(session('success'));
+        const errorMsg = @json(session('error'));
+
+        if (successMsg) {
+            alert(successMsg);
+        }
+        if (errorMsg) {
+            alert(errorMsg);
+        }
     });
 
     /* ---------- PROMO SLIDER SCRIPT ---------- */

@@ -12,13 +12,13 @@ class ProfileController extends Controller
   public function show(Request $request)
 {
     $user = $request->user()->load('roles');
-    
+
     return response()->json([
         'user' => [
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'avatar' => $user->avatar ? url('storage/' . $user->avatar) : null,
+            'avatar' => $user->avatar_url,
             'email_verified_at' => $user->email_verified_at,
             'roles' => $user->getRoleNames(),
             'created_at' => $user->created_at,
@@ -54,7 +54,7 @@ public function update(Request $request)
     {
         try {
             \Log::info('Avatar upload started', ['user_id' => $request->user()->id]);
-            
+
             $validator = Validator::make($request->all(), [
                 'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
             ]);
@@ -68,10 +68,10 @@ public function update(Request $request)
             }
 
             $user = $request->user();
-            
+
             if ($request->hasFile('avatar')) {
                 \Log::info('Avatar file detected', ['file_name' => $request->file('avatar')->getClientOriginalName()]);
-                
+
                 // Check if avatar column exists in database
                 if (!\Schema::hasColumn('users', 'avatar')) {
                     \Log::error('Avatar column does not exist in users table');
@@ -79,12 +79,12 @@ public function update(Request $request)
                         'message' => 'Avatar feature not available - database column missing'
                     ], 500);
                 }
-                
+
                 $path = $request->file('avatar')->store('avatars', 'public');
                 \Log::info('Avatar stored', ['path' => $path]);
-                
+
                 $user->update(['avatar' => $path]);
-                
+
                 return response()->json([
                     'message' => 'Profile picture updated successfully',
                     'avatar_url' => url('storage/' . $path)
@@ -101,7 +101,7 @@ public function update(Request $request)
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'message' => 'Failed to upload avatar',
                 'error' => $e->getMessage()

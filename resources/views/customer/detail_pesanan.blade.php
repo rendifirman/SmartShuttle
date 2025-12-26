@@ -164,6 +164,20 @@
         min-width: 70px;
     }
 
+    /* STYLE UNTUK PANAH - SEDERHANA */
+    .arrow-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 20px;
+        flex-shrink: 0;
+    }
+
+    .arrow-icon {
+        color: #FF581E;
+        font-size: 32px;
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
         .card {
@@ -195,6 +209,21 @@
         .shuttle-item:last-child {
             border-bottom: none;
         }
+
+        /* Responsive untuk panah */
+        .arrow-container {
+            padding: 0 10px;
+        }
+
+        .arrow-icon {
+            font-size: 28px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .arrow-icon {
+            font-size: 24px;
+        }
     }
 </style>
 @endpush
@@ -203,8 +232,8 @@
 <!-- CARD CONTENT -->
 <div class="card">
 
-    <!-- JUDUL DETAIL PESANAN - DIPERBESAR -->
-    <h1 style="font-weight:700; font-size: 32px; margin-bottom: 10px;">DETAIL PESANAN</h1>
+    <!-- JUDUL DETAIL PESANAN - DIPERBESAR DAN DI TENGAH -->
+    <h1 style="font-weight:700; font-size: 32px; margin-bottom: 10px; text-align: center;">DETAIL PESANAN</h1>
     <div class="dotted-line"></div>
 
     <!-- SHUTTLE INFO - DIUBAH MENJADI LEBIH RAPI -->
@@ -223,9 +252,9 @@
         </div>
     </div>
 
-    <!-- Kota dan tanggal -->
-    <div style="display:flex; justify-content:space-between; margin-top:30px;">
-        <div style="font-weight:700; font-size: 28px; text-transform:uppercase;">
+    <!-- Kota dan tanggal - DITAMBAH ICON PANAH DI TENGAH -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:30px;">
+        <div style="font-weight:700; font-size: 28px; text-transform:uppercase; flex: 1;">
             {{ $from ?? 'KOTA ASAL' }}<br>
             <span style="font-weight:400; font-size: 18px; color: #666;">
                 @php
@@ -245,7 +274,12 @@
             </span>
         </div>
 
-        <div style="text-align:right; font-weight:700; font-size: 28px; text-transform:uppercase;">
+        <!-- ICON PANAH YANG DITAMBAHKAN -->
+        <div class="arrow-container">
+            <i class="fas fa-arrow-right arrow-icon"></i>
+        </div>
+
+        <div style="text-align:right; font-weight:700; font-size: 28px; text-transform:uppercase; flex: 1;">
             {{ $to ?? 'KOTA TUJUAN' }}
         </div>
     </div>
@@ -339,24 +373,23 @@
     </div>
 
     <!-- Action Buttons -->
-    <!-- Action Buttons -->
-<div style="margin-top: 30px;">
-    @if($pemesanan->status == 'menunggu_pembayaran')
-        <a href="{{ route('customer.pembayaran', ['kode_booking' => $pemesanan->kode_booking]) }}"
-           class="btn-orange">
-            Lanjut Pembayaran
-        </a>
-    @elseif($pemesanan->status == 'dibayar')
-        <a href="{{ route('customer.e_ticket', ['kode_booking' => $pemesanan->kode_booking]) }}"
-           class="btn-orange" style="background-color: #28a745;">
-            Lihat E-Ticket
-        </a>
-    @else
-        <button class="btn-orange" style="background-color: #6c757d;" disabled>
-            Status: {{ ucfirst(str_replace('_', ' ', $pemesanan->status)) }}
-        </button>
-    @endif
-</div>
+    <div style="margin-top: 30px;">
+        @if($pemesanan->status == 'menunggu_pembayaran')
+            <a href="{{ route('customer.pembayaran', ['kode_booking' => $pemesanan->kode_booking]) }}"
+               class="btn-orange">
+                Lanjut Pembayaran
+            </a>
+        @elseif($pemesanan->status == 'dibayar')
+            <a href="{{ route('customer.e_ticket', ['kode_booking' => $pemesanan->kode_booking]) }}"
+               class="btn-orange" style="background-color: #28a745;">
+                Lihat E-Ticket
+            </a>
+        @else
+            <button class="btn-orange" style="background-color: #6c757d;" disabled>
+                Status: {{ ucfirst(str_replace('_', ' ', $pemesanan->status)) }}
+            </button>
+        @endif
+    </div>
 
     <!-- Important Notes -->
     <div class="info-box">

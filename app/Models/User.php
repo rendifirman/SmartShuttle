@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -190,10 +191,29 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function getAvatarUrlAttribute()
     {
-        if ($this->avatar) {
-            return asset('storage/' . $this->avatar);
+        if (empty($this->avatar)) {
+            return null;
         }
 
+        // Jika avatar sudah berupa URL eksternal (mis. Google avatar), kembalikan apa adanya
+        if (preg_match('/^https?:\/\//i', $this->avatar) || preg_match('/^\/\//', $this->avatar)) {
+            return $this->avatar;
+        }
+
+        // Kalau bukan URL, anggap disimpan di storage. Pastikan file ada agar tidak menampilkan broken image.
+        $relative = ltrim($this->avatar, '/');
+
+        try {
+            if (Storage::disk('public')->exists($relative) || file_exists(public_path('storage/' . $relative))) {
+                return asset('storage/' . $relative);
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Error checking avatar file existence', ['avatar' => $this->avatar, 'error' => $e->getMessage()]);
+        }
+
+        // Jika file tidak ditemukan, kembalikan null sehingga view menampilkan inisial/fallback,
+        // bukan <img> dengan src yang menyebabkan alt text terlihat (mis. "AVAT").
+        \Log::info('Avatar file missing or inaccessible', ['user_id' => $this->id, 'avatar' => $this->avatar]);
         return null;
     }
 

@@ -113,6 +113,13 @@
             font-weight: 600;
             margin: 0 2px;
         }
+
+        /* STYLE UNTUK PANAH SEDERHANA */
+        .arrow-icon {
+            color: #FF581E;
+            font-size: 24px;
+            margin: 0 10px;
+        }
     </style>
 </head>
 
@@ -143,9 +150,9 @@
                     </div>
                 </div>
 
-                <!-- Kota & waktu -->
-                <div class="flex justify-between mb-4">
-                    <div>
+                <!-- Kota & waktu DENGAN PANAH -->
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex-1">
                         <p class="font-bold text-gray-700 text-lg">{{ $from }}</p>
                         <p class="text-sm text-gray-600">
                             @php
@@ -168,7 +175,11 @@
                             {{ $time }}
                         </p>
                     </div>
-                    <div class="text-right">
+
+                    <!-- ICON PANAH SEDERHANA -->
+                    <i class="fas fa-arrow-right arrow-icon"></i>
+
+                    <div class="flex-1 text-right">
                         <p class="font-bold text-gray-700 text-lg">{{ $to }}</p>
                     </div>
                 </div>
