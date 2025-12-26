@@ -467,6 +467,21 @@
             @include('layouts.footer', ['profilePerusahaan' => $profilePerusahaan])
         @endif
 
+            <!-- Modal untuk menampilkan Syarat & Kebijakan (global) -->
+            <div class="modal fade" id="policyModal" tabindex="-1" aria-labelledby="policyModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="policyModalLabel">Title</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" id="policyModalBody">
+                            Loading...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         <!-- JavaScript OFFLINE -->
         <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -559,6 +574,39 @@
                 if (errorMsg) {
                     alert(errorMsg);
                 }
+                // Bind click handler for any policy links (footer, other places)
+                function bindPolicyLinks() {
+                    document.querySelectorAll('.policy-link').forEach(function(el) {
+                        if (el.getAttribute('data-policy-bound')) return;
+                        el.setAttribute('data-policy-bound', '1');
+                        el.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            var type = el.getAttribute('data-policy') || 'terms';
+                            var modalEl = document.getElementById('policyModal');
+                            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                            var titleEl = document.getElementById('policyModalLabel');
+                            var bodyEl = document.getElementById('policyModalBody');
+                            titleEl.textContent = 'Loading...';
+                            bodyEl.innerHTML = '<p>Loading...</p>';
+                            modal.show();
+
+                            fetch('/api/policy/' + encodeURIComponent(type))
+                                .then(function(res) { return res.json(); })
+                                .then(function(json) {
+                                    titleEl.textContent = json.title || (type === 'privacy' ? 'Kebijakan Privasi' : 'Syarat & Ketentuan');
+                                    bodyEl.innerHTML = json.content || '<p>Tidak ada konten.</p>';
+                                })
+                                .catch(function(err) {
+                                    titleEl.textContent = 'Error';
+                                    bodyEl.innerHTML = '<p>Gagal memuat konten.</p>';
+                                    console.error(err);
+                                });
+                        });
+                    });
+                }
+
+                // initial bind
+                bindPolicyLinks();
             });
         </script>
 

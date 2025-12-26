@@ -172,6 +172,9 @@ Route::prefix('api')->group(function () {
 
     // Payment API
     Route::post('/payment/callback', [PembayaranController::class, 'webhook'])->name('api.payment.callback');
+
+    // Policy content API (terms / privacy) for AJAX modals
+    Route::get('/policy/{type}', [CustomerController::class, 'getPolicy'])->name('api.policy.get');
 });
 
 // ★★★ ADMIN ROUTES ★★★
@@ -201,4 +204,18 @@ Route::get('/customer/artikel', function () {
 // ★★★ ROUTE FALLBACK ★★★
 Route::fallback(function () {
     return redirect()->route('customer.beranda');
+});
+// Route untuk kursi
+Route::prefix('kursi')->name('customer.kursi.')->group(function () {
+    Route::get('/', [KursiController::class, 'index'])->name('index');
+    Route::post('/proses', [KursiController::class, 'prosesKursi'])->name('proses');
+    Route::get('/detail/{kode}', [KursiController::class, 'detailPesanan'])->name('detail_pesanan');
+    Route::post('/batalkan/{pemesananId}', [KursiController::class, 'batalkanKursi'])->name('batalkan');
+});
+
+// API Routes untuk validasi kursi
+Route::prefix('api')->group(function () {
+    Route::post('/validasi-kursi', [KursiController::class, 'validasiKursiAPI']);
+    Route::get('/kursi-tersedia/{jadwalId}', [KursiController::class, 'getKursiTersediaAPI']);
+    Route::post('/kursi-validate', [KursiController::class, 'validateSeatsAPI']);
 });

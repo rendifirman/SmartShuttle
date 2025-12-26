@@ -92,10 +92,19 @@ class KursiTerpesan extends Model
             // Validasi: jika layout kosong atau bukan array, generate default
             if (empty($layoutKursi) || !is_array($layoutKursi)) {
                 $layoutKursi = self::generateLayoutKursi($shuttle->total_kursi ?? 9);
+                // Simpan layout yang baru ke database
+                $shuttle->layout_kursi = json_encode($layoutKursi);
+                $shuttle->save();
             }
         } else {
             // Fallback: generate layout default 9 kursi
             $layoutKursi = self::generateLayoutKursi(9);
+
+            // Jika shuttle ditemukan tapi layout kosong, simpan ke database
+            if ($shuttle) {
+                $shuttle->layout_kursi = json_encode($layoutKursi);
+                $shuttle->save();
+            }
         }
 
         // 2. Reset semua status menjadi 'tersedia' terlebih dahulu
@@ -103,9 +112,10 @@ class KursiTerpesan extends Model
             $kursi['status'] = 'tersedia';
         }
 
-        // 3. Ambil kursi yang sudah terpesan dari database
+        // 3. Ambil kursi yang sudah terpesan dari database dengan LOCK untuk konsistensi
         $terpesan = self::where('jadwal_id', $jadwalId)
             ->whereIn('status', ['terpesan', 'terisi'])
+            ->lockForUpdate()
             ->pluck('nomor_kursi')
             ->toArray();
 
@@ -144,43 +154,82 @@ class KursiTerpesan extends Model
     }
 
     /**
-     * Cek apakah kursi tersedia
+     * Cek apakah kursi tersedia dengan LOCK untuk mencegah race condition
      */
     public static function isKursiTersedia($jadwalId, $nomorKursi)
     {
         return !self::where('jadwal_id', $jadwalId)
             ->where('nomor_kursi', $nomorKursi)
             ->whereIn('status', ['terpesan', 'terisi'])
+            ->lockForUpdate()
             ->exists();
     }
 
     /**
-     * Pesan kursi dengan validasi ganda
+     * Pesan kursi dengan validasi ganda dan LOCK untuk mencegah double booking
      */
     public static function pesanKursi($jadwalId, $nomorKursi, $detailPenumpangId = null, $pemesananId = null)
     {
-        // Validasi kursi tersedia
-        if (!self::isKursiTersedia($jadwalId, $nomorKursi)) {
-            throw new \Exception("Kursi {$nomorKursi} sudah terpesan");
-        }
+        DB::beginTransaction();
 
-        return self::create([
-            'jadwal_id' => $jadwalId,
-            'nomor_kursi' => $nomorKursi,
-            'detail_penumpang_id' => $detailPenumpangId,
-            'pemesanan_id' => $pemesananId,
-            'status' => 'terpesan'
-        ]);
+        try {
+            // Validasi kursi tersedia dengan LOCK
+            if (!self::isKursiTersedia($jadwalId, $nomorKursi)) {
+                throw new \Exception("Kursi {$nomorKursi} sudah terpesan oleh customer lain");
+            }
+
+            $kursi = self::create([
+                'jadwal_id' => $jadwalId,
+                'nomor_kursi' => $nomorKursi,
+                'detail_penumpang_id' => $detailPenumpangId,
+                'pemesanan_id' => $pemesananId,
+                'status' => 'terpesan'
+            ]);
+
+            // Update kursi tersedia di jadwal
+            $jadwal = Jadwal::find($jadwalId);
+            if ($jadwal) {
+                $jadwal->decrement('kursi_tersedia');
+            }
+
+            DB::commit();
+
+            return $kursi;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     /**
-     * Batalkan pemesanan kursi
+     * Batalkan pemesanan kursi dengan LOCK
      */
     public static function batalkanKursi($jadwalId, $nomorKursi)
     {
-        return self::where('jadwal_id', $jadwalId)
-            ->where('nomor_kursi', $nomorKursi)
-            ->delete();
+        DB::beginTransaction();
+
+        try {
+            $deleted = self::where('jadwal_id', $jadwalId)
+                ->where('nomor_kursi', $nomorKursi)
+                ->delete();
+
+            // Update kursi tersedia di jadwal
+            if ($deleted > 0) {
+                $jadwal = Jadwal::find($jadwalId);
+                if ($jadwal) {
+                    $jadwal->increment('kursi_tersedia');
+                }
+            }
+
+            DB::commit();
+
+            return $deleted;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     /**
@@ -208,7 +257,51 @@ class KursiTerpesan extends Model
      */
     public static function clearKursiByPemesanan($pemesananId)
     {
-        return self::where('pemesanan_id', $pemesananId)->delete();
+        DB::beginTransaction();
+
+        try {
+            // Ambil jumlah kursi yang akan dihapus
+            $kursiTerpesan = self::where('pemesanan_id', $pemesananId)->get();
+            $jumlahKursi = $kursiTerpesan->count();
+
+            // Hapus kursi terpesan
+            $deleted = self::where('pemesanan_id', $pemesananId)->delete();
+
+            // Update kursi tersedia di jadwal
+            if ($deleted > 0) {
+                foreach ($kursiTerpesan as $kursi) {
+                    $jadwal = Jadwal::find($kursi->jadwal_id);
+                    if ($jadwal) {
+                        $jadwal->increment('kursi_tersedia');
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return $deleted;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Cek apakah semua kursi dalam array tersedia
+     */
+    public static function areSeatsAvailable($jadwalId, $seatNumbers)
+    {
+        $terpesan = self::where('jadwal_id', $jadwalId)
+            ->whereIn('nomor_kursi', $seatNumbers)
+            ->whereIn('status', ['terpesan', 'terisi'])
+            ->pluck('nomor_kursi')
+            ->toArray();
+
+        return [
+            'available' => empty($terpesan),
+            'terpesan_seats' => $terpesan
+        ];
     }
 
     /**

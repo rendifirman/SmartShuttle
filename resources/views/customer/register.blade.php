@@ -33,6 +33,7 @@
       background-position: center;
       background-repeat: no-repeat;
       background-attachment: fixed;
+      background-color: #00215E; /* Fallback color */
     }
 
     @media (max-width: 768px) {
@@ -72,7 +73,6 @@
       left: 0;
       right: 0;
       bottom: 0;
-      /* gunakan warna biru utama dengan opacity untuk overlay */
       background: rgba(18, 51, 82, 0.95); /* var(--primary-blue) */
       display: flex;
       align-items: center;
@@ -99,7 +99,6 @@
       overflow-y: auto;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
       position: relative;
-      /* border tipis dengan warna oranye yang lembut */
       border: 1px solid rgba(255, 88, 30, 0.15);
     }
 
@@ -112,14 +111,12 @@
 
     .modal-header {
       padding: 20px 25px 15px;
-      /* header gelap biru dengan aksen oranye halus */
       background: linear-gradient(135deg, var(--primary-blue) 0%, #0f283f 100%);
       border-radius: 16px 16px 0 0;
       text-align: center;
       position: sticky;
       top: 0;
       z-index: 10;
-      /* garis bawah oranye sebagai aksen */
       border-bottom: 3px solid rgba(255, 88, 30, 0.95);
     }
 
@@ -160,7 +157,6 @@
     }
 
     .modal-body h4 {
-      /* teks tetap abu, namun garis aksen oranye */
       color: var(--text-gray);
       font-size: 1rem;
       font-weight: 600;
@@ -219,7 +215,6 @@
       top: 0.5rem;
       width: 6px;
       height: 6px;
-      /* bullet oranye untuk aksen */
       background: var(--accent-orange);
       border-radius: 50%;
     }
@@ -315,58 +310,165 @@
       50% { transform: translateX(-50%) translateY(-5px); }
     }
 
-    /* Mobile Navigation */
-    .mobile-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(18, 51, 82, 0.95);
-      backdrop-filter: blur(10px);
-      border-top: 1px solid rgba(255, 88, 30, 0.2);
-      z-index: 100;
-      padding: 10px 15px;
-    }
+    /* Mobile container styling */
+    @media (max-width: 768px) {
+      .mobile-main-container {
+        background: rgba(0, 33, 94, 0.8);
+        min-height: 100vh;
+        padding-bottom: 20px;
+      }
 
-    /* Password strength indicator */
-    .password-strength {
-      height: 4px;
-      border-radius: 2px;
-      margin-top: 5px;
-      transition: all 0.3s;
-    }
+      .mobile-content-wrapper {
+        padding: 0 16px 30px;
+      }
 
-    .strength-weak {
-      width: 25%;
-      background: #ef4444;
-    }
-    .strength-medium {
-      width: 50%;
-      background: #f59e0b;
-    }
-    .strength-strong {
-      width: 75%;
-      background: #10b981;
-    }
-    .strength-very-strong {
-      width: 100%;
-      background: #059669;
-    }
+      /* Features section for mobile */
+      .mobile-features-container {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 16px;
+        padding: 25px 20px;
+        margin-top: 20px;
+        box-shadow: 0 4px 12px rgba(0, 33, 94, 0.1);
+      }
 
-    /* Show/Hide password toggle */
-    .password-toggle {
-      position: absolute;
-      right: 15px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      color: #6b7280;
-      cursor: pointer;
-    }
+      .mobile-features-header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
 
-    .password-container {
-      position: relative;
+      .mobile-features-main-title {
+        color: #00215E;
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+      }
+
+      .mobile-features-subtitle {
+        color: #FF581E;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+      }
+
+      .mobile-feature-item {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border-left: 4px solid #00215E;
+        box-shadow: 0 2px 6px rgba(0, 33, 94, 0.08);
+      }
+
+      .mobile-feature-content {
+        display: flex;
+        align-items: center;
+      }
+
+      .mobile-feature-icon {
+        background: #00215E;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        flex-shrink: 0;
+      }
+
+      .mobile-feature-title {
+        color: #00215E;
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-bottom: 4px;
+      }
+
+      .mobile-feature-desc {
+        color: #4a5568;
+        font-size: 0.85rem;
+        line-height: 1.4;
+      }
+
+      /* Form section for mobile */
+      .mobile-form-container {
+        background: rgba(59, 59, 59, 0.9);
+        border-radius: 16px;
+        padding: 25px 20px;
+        margin-top: 25px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      }
+
+      .mobile-form-title {
+        text-align: center;
+        color: white;
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      .mobile-form-subtitle {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+        margin-bottom: 20px;
+      }
+
+      .mobile-input {
+        background: rgba(255, 255, 255, 0.95) !important;
+        border: 1px solid rgba(0, 40, 100, 0.2) !important;
+        color: #333 !important;
+      }
+
+      .mobile-input::placeholder {
+        color: #666 !important;
+      }
+
+      .mobile-label {
+        color: white !important;
+        font-weight: 500;
+        margin-bottom: 8px;
+      }
+
+      /* Password strength indicator */
+      .password-strength {
+        height: 4px;
+        border-radius: 2px;
+        margin-top: 5px;
+        transition: all 0.3s;
+      }
+
+      .strength-weak {
+        width: 25%;
+        background: #ef4444;
+      }
+      .strength-medium {
+        width: 50%;
+        background: #f59e0b;
+      }
+      .strength-strong {
+        width: 75%;
+        background: #10b981;
+      }
+      .strength-very-strong {
+        width: 100%;
+        background: #059669;
+      }
+
+      /* Show/Hide password toggle */
+      .password-toggle {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #6b7280;
+        cursor: pointer;
+      }
+
+      .password-container {
+        position: relative;
+      }
     }
 
     /* Mobile logo and header */
@@ -379,27 +481,269 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 20px 0 15px;
-        background: rgba(255, 254, 254, 0.9);
-        backdrop-filter: blur(5px);
-        border-bottom: 1px solid rgba(0, 33, 94, 0.1);
+        padding: 25px 20px 15px;
+        background: linear-gradient(135deg, #00215E 0%, #123352 100%);
+        border-bottom: 3px solid #FF581E;
+        text-align: center;
       }
     }
+
   </style>
 </head>
 <body class="bg-gray-50">
-  <!-- Mobile Header -->
-  <div class="mobile-header md:hidden">
-    <div class="text-center">
-      <h1 class="text-2xl font-bold text-[#00215E]">Smart Shuttle</h1>
-      <div class="w-16 h-1 bg-[#FF581E] mx-auto rounded-full mt-1"></div>
-      <p class="text-[#00215E] text-sm mt-2 font-medium">
-        Bergabung Bersama Kami
-      </p>
+  <!-- Mobile View -->
+  <div class="md:hidden mobile-main-container">
+    <!-- Mobile Header - Hanya Smart Shuttle -->
+    <div class="mobile-header">
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-white">Smart Shuttle</h1>
+        <div class="w-16 h-1 bg-[#FF581E] mx-auto rounded-full mt-1"></div>
+      </div>
+    </div>
+
+    <div class="mobile-content-wrapper">
+      <!-- Features Section for Mobile -->
+      <div class="mobile-features-container">
+        <!-- Header dengan kedua teks dalam satu frame -->
+        <div class="mobile-features-header">
+          <h2 class="mobile-features-main-title">Bergabung Bersama Kami</h2>
+          <div class="mobile-features-subtitle">Buat akun dan akses layanan terpadu kami</div>
+        </div>
+
+        <!-- FEATURE DINAMIS DARI DATABASE -->
+        @if(isset($layanan) && count($layanan) > 0)
+          @foreach($layanan as $item)
+          <div class="mobile-feature-item">
+            <div class="mobile-feature-content">
+              <div class="mobile-feature-icon">
+                @if($item->layanan_icon)
+                  <img src="{{ asset('storage/' . $item->layanan_icon) }}" alt="{{ $item->layanan_nama }}" class="w-5 h-5 text-white">
+                @else
+                  <!-- Default icon untuk tiket -->
+                  @if($item->layanan_kode == 'tiket')
+                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  <!-- Default icon untuk pengiriman -->
+                  @elseif($item->layanan_kode == 'pengiriman')
+                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                  </svg>
+                  <!-- Default icon untuk sewa -->
+                  @else
+                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                  </svg>
+                  @endif
+                @endif
+              </div>
+              <div>
+                <p class="mobile-feature-title">{{ $item->layanan_nama }}</p>
+                <p class="mobile-feature-desc">{{ $item->layanan_deskripsi }}</p>
+                <!-- Tampilkan harga range jika ada -->
+                @if($item->layanan_harga_min && $item->layanan_harga_max)
+                <p class="text-[#00215E]/60 text-xs mt-1">
+                  Mulai dari Rp {{ number_format($item->layanan_harga_min, 0, ',', '.') }}
+                </p>
+                @endif
+              </div>
+            </div>
+          </div>
+          @endforeach
+        @else
+          <!-- FALLBACK JIKA TIDAK ADA DATA -->
+          <div class="mobile-feature-item">
+            <div class="mobile-feature-content">
+              <div class="mobile-feature-icon">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+              <div>
+                <p class="mobile-feature-title">Tiket Antar Kota</p>
+                <p class="mobile-feature-desc">Jemput dan antar penumpang</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mobile-feature-item">
+            <div class="mobile-feature-content">
+              <div class="mobile-feature-icon">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                </svg>
+              </div>
+              <div>
+                <p class="mobile-feature-title">Pengiriman Barang</p>
+                <p class="mobile-feature-desc">Antar barang ke seluruh kota</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mobile-feature-item">
+            <div class="mobile-feature-content">
+              <div class="mobile-feature-icon">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                </svg>
+              </div>
+              <div>
+                <p class="mobile-feature-title">Sewa Armada</p>
+                <p class="mobile-feature-desc">Sewakan kendaraan Anda</p>
+              </div>
+            </div>
+          </div>
+        @endif
+      </div>
+
+      <!-- Form Section for Mobile -->
+      <div class="mobile-form-container">
+        <h2 class="mobile-form-title">Daftar Akun Anda</h2>
+        <p class="mobile-form-subtitle">Isi data diri Anda untuk mulai menggunakan layanan</p>
+
+        <form action="{{ route('customer.register.post') }}" method="POST" class="space-y-4">
+          @csrf
+
+          <!-- Name -->
+          <div>
+            <label class="block mb-2 mobile-label flex items-center gap-2 text-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+              Nama Lengkap
+            </label>
+            <input
+              type="text"
+              name="name"
+              class="w-full p-3 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 mobile-input"
+              placeholder="Masukkan nama lengkap Anda"
+              required
+              value="{{ old('name') }}"
+            />
+            @error('name')
+              <p class="text-red-300 text-xs mt-1">{{ $message }}</p>
+            @enderror
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label class="block mb-2 mobile-label flex items-center gap-2 text-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+              </svg>
+              Email
+            </label>
+            <input
+              type="email"
+              name="email"
+              class="w-full p-3 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 mobile-input"
+              placeholder="Masukkan email Anda"
+              required
+              value="{{ old('email') }}"
+            />
+            @error('email')
+              <p class="text-red-300 text-xs mt-1">{{ $message }}</p>
+            @enderror
+          </div>
+
+          <!-- Password -->
+          <div class="password-container">
+            <label class="block mb-2 mobile-label flex items-center gap-2 text-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              </svg>
+              Password
+            </label>
+            <input
+              type="password"
+              name="password"
+              id="password"
+              class="w-full p-3 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 mobile-input pr-10"
+              placeholder="Buat password (minimal 8 karakter)"
+              required
+              minlength="8"
+            />
+            <button type="button" class="password-toggle" id="togglePassword">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeIcon">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+            </button>
+            <div class="password-strength" id="passwordStrength"></div>
+            @error('password')
+              <p class="text-red-300 text-xs mt-1">{{ $message }}</p>
+            @enderror
+          </div>
+
+          <!-- Confirm Password -->
+          <div class="password-container">
+            <label class="block mb-2 mobile-label flex items-center gap-2 text-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+              </svg>
+              Konfirmasi Password
+            </label>
+            <input
+              type="password"
+              name="password_confirmation"
+              id="confirmPassword"
+              class="w-full p-3 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 mobile-input pr-10"
+              placeholder="Konfirmasi password Anda"
+              required
+            />
+            <button type="button" class="password-toggle" id="toggleConfirmPassword">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeConfirmIcon">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+            </button>
+            <div class="text-xs mt-1 text-white/60" id="passwordMatch"></div>
+          </div>
+
+          <!-- Terms and Conditions -->
+          <div class="pt-2">
+            <label class="flex items-start text-white">
+              <input type="checkbox" name="terms" class="rounded text-[#00C8FF] focus:ring-[#00C8FF] w-4 h-4 mt-1" required>
+              <span class="ml-3 text-xs leading-tight">
+                Saya menyetujui
+                <a href="#" class="text-[#FF581E] hover:text-white font-medium transition-colors policy-link" data-policy="terms">Syarat & Ketentuan</a>
+                dan
+                <a href="#" class="text-[#FF581E] hover:text-white font-medium transition-colors policy-link" data-policy="privacy">Kebijakan Privasi</a>
+              </span>
+            </label>
+            @error('terms')
+              <p class="text-red-300 text-xs mt-1">{{ $message }}</p>
+            @enderror
+          </div>
+
+          @error('message')
+            <div class="bg-red-900/50 border border-red-700 text-red-200 px-3 py-2 rounded-lg text-sm" role="alert">
+              <span class="block">{{ $message }}</span>
+            </div>
+          @enderror
+
+          <button
+            type="submit"
+            class="w-full bg-gradient-to-r from-[#FF581E] to-[#FF581E] text-white font-semibold py-3 rounded-lg mt-3 transition-all duration-300 active:scale-95 shadow-lg text-sm"
+            id="submitButton"
+          >
+            Daftar Sekarang
+          </button>
+        </form>
+
+        <!-- Link ke login -->
+        <p class="mt-5 text-center text-sm text-white">
+          Sudah punya akun?
+          <a href="{{ route('customer.login') }}" class="text-[#FF581E] font-semibold hover:text-white transition-colors">
+            Masuk di sini
+          </a>
+        </p>
+      </div>
     </div>
   </div>
 
-  <div class="flex flex-col min-h-screen md:flex-row">
+  <!-- Desktop View (Original Code) -->
+  <div class="hidden md:flex flex-col min-h-screen md:flex-row">
     <!-- LEFT SIDE - Desktop Only -->
     <div class="hidden md:w-1/2 md:flex flex-col px-8 lg:px-16 relative left-overlay">
       <!-- Logo di kiri atas -->
@@ -504,28 +848,28 @@
       </div>
     </div>
 
-    <!-- RIGHT SIDE FORM - Mobile & Desktop -->
-    <div class="w-full md:w-1/2 flex items-center justify-center px-5 sm:px-6 md:px-12 lg:px-20 text-white relative right-overlay min-h-screen md:min-h-0">
+    <!-- RIGHT SIDE FORM - Desktop -->
+    <div class="hidden md:flex md:w-1/2 items-center justify-center px-12 lg:px-20 text-white relative right-overlay min-h-screen md:min-h-0">
       <div class="w-full max-w-md mx-auto md:mx-0 py-8 md:py-0">
         <!-- Tambahkan margin atas untuk desktop -->
         <div class="pt-24 lg:pt-28">
           <!-- JUDUL DI TENGAH -->
-          <div class="flex flex-col items-center mb-6 md:mb-8">
+          <div class="flex flex-col items-center mb-8">
             <div class="w-full text-center">
-              <h2 class="text-xl sm:text-2xl md:text-4xl font-bold mb-3 md:mb-4 text-white tracking-tight">Daftar Akun Anda</h2>
-              <p class="text-white/70 text-sm md:text-base mb-4 md:mb-6">
+              <h2 class="text-4xl font-bold mb-4 text-white tracking-tight">Daftar Akun Anda</h2>
+              <p class="text-white/70 text-base mb-6">
                 Isi data diri Anda untuk mulai menggunakan layanan
               </p>
             </div>
           </div>
 
-          <form action="{{ route('customer.register.post') }}" method="POST" class="space-y-4 md:space-y-6">
+          <form action="{{ route('customer.register.post') }}" method="POST" class="space-y-6">
             @csrf
 
             <!-- Name -->
             <div>
-              <label class="block mb-2 text-white/80 flex items-center gap-2 text-sm md:text-base">
-                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <label class="block mb-2 text-white/80 flex items-center gap-2 text-base">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                 </svg>
                 Nama Lengkap
@@ -533,20 +877,20 @@
               <input
                 type="text"
                 name="name"
-                class="w-full p-3 md:p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300 bg-white/95 border border-white/30 text-sm md:text-base"
+                class="w-full p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300 bg-white/95 border border-white/30 text-base"
                 placeholder="Masukkan nama lengkap Anda"
                 required
                 value="{{ old('name') }}"
               />
               @error('name')
-                <p class="text-red-300 text-xs md:text-sm mt-1">{{ $message }}</p>
+                <p class="text-red-300 text-sm mt-1">{{ $message }}</p>
               @enderror
             </div>
 
             <!-- Email -->
             <div>
-              <label class="block mb-2 text-white/80 flex items-center gap-2 text-sm md:text-base">
-                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <label class="block mb-2 text-white/80 flex items-center gap-2 text-base">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                 </svg>
                 Email
@@ -554,20 +898,20 @@
               <input
                 type="email"
                 name="email"
-                class="w-full p-3 md:p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300 bg-white/95 border border-white/30 text-sm md:text-base"
+                class="w-full p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300 bg-white/95 border border-white/30 text-base"
                 placeholder="Masukkan email Anda"
                 required
                 value="{{ old('email') }}"
               />
               @error('email')
-                <p class="text-red-300 text-xs md:text-sm mt-1">{{ $message }}</p>
+                <p class="text-red-300 text-sm mt-1">{{ $message }}</p>
               @enderror
             </div>
 
             <!-- Password -->
             <div class="password-container">
-              <label class="block mb-2 text-white/80 flex items-center gap-2 text-sm md:text-base">
-                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <label class="block mb-2 text-white/80 flex items-center gap-2 text-base">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                 </svg>
                 Password
@@ -575,28 +919,28 @@
               <input
                 type="password"
                 name="password"
-                id="password"
-                class="w-full p-3 md:p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300 bg-white/95 border border-white/30 text-sm md:text-base pr-10"
+                id="password-desktop"
+                class="w-full p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300 bg-white/95 border border-white/30 text-base pr-10"
                 placeholder="Buat password (minimal 8 karakter)"
                 required
                 minlength="8"
               />
-              <button type="button" class="password-toggle" id="togglePassword">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeIcon">
+              <button type="button" class="password-toggle" id="togglePasswordDesktop">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeIconDesktop">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                 </svg>
               </button>
-              <div class="password-strength" id="passwordStrength"></div>
+              <div class="password-strength" id="passwordStrengthDesktop"></div>
               @error('password')
-                <p class="text-red-300 text-xs md:text-sm mt-1">{{ $message }}</p>
+                <p class="text-red-300 text-sm mt-1">{{ $message }}</p>
               @enderror
             </div>
 
             <!-- Confirm Password -->
             <div class="password-container">
-              <label class="block mb-2 text-white/80 flex items-center gap-2 text-sm md:text-base">
-                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <label class="block mb-2 text-white/80 flex items-center gap-2 text-base">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                 </svg>
                 Konfirmasi Password
@@ -604,53 +948,53 @@
               <input
                 type="password"
                 name="password_confirmation"
-                id="confirmPassword"
-                class="w-full p-3 md:p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300 bg-white/95 border border-white/30 text-sm md:text-base pr-10"
+                id="confirmPassword-desktop"
+                class="w-full p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300 bg-white/95 border border-white/30 text-base pr-10"
                 placeholder="Konfirmasi password Anda"
                 required
               />
-              <button type="button" class="password-toggle" id="toggleConfirmPassword">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeConfirmIcon">
+              <button type="button" class="password-toggle" id="toggleConfirmPasswordDesktop">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeConfirmIconDesktop">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                 </svg>
               </button>
-              <div class="text-xs mt-1 text-white/60" id="passwordMatch"></div>
+              <div class="text-sm mt-1 text-white/60" id="passwordMatchDesktop"></div>
             </div>
 
             <!-- Terms and Conditions -->
             <div class="pt-2">
               <label class="flex items-start text-white/80">
-                <input type="checkbox" name="terms" class="rounded text-[#00C8FF] focus:ring-[#00C8FF] w-4 h-4 md:w-5 md:h-5 mt-1" required>
-                <span class="ml-3 text-xs md:text-sm leading-tight">
+                <input type="checkbox" name="terms" class="rounded text-[#00C8FF] focus:ring-[#00C8FF] w-5 h-5 mt-1" required>
+                <span class="ml-3 text-sm leading-tight">
                   Saya menyetujui
-                  <a href="#" class="text-[#FF581E] hover:text-white font-medium transition-colors" id="terms-link">Syarat & Ketentuan</a>
+                  <a href="#" class="text-[#FF581E] hover:text-white font-medium transition-colors policy-link" data-policy="terms">Syarat & Ketentuan</a>
                   dan
-                  <a href="#" class="text-[#FF581E] hover:text-white font-medium transition-colors" id="privacy-link">Kebijakan Privasi</a>
+                  <a href="#" class="text-[#FF581E] hover:text-white font-medium transition-colors policy-link" data-policy="privacy">Kebijakan Privasi</a>
                 </span>
               </label>
               @error('terms')
-                <p class="text-red-300 text-xs md:text-sm mt-1">{{ $message }}</p>
+                <p class="text-red-300 text-sm mt-1">{{ $message }}</p>
               @enderror
             </div>
 
             @error('message')
-              <div class="bg-red-900/50 border border-red-700 text-red-200 px-3 py-2 md:px-4 md:py-3 rounded-lg text-sm md:text-base" role="alert">
+              <div class="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg text-base" role="alert">
                 <span class="block sm:inline">{{ $message }}</span>
               </div>
             @enderror
 
             <button
               type="submit"
-              class="w-full bg-gradient-to-r from-[#FF581E] to-[#FF581E] hover:from-[#FF581E] hover:to-[#FF581E] text-white font-bold py-3 md:py-4 rounded-lg mt-4 md:mt-8 transition-all duration-300 transform hover:scale-[1.02] active:scale-95 shadow-lg hover:shadow-xl text-sm md:text-base"
-              id="submitButton"
+              class="w-full bg-gradient-to-r from-[#FF581E] to-[#FF581E] hover:from-[#FF581E] hover:to-[#FF581E] text-white font-bold py-4 rounded-lg mt-8 transition-all duration-300 transform hover:scale-[1.02] active:scale-95 shadow-lg hover:shadow-xl text-base"
+              id="submitButtonDesktop"
             >
               Daftar Sekarang
             </button>
           </form>
 
           <!-- Link ke login -->
-          <p class="mt-6 md:mt-8 text-white/80 text-center text-sm md:text-base">
+          <p class="mt-8 text-white/80 text-center text-base">
             Sudah punya akun?
             <a href="{{ route('customer.login') }}" class="text-[#FF581E] font-semibold hover:text-white transition-colors">
               Masuk di sini
@@ -658,8 +1002,8 @@
           </p>
         </div>
 
-        <!-- Spacer untuk mobile -->
-        <div class="mt-8 md:mt-0"></div>
+        <!-- Spacer untuk desktop -->
+        <div class="mt-8"></div>
       </div>
     </div>
   </div>
@@ -693,39 +1037,171 @@
     </div>
   </div>
 
-  <!-- Mobile Bottom Navigation -->
-  <div class="mobile-nav md:hidden">
-    <div class="flex justify-between items-center">
-      <div class="text-center flex-1">
-        <p class="text-white text-xs">© 2023 Smart Shuttle</p>
-      </div>
-      <div class="text-center flex-1">
-        <p class="text-white text-xs font-medium">Butuh Bantuan?</p>
-        <p class="text-[#FF581E] text-xs font-bold">0800-1234-5678</p>
-      </div>
-    </div>
-  </div>
-
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      const form = document.querySelector('form');
-      const termsLink = document.getElementById('terms-link');
-      const privacyLink = document.getElementById('privacy-link');
+      // Function untuk menangani mobile dan desktop
+      function initializeForm(isMobile = true) {
+        const form = isMobile ? document.querySelector('.mobile-main-container form') : document.querySelector('.right-overlay form');
+        const passwordInput = isMobile ? document.getElementById('password') : document.getElementById('password-desktop');
+        const confirmPasswordInput = isMobile ? document.getElementById('confirmPassword') : document.getElementById('confirmPassword-desktop');
+        const passwordStrength = isMobile ? document.getElementById('passwordStrength') : document.getElementById('passwordStrengthDesktop');
+        const passwordMatch = isMobile ? document.getElementById('passwordMatch') : document.getElementById('passwordMatchDesktop');
+        const togglePassword = isMobile ? document.getElementById('togglePassword') : document.getElementById('togglePasswordDesktop');
+        const toggleConfirmPassword = isMobile ? document.getElementById('toggleConfirmPassword') : document.getElementById('toggleConfirmPasswordDesktop');
+        const eyeIcon = isMobile ? document.getElementById('eyeIcon') : document.getElementById('eyeIconDesktop');
+        const eyeConfirmIcon = isMobile ? document.getElementById('eyeConfirmIcon') : document.getElementById('eyeConfirmIconDesktop');
+        const submitButton = isMobile ? document.getElementById('submitButton') : document.getElementById('submitButtonDesktop');
+        const termsCheckbox = form ? form.querySelector('input[name="terms"]') : null;
+
+        if (!form) return;
+
+        // Password strength checker
+        function checkPasswordStrength(password) {
+          let strength = 0;
+
+          if (password.length >= 8) strength++;
+          if (password.match(/[a-z]+/)) strength++;
+          if (password.match(/[A-Z]+/)) strength++;
+          if (password.match(/[0-9]+/)) strength++;
+          if (password.match(/[$@#&!]+/)) strength++;
+
+          return strength;
+        }
+
+        function updatePasswordStrength() {
+          const password = passwordInput.value;
+          const strength = checkPasswordStrength(password);
+
+          // Reset classes
+          passwordStrength.className = 'password-strength';
+
+          if (password.length === 0) {
+            passwordStrength.style.width = '0%';
+            return;
+          }
+
+          switch(strength) {
+            case 0:
+            case 1:
+              passwordStrength.classList.add('strength-weak');
+              break;
+            case 2:
+              passwordStrength.classList.add('strength-medium');
+              break;
+            case 3:
+            case 4:
+              passwordStrength.classList.add('strength-strong');
+              break;
+            case 5:
+              passwordStrength.classList.add('strength-very-strong');
+              break;
+          }
+        }
+
+        function checkPasswordMatch() {
+          const password = passwordInput.value;
+          const confirmPassword = confirmPasswordInput.value;
+
+          if (confirmPassword.length === 0) {
+            passwordMatch.textContent = '';
+            return;
+          }
+
+          if (password === confirmPassword) {
+            passwordMatch.textContent = '✓ Password cocok';
+            passwordMatch.style.color = '#10b981';
+          } else {
+            passwordMatch.textContent = '✗ Password tidak cocok';
+            passwordMatch.style.color = '#ef4444';
+          }
+        }
+
+        // Toggle password visibility
+        function togglePasswordVisibility(input, icon) {
+          const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+          input.setAttribute('type', type);
+
+          // Toggle icon
+          if (type === 'text') {
+            icon.innerHTML = `
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+            `;
+          } else {
+            icon.innerHTML = `
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+            `;
+          }
+        }
+
+        // Form validation
+        if (form) {
+          form.addEventListener('submit', function(e) {
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+
+            if (!termsCheckbox.checked) {
+              e.preventDefault();
+              alert('Harap setujui Syarat & Ketentuan dan Kebijakan Privasi');
+              termsCheckbox.focus();
+              return;
+            }
+
+            if (password !== confirmPassword) {
+              e.preventDefault();
+              alert('Password dan konfirmasi password tidak cocok!');
+              confirmPasswordInput.focus();
+              return;
+            }
+
+            if (password.length < 8) {
+              e.preventDefault();
+              alert('Password minimal harus 8 karakter!');
+              passwordInput.focus();
+              return;
+            }
+
+            // Disable button dan tampilkan loading state
+            submitButton.disabled = true;
+            submitButton.innerHTML = 'Memproses Pendaftaran...';
+            submitButton.classList.remove('hover:scale-[1.02]');
+          });
+        }
+
+        // Event listeners for password strength and match
+        if (passwordInput) {
+          passwordInput.addEventListener('input', updatePasswordStrength);
+          passwordInput.addEventListener('input', checkPasswordMatch);
+        }
+
+        if (confirmPasswordInput) {
+          confirmPasswordInput.addEventListener('input', checkPasswordMatch);
+        }
+
+        // Event listeners for toggle password visibility
+        if (togglePassword) {
+          togglePassword.addEventListener('click', () => togglePasswordVisibility(passwordInput, eyeIcon));
+        }
+        if (toggleConfirmPassword) {
+          toggleConfirmPassword.addEventListener('click', () => togglePasswordVisibility(confirmPasswordInput, eyeConfirmIcon));
+        }
+
+        // Initialize password strength display
+        if (passwordInput) updatePasswordStrength();
+      }
+
+      // Initialize mobile form
+      initializeForm(true);
+
+      // Initialize desktop form
+      initializeForm(false);
+
+      // Modal handling (sama untuk mobile dan desktop)
       const termsModal = document.getElementById('termsModal');
       const closeModal = document.getElementById('closeModal');
       const modalTitle = document.getElementById('modalTitle');
       const modalContent = document.getElementById('modalContent');
       const agreeBtn = document.getElementById('agreeBtn');
-      const termsCheckbox = document.querySelector('input[name="terms"]');
-      const passwordInput = document.getElementById('password');
-      const confirmPasswordInput = document.getElementById('confirmPassword');
-      const passwordStrength = document.getElementById('passwordStrength');
-      const passwordMatch = document.getElementById('passwordMatch');
-      const togglePassword = document.getElementById('togglePassword');
-      const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
-      const eyeIcon = document.getElementById('eyeIcon');
-      const eyeConfirmIcon = document.getElementById('eyeConfirmIcon');
-      const submitButton = document.getElementById('submitButton');
 
       // Konten dari database (dikirim dari controller)
       const termsContent = @json($syaratKetentuan->sk_konten_html ?? '');
@@ -758,126 +1234,6 @@
         </div>
       `;
 
-      // Password strength checker
-      function checkPasswordStrength(password) {
-        let strength = 0;
-
-        if (password.length >= 8) strength++;
-        if (password.match(/[a-z]+/)) strength++;
-        if (password.match(/[A-Z]+/)) strength++;
-        if (password.match(/[0-9]+/)) strength++;
-        if (password.match(/[$@#&!]+/)) strength++;
-
-        return strength;
-      }
-
-      function updatePasswordStrength() {
-        const password = passwordInput.value;
-        const strength = checkPasswordStrength(password);
-
-        // Reset classes
-        passwordStrength.className = 'password-strength';
-
-        if (password.length === 0) {
-          passwordStrength.style.width = '0%';
-          return;
-        }
-
-        switch(strength) {
-          case 0:
-          case 1:
-            passwordStrength.classList.add('strength-weak');
-            break;
-          case 2:
-            passwordStrength.classList.add('strength-medium');
-            break;
-          case 3:
-          case 4:
-            passwordStrength.classList.add('strength-strong');
-            break;
-          case 5:
-            passwordStrength.classList.add('strength-very-strong');
-            break;
-        }
-      }
-
-      function checkPasswordMatch() {
-        const password = passwordInput.value;
-        const confirmPassword = confirmPasswordInput.value;
-
-        if (confirmPassword.length === 0) {
-          passwordMatch.textContent = '';
-          return;
-        }
-
-        if (password === confirmPassword) {
-          passwordMatch.textContent = '✓ Password cocok';
-          passwordMatch.style.color = '#10b981';
-        } else {
-          passwordMatch.textContent = '✗ Password tidak cocok';
-          passwordMatch.style.color = '#ef4444';
-        }
-      }
-
-      // Toggle password visibility
-      function togglePasswordVisibility(input, icon) {
-        const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
-        input.setAttribute('type', type);
-
-        // Toggle icon
-        if (type === 'text') {
-          icon.innerHTML = `
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-          `;
-        } else {
-          icon.innerHTML = `
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-          `;
-        }
-      }
-
-      // Form validation
-      form.addEventListener('submit', function(e) {
-        const password = passwordInput.value;
-        const confirmPassword = confirmPasswordInput.value;
-
-        if (!termsCheckbox.checked) {
-          e.preventDefault();
-          alert('Harap setujui Syarat & Ketentuan dan Kebijakan Privasi');
-          termsCheckbox.focus();
-          return;
-        }
-
-        if (password !== confirmPassword) {
-          e.preventDefault();
-          alert('Password dan konfirmasi password tidak cocok!');
-          confirmPasswordInput.focus();
-          return;
-        }
-
-        if (password.length < 8) {
-          e.preventDefault();
-          alert('Password minimal harus 8 karakter!');
-          passwordInput.focus();
-          return;
-        }
-
-        // Disable button dan tampilkan loading state
-        submitButton.disabled = true;
-        submitButton.innerHTML = 'Memproses Pendaftaran...';
-        submitButton.classList.remove('hover:scale-[1.02]');
-      });
-
-      // Event listeners for password strength and match
-      passwordInput.addEventListener('input', updatePasswordStrength);
-      passwordInput.addEventListener('input', checkPasswordMatch);
-      confirmPasswordInput.addEventListener('input', checkPasswordMatch);
-
-      // Event listeners for toggle password visibility
-      togglePassword.addEventListener('click', () => togglePasswordVisibility(passwordInput, eyeIcon));
-      toggleConfirmPassword.addEventListener('click', () => togglePasswordVisibility(confirmPasswordInput, eyeConfirmIcon));
-
       // Open modal dengan konten yang sesuai
       function openModal(type, title, content) {
         modalTitle.textContent = title;
@@ -900,16 +1256,17 @@
         modalContent.scrollTop = 0;
       }
 
-      // Event listener untuk link Syarat & Ketentuan
-      termsLink.addEventListener('click', function(e) {
-        e.preventDefault();
-        openModal('terms', termsTitle, termsContent);
-      });
-
-      // Event listener untuk link Kebijakan Privasi
-      privacyLink.addEventListener('click', function(e) {
-        e.preventDefault();
-        openModal('privacy', privacyTitle, privacyContent);
+      // Event listener untuk semua link Syarat & Ketentuan dan Kebijakan Privasi
+      document.querySelectorAll('.policy-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          const policyType = this.getAttribute('data-policy');
+          if (policyType === 'terms') {
+            openModal('terms', termsTitle, termsContent);
+          } else if (policyType === 'privacy') {
+            openModal('privacy', privacyTitle, privacyContent);
+          }
+        });
       });
 
       // Event listener untuk tombol close modal
@@ -922,16 +1279,32 @@
       agreeBtn.addEventListener('click', function() {
         termsModal.classList.remove('active');
         document.body.style.overflow = 'auto';
-        // Centang checkbox terms
-        if (termsCheckbox) {
-          termsCheckbox.checked = true;
-          // Smooth scroll to checkbox
-          termsCheckbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Centang checkbox terms di semua form
+        document.querySelectorAll('input[name="terms"]').forEach(checkbox => {
+          checkbox.checked = true;
+        });
+
+        // Smooth scroll to checkbox (untuk mobile dan desktop)
+        const mobileForm = document.querySelector('.mobile-main-container form');
+        const desktopForm = document.querySelector('.right-overlay form');
+        let targetCheckbox = null;
+
+        if (window.innerWidth < 768 && mobileForm) {
+          // Mobile view
+          targetCheckbox = mobileForm.querySelector('input[name="terms"]');
+        } else if (window.innerWidth >= 768 && desktopForm) {
+          // Desktop view
+          targetCheckbox = desktopForm.querySelector('input[name="terms"]');
+        }
+
+        if (targetCheckbox) {
+          targetCheckbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
           // Highlight briefly
-          termsCheckbox.parentElement.style.backgroundColor = 'rgba(255, 88, 30, 0.1)';
+          targetCheckbox.parentElement.style.backgroundColor = 'rgba(255, 88, 30, 0.1)';
           setTimeout(() => {
-            termsCheckbox.parentElement.style.backgroundColor = '';
+            targetCheckbox.parentElement.style.backgroundColor = '';
           }, 1000);
         }
       });
@@ -951,9 +1324,6 @@
           document.body.style.overflow = 'auto';
         }
       });
-
-      // Initialize password strength display
-      updatePasswordStrength();
 
       // Prevent zoom on input focus on mobile
       const inputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"]');

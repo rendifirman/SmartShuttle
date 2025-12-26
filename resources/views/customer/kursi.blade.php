@@ -1343,8 +1343,9 @@
                                             // Tentukan status: 'terpesan' atau 'tersedia'
                                             // Status sudah ada di $layoutKursi dari controller
                                             $status = $kursi['status'] ?? 'tersedia';
-                                            $terpesan = $status === 'terpesan' || $status === 'terisi';
+                                            // Periksa juga apakah nomor kursi sudah tercatat di array kursi terpesan global
                                             $nomorKursi = $kursi['nomor'] ?? '';
+                                            $terpesan = $status === 'terpesan' || $status === 'terisi' || in_array($nomorKursi, $kursiTerpesan ?? []);
                                             $hargaTambahan = $kursi['harga_tambahan'] ?? 0;
                                             $tipe = $kursi['tipe'] ?? 'reguler';
                                         @endphp
@@ -1354,12 +1355,15 @@
                                              data-harga="{{ $pemesanan->harga_total + $hargaTambahan }}"
                                              data-status="{{ $status }}"
                                              data-nomor="{{ $nomorKursi }}"
-                                             @if(!$terpesan)
-                                                onclick="selectSeat(this, '{{ $nomorKursi }}')"
-                                             @else
-                                                title="Kursi {{ $nomorKursi }} sudah terpesan"
-                                                style="cursor: not-allowed; pointer-events: none;"
-                                             @endif>
+                                                            @if(!$terpesan)
+                                                                onclick="selectSeat(this, '{{ $nomorKursi }}')"
+                                                            @else
+                                                                title="Kursi {{ $nomorKursi }} sudah terpesan"
+                                                                aria-disabled="true"
+                                                                tabindex="-1"
+                                                                data-booked="1"
+                                                                style="pointer-events: none; cursor: not-allowed;"
+                                                            @endif>
 
                                             <span class="seat-number">{{ $nomorKursi }}</span>
 
@@ -1401,12 +1405,15 @@
                                                      data-harga="{{ $pemesanan->harga_total }}"
                                                      data-status="{{ $isTerpesan ? 'terpesan' : 'tersedia' }}"
                                                      data-nomor="{{ $seatNumber }}"
-                                                     @if(!$isTerpesan)
-                                                        onclick="selectSeat(this, '{{ $seatNumber }}')"
-                                                     @else
-                                                        title="Kursi {{ $seatNumber }} sudah terpesan"
-                                                        style="cursor: not-allowed; pointer-events: none;"
-                                                     @endif>
+                                                                      @if(!$isTerpesan)
+                                                                          onclick="selectSeat(this, '{{ $seatNumber }}')"
+                                                                      @else
+                                                                          title="Kursi {{ $seatNumber }} sudah terpesan"
+                                                                          aria-disabled="true"
+                                                                          tabindex="-1"
+                                                                          data-booked="1"
+                                                                          style="cursor: not-allowed; pointer-events: none;"
+                                                                      @endif>
 
                                                     <span class="seat-number">{{ $seatNumber }}</span>
 
@@ -1498,12 +1505,14 @@
 
         // Fungsi untuk memilih kursi
         window.selectSeat = function(seatElement, seatNumber) {
-            // Cek status dari data attribute
+            // Defensive checks: don’t allow selecting seats that are marked sold/booked
             const status = seatElement.getAttribute('data-status');
-            const isSold = status === 'terpesan' || status === 'terisi';
+            const isSoldByStatus = status === 'terpesan' || status === 'terisi';
+            const isAriaDisabled = seatElement.getAttribute('aria-disabled') === 'true';
+            const hasSoldClass = seatElement.classList.contains('sold');
+            const isDataBooked = seatElement.getAttribute('data-booked') === '1';
 
-            // Validasi kursi terpesan
-            if (isSold) {
+            if (isSoldByStatus || isAriaDisabled || hasSoldClass || isDataBooked) {
                 showValidationMessage(`Kursi ${seatNumber} sudah terpesan oleh penumpang lain. Silakan pilih kursi lain.`, 'danger');
                 return;
             }
@@ -1533,22 +1542,62 @@
                     return;
                 }
 
-                // Tambahkan kursi yang dipilih
-                selectedSeats.push({
-                    id: seatId,
-                    number: seatNumber,
-                    price: seatPrice
+                // Sebelum menambahkan, validasi ke server bahwa kursi masih tersedia
+                fetch('/api/validasi-kursi', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        jadwal_id: jadwalId,
+                        kursi: [seatId],
+                        pemesanan_id: pemesananId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Tambahkan kursi yang dipilih
+                        selectedSeats.push({
+                            id: seatId,
+                            number: seatNumber,
+                            price: seatPrice
+                        });
+
+                        seatElement.classList.remove('available');
+                        seatElement.classList.add('selected');
+
+                        // Update icon
+                        if (seatElement.querySelector('.seat-status-icon')) {
+                            seatElement.querySelector('.seat-status-icon').className = 'fas fa-user seat-status-icon selected-icon';
+                        }
+
+                        showValidationMessage(`Kursi ${seatNumber} dipilih`, 'success');
+                        updateSelectedSeatsDisplay();
+                        updateFormInputs();
+                        updatePaymentButton();
+                    } else {
+                        // Jika server mengatakan kursi sudah terpesan, tandai sebagai sold
+                        seatElement.classList.remove('available');
+                        seatElement.classList.add('sold');
+                        seatElement.style.pointerEvents = 'none';
+                        seatElement.style.cursor = 'not-allowed';
+                        seatElement.setAttribute('aria-disabled', 'true');
+                        seatElement.setAttribute('tabindex', '-1');
+                        if (seatElement.querySelector('.seat-status-icon')) {
+                            seatElement.querySelector('.seat-status-icon').className = 'fas fa-lock seat-status-icon';
+                        }
+
+                        showValidationMessage(data.message || `Kursi ${seatNumber} sudah terpesan oleh penumpang lain. Silakan pilih kursi lain.`, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Validasi kursi error:', error);
+                    showValidationMessage('Terjadi kesalahan jaringan saat validasi kursi. Silakan coba lagi.', 'danger');
                 });
 
-                seatElement.classList.remove('available');
-                seatElement.classList.add('selected');
-
-                // Update icon
-                if (seatElement.querySelector('.seat-status-icon')) {
-                    seatElement.querySelector('.seat-status-icon').className = 'fas fa-user seat-status-icon selected-icon';
-                }
-
-                showValidationMessage(`Kursi ${seatNumber} dipilih`, 'success');
+                // Jangan lanjutkan sebelum respons server — fungsi akan melanjutkan di dalam promise
             }
 
             updateSelectedSeatsDisplay();
@@ -1711,7 +1760,35 @@
         soldSeats.forEach(seat => {
             seat.style.pointerEvents = 'none';
             seat.style.cursor = 'not-allowed';
+            seat.setAttribute('aria-disabled', 'true');
+            seat.setAttribute('tabindex', '-1');
         });
+
+        // Additional safeguard: fetch latest available seats from API and mark others as sold
+        (function refreshSeatStates() {
+            fetch(`/api/kursi-tersedia/${jadwalId}`)
+                .then(res => res.json())
+                .then(resp => {
+                    if (resp && resp.success) {
+                        const available = new Set((resp.data || []).map(s => s.nomor));
+                        document.querySelectorAll('.seat').forEach(el => {
+                            const seatId = el.getAttribute('data-seat');
+                            if (!available.has(seatId)) {
+                                el.classList.remove('available');
+                                el.classList.add('sold');
+                                el.style.pointerEvents = 'none';
+                                el.style.cursor = 'not-allowed';
+                                el.setAttribute('aria-disabled', 'true');
+                                el.setAttribute('tabindex', '-1');
+                                el.setAttribute('data-booked', '1');
+                                const icon = el.querySelector('.seat-status-icon');
+                                if (icon) icon.className = 'fas fa-lock seat-status-icon';
+                            }
+                        });
+                    }
+                })
+                .catch(err => console.warn('Could not refresh seat states:', err));
+        })();
 
         // Debug info
         console.log('Pemesanan ID:', pemesananId);

@@ -930,6 +930,7 @@ class CustomerController extends Controller
                     'nama_lengkap' => $dataPenumpang['nama_lengkap'],
                     'nik' => $dataPenumpang['nik'],
                     'jenis_kelamin' => $dataPenumpang['jenis_kelamin'],
+                    'telepon' => isset($dataPenumpang['telepon']) ? preg_replace('/\D/', '', $dataPenumpang['telepon']) : null,
                     'nomor_kursi' => null
                 ]);
             }
@@ -1813,7 +1814,31 @@ class CustomerController extends Controller
 
     /**
      * Halaman kontak
+
+    /**
+     * API: return policy content for AJAX modal
+     * type: 'privacy' or 'terms'
      */
+    public function getPolicy(Request $request, $type)
+    {
+        $type = strtolower($type);
+        if (in_array($type, ['privacy', 'kebijakan', 'kebijakan-privasi'])) {
+            $k = KebijakanPrivasi::getAktif();
+            $title = $k->kp_judul ?? 'Kebijakan Privasi';
+            $content = $k->kp_konten_html ?? '';
+        } else {
+            // default to terms
+            $s = SyaratKetentuan::getUntukPengguna();
+            $title = $s->sk_judul ?? 'Syarat & Ketentuan';
+            $content = $s->sk_konten_html ?? '';
+        }
+
+        return response()->json([
+            'title' => $title,
+            'content' => $content,
+        ]);
+    }
+
     public function contact()
     {
         $user = session()->get('user');

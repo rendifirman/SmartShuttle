@@ -17,7 +17,7 @@
             --secondary-color: #FF581E;
             --success-color: #28a745;
             --danger-color: #dc3545;
-            --modal-bg: rgba(74, 66, 62, 0.50); /* 95% opacity */
+            --modal-bg: rgba(74, 66, 62, 0.50);
         }
 
         /* Reset margin dan padding untuk body */
@@ -39,7 +39,7 @@
 
         /* Custom Navbar Styles - TRANSPARAN */
         .custom-navbar {
-            background: transparent; /* UBAH: dari white menjadi transparent */
+            background: transparent;
             padding: 20px 5%;
             display: flex;
             justify-content: center;
@@ -52,7 +52,7 @@
             transition: all 0.4s ease;
             min-height: 80px;
             transform: translateY(0);
-            box-shadow: none; /* HAPUS: shadow default */
+            box-shadow: none;
         }
 
         .custom-navbar.hidden {
@@ -69,7 +69,7 @@
 
         /* Panel Oval untuk Navbar - TRANSPARAN DENGAN BLUR */
         .nav-panel {
-            background: rgba(255, 255, 255, 0.9); /* UBAH: semi-transparan dengan blur effect */
+            background: rgba(255, 255, 255, 0.9);
             border-radius: 50px;
             padding: 8px 30px;
             display: flex;
@@ -79,7 +79,7 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.3);
             transition: all 0.3s ease;
-            backdrop-filter: blur(10px); /* TAMBAH: efek blur untuk glassmorphism */
+            backdrop-filter: blur(10px);
         }
 
         .nav-brand img {
@@ -95,7 +95,7 @@
 
         .nav-links {
             display: flex;
-            gap: 25px; /* Diperkecil sedikit agar semua menu muat */
+            gap: 25px;
             list-style: none;
             margin: 0;
             padding: 0;
@@ -105,7 +105,7 @@
             text-decoration: none;
             color: var(--primary-color);
             font-weight: 500;
-            font-size: 0.95rem; /* Diperkecil sedikit */
+            font-size: 0.95rem;
             transition: color 0.3s;
             position: relative;
             white-space: nowrap;
@@ -165,15 +165,27 @@
             color: white;
         }
 
-        /* Navbar saat di-scroll - LEBIH TRANSPARAN */
+        /* Navbar saat di-scroll */
         .custom-navbar.scrolled {
-            background: rgba(255, 255, 255, 0.95); /* Sedikit lebih solid saat di-scroll */
+            background: rgba(255, 255, 255, 0.95);
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         .custom-navbar.scrolled .nav-panel {
             background: rgba(255, 255, 255, 0.8);
             box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Mobile Menu Toggle */
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 5px;
+            z-index: 1001;
         }
 
         /* Hero Section */
@@ -367,7 +379,7 @@
             font-family: 'Roboto', sans-serif;
         }
 
-        /* Tombol dengan layout vertikal (teks rata kiri, tanpa ikon) */
+        /* Tombol dengan layout vertikal */
         .search-btn.vertical-btn {
             display: flex;
             flex-direction: column;
@@ -381,7 +393,6 @@
             font-family: 'Roboto', sans-serif;
         }
 
-        /* Container untuk teks (tanpa container ikon) */
         .btn-text {
             display: flex;
             flex-direction: column;
@@ -390,12 +401,10 @@
             width: 100%;
         }
 
-        /* Hapus container ikon karena tidak perlu */
         .btn-icon {
             display: none;
         }
 
-        /* Teks utama tombol */
         .btn-main-text {
             font-weight: 700;
             font-size: 16px;
@@ -406,7 +415,6 @@
             font-family: 'Roboto', sans-serif;
         }
 
-        /* Label di bawah teks utama */
         .search-btn.vertical-btn .btn-label {
             font-size: 12px;
             line-height: 1.4;
@@ -418,19 +426,19 @@
             font-family: 'Roboto', sans-serif;
         }
 
-        /* Untuk tombol Cek Paket (default state) */
+        /* Untuk tombol Cek Paket */
         #btn-cek-paket .btn-main-text,
         #btn-cek-paket .btn-label {
             color: var(--secondary-color);
         }
 
-        /* Untuk tombol Kirim Paket (default state) */
+        /* Untuk tombol Kirim Paket */
         #kirim-paket-form .search-btn:not(#btn-cek-paket) .btn-main-text,
         #kirim-paket-form .search-btn:not(#btn-cek-paket) .btn-label {
             color: var(--secondary-color);
         }
 
-        /* Hover state untuk kedua tombol */
+        /* Hover state */
         #btn-cek-paket:hover .btn-main-text,
         #btn-cek-paket:hover .btn-label,
         #kirim-paket-form .search-btn:not(#btn-cek-paket):hover .btn-main-text,
@@ -495,7 +503,7 @@
             color: white;
         }
 
-        /* Modal Cek Paket - DISATUKAN DENGAN TOMBOL */
+        /* Modal Cek Paket */
         .modal-cek-paket {
             display: none;
             position: absolute;
@@ -522,7 +530,6 @@
             height: auto;
         }
 
-        /* Header Modal - SAMA SEPERTI TOMBOL CEK PAKET */
         .modal-header {
             background: var(--modal-bg);
             padding: 25px 30px;
@@ -537,7 +544,6 @@
             flex-shrink: 0;
         }
 
-        /* Teks utama modal dengan warna secondary */
         .modal-main-text {
             font-weight: 700;
             font-size: 18px;
@@ -548,7 +554,6 @@
             font-family: 'Roboto', sans-serif;
         }
 
-        /* Label di bawah teks utama */
         .modal-label {
             font-size: 14px;
             line-height: 1.4;
@@ -560,7 +565,6 @@
             font-family: 'Roboto', sans-serif;
         }
 
-        /* Garis pemisah */
         .modal-divider {
             width: 100%;
             height: 1px;
@@ -569,7 +573,6 @@
             border: none;
         }
 
-        /* Container untuk form input */
         .modal-body {
             width: 100%;
             padding: 30px;
@@ -580,7 +583,6 @@
             flex-shrink: 0;
         }
 
-        /* Form Cek Resi - layout horizontal */
         .resi-form {
             display: flex;
             flex-direction: column;
@@ -591,7 +593,6 @@
             height: auto;
         }
 
-        /* Container untuk input dan tombol - DIUBAH MENJADI FLEX ROW */
         .resi-input-group {
             display: flex;
             flex-direction: row;
@@ -602,7 +603,6 @@
             min-height: fit-content;
         }
 
-        /* Input field - DIUBAH MENJADI FLEXIBLE */
         .form-control {
             flex: 1;
             padding: 14px 18px;
@@ -631,7 +631,6 @@
             box-shadow: 0 0 0 3px rgba(255, 88, 30, 0.2);
         }
 
-        /* Tombol CEK - DIUBAH WIDTH MENJADI AUTO */
         .btn-cek-resi {
             width: auto;
             padding: 15px 30px;
@@ -659,7 +658,6 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
-        /* Tombol close modal */
         .close-modal {
             position: absolute;
             top: 20px;
@@ -713,7 +711,6 @@
             height: auto;
         }
 
-        /* Form Kirim Paket - lebih kompleks */
         .kirim-paket-form {
             display: flex;
             flex-direction: column;
@@ -724,7 +721,6 @@
             height: auto;
         }
 
-        /* Form group untuk setiap baris - DIUBAH: label dan input dalam satu baris */
         .form-group {
             display: flex;
             flex-direction: row;
@@ -734,7 +730,6 @@
             flex-wrap: nowrap;
         }
 
-        /* Label untuk form - DIUBAH: lebar tetap */
         .form-label {
             font-size: 14px;
             font-weight: 600;
@@ -745,13 +740,11 @@
             font-family: 'Roboto', sans-serif;
         }
 
-        /* Input container - DIUBAH: mengambil sisa space */
         .form-input-container {
             flex: 1;
             min-width: 0;
         }
 
-        /* Select2 untuk modal */
         .select2-modal {
             width: 100% !important;
         }
@@ -772,7 +765,6 @@
             font-family: 'Roboto', sans-serif !important;
         }
 
-        /* Input dengan suffix (kg, cm) - DIUBAH: lebih kompak */
         .input-with-suffix {
             display: flex;
             align-items: center;
@@ -802,7 +794,6 @@
             font-family: 'Roboto', sans-serif;
         }
 
-        /* Volume container - 3 input dalam satu baris - DIUBAH: lebih kompak */
         .volume-container {
             display: flex;
             gap: 10px;
@@ -832,7 +823,6 @@
             font-family: 'Roboto', sans-serif;
         }
 
-        /* Harga total display - DIUBAH: tetap di satu baris */
         .harga-container {
             display: flex;
             justify-content: space-between;
@@ -861,7 +851,6 @@
             font-family: 'Roboto', sans-serif;
         }
 
-        /* Tombol Cek Harga di tengah - UKURAN REFERENSI */
         .btn-cek-harga {
             width: 100%;
             padding: 15px 30px;
@@ -890,7 +879,6 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
-        /* Animasi untuk hasil perhitungan */
         #hasil-perhitungan {
             opacity: 0;
             transform: translateY(20px);
@@ -1385,7 +1373,7 @@
             transform: translateY(-8px);
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
             border-color: var(--primary-color);
-            background: #0f2942ff; /* Sedikit lebih gelap saat hover */
+            background: #0f2942ff;
         }
 
         .feature-card::before {
@@ -1419,26 +1407,10 @@
 
         .feature-desc {
             font-size: 14px;
-            color: #e0e8ff !important; /* Warna biru muda terang */
+            color: #e0e8ff !important;
             line-height: 1.6;
             margin: 0;
             font-family: 'Roboto', sans-serif;
-        }
-
-        /* PAKSA SEMUA WARNA TETAP BIRU DAN PUTIH */
-        .feature-card:hover .feature-icon,
-        .feature-card .feature-icon {
-            color: white !important;
-        }
-
-        .feature-card:hover .feature-label,
-        .feature-card .feature-label {
-            color: white !important;
-        }
-
-        .feature-card:hover .feature-desc,
-        .feature-card .feature-desc {
-            color: #e0e8ff !important; /* Tetap biru muda */
         }
 
         /* === ARTIKEL/BERITA SECTION === */
@@ -1585,7 +1557,7 @@
             color: white;
         }
 
-        /* === REVIEW SECTION YANG DIRAPIHKAN === */
+        /* === REVIEW SECTION === */
         .feedback-section {
             padding: 80px 40px;
             background: var(--primary-color);
@@ -2067,7 +2039,7 @@
             margin-right: 8px;
         }
 
-        /* Style untuk hasil perhitungan yang lebih sederhana - SAMA DENGAN TOMBOL CEK HARGA + 3px */
+        /* Style untuk hasil perhitungan */
         .total-harga-container {
             background: rgba(255, 255, 255, 0.08);
             border-radius: 8px;
@@ -2077,7 +2049,7 @@
             text-align: center;
             width: 100%;
             box-sizing: border-box;
-            min-height: 51px; /* 48px (tombol) + 3px */
+            min-height: 51px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -2118,8 +2090,297 @@
             margin-bottom: 6px;
         }
 
-        /* Responsive Styles */
-        @media (max-width: 1024px) {
+        /* =================== MOBILE RESPONSIVE STYLES =================== */
+        @media (max-width: 1200px) {
+            .nav-panel {
+                padding: 8px 20px;
+            }
+
+            .nav-links {
+                gap: 15px;
+            }
+
+            .nav-links a {
+                font-size: 0.9rem;
+            }
+
+            .hero-title {
+                font-size: 48px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            /* Navbar Mobile */
+            .menu-toggle {
+                display: block;
+            }
+
+            .nav-panel {
+                flex-wrap: wrap;
+                padding: 12px 20px;
+                border-radius: 25px;
+            }
+
+            .nav-container {
+                position: relative;
+            }
+
+            .nav-menu {
+                order: 3;
+                width: 100%;
+                margin-top: 15px;
+                display: none;
+            }
+
+            .nav-menu.active {
+                display: block;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                gap: 10px;
+                padding: 15px 0;
+                align-items: center;
+            }
+
+            .nav-links a {
+                font-size: 1rem;
+                padding: 8px 0;
+                width: 100%;
+                text-align: center;
+            }
+
+            .nav-auth {
+                order: 2;
+            }
+
+            /* Hero Section */
+            .hero-section {
+                padding: 100px 20px 60px;
+                height: auto;
+                min-height: 80vh;
+            }
+
+            .hero-content {
+                max-width: 100%;
+                text-align: center;
+            }
+
+            .hero-title {
+                font-size: 36px;
+                margin-bottom: 15px;
+            }
+
+            .hero-desc {
+                font-size: 16px;
+                margin: 0 auto;
+            }
+
+            .hero-services {
+                flex-direction: column;
+                max-width: 100%;
+                gap: 10px;
+            }
+
+            .hero-service {
+                flex-direction: row;
+                justify-content: center;
+                padding: 15px;
+                min-width: 100%;
+            }
+
+            .hero-service i {
+                font-size: 24px;
+                margin-right: 10px;
+            }
+
+            /* Search Section */
+            .search-section {
+                margin-top: -80px;
+                padding: 0 20px;
+            }
+
+            .search-container {
+                padding: 20px;
+                margin-bottom: 30px;
+            }
+
+            .search-row {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            #kirim-paket-form .search-row {
+                grid-template-columns: 1fr !important;
+            }
+
+            .search-btn-container {
+                height: 48px;
+                margin-top: 10px;
+            }
+
+            .search-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .search-btn.vertical-btn {
+                padding: 15px;
+                text-align: center;
+                align-items: center;
+            }
+
+            .search-btn.vertical-btn .btn-text {
+                align-items: center;
+                text-align: center;
+            }
+
+            /* Modal Adjustments */
+            .modal-cek-paket,
+            .modal-kirim-paket {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 90%;
+                max-width: 500px;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+
+            .modal-body {
+                padding: 20px;
+            }
+
+            .resi-input-group {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .btn-cek-resi {
+                width: 100%;
+            }
+
+            /* Services Section */
+            .services-section {
+                padding: 50px 20px;
+            }
+
+            .services-grid {
+                flex-direction: column;
+                gap: 25px;
+            }
+
+            .service-card {
+                width: 100%;
+                max-width: 400px;
+                margin: 0 auto;
+                padding: 25px 20px;
+            }
+
+            .service-logo-box {
+                padding: 15px;
+            }
+
+            .service-logo-box img {
+                width: 150px;
+            }
+
+            /* Promo Section */
+            .promo-section {
+                padding: 50px 20px;
+            }
+
+            .promo-slider-container {
+                padding: 0 20px;
+            }
+
+            .promo-image {
+                height: 200px;
+            }
+
+            .promo-content {
+                padding: 15px;
+            }
+
+            .promo-name {
+                font-size: 16px;
+            }
+
+            .promo-desc {
+                font-size: 13px;
+            }
+
+            /* Features Section */
+            .features-section {
+                padding: 50px 20px;
+            }
+
+            .features-title {
+                font-size: 28px;
+                margin-bottom: 40px;
+            }
+
+            .features-grid-6 {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .feature-card {
+                padding: 30px 20px;
+            }
+
+            .feature-icon {
+                font-size: 36px;
+                height: 60px;
+                margin-bottom: 20px;
+            }
+
+            .feature-label {
+                font-size: 18px;
+            }
+
+            /* Articles Section */
+            .articles-section {
+                padding: 50px 20px;
+            }
+
+            .articles-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .article-card {
+                max-width: 400px;
+                margin: 0 auto;
+            }
+
+            .article-image {
+                height: 180px;
+            }
+
+            .article-content {
+                padding: 20px;
+            }
+
+            .article-title {
+                font-size: 16px;
+            }
+
+            /* Feedback Section */
+            .feedback-section {
+                padding: 50px 20px;
+            }
+
+            .feedback-container {
+                padding: 30px 20px;
+                border-radius: 20px;
+            }
+
+            .feedback-title {
+                font-size: 24px;
+            }
+
             .review-wrapper {
                 grid-template-columns: 1fr;
                 gap: 30px;
@@ -2130,55 +2391,37 @@
             }
 
             .review-stats {
-                gap: 15px;
+                flex-wrap: wrap;
+                justify-content: space-around;
             }
 
-            .stat-value {
-                font-size: 20px;
+            .stat-item {
+                flex: 0 0 45%;
+                margin-bottom: 15px;
             }
 
-            .feedback-container {
-                padding: 40px 30px;
+            .review-item {
+                padding: 15px;
             }
 
-            .nav-panel {
-                padding: 8px 20px;
-            }
-
-            .nav-links {
-                gap: 20px; /* Lebih kecil di tablet */
-            }
-
-            .services-grid {
+            .review-header {
                 flex-direction: column;
-                align-items: center;
+                align-items: flex-start;
+                gap: 10px;
             }
 
-            .service-card {
-                width: 100%;
-                max-width: 400px;
+            .reviewer-info {
+                flex-direction: column;
+                align-items: flex-start;
+                text-align: left;
             }
 
-            .features-grid-6 {
-                grid-template-columns: repeat(2, 1fr);
+            .review-avatar {
+                width: 40px;
+                height: 40px;
             }
 
-            /* Articles Responsive */
-            .articles-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 25px;
-            }
-
-            /* Promo Responsive */
-            .promo-slider-container {
-                padding: 0 40px;
-            }
-
-            .promo-image {
-                height: 250px;
-            }
-
-            /* Modal Artikel Responsive */
+            /* Modal Artikel */
             .modal-artikel-content {
                 width: 95%;
                 margin: 20px auto;
@@ -2200,231 +2443,77 @@
                 height: 250px;
             }
 
-            .modal-artikel-content-text {
-                font-size: 14px;
+            /* Divider */
+            .divider {
+                margin: 30px 20px;
             }
         }
 
         @media (max-width: 768px) {
-            .custom-navbar {
-                padding: 15px 3%;
-            }
-
-            .nav-container {
+            /* Form Adjustments */
+            .form-group {
                 flex-direction: column;
-                gap: 15px;
-            }
-
-            .nav-panel {
-                flex-direction: column;
-                gap: 15px;
-                padding: 15px;
-                border-radius: 25px;
-            }
-
-            .nav-brand, .nav-menu, .nav-auth {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .nav-links {
-                flex-direction: column;
+                align-items: flex-start;
                 gap: 10px;
-                text-align: center;
             }
 
-            .hero-section {
-                height: auto;
-                min-height: 100vh;
-                padding: 120px 20px 60px;
+            .form-label {
+                min-width: 100%;
+                margin-bottom: 5px;
             }
 
-            .hero-content {
-                max-width: 100%;
-                text-align: center;
-            }
-
-            .hero-title {
-                font-size: 36px;
-            }
-
-            .hero-desc {
-                font-size: 16px;
-                margin: 0 auto;
-            }
-
-            .hero-services {
-                justify-content: center;
-                max-width: 100%;
-            }
-
-            .services-section {
-                padding: 40px 20px;
-            }
-
-            .services-grid {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .service-card {
+            .form-input-container {
                 width: 100%;
-                max-width: 330px;
-                padding: 30px 15px 25px 15px;
             }
 
-            /* Articles Responsive */
-            .articles-section {
-                padding: 40px 20px;
-            }
-
-            .articles-grid {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-
-            .article-image {
-                height: 180px;
-            }
-
-            .article-content {
-                padding: 20px;
-            }
-
-            .article-title {
-                font-size: 16px;
-            }
-
-            /* Promo Responsive */
-            .promo-section {
-                padding: 40px 20px;
-            }
-
-            .promo-slider-container {
-                padding: 0 30px;
-            }
-
-            .promo-image {
-                height: 200px;
-            }
-
-            .promo-content {
-                padding: 15px;
-            }
-
-            .promo-name {
-                font-size: 16px;
-            }
-
-            .promo-desc {
-                font-size: 13px;
-            }
-
-            .slider-btn {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
-            }
-
-            .features-section {
-                padding: 60px 20px;
-            }
-
-            .features-title {
-                font-size: 28px;
-                margin-bottom: 40px;
-            }
-
-            .features-grid-6 {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-
-            .feature-card {
-                padding: 30px 25px;
-            }
-
-            .feature-icon {
-                font-size: 40px;
-                margin-bottom: 20px;
-                height: 70px;
-            }
-
-            .feature-label {
-                font-size: 18px;
-                margin-bottom: 15px;
-            }
-
-            .feature-desc {
-                font-size: 13px;
-            }
-
-            .feedback-section {
-                padding: 60px 20px;
-            }
-
-            .feedback-container {
-                padding: 30px 25px;
-                border-radius: 20px;
-            }
-
-            .feedback-title {
-                font-size: 28px;
-            }
-
-            .star-filter-buttons {
-                justify-content: center;
-            }
-
-            .review-stats {
-                flex-wrap: wrap;
-                gap: 15px;
-            }
-
-            .stat-item {
-                flex: 0 0 calc(50% - 15px);
-            }
-
-            .review-item {
-                padding: 15px;
-            }
-
-            .review-header {
+            .volume-container {
                 flex-direction: column;
                 gap: 10px;
             }
 
-            .review-form-container {
-                padding: 20px;
+            .volume-input {
+                width: 100%;
             }
 
-            .total-harga-container {
-                padding: 8px 15px;
-                margin: 10px 0;
+            /* Select2 Mobile */
+            .select2-container--default .select2-selection--single {
+                height: 44px !important;
             }
 
-            .success-icon {
-                font-size: 22px;
-                margin-bottom: 6px;
+            .select2-container--default .select2-selection--single .select2-selection__rendered {
+                line-height: 44px !important;
+                font-size: 14px !important;
             }
 
-            .total-harga-label {
-                font-size: 11px;
-                margin-bottom: 4px;
+            /* Button Adjustments */
+            .btn-login {
+                padding: 8px 16px;
+                font-size: 14px;
             }
 
-            .total-harga-value {
-                font-size: 16px;
-                margin-bottom: 4px;
+            /* Profile Dropdown */
+            .profile-name {
+                display: none;
             }
 
-            .total-harga-desc {
-                font-size: 9px;
-                margin-top: 4px;
+            .profile-btn {
+                padding: 5px;
+            }
+
+            .profile-avatar {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
             }
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 576px) {
+            /* Hero Section */
+            .hero-section {
+                padding: 120px 15px 40px;
+                min-height: 70vh;
+            }
+
             .hero-title {
                 font-size: 28px;
             }
@@ -2434,38 +2523,81 @@
             }
 
             .hero-service {
-                min-width: 90px;
-                padding: 10px;
+                padding: 12px;
             }
 
             .hero-service i {
-                font-size: 24px;
+                font-size: 20px;
             }
 
             .hero-service span {
                 font-size: 12px;
             }
 
+            /* Search Section */
             .search-section {
-                margin-top: -100px;
+                margin-top: -60px;
             }
 
             .search-container {
                 padding: 15px;
             }
 
-            /* Articles Responsive */
+            .search-input {
+                height: 44px;
+                font-size: 14px;
+            }
+
+            /* Promo Slider */
+            .promo-image {
+                height: 160px;
+            }
+
+            .promo-name {
+                font-size: 14px;
+            }
+
+            .promo-desc {
+                font-size: 12px;
+            }
+
+            .slider-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+
+            /* Features Section */
+            .features-title {
+                font-size: 24px;
+                margin-bottom: 30px;
+            }
+
+            .feature-card {
+                padding: 25px 15px;
+            }
+
+            .feature-icon {
+                font-size: 32px;
+                height: 50px;
+                margin-bottom: 15px;
+            }
+
+            .feature-label {
+                font-size: 16px;
+            }
+
+            .feature-desc {
+                font-size: 13px;
+            }
+
+            /* Articles Section */
             .article-image {
                 height: 160px;
             }
 
             .article-content {
                 padding: 15px;
-            }
-
-            .article-category {
-                font-size: 11px;
-                padding: 3px 10px;
             }
 
             .article-title {
@@ -2476,52 +2608,17 @@
                 font-size: 13px;
             }
 
-            /* Promo Responsive */
-            .promo-slider-container {
-                padding: 0 20px;
-            }
-
-            .promo-image {
-                height: 180px;
-            }
-
-            .promo-name {
-                font-size: 14px;
-            }
-
-            .promo-desc {
-                font-size: 12px;
-            }
-
-            .slider-btn {
-                width: 35px;
-                height: 35px;
-                font-size: 16px;
-            }
-
-            .features-title {
-                font-size: 24px;
-            }
-
-            .feature-card {
-                padding: 25px 20px;
-            }
-
-            .feature-icon {
-                font-size: 36px;
-                height: 60px;
-            }
-
-            .feature-label {
-                font-size: 16px;
+            /* Feedback Section */
+            .feedback-container {
+                padding: 25px 15px;
             }
 
             .feedback-title {
-                font-size: 24px;
+                font-size: 20px;
             }
 
             .form-title {
-                font-size: 20px;
+                font-size: 18px;
             }
 
             .star-rating-input i {
@@ -2534,33 +2631,61 @@
                 font-size: 16px;
             }
 
-            .star-filter-btn {
-                padding: 6px 12px;
-                font-size: 13px;
+            /* Modal Artikel */
+            .modal-artikel-title {
+                font-size: 18px;
+            }
+
+            .modal-artikel-body {
+                padding: 15px;
+            }
+
+            .modal-artikel-image {
+                height: 200px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .nav-panel {
+                padding: 10px 15px;
+                border-radius: 20px;
+            }
+
+            .nav-brand img {
+                height: 28px;
+            }
+
+            .hero-title {
+                font-size: 24px;
+            }
+
+            .hero-services {
+                gap: 8px;
+            }
+
+            .hero-service {
+                padding: 10px 8px;
+            }
+
+            .hero-service i {
+                font-size: 18px;
+                margin-right: 6px;
+            }
+
+            .hero-service span {
+                font-size: 11px;
+            }
+
+            .promo-image {
+                height: 140px;
+            }
+
+            .article-image {
+                height: 140px;
             }
 
             .stat-item {
                 flex: 0 0 100%;
-            }
-
-            .reviewer-info {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
-
-            .nav-links a {
-                font-size: 0.9rem;
-            }
-
-            .btn-login {
-                padding: 6px 15px;
-                font-size: 0.9rem;
-            }
-
-            .nav-panel {
-                padding: 12px;
-                border-radius: 20px;
             }
         }
 
@@ -2702,6 +2827,7 @@
             color: var(--secondary-color);
         }
 
+        /* Footer Mobile Responsive */
         @media (max-width: 768px) {
             .site-footer {
                 padding: 40px 20px 20px;
@@ -2710,7 +2836,6 @@
             .footer-main {
                 flex-direction: column;
                 gap: 30px;
-                margin-bottom: 30px;
             }
 
             .footer-column {
@@ -2722,9 +2847,15 @@
                 text-align: center;
                 gap: 10px;
             }
+
+            .footer-links {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 15px;
+            }
         }
 
-        /* Profile icon + small name - PERBAIKAN */
+        /* Profile icon + small name */
         .profile-wrapper {
             position: relative;
             display: inline-block;
@@ -2788,7 +2919,7 @@
             font-family: 'Roboto', sans-serif;
         }
 
-        /* Dropdown Menu - PERBAIKAN */
+        /* Dropdown Menu */
         .dropdown-menu {
             z-index: 1000;
             display: none;
@@ -2857,11 +2988,17 @@
             display: block;
         }
 
-        /* Pastikan tombol login di navbar bisa diklik */
-        .nav-auth a.btn-login {
-            pointer-events: auto !important;
-            position: relative;
-            z-index: 10;
+        /* Mobile Dropdown Menu */
+        @media (max-width: 992px) {
+            .dropdown-menu {
+                position: fixed;
+                top: auto;
+                right: 20px;
+                left: 20px;
+                bottom: 20px;
+                min-width: auto;
+                z-index: 1002;
+            }
         }
     </style>
     @php
@@ -2874,7 +3011,7 @@
         // Data user dari session
         $user = session()->get('user', null);
 
-        // Data review dan statistik (contoh data statis)
+        // Data review dan statistik
         $totalReviews = 24;
         $averageRating = 4.8;
         $reviewStats = [
@@ -2885,7 +3022,7 @@
             1 => 0
         ];
 
-        // Data review dari database (contoh)
+        // Data review
         $reviews = collect([
             [
                 'id' => 1,
@@ -2910,58 +3047,10 @@
                 'rating' => 5,
                 'date' => '2024-03-13',
                 'content' => 'Harganya menurut saya cukup murah dibanding shuttle lain, tapi kualitas layanannya tetap bagus. Pemesanan lewat aplikasi juga gampang.'
-            ],
-            [
-                'id' => 4,
-                'avatar' => 'https://randomuser.me/api/portraits/men/45.jpg',
-                'name' => 'Budi Santoso',
-                'rating' => 5,
-                'date' => '2024-03-12',
-                'content' => 'Sangat puas dengan layanan SmartShuttle. Armada bersih, driver ramah, dan tepat waktu. Sudah beberapa kali menggunakan dan selalu puas.'
-            ],
-            [
-                'id' => 5,
-                'avatar' => 'https://randomuser.me/api/portraits/women/55.jpg',
-                'name' => 'Maya Indah',
-                'rating' => 4,
-                'date' => '2024-03-11',
-                'content' => 'Pelayanan bagus, harga terjangkau. Cuma kadang agak telat sedikit, tapi masih dalam batas wajar. Overall recommended!'
-            ],
-            [
-                'id' => 6,
-                'avatar' => 'https://randomuser.me/api/portraits/men/32.jpg',
-                'name' => 'Ahmad Fauzi',
-                'rating' => 5,
-                'date' => '2024-03-10',
-                'content' => 'SmartShuttle membantu sekali untuk perjalanan bisnis saya. Jadwal fleksibel, booking mudah, dan selalu on time. Terima kasih!'
-            ],
-            [
-                'id' => 7,
-                'avatar' => 'https://randomuser.me/api/portraits/women/44.jpg',
-                'name' => 'Siti Rahayu',
-                'rating' => 5,
-                'date' => '2024-03-09',
-                'content' => 'Pengiriman paket sangat cepat dan aman. Driver ramah dan profesional. Harga juga terjangkau. Sangat recommended!'
-            ],
-            [
-                'id' => 8,
-                'avatar' => 'https://randomuser.me/api/portraits/men/65.jpg',
-                'name' => 'Hendra Wijaya',
-                'rating' => 4,
-                'date' => '2024-03-08',
-                'content' => 'Layanan shuttle sangat nyaman, AC dingin, kursi empuk. Perjalanan Jakarta-Bandung jadi tidak melelahkan.'
-            ],
-            [
-                'id' => 9,
-                'avatar' => 'https://randomuser.me/api/portraits/women/29.jpg',
-                'name' => 'Dewi Lestari',
-                'rating' => 5,
-                'date' => '2024-03-07',
-                'content' => 'Sudah langganan 2 tahun, selalu puas. Tidak pernah telat dan armada selalu dalam kondisi bersih.'
             ]
         ]);
 
-        // Data promo (contoh statis, nanti bisa dari database)
+        // Data promo
         $promos = Promo::where('status', true)
             ->orderBy('created_at', 'desc')
             ->take(3)
@@ -2986,25 +3075,11 @@
                     'deskripsi' => 'Nikmati diskon 30% untuk semua rute shuttle reguler. Berlaku untuk pemesanan minimal 2 tiket.',
                     'gambar' => asset('images/promo1.jpg'),
                     'periode' => '1 Mar - 31 Mar 2024',
-                ],
-                [
-                    'id' => 2,
-                    'nama' => 'SmartSend Free Ongkir',
-                    'deskripsi' => 'Gratis ongkir pengiriman paket untuk pengguna pertama SmartSend. Syarat dan ketentuan berlaku.',
-                    'gambar' => asset('images/promo2.jpg'),
-                    'periode' => '15 Mar - 30 Apr 2024',
-                ],
-                [
-                    'id' => 3,
-                    'nama' => 'SmartRent Weekend Promo',
-                    'deskripsi' => 'Special price untuk sewa armada di akhir pekan. Dapatkan harga spesial untuk perjalanan liburan.',
-                    'gambar' => asset('images/promo3.jpg'),
-                    'periode' => 'Mar - Apr 2024',
-                ],
+                ]
             ];
         }
 
-        // Data artikel dari database
+        // Data artikel
         $artikelsFromDB = Artikel::orderBy('tanggal_publikasi', 'desc')->take(3)->get();
         $articles = [];
 
@@ -3023,7 +3098,6 @@
             ];
         }
 
-        // Jika tidak ada artikel di database, gunakan fallback
         if (empty($articles)) {
             $articles = [
                 [
@@ -3035,61 +3109,37 @@
                     'date' => '15 Maret 2024',
                     'read_time' => '5 min read',
                     'tags' => ['Perjalanan', 'Tips', 'Liburan'],
-                    'full_content' => '<h3>Persiapan Sebelum Perjalanan</h3><p>Perjalanan dengan shuttle selama liburan memerlukan persiapan yang matang. Pastikan Anda memesan tiket jauh-jauh hari untuk mendapatkan harga terbaik dan kursi pilihan. Smart Shuttle menawarkan pemesanan online yang mudah melalui website atau aplikasi kami.</p><h3>Packing yang Tepat</h3><p>Bawalah barang secukupnya sesuai durasi perjalanan. Gunakan tas yang mudah disimpan di bagasi shuttle. Jangan lupa membawa charger ponsel, makanan ringan, dan baju hangat karena AC shuttle biasanya cukup dingin.</p>',
-                    'author' => 'Admin SmartShuttle'
-                ],
-                [
-                    'id' => 2,
-                    'image' => asset('images/default-article.jpg'),
-                    'category' => 'Berita',
-                    'title' => 'SmartShuttle Perkenalkan Fitur Baru: SmartSend',
-                    'excerpt' => 'Kami dengan bangga memperkenalkan layanan pengiriman paket antar kota dengan fitur tracking real-time.',
-                    'date' => '10 Maret 2024',
-                    'read_time' => '4 min read',
-                    'tags' => ['Fitur Baru', 'Pengiriman', 'Inovasi'],
-                    'full_content' => '<h3>SmartSend - Solusi Pengiriman Paket</h3><p>SmartSend adalah layanan terbaru dari Smart Shuttle yang memungkinkan Anda mengirim paket antar kota dengan mudah, cepat, dan aman. Dengan fitur tracking real-time, Anda dapat memantau perjalanan paket Anda kapan saja dan di mana saja.</p><h3>Keunggulan SmartSend</h3><p>1. <strong>Tracking Real-time</strong>: Pantau lokasi paket Anda secara real-time melalui aplikasi<br>2. <strong>Harga Terjangkau</strong>: Tarif yang kompetitif dengan kualitas terjamin<br>3. <strong>Pengiriman Cepat</strong>: Didukung oleh armada shuttle yang sudah terintegrasi</p>',
-                    'author' => 'Admin SmartShuttle'
-                ],
-                [
-                    'id' => 3,
-                    'image' => asset('images/default-article.jpg'),
-                    'category' => 'Bisnis',
-                    'title' => 'Mengapa Memilih Shuttle untuk Perjalanan Bisnis?',
-                    'excerpt' => 'Temukan keuntungan menggunakan layanan shuttle untuk kebutuhan perjalanan bisnis Anda. Efisien dan hemat waktu.',
-                    'date' => '5 Maret 2024',
-                    'read_time' => '6 min read',
-                    'tags' => ['Bisnis', 'Efisiensi', 'Perjalanan'],
-                    'full_content' => '<h3>Efisiensi Waktu dan Biaya</h3><p>Untuk perjalanan bisnis, waktu adalah uang. Dengan menggunakan layanan shuttle, Anda dapat menghindari kemacetan dengan rute yang sudah teroptimasi.</p><h3>Kenyamanan dan Produktivitas</h3><p>Smart Shuttle menyediakan fasilitas yang mendukung produktivitas Anda seperti Wi-Fi gratis dan stop kontak untuk mengisi daya perangkat.</p>',
+                    'full_content' => '<h3>Persiapan Sebelum Perjalanan</h3><p>Perjalanan dengan shuttle selama liburan memerlukan persiapan yang matang. Pastikan Anda memesan tiket jauh-jauh hari untuk mendapatkan harga terbaik dan kursi pilihan. Smart Shuttle menawarkan pemesanan online yang mudah melalui website atau aplikasi kami.</p>',
                     'author' => 'Admin SmartShuttle'
                 ]
             ];
         }
 
-        // Mendapatkan service aktif dari URL atau default 'shuttle'
         $activeService = request()->get('service', 'shuttle');
     @endphp
 </head>
 <body>
-    <!-- Custom Navbar TRANSPARAN -->
+    <!-- Custom Navbar -->
     <nav class="custom-navbar" id="navbar">
         <div class="nav-container">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
             <div class="nav-panel">
                 <div class="nav-brand">
                     <img src="{{ asset($profile->logo_perusahaan ?? '/images/smartshuttlelogo.png') }}" alt="{{ $profile->nama_dagang ?? 'Smart Shuttle' }}">
                 </div>
-                <div class="nav-menu">
+                <div class="nav-menu" id="navMenu">
                     <ul class="nav-links">
                         <li><a href="/customer/beranda" class="{{ $activeService === 'shuttle' ? 'active' : '' }}">Beranda</a></li>
-                        <li><a href="{{ route('customer.search') }}" class="{{ $activeService === 'shuttle' ? '' : '' }}">Cari Tiket</a></li>
+                        <li><a href="{{ route('customer.search') }}">Cari Tiket</a></li>
                         <li><a href="{{ route('customer.outlet') }}">Outlet</a></li>
-                        <!-- Menu Kirim Paket - akan diaktifkan jika service=kirim-paket -->
                         <li><a href="{{ url()->current() }}?service=kirim-paket" class="{{ $activeService === 'kirim-paket' ? 'active' : '' }}" id="nav-kirim-paket">Kirim Paket</a></li>
                         <li><a href="#" onclick="alert('Fitur Sewa Armada akan segera hadir!'); return false;">Sewa Armada</a></li>
                         <li><a href="{{ route('customer.contact') }}">Kontak</a></li>
                         <li><a href="{{ route('customer.cek-reservasi') }}">Cek Reservasi</a></li>
                     </ul>
                 </div>
-                <!-- BAGIAN NAV-AUTH -->
                 <div class="nav-auth">
                     @if($user && isset($user['id']) && $user['id'])
                         <div class="profile-wrapper">
@@ -3120,7 +3170,7 @@
         </div>
     </nav>
 
-    <!-- Hero Section dengan Background Image -->
+    <!-- Hero Section -->
     <div class="hero-section" style="background-image:url('{{ asset('images/bg.png') }}');">
         <div class="hero-content">
             <h1 class="hero-title">{{ $profile->nama_dagang ?? 'Smart Shuttle' }}</h1>
@@ -3147,40 +3197,36 @@
     <!-- Search Section -->
     <div class="search-section">
         <div class="search-container">
-            <!-- Form Tiket Shuttle (Default) -->
+            <!-- Form Tiket Shuttle -->
             <form action="{{ route('customer.search') }}" method="GET" id="search-form" class="service-form" data-service="shuttle" style="{{ $activeService === 'shuttle' ? 'display: block;' : 'display: none;' }}">
                 <div class="search-row">
                     <div class="search-field">
-                        <div class="autocomplete-container">
-                            <select class="search-input select2-dropdown" id="departure-outlet" name="departure_outlet" required>
-                                <option value="">Pilih Outlet Keberangkatan</option>
-                                @foreach($outletsGrouped as $kota => $outlets)
-                                    <optgroup label="{{ $kota }}">
-                                        @foreach($outlets as $outlet)
-                                            <option value="{{ $outlet->id }}">
-                                                {{ $outlet->nama_outlet }}
-                                            </option>
-                                        @endforeach
-                                    </optgroup>
-                                @endforeach
-                            </select>
-                        </div>
+                        <select class="search-input select2-dropdown" id="departure-outlet" name="departure_outlet" required>
+                            <option value="">Pilih Outlet Keberangkatan</option>
+                            @foreach($outletsGrouped as $kota => $outlets)
+                                <optgroup label="{{ $kota }}">
+                                    @foreach($outlets as $outlet)
+                                        <option value="{{ $outlet->id }}">
+                                            {{ $outlet->nama_outlet }}
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="search-field">
-                        <div class="autocomplete-container">
-                            <select class="search-input select2-dropdown" id="destination-outlet" name="destination_outlet" required>
-                                <option value="">Pilih Outlet Tujuan</option>
-                                @foreach($outletsGrouped as $kota => $outlets)
-                                    <optgroup label="{{ $kota }}">
-                                        @foreach($outlets as $outlet)
-                                            <option value="{{ $outlet->id }}">
-                                                {{ $outlet->nama_outlet }}
-                                            </option>
-                                        @endforeach
-                                    </optgroup>
-                                @endforeach
-                            </select>
-                        </div>
+                        <select class="search-input select2-dropdown" id="destination-outlet" name="destination_outlet" required>
+                            <option value="">Pilih Outlet Tujuan</option>
+                            @foreach($outletsGrouped as $kota => $outlets)
+                                <optgroup label="{{ $kota }}">
+                                    @foreach($outlets as $outlet)
+                                        <option value="{{ $outlet->id }}">
+                                            {{ $outlet->nama_outlet }}
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="search-field">
                         <input type="date" class="search-input" name="departure_date"
@@ -3200,7 +3246,7 @@
                 </div>
             </form>
 
-            <!-- Form Kirim Paket (Hidden by Default) -->
+            <!-- Form Kirim Paket -->
             <form action="{{ route('customer.kirim-paket') }}" method="GET" id="kirim-paket-form" class="service-form" data-service="kirim-paket" style="{{ $activeService === 'kirim-paket' ? 'display: block;' : 'display: none;' }}">
                 <div class="search-row" style="grid-template-columns: 1fr 1fr; gap: 20px;">
                     <!-- Tombol Cek Paket -->
@@ -3213,25 +3259,21 @@
                                 </div>
                             </div>
                         </button>
-                        <!-- Modal Cek Paket - DISATUKAN DENGAN TOMBOL -->
+                        <!-- Modal Cek Paket -->
                         <div class="modal-cek-paket" id="modal-cek-paket">
                             <button type="button" class="close-modal" id="close-modal-cek-paket">
                                 <i class="fas fa-times"></i>
                             </button>
 
-                            <!-- Header - SAMA SEPERTI TOMBOL CEK PAKET -->
                             <div class="modal-header">
                                 <div class="modal-main-text">CEK PAKET</div>
                                 <div class="modal-label">Cek status paket yang sudah anda kirim kan</div>
                             </div>
 
-                            <!-- Garis pemisah -->
                             <hr class="modal-divider">
 
-                            <!-- Body dengan form input -->
                             <div class="modal-body">
                                 <div class="resi-form">
-                                    <!-- Input dan tombol CEK dalam satu baris -->
                                     <div class="resi-input-group">
                                         <input type="text" class="form-control" id="kode-resi"
                                             placeholder="Kode Resi">
@@ -3247,31 +3289,27 @@
                     <div class="search-field">
                         <button type="button" class="search-btn vertical-btn" id="btn-kirim-paket">
                             <div class="btn-text">
-                                <div class="btn-main-text">KIRIM PAKET</div>
+                                <div class="btn-main-text">CEK HARGA</div>
                                 <div class="btn-label">
                                     Kirim paket ke beberapa daerah
                                 </div>
                             </div>
                         </button>
-                        <!-- Modal Kirim Paket - DISATUKAN DENGAN TOMBOL -->
+                        <!-- Modal Kirim Paket -->
                         <div class="modal-kirim-paket" id="modal-kirim-paket">
                             <button type="button" class="close-modal" id="close-modal-kirim-paket">
                                 <i class="fas fa-times"></i>
                             </button>
 
-                            <!-- Header - SAMA SEPERTI TOMBOL KIRIM PAKET -->
                             <div class="modal-header">
                                 <div class="modal-main-text">CEK HARGA PAKET</div>
                                 <div class="modal-label">Cek harga pengiriman paket antar kota</div>
                             </div>
 
-                            <!-- Garis pemisah -->
                             <hr class="modal-divider">
 
-                            <!-- Body dengan form input -->
                             <div class="modal-body">
                                 <div class="kirim-paket-form" id="form-kirim-paket">
-                                    <!-- Data Paket -->
                                     <h4 style="color: white; margin-bottom: 15px;">Data Paket</h4>
 
                                     <div class="form-group">
@@ -3298,7 +3336,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- Berat -->
                                     <div class="form-group">
                                         <label class="form-label">Berat Paket</label>
                                         <div class="form-input-container">
@@ -3313,7 +3350,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- Volume - Opsional -->
                                     <div class="form-group">
                                         <label class="form-label">Dimensi Paket <span style="color: #ccc; font-weight: normal;">(Opsional)</span></label>
                                         <div class="form-input-container">
@@ -3340,18 +3376,15 @@
                                         </div>
                                     </div>
 
-                                    <!-- Tombol Cek Harga -->
                                     <button type="button" class="btn-cek-harga" id="btn-cek-harga">
                                         <i class="fas fa-calculator"></i> CEK HARGA SEKARANG
                                     </button>
 
-                                    <!-- HASIL PERHITUNGAN (akan muncul setelah cek harga) -->
                                     <div id="hasil-perhitungan" style="display: none; margin-top: 25px;">
                                         <h4 style="color: white; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
                                             <i class="fas fa-check-circle"></i> Hasil Perhitungan Harga
                                         </h4>
 
-                                        <!-- Container Total Harga yang Sederhana DAN LEBIH KECIL -->
                                         <div class="total-harga-container">
                                             <div class="success-icon">
                                                 <i class="fas fa-check-circle"></i>
@@ -3363,7 +3396,6 @@
                                             </span>
                                         </div>
 
-                                        <!-- Informasi tambahan -->
                                         <div style="margin-top: 15px; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; border-left: 3px solid var(--secondary-color);">
                                             <p style="color: #ccc; font-size: 12px; margin: 0;">
                                                 <i class="fas fa-info-circle" style="margin-right: 5px; color: var(--secondary-color);"></i>
@@ -3371,7 +3403,6 @@
                                             </p>
                                         </div>
 
-                                        <!-- Tombol Reset -->
                                         <button type="button" class="btn-cek-ulang" id="btn-cek-ulang"
                                                 style="width: 100%; padding: 12px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s ease; margin-top: 15px;">
                                             <i class="fas fa-redo"></i> CEK HARGA LAINNYA
@@ -3397,7 +3428,6 @@
         </p>
         <div class="services-grid">
             @forelse($layanan as $item)
-            <!-- Dynamic Service Cards -->
             <div class="service-card">
                 <div class="service-logo-box">
                     @if($item->logo)
@@ -3414,7 +3444,6 @@
                 </p>
             </div>
             @empty
-            <!-- Fallback jika tidak ada data -->
             <div class="service-card">
                 <div class="service-logo-box">
                     <img src="{{ asset('images/lgsmartrent.png') }}" alt="Smart Rent">
@@ -3443,7 +3472,7 @@
         </div>
     </div>
 
-    <!-- === PROMO SECTION BARU === -->
+    <!-- Promo Section -->
     <div class="promo-section">
         <h2 class="promo-title">Promo Spesial {{ $profile->nama_dagang ?? 'Smart Shuttle' }}</h2>
         <p class="promo-subtitle">
@@ -3475,7 +3504,7 @@
                     <i class="fas fa-chevron-left"></i>
                 </button>
                 <div class="slider-dots" id="slider-dots">
-                    <!-- Dots will be generated by JavaScript -->
+                    <!-- Dots akan di-generate oleh JavaScript -->
                 </div>
                 <button class="slider-btn" id="next-btn">
                     <i class="fas fa-chevron-right"></i>
@@ -3502,7 +3531,6 @@
                 </div>
                 @endforeach
             @else
-                <!-- Fallback jika tidak ada data -->
                 <div class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-route"></i>
@@ -3549,7 +3577,7 @@
         </div>
     </div>
 
-    <!-- === ARTIKEL/BERITA SECTION === -->
+    <!-- Articles Section -->
     <section class="articles-section">
         <h2 class="articles-title">Artikel & Berita Terbaru</h2>
         <p class="articles-subtitle">
@@ -3582,28 +3610,24 @@
         </a>
     </section>
 
-    <!-- === MODAL ARTIKEL === -->
+    <!-- Modal Artikel -->
     <div class="modal-artikel" id="modal-artikel">
         <div class="modal-artikel-content">
             <button class="close-modal-artikel" id="close-modal-artikel">
                 <i class="fas fa-times"></i>
             </button>
-
-            <!-- Konten modal akan diisi oleh JavaScript -->
             <div id="modal-artikel-content"></div>
         </div>
     </div>
 
-    <!-- === FEEDBACK SECTION YANG DIRAPIHKAN DENGAN FILTER === -->
+    <!-- Feedback Section -->
     <section class="feedback-section">
         <div class="feedback-container">
             <h2 class="feedback-title">Review Pelanggan</h2>
             <div class="feedback-line"></div>
 
             <div class="review-wrapper">
-                <!-- KIRI: DAFTAR REVIEW DENGAN FILTER -->
                 <div class="review-list-container">
-                    <!-- FILTER BINTANG -->
                     <div class="star-filter-section">
                         <h4 class="filter-title">Filter berdasarkan Rating:</h4>
                         <div class="star-filter-buttons">
@@ -3625,7 +3649,6 @@
                             </button>
                         </div>
 
-                        <!-- INFO STATISTIK -->
                         <div class="review-stats">
                             <div class="stat-item">
                                 <span class="stat-value">{{ $totalReviews ?? 0 }}</span>
@@ -3642,26 +3665,21 @@
                         </div>
                     </div>
 
-                    <!-- DAFTAR REVIEW -->
                     <div class="reviews-list" id="reviews-list">
-                        <!-- Review akan dimuat via JavaScript -->
                         <div class="loading-reviews">
                             <i class="fas fa-spinner fa-spin"></i> Memuat review...
                         </div>
                     </div>
 
-                    <!-- PAGINATION -->
                     <div class="review-pagination" id="review-pagination">
                         <!-- Pagination akan di-generate oleh JavaScript -->
                     </div>
                 </div>
 
-                <!-- KANAN: FORM REVIEW -->
                 <div class="review-form-container">
                     <div class="form-title">Berikan Penilaian Anda</div>
                     <p class="form-subtitle">Bagikan pengalaman Anda menggunakan layanan kami</p>
 
-                    <!-- RATING INPUT -->
                     <div class="rating-input-container">
                         <div class="rating-label">Rating:</div>
                         <div class="star-rating-input" id="star-rating">
@@ -3674,7 +3692,6 @@
                         </div>
                     </div>
 
-                    <!-- INPUT REVIEW -->
                     <div class="form-group">
                         <textarea class="form-textarea" id="review-text"
                                   placeholder="Ceritakan pengalaman Anda menggunakan layanan kami... (Minimal 10 karakter)"
@@ -3682,7 +3699,6 @@
                         <div class="char-count" id="char-count">0/500 karakter</div>
                     </div>
 
-                    <!-- BUTTONS -->
                     <button class="btn-primary" id="submit-review">
                         <i class="fas fa-paper-plane"></i>
                         Kirim Review
@@ -3692,7 +3708,6 @@
                         Reset Form
                     </button>
 
-                    <!-- NOTICE -->
                     <div class="form-notice">
                         <i class="fas fa-info-circle"></i>
                         Review Anda akan membantu kami meningkatkan layanan
@@ -3706,7 +3721,6 @@
     <footer class="site-footer">
         <div class="footer-container">
             <div class="footer-main">
-                <!-- Smart Shuttle -->
                 <div class="footer-column">
                     <h3 class="footer-title">{{ $profile->nama_dagang ?? 'Smart Shuttle' }}</h3>
                     <p class="footer-text">
@@ -3714,7 +3728,6 @@
                     </p>
                 </div>
 
-                <!-- Kontak -->
                 <div class="footer-column">
                     <h4 class="footer-subtitle">Kontak</h4>
                     <div class="contact-list">
@@ -3730,7 +3743,6 @@
                     </div>
                 </div>
 
-                <!-- Sosial Media -->
                 <div class="footer-column">
                     <h4 class="footer-subtitle">Sosial Media</h4>
                     <p class="footer-text">
@@ -3770,9 +3782,42 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        /* ---------- NAVBAR SCROLL ---------- */
+        /* ========== MOBILE MENU TOGGLE ========== */
+        const menuToggle = document.getElementById('menuToggle');
+        const navMenu = document.getElementById('navMenu');
+
+        if (menuToggle && navMenu) {
+            menuToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                navMenu.classList.toggle('active');
+                menuToggle.innerHTML = navMenu.classList.contains('active')
+                    ? '<i class="fas fa-times"></i>'
+                    : '<i class="fas fa-bars"></i>';
+            });
+
+            // Tutup menu saat klik di luar
+            document.addEventListener('click', function(e) {
+                if (navMenu.classList.contains('active') &&
+                    !navMenu.contains(e.target) &&
+                    !menuToggle.contains(e.target)) {
+                    navMenu.classList.remove('active');
+                    menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                }
+            });
+
+            // Tutup menu saat window di-resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 992 && navMenu.classList.contains('active')) {
+                    navMenu.classList.remove('active');
+                    menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                }
+            });
+        }
+
+        /* ========== NAVBAR SCROLL ========== */
         const navbar = document.getElementById('navbar');
         let lastScrollY = window.scrollY || 0;
+
         if (navbar) {
             window.addEventListener('scroll', function () {
                 const currentY = window.scrollY || 0;
@@ -3791,14 +3836,14 @@
             }, { passive: true });
         }
 
-        /* ---------- DATE MIN ---------- */
+        /* ========== DATE MIN ========== */
         const departureDateInput = document.querySelector('input[name="departure_date"]');
         if (departureDateInput) {
             const today = new Date().toISOString().split('T')[0];
             departureDateInput.setAttribute('min', today);
         }
 
-        /* ---------- SEARCH FORM VALIDATION ---------- */
+        /* ========== SEARCH FORM VALIDATION ========== */
         const searchForm = document.getElementById('search-form');
         if (searchForm) {
             searchForm.addEventListener('submit', function(e) {
@@ -3813,7 +3858,7 @@
             });
         }
 
-        /* ---------- PROFILE DROPDOWN - PERBAIKAN ---------- */
+        /* ========== PROFILE DROPDOWN ========== */
         const dropdownButton = document.getElementById('profile-dropdown');
         const dropdownMenu = document.getElementById('dropdown-menu');
 
@@ -3827,10 +3872,8 @@
                 dropdownButton.setAttribute('aria-expanded', isShown ? 'true' : 'false');
             });
 
-            // Hanya tutup dropdown jika klik di luar dropdown DAN tombol profile
             document.addEventListener('click', function (e) {
                 if (dropdownMenu.classList.contains('show')) {
-                    // Jika klik di luar dropdown DAN di luar tombol profile
                     if (!dropdownMenu.contains(e.target) && !dropdownButton.contains(e.target)) {
                         dropdownMenu.classList.remove('show');
                         dropdownButton.setAttribute('aria-expanded', 'false');
@@ -3838,7 +3881,6 @@
                 }
             });
 
-            // Tutup dropdown saat tombol Escape ditekan
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape' && dropdownMenu.classList.contains('show')) {
                     dropdownMenu.classList.remove('show');
@@ -3847,7 +3889,6 @@
                 }
             });
 
-            // Tutup dropdown saat item dipilih
             dropdownMenu.addEventListener('click', function (e) {
                 if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') {
                     dropdownMenu.classList.remove('show');
@@ -3856,74 +3897,43 @@
             });
         }
 
-        /* ---------- MODAL CEK PAKET ---------- */
+        /* ========== MODAL CEK PAKET ========== */
         const btnCekPaket = document.getElementById('btn-cek-paket');
         const modalCekPaket = document.getElementById('modal-cek-paket');
         const closeModalCekPaket = document.getElementById('close-modal-cek-paket');
         const btnCekResi = document.getElementById('btn-cek-resi');
 
-        // Show modal cek paket - menggantikan tombol
         if (btnCekPaket) {
             btnCekPaket.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Tutup modal Kirim Paket jika terbuka
                 if (modalKirimPaket && modalKirimPaket.classList.contains('show')) {
                     modalKirimPaket.classList.remove('show');
-                    btnKirimPaket.style.visibility = 'visible';
-
-                    const searchFieldKirim = btnKirimPaket.closest('.search-field');
-                    if (searchFieldKirim) {
-                        searchFieldKirim.style.height = '';
-                        searchFieldKirim.style.minHeight = '';
-                    }
                 }
 
-                // Buka modal Cek Paket
                 modalCekPaket.classList.toggle('show');
-                btnCekPaket.style.visibility = 'hidden';
-
-                const searchField = btnCekPaket.closest('.search-field');
-                if (searchField) {
-                    searchField.style.height = 'auto';
-                    searchField.style.minHeight = 'fit-content';
-                }
+                document.body.style.overflow = 'hidden';
             });
         }
 
-        // Close modal when clicking close button
         if (closeModalCekPaket) {
             closeModalCekPaket.addEventListener('click', function(e) {
                 e.preventDefault();
                 modalCekPaket.classList.remove('show');
-                btnCekPaket.style.visibility = 'visible';
-
-                const searchField = btnCekPaket.closest('.search-field');
-                if (searchField) {
-                    searchField.style.height = '';
-                    searchField.style.minHeight = '';
-                }
+                document.body.style.overflow = 'auto';
             });
         }
 
-        // Close modal when clicking outside
         document.addEventListener('click', function(e) {
             if (modalCekPaket.classList.contains('show')) {
                 if (!modalCekPaket.contains(e.target) && !btnCekPaket.contains(e.target)) {
                     modalCekPaket.classList.remove('show');
-                    btnCekPaket.style.visibility = 'visible';
-
-                    const searchField = btnCekPaket.closest('.search-field');
-                    if (searchField) {
-                        searchField.style.height = '';
-                        searchField.style.minHeight = '';
-                    }
+                    document.body.style.overflow = 'auto';
                 }
             }
         });
 
-        // Handle cek resi button
         if (btnCekResi) {
             btnCekResi.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -3934,58 +3944,31 @@
                     return;
                 }
 
-                // Simulasi cek resi
                 alert('Mencari informasi untuk resi: ' + kodeResi + '\n\n(Sistem cek paket akan ditampilkan di sini)');
 
-                // Reset form
                 document.getElementById('kode-resi').value = '';
                 modalCekPaket.classList.remove('show');
-                // Tampilkan kembali tombol utama
-                btnCekPaket.style.visibility = 'visible';
-
-                // Kembalikan ukuran container search
-                const searchField = btnCekPaket.closest('.search-field');
-                if (searchField) {
-                    searchField.style.height = '';
-                    searchField.style.minHeight = '';
-                }
+                document.body.style.overflow = 'auto';
             });
         }
 
-        /* ---------- MODAL KIRIM PAKET ---------- */
+        /* ========== MODAL KIRIM PAKET ========== */
         const btnKirimPaket = document.getElementById('btn-kirim-paket');
         const modalKirimPaket = document.getElementById('modal-kirim-paket');
         const closeModalKirimPaket = document.getElementById('close-modal-kirim-paket');
 
-        // Show modal kirim paket - menggantikan tombol
         if (btnKirimPaket) {
             btnKirimPaket.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Tutup modal Cek Paket jika terbuka
                 if (modalCekPaket && modalCekPaket.classList.contains('show')) {
                     modalCekPaket.classList.remove('show');
-                    btnCekPaket.style.visibility = 'visible';
-
-                    const searchFieldCek = btnCekPaket.closest('.search-field');
-                    if (searchFieldCek) {
-                        searchFieldCek.style.height = '';
-                        searchFieldCek.style.minHeight = '';
-                    }
                 }
 
-                // Buka modal Kirim Paket
                 modalKirimPaket.classList.toggle('show');
-                btnKirimPaket.style.visibility = 'hidden';
+                document.body.style.overflow = 'hidden';
 
-                const searchField = btnKirimPaket.closest('.search-field');
-                if (searchField) {
-                    searchField.style.height = 'auto';
-                    searchField.style.minHeight = 'fit-content';
-                }
-
-                // Initialize Select2 untuk modal
                 setTimeout(() => {
                     $('#asal-paket').select2({
                         placeholder: "Pilih Kota Asal",
@@ -4003,65 +3986,43 @@
             });
         }
 
-        // Close modal when clicking close button
         if (closeModalKirimPaket) {
             closeModalKirimPaket.addEventListener('click', function(e) {
                 e.preventDefault();
                 modalKirimPaket.classList.remove('show');
-                btnKirimPaket.style.visibility = 'visible';
-
-                const searchField = btnKirimPaket.closest('.search-field');
-                if (searchField) {
-                    searchField.style.height = '';
-                    searchField.style.minHeight = '';
-                }
+                document.body.style.overflow = 'auto';
             });
         }
 
-        // Close modal when clicking outside
         document.addEventListener('click', function(e) {
             if (modalKirimPaket.classList.contains('show')) {
                 if (!modalKirimPaket.contains(e.target) && !btnKirimPaket.contains(e.target)) {
                     modalKirimPaket.classList.remove('show');
-                    btnKirimPaket.style.visibility = 'visible';
-
-                    const searchField = btnKirimPaket.closest('.search-field');
-                    if (searchField) {
-                        searchField.style.height = '';
-                        searchField.style.minHeight = '';
-                    }
+                    document.body.style.overflow = 'auto';
                 }
             }
         });
 
-        // Close modal on Escape key
         document.addEventListener('keydown', function(e) {
-            // Tutup modal Cek Paket jika terbuka
-            if (e.key === 'Escape' && modalCekPaket.classList.contains('show')) {
-                modalCekPaket.classList.remove('show');
-                btnCekPaket.style.visibility = 'visible';
-
-                const searchField = btnCekPaket.closest('.search-field');
-                if (searchField) {
-                    searchField.style.height = '';
-                    searchField.style.minHeight = '';
+            if (e.key === 'Escape') {
+                if (modalCekPaket.classList.contains('show')) {
+                    modalCekPaket.classList.remove('show');
+                    document.body.style.overflow = 'auto';
                 }
-            }
 
-            // Tutup modal Kirim Paket jika terbuka
-            if (e.key === 'Escape' && modalKirimPaket.classList.contains('show')) {
-                modalKirimPaket.classList.remove('show');
-                btnKirimPaket.style.visibility = 'visible';
+                if (modalKirimPaket.classList.contains('show')) {
+                    modalKirimPaket.classList.remove('show');
+                    document.body.style.overflow = 'auto';
+                }
 
-                const searchField = btnKirimPaket.closest('.search-field');
-                if (searchField) {
-                    searchField.style.height = '';
-                    searchField.style.minHeight = '';
+                if (modalArtikel.classList.contains('show')) {
+                    modalArtikel.classList.remove('show');
+                    document.body.style.overflow = 'auto';
                 }
             }
         });
 
-        /* ---------- SERVICE SWITCHER DENGAN UPDATE NAVBAR ---------- */
+        /* ========== SERVICE SWITCHER ========== */
         const shuttleLink = document.getElementById('shuttle-link');
         const kirimPaketLink = document.getElementById('kirim-paket-link');
         const navKirimPaket = document.getElementById('nav-kirim-paket');
@@ -4073,67 +4034,44 @@
         const urlParams = new URLSearchParams(window.location.search);
         const activeService = urlParams.get('service') || 'shuttle';
 
-        // Function to update navbar active state
         function updateNavbarActiveState(serviceType) {
-            // Reset semua menu
             navLinks.forEach(link => {
                 link.classList.remove('active');
 
-                // Jika ini adalah halaman beranda dan service shuttle aktif
                 if (serviceType === 'shuttle' && link.getAttribute('href') === '/customer/beranda') {
                     link.classList.add('active');
                 }
 
-                // Jika ini adalah menu Kirim Paket dan service kirim-paket aktif
                 if (serviceType === 'kirim-paket' && link.id === 'nav-kirim-paket') {
                     link.classList.add('active');
                 }
             });
         }
 
-        // Function to switch between forms
         function switchService(serviceType) {
-            // Hide all forms
             serviceForms.forEach(form => {
                 form.style.display = 'none';
             });
 
-            // Show selected form
             const activeForm = document.querySelector(`.service-form[data-service="${serviceType}"]`);
             if (activeForm) {
                 activeForm.style.display = 'block';
             }
 
-            // Update navbar active state
             updateNavbarActiveState(serviceType);
 
-            // Tutup kedua modal jika terbuka
             if (modalCekPaket) {
                 modalCekPaket.classList.remove('show');
-                btnCekPaket.style.visibility = 'visible';
-
-                const searchFieldCek = btnCekPaket.closest('.search-field');
-                if (searchFieldCek) {
-                    searchFieldCek.style.height = '';
-                    searchFieldCek.style.minHeight = '';
-                }
+                document.body.style.overflow = 'auto';
             }
 
             if (modalKirimPaket) {
                 modalKirimPaket.classList.remove('show');
-                btnKirimPaket.style.visibility = 'visible';
-
-                const searchFieldKirim = btnKirimPaket.closest('.search-field');
-                if (searchFieldKirim) {
-                    searchFieldKirim.style.height = '';
-                    searchFieldKirim.style.minHeight = '';
-                }
+                document.body.style.overflow = 'auto';
             }
 
-            // Update hero title and description based on service
             updateHeroContent(serviceType);
 
-            // Update URL without reloading page
             const newUrl = new URL(window.location);
             if (serviceType === 'shuttle') {
                 newUrl.searchParams.delete('service');
@@ -4142,10 +4080,8 @@
             }
             window.history.pushState({}, '', newUrl);
 
-            // Update hero services active state
             updateHeroServicesActiveState(serviceType);
 
-            // Reinitialize Select2 for visible form
             setTimeout(() => {
                 if (serviceType === 'shuttle') {
                     $('#departure-outlet').select2({
@@ -4159,7 +4095,6 @@
                         width: '100%'
                     });
                 } else if (serviceType === 'kirim-paket') {
-                    // Initialize Select2 untuk modal Kirim Paket jika belum diinisialisasi
                     if ($('#asal-paket').data('select2') === undefined) {
                         $('#asal-paket').select2({
                             placeholder: "Pilih Kota Asal",
@@ -4176,22 +4111,18 @@
             }, 100);
         }
 
-        // Function to update hero content based on service
         function updateHeroContent(serviceType) {
             if (heroTitle && heroDesc) {
                 if (serviceType === 'kirim-paket') {
-                    // Ubah untuk SmartSend
                     heroTitle.textContent = 'SmartSend';
                     heroDesc.textContent = 'Setiap kiriman punya tujuan — Paket terkirim cepat, aman, dan terpantau.';
                 } else {
-                    // Kembalikan ke default
                     heroTitle.textContent = '{{ $profile->nama_dagang ?? 'Smart Shuttle' }}';
                     heroDesc.textContent = '{{ $profile->deskripsi_singkat ?? 'Menghubungkan kota, menyatukan perjalanan – Solusi cerdas untuk mobilitas anda' }}';
                 }
             }
         }
 
-        // Function to update active state in hero services
         function updateHeroServicesActiveState(serviceType) {
             heroServices.forEach(service => {
                 service.classList.remove('active');
@@ -4204,71 +4135,57 @@
             });
         }
 
-        // Initialize based on URL parameter
         if (activeService === 'kirim-paket') {
             switchService('kirim-paket');
         } else {
             switchService('shuttle');
         }
 
-        // Handle click on Tiket Shuttle link
         if (shuttleLink) {
             shuttleLink.addEventListener('click', function(e) {
                 e.preventDefault();
                 switchService('shuttle');
-
-                // Scroll to search section
                 document.querySelector('.search-section').scrollIntoView({
                     behavior: 'smooth'
                 });
             });
         }
 
-        // Handle click on Kirim Paket link
         if (kirimPaketLink) {
             kirimPaketLink.addEventListener('click', function(e) {
                 e.preventDefault();
                 switchService('kirim-paket');
-
-                // Scroll to search section
                 document.querySelector('.search-section').scrollIntoView({
                     behavior: 'smooth'
                 });
             });
         }
 
-        // Handle click on Kirim Paket navbar link
         if (navKirimPaket) {
             navKirimPaket.addEventListener('click', function(e) {
                 e.preventDefault();
                 switchService('kirim-paket');
-
-                // Scroll to search section
                 document.querySelector('.search-section').scrollIntoView({
                     behavior: 'smooth'
                 });
             });
         }
 
-        // Handle browser back/forward buttons
         window.addEventListener('popstate', function() {
             const urlParams = new URLSearchParams(window.location.search);
             const service = urlParams.get('service') || 'shuttle';
             switchService(service);
         });
 
-        /* === MODAL ARTIKEL === */
+        /* ========== MODAL ARTIKEL ========== */
         const modalArtikel = document.getElementById('modal-artikel');
         const closeModalArtikel = document.getElementById('close-modal-artikel');
         const modalArtikelContent = document.getElementById('modal-artikel-content');
         const readMoreButtons = document.querySelectorAll('.article-read-more');
 
-        // Data artikel (diambil dari PHP)
         const articlesData = @json($articles);
 
-        // Fungsi untuk menampilkan modal artikel
         function showArticleModal(articleId) {
-            // Cari artikel berdasarkan ID
             const article = articlesData.find(a => a.id == articleId);
 
             if (!article) {
@@ -4276,7 +4193,6 @@
                 return;
             }
 
-            // Isi konten modal
             modalArtikelContent.innerHTML = `
                 <div class="modal-artikel-header">
                     <span class="modal-artikel-category">${article.category}</span>
@@ -4326,18 +4242,15 @@
                 </div>
             `;
 
-            // Tampilkan modal
             modalArtikel.classList.add('show');
-            document.body.style.overflow = 'hidden'; // Mencegah scroll di background
+            document.body.style.overflow = 'hidden';
         }
 
-        // Fungsi untuk menutup modal
         function closeArticleModal() {
             modalArtikel.classList.remove('show');
-            document.body.style.overflow = 'auto'; // Kembalikan scroll
+            document.body.style.overflow = 'auto';
         }
 
-        // Event listener untuk tombol "Baca Selengkapnya"
         readMoreButtons.forEach(button => {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -4346,26 +4259,22 @@
             });
         });
 
-        // Event listener untuk tombol close modal
         if (closeModalArtikel) {
             closeModalArtikel.addEventListener('click', closeArticleModal);
         }
 
-        // Tutup modal ketika klik di luar konten modal
         modalArtikel.addEventListener('click', function(e) {
             if (e.target === modalArtikel) {
                 closeArticleModal();
             }
         });
 
-        // Tutup modal dengan tombol Escape
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && modalArtikel.classList.contains('show')) {
                 closeArticleModal();
             }
         });
 
-        // Fungsi untuk berbagi artikel
         window.shareOnFacebook = function(title, url) {
             const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(title)}`;
             window.open(shareUrl, '_blank', 'width=600,height=400');
@@ -4381,11 +4290,9 @@
             window.open(shareUrl, '_blank', 'width=600,height=400');
         };
 
-        /* === REVIEW MANAGEMENT SCRIPT === */
-        // Data review (gunakan data dari server jika ada)
+        /* ========== REVIEW MANAGEMENT ========== */
         let allReviews = @json($reviews ?? []);
 
-        // Jika tidak ada data dari server, gunakan fallback
         if (!allReviews || allReviews.length === 0) {
             allReviews = [
                 {
@@ -4403,73 +4310,15 @@
                     rating: 4,
                     date: '2024-03-14',
                     content: 'Pertama kali coba SmartShuttle dan langsung puas. Mobilnya bersih, AC dingin, kursinya empuk. Berangkat juga sesuai jadwal. Recommended banget!'
-                },
-                {
-                    id: 3,
-                    avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
-                    name: 'Sari Dewi',
-                    rating: 5,
-                    date: '2024-03-13',
-                    content: 'Harganya menurut saya cukup murah dibanding shuttle lain, tapi kualitas layanannya tetap bagus. Pemesanan lewat aplikasi juga gampang.'
-                },
-                {
-                    id: 4,
-                    avatar: 'https://randomuser.me/api/portraits/men/45.jpg',
-                    name: 'Budi Santoso',
-                    rating: 5,
-                    date: '2024-03-12',
-                    content: 'Sangat puas dengan layanan SmartShuttle. Armada bersih, driver ramah, dan tepat waktu. Sudah beberapa kali menggunakan dan selalu puas.'
-                },
-                {
-                    id: 5,
-                    avatar: 'https://randomuser.me/api/portraits/women/55.jpg',
-                    name: 'Maya Indah',
-                    rating: 4,
-                    date: '2024-03-11',
-                    content: 'Pelayanan bagus, harga terjangkau. Cuma kadang agak telat sedikit, tapi masih dalam batas wajar. Overall recommended!'
-                },
-                {
-                    id: 6,
-                    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-                    name: 'Ahmad Fauzi',
-                    rating: 5,
-                    date: '2024-03-10',
-                    content: 'SmartShuttle membantu sekali untuk perjalanan bisnis saya. Jadwal fleksibel, booking mudah, dan selalu on time. Terima kasih!'
-                },
-                {
-                    id: 7,
-                    avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-                    name: 'Siti Rahayu',
-                    rating: 5,
-                    date: '2024-03-09',
-                    content: 'Pengiriman paket sangat cepat dan aman. Driver ramah dan profesional. Harga juga terjangkau. Sangat recommended!'
-                },
-                {
-                    id: 8,
-                    avatar: 'https://randomuser.me/api/portraits/men/65.jpg',
-                    name: 'Hendra Wijaya',
-                    rating: 4,
-                    date: '2024-03-08',
-                    content: 'Layanan shuttle sangat nyaman, AC dingin, kursi empuk. Perjalanan Jakarta-Bandung jadi tidak melelahkan.'
-                },
-                {
-                    id: 9,
-                    avatar: 'https://randomuser.me/api/portraits/women/29.jpg',
-                    name: 'Dewi Lestari',
-                    rating: 5,
-                    date: '2024-03-07',
-                    content: 'Sudah langganan 2 tahun, selalu puas. Tidak pernah telat dan armada selalu dalam kondisi bersih.'
                 }
             ];
         }
 
-        // State variables
-        let currentFilter = 0; // 0 = semua
+        let currentFilter = 0;
         let currentPage = 1;
         const reviewsPerPage = 4;
         let selectedRating = 0;
 
-        // DOM Elements
         const reviewsList = document.getElementById('reviews-list');
         const reviewPagination = document.getElementById('review-pagination');
         const filterButtons = document.querySelectorAll('.star-filter-btn');
@@ -4480,27 +4329,21 @@
         const submitReviewBtn = document.getElementById('submit-review');
         const resetReviewBtn = document.getElementById('reset-review');
 
-        // Initialize
         initReviewSection();
 
         function initReviewSection() {
-            // Setup filter buttons
             filterButtons.forEach(btn => {
                 btn.addEventListener('click', function() {
-                    // Update active state
                     filterButtons.forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
 
-                    // Update filter
                     currentFilter = parseInt(this.dataset.rating);
                     currentPage = 1;
 
-                    // Reload reviews
                     loadReviews();
                 });
             });
 
-            // Setup star rating input
             if (starRatingInput) {
                 const stars = starRatingInput.querySelectorAll('i');
                 stars.forEach(star => {
@@ -4508,7 +4351,6 @@
                         const rating = parseInt(this.dataset.rating);
                         selectedRating = rating;
 
-                        // Update star display
                         stars.forEach((s, index) => {
                             if (index < rating) {
                                 s.classList.add('active');
@@ -4517,7 +4359,6 @@
                             }
                         });
 
-                        // Update rating text
                         const ratingTexts = [
                             'Pilih bintang',
                             'Sangat Buruk',
@@ -4531,7 +4372,6 @@
                 });
             }
 
-            // Setup character counter
             if (reviewText) {
                 reviewText.addEventListener('input', function() {
                     const length = this.value.length;
@@ -4546,37 +4386,29 @@
                 });
             }
 
-            // Setup submit button
             if (submitReviewBtn) {
                 submitReviewBtn.addEventListener('click', submitReview);
             }
 
-            // Setup reset button
             if (resetReviewBtn) {
                 resetReviewBtn.addEventListener('click', resetReviewForm);
             }
 
-            // Load initial reviews
             loadReviews();
         }
 
         function loadReviews() {
-            // Filter reviews
             let filteredReviews = allReviews;
             if (currentFilter > 0) {
                 filteredReviews = allReviews.filter(review => review.rating === currentFilter);
             }
 
-            // Calculate pagination
             const totalPages = Math.ceil(filteredReviews.length / reviewsPerPage);
             const startIndex = (currentPage - 1) * reviewsPerPage;
             const endIndex = startIndex + reviewsPerPage;
             const pageReviews = filteredReviews.slice(startIndex, endIndex);
 
-            // Render reviews
             renderReviews(pageReviews);
-
-            // Render pagination
             renderPagination(totalPages);
         }
 
@@ -4628,7 +4460,6 @@
 
             let paginationHTML = '';
 
-            // Previous button
             paginationHTML += `
                 <button class="page-btn ${currentPage === 1 ? 'disabled' : ''}"
                         onclick="goToPage(${currentPage - 1})"
@@ -4637,7 +4468,6 @@
                 </button>
             `;
 
-            // Page numbers
             for (let i = 1; i <= totalPages; i++) {
                 if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
                     paginationHTML += `
@@ -4651,7 +4481,6 @@
                 }
             }
 
-            // Next button
             paginationHTML += `
                 <button class="page-btn ${currentPage === totalPages ? 'disabled' : ''}"
                         onclick="goToPage(${currentPage + 1})"
@@ -4670,7 +4499,6 @@
         }
 
         function submitReview() {
-            // Validation
             if (selectedRating === 0) {
                 alert('Silakan berikan rating terlebih dahulu!');
                 return;
@@ -4682,7 +4510,6 @@
                 return;
             }
 
-            // Simulate API call
             const newReview = {
                 id: allReviews.length + 1,
                 avatar: 'https://ui-avatars.com/api/?name={{ $user["name"] ?? "Guest" }}&background=FF581E&color=fff',
@@ -4692,32 +4519,22 @@
                 content: reviewText.value.trim()
             };
 
-            // Add to reviews (in real app, this would be an AJAX call)
             allReviews.unshift(newReview);
-
-            // Reset form
             resetReviewForm();
-
-            // Reload reviews
             currentPage = 1;
             loadReviews();
-
-            // Show success message
             alert('Terima kasih atas review Anda! Review telah berhasil dikirim.');
         }
 
         function resetReviewForm() {
-            // Reset stars
             if (starRatingInput) {
                 const stars = starRatingInput.querySelectorAll('i');
                 stars.forEach(star => star.classList.remove('active'));
             }
 
-            // Reset rating
             selectedRating = 0;
             ratingText.textContent = 'Pilih bintang';
 
-            // Reset textarea
             if (reviewText) {
                 reviewText.value = '';
                 charCount.textContent = '0/500 karakter';
@@ -4738,310 +4555,268 @@
             return stars;
         }
 
-        // Make goToPage available globally
         window.goToPage = goToPage;
 
-        // Session messages
+        /* ========== PROMO SLIDER ========== */
+        const promoSlider = {
+            track: document.getElementById('promo-track'),
+            slides: document.querySelectorAll('.promo-slide'),
+            dotsContainer: document.getElementById('slider-dots'),
+            prevBtn: document.getElementById('prev-btn'),
+            nextBtn: document.getElementById('next-btn'),
+            currentIndex: 0,
+            totalSlides: 0,
+            autoSlideInterval: null,
+
+            init: function() {
+                this.totalSlides = this.slides.length;
+
+                for (let i = 0; i < this.totalSlides; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'slider-dot';
+                    if (i === 0) dot.classList.add('active');
+                    dot.addEventListener('click', () => this.goToSlide(i));
+                    this.dotsContainer.appendChild(dot);
+                }
+
+                this.prevBtn.addEventListener('click', () => this.prevSlide());
+                this.nextBtn.addEventListener('click', () => this.nextSlide());
+
+                this.startAutoSlide();
+
+                this.track.parentElement.addEventListener('mouseenter', () => this.stopAutoSlide());
+                this.track.parentElement.addEventListener('mouseleave', () => this.startAutoSlide());
+
+                this.track.addEventListener('touchstart', this.handleTouchStart.bind(this));
+                this.track.addEventListener('touchmove', this.handleTouchMove.bind(this));
+
+                this.updateSlider();
+            },
+
+            goToSlide: function(index) {
+                this.currentIndex = index;
+                this.updateSlider();
+                this.resetAutoSlide();
+            },
+
+            prevSlide: function() {
+                this.currentIndex = (this.currentIndex - 1 + this.totalSlides) % this.totalSlides;
+                this.updateSlider();
+                this.resetAutoSlide();
+            },
+
+            nextSlide: function() {
+                this.currentIndex = (this.currentIndex + 1) % this.totalSlides;
+                this.updateSlider();
+                this.resetAutoSlide();
+            },
+
+            updateSlider: function() {
+                this.track.style.transform = `translateX(-${this.currentIndex * 100}%)`;
+
+                const dots = this.dotsContainer.querySelectorAll('.slider-dot');
+                dots.forEach((dot, index) => {
+                    if (index === this.currentIndex) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
+            },
+
+            startAutoSlide: function() {
+                this.stopAutoSlide();
+                this.autoSlideInterval = setInterval(() => this.nextSlide(), 5000);
+            },
+
+            stopAutoSlide: function() {
+                if (this.autoSlideInterval) {
+                    clearInterval(this.autoSlideInterval);
+                    this.autoSlideInterval = null;
+                }
+            },
+
+            resetAutoSlide: function() {
+                this.stopAutoSlide();
+                this.startAutoSlide();
+            },
+
+            touchStartX: 0,
+            touchEndX: 0,
+
+            handleTouchStart: function(e) {
+                this.touchStartX = e.changedTouches[0].screenX;
+            },
+
+            handleTouchMove: function(e) {
+                this.touchEndX = e.changedTouches[0].screenX;
+                this.handleSwipe();
+            },
+
+            handleSwipe: function() {
+                const threshold = 50;
+                const diff = this.touchStartX - this.touchEndX;
+
+                if (Math.abs(diff) > threshold) {
+                    if (diff > 0) {
+                        this.nextSlide();
+                    } else {
+                        this.prevSlide();
+                    }
+                }
+
+                this.touchStartX = 0;
+                this.touchEndX = 0;
+            }
+        };
+
+        if (document.getElementById('promo-track')) {
+            promoSlider.init();
+        }
+
+        /* ========== CEK HARGA PAKET AJAX ========== */
+        const btnCekHarga = document.getElementById('btn-cek-harga');
+        const btnCekUlang = document.getElementById('btn-cek-ulang');
+        const hasilPerhitungan = document.getElementById('hasil-perhitungan');
+
+        if (btnCekHarga) {
+            btnCekHarga.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                const asal = document.getElementById('asal-paket').value;
+                const tujuan = document.getElementById('tujuan-paket').value;
+                const berat = parseFloat(document.getElementById('berat-paket').value) || 0.1;
+                const panjang = parseFloat(document.getElementById('panjang-paket').value) || 0;
+                const lebar = parseFloat(document.getElementById('lebar-paket').value) || 0;
+                const tinggi = parseFloat(document.getElementById('tinggi-paket').value) || 0;
+
+                if (!asal || !tujuan) {
+                    alert('Silakan pilih asal dan tujuan terlebih dahulu!');
+                    return;
+                }
+
+                if (asal === tujuan) {
+                    alert('Kota asal dan tujuan tidak boleh sama!');
+                    return;
+                }
+
+                if (berat <= 0) {
+                    alert('Silakan isi berat paket (minimal 0.1 kg)!');
+                    return;
+                }
+
+                if ((panjang > 0 || lebar > 0 || tinggi > 0) &&
+                    (panjang <= 0 || lebar <= 0 || tinggi <= 0)) {
+                    alert('Jika mengisi dimensi, semua kolom panjang, lebar, dan tinggi harus diisi!');
+                    return;
+                }
+
+                const originalText = btnCekHarga.innerHTML;
+                btnCekHarga.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghitung...';
+                btnCekHarga.disabled = true;
+
+                fetch('{{ route("customer.cek-harga-paket") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        asal: asal,
+                        tujuan: tujuan,
+                        berat: berat,
+                        panjang: panjang,
+                        lebar: lebar,
+                        tinggi: tinggi
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    btnCekHarga.innerHTML = originalText;
+                    btnCekHarga.disabled = false;
+
+                    if (data.success) {
+                        hasilPerhitungan.style.display = 'block';
+                        document.getElementById('harga-total').textContent = data.data.harga_total;
+                        hasilPerhitungan.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        hasilPerhitungan.classList.add('show');
+
+                        $('#asal-paket').val('').trigger('change');
+                        $('#tujuan-paket').val('').trigger('change');
+                        document.getElementById('berat-paket').value = '0.1';
+                        document.getElementById('panjang-paket').value = '';
+                        document.getElementById('lebar-paket').value = '';
+                        document.getElementById('tinggi-paket').value = '';
+
+                    } else {
+                        alert(data.message || 'Terjadi kesalahan saat menghitung harga.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    btnCekHarga.innerHTML = originalText;
+                    btnCekHarga.disabled = false;
+                    alert('Terjadi kesalahan saat menghitung harga.');
+                });
+            });
+        }
+
+        if (btnCekUlang) {
+            btnCekUlang.addEventListener('click', function() {
+                $('#asal-paket').val('').trigger('change');
+                $('#tujuan-paket').val('').trigger('change');
+                document.getElementById('berat-paket').value = '0.1';
+                document.getElementById('panjang-paket').value = '';
+                document.getElementById('lebar-paket').value = '';
+                document.getElementById('tinggi-paket').value = '';
+                hasilPerhitungan.style.display = 'none';
+                document.getElementById('form-kirim-paket').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        /* ========== SELECT2 INITIALIZATION ========== */
+        $(document).ready(function() {
+            if ($('#asal-paket').length) {
+                $('#asal-paket').select2({
+                    placeholder: "Pilih Kota Asal",
+                    allowClear: true,
+                    width: '100%',
+                    dropdownParent: $('#modal-kirim-paket')
+                });
+
+                $('#tujuan-paket').select2({
+                    placeholder: "Pilih Kota Tujuan",
+                    allowClear: true,
+                    width: '100%',
+                    dropdownParent: $('#modal-kirim-paket')
+                });
+            }
+
+            if ($('#departure-outlet').length) {
+                $('#departure-outlet').select2({
+                    placeholder: "Pilih Outlet Keberangkatan",
+                    allowClear: true,
+                    width: '100%'
+                });
+
+                $('#destination-outlet').select2({
+                    placeholder: "Pilih Outlet Tujuan",
+                    allowClear: true,
+                    width: '100%'
+                });
+            }
+        });
+
+        /* ========== SESSION MESSAGES ========== */
         const successMsg = @json(session('success'));
         const errorMsg = @json(session('error'));
 
         if (successMsg) {
-            alert(successMsg);
+            setTimeout(() => alert(successMsg), 500);
         }
         if (errorMsg) {
-            alert(errorMsg);
+            setTimeout(() => alert(errorMsg), 500);
         }
-    });
-
-    /* ---------- PROMO SLIDER SCRIPT ---------- */
-    const promoSlider = {
-        track: document.getElementById('promo-track'),
-        slides: document.querySelectorAll('.promo-slide'),
-        dotsContainer: document.getElementById('slider-dots'),
-        prevBtn: document.getElementById('prev-btn'),
-        nextBtn: document.getElementById('next-btn'),
-        currentIndex: 0,
-        totalSlides: 0,
-        autoSlideInterval: null,
-
-        init: function() {
-            this.totalSlides = this.slides.length;
-
-            // Create dots
-            for (let i = 0; i < this.totalSlides; i++) {
-                const dot = document.createElement('div');
-                dot.className = 'slider-dot';
-                if (i === 0) dot.classList.add('active');
-                dot.addEventListener('click', () => this.goToSlide(i));
-                this.dotsContainer.appendChild(dot);
-            }
-
-            // Event listeners for buttons
-            this.prevBtn.addEventListener('click', () => this.prevSlide());
-            this.nextBtn.addEventListener('click', () => this.nextSlide());
-
-            // Auto slide every 5 seconds
-            this.startAutoSlide();
-
-            // Pause auto slide on hover
-            this.track.parentElement.addEventListener('mouseenter', () => this.stopAutoSlide());
-            this.track.parentElement.addEventListener('mouseleave', () => this.startAutoSlide());
-
-            // Touch events for mobile
-            this.track.addEventListener('touchstart', this.handleTouchStart.bind(this));
-            this.track.addEventListener('touchmove', this.handleTouchMove.bind(this));
-
-            // Initialize
-            this.updateSlider();
-        },
-
-        goToSlide: function(index) {
-            this.currentIndex = index;
-            this.updateSlider();
-            this.resetAutoSlide();
-        },
-
-        prevSlide: function() {
-            this.currentIndex = (this.currentIndex - 1 + this.totalSlides) % this.totalSlides;
-            this.updateSlider();
-            this.resetAutoSlide();
-        },
-
-        nextSlide: function() {
-            this.currentIndex = (this.currentIndex + 1) % this.totalSlides;
-            this.updateSlider();
-            this.resetAutoSlide();
-        },
-
-        updateSlider: function() {
-            // Move track
-            this.track.style.transform = `translateX(-${this.currentIndex * 100}%)`;
-
-            // Update dots
-            const dots = this.dotsContainer.querySelectorAll('.slider-dot');
-            dots.forEach((dot, index) => {
-                if (index === this.currentIndex) {
-                    dot.classList.add('active');
-                } else {
-                    dot.classList.remove('active');
-                }
-            });
-        },
-
-        startAutoSlide: function() {
-            this.stopAutoSlide();
-            this.autoSlideInterval = setInterval(() => this.nextSlide(), 5000);
-        },
-
-        stopAutoSlide: function() {
-            if (this.autoSlideInterval) {
-                clearInterval(this.autoSlideInterval);
-                this.autoSlideInterval = null;
-            }
-        },
-
-        resetAutoSlide: function() {
-            this.stopAutoSlide();
-            this.startAutoSlide();
-        },
-
-        // Touch events for mobile
-        touchStartX: 0,
-        touchEndX: 0,
-
-        handleTouchStart: function(e) {
-            this.touchStartX = e.changedTouches[0].screenX;
-        },
-
-        handleTouchMove: function(e) {
-            this.touchEndX = e.changedTouches[0].screenX;
-            this.handleSwipe();
-        },
-
-        handleSwipe: function() {
-            const threshold = 50; // Minimum swipe distance
-            const diff = this.touchStartX - this.touchEndX;
-
-            if (Math.abs(diff) > threshold) {
-                if (diff > 0) {
-                    // Swipe left - next slide
-                    this.nextSlide();
-                } else {
-                    // Swipe right - previous slide
-                    this.prevSlide();
-                }
-            }
-
-            // Reset
-            this.touchStartX = 0;
-            this.touchEndX = 0;
-        }
-    };
-
-    // Initialize promo slider when DOM is loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        if (document.getElementById('promo-track')) {
-            promoSlider.init();
-        }
-    });
-
-    /* ---------- CEK HARGA PAKET AJAX ---------- */
-    const btnCekHarga = document.getElementById('btn-cek-harga');
-    const btnCekUlang = document.getElementById('btn-cek-ulang');
-    const hasilPerhitungan = document.getElementById('hasil-perhitungan');
-
-    if (btnCekHarga) {
-        btnCekHarga.addEventListener('click', function(e) {
-            e.preventDefault();
-
-            const asal = document.getElementById('asal-paket').value;
-            const tujuan = document.getElementById('tujuan-paket').value;
-            const berat = parseFloat(document.getElementById('berat-paket').value) || 0.1;
-            const panjang = parseFloat(document.getElementById('panjang-paket').value) || 0;
-            const lebar = parseFloat(document.getElementById('lebar-paket').value) || 0;
-            const tinggi = parseFloat(document.getElementById('tinggi-paket').value) || 0;
-
-            // Validasi dasar
-            if (!asal || !tujuan) {
-                alert('Silakan pilih asal dan tujuan terlebih dahulu!');
-                return;
-            }
-
-            if (asal === tujuan) {
-                alert('Kota asal dan tujuan tidak boleh sama!');
-                return;
-            }
-
-            if (berat <= 0) {
-                alert('Silakan isi berat paket (minimal 0.1 kg)!');
-                return;
-            }
-
-            // Validasi dimensi jika salah satu diisi
-            if ((panjang > 0 || lebar > 0 || tinggi > 0) &&
-                (panjang <= 0 || lebar <= 0 || tinggi <= 0)) {
-                alert('Jika mengisi dimensi, semua kolom panjang, lebar, dan tinggi harus diisi!');
-                return;
-            }
-
-            // Tampilkan loading
-            const originalText = btnCekHarga.innerHTML;
-            btnCekHarga.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghitung...';
-            btnCekHarga.disabled = true;
-
-            // Kirim AJAX request
-            fetch('{{ route("customer.cek-harga-paket") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    asal: asal,
-                    tujuan: tujuan,
-                    berat: berat,
-                    panjang: panjang,
-                    lebar: lebar,
-                    tinggi: tinggi
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Kembalikan tombol ke keadaan semula
-                btnCekHarga.innerHTML = originalText;
-                btnCekHarga.disabled = false;
-
-                if (data.success) {
-                    // Tampilkan hasil perhitungan
-                    hasilPerhitungan.style.display = 'block';
-
-                    // Update hanya total harga
-                    document.getElementById('harga-total').textContent = data.data.harga_total;
-
-                    // Scroll ke hasil perhitungan
-                    hasilPerhitungan.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-                    // Tambahkan class untuk animasi
-                    hasilPerhitungan.classList.add('show');
-
-                    // RESET KOTA ASAL DAN TUJUAN SETELAH BERHASIL
-                    $('#asal-paket').val('').trigger('change');
-                    $('#tujuan-paket').val('').trigger('change');
-
-                    // Reset berat ke default 0.1 kg
-                    document.getElementById('berat-paket').value = '0.1';
-
-                    // Reset dimensi
-                    document.getElementById('panjang-paket').value = '';
-                    document.getElementById('lebar-paket').value = '';
-                    document.getElementById('tinggi-paket').value = '';
-
-                } else {
-                    alert(data.message || 'Terjadi kesalahan saat menghitung harga.');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                btnCekHarga.innerHTML = originalText;
-                btnCekHarga.disabled = false;
-                alert('Terjadi kesalahan saat menghitung harga.');
-            });
-        });
-    }
-
-    // Tombol cek ulang
-    if (btnCekUlang) {
-        btnCekUlang.addEventListener('click', function() {
-            // Reset kota asal dan tujuan
-            $('#asal-paket').val('').trigger('change');
-            $('#tujuan-paket').val('').trigger('change');
-
-            // Reset berat
-            document.getElementById('berat-paket').value = '0.1';
-
-            // Reset dimensi
-            document.getElementById('panjang-paket').value = '';
-            document.getElementById('lebar-paket').value = '';
-            document.getElementById('tinggi-paket').value = '';
-
-            // Sembunyikan hasil
-            hasilPerhitungan.style.display = 'none';
-
-            // Scroll ke atas form
-            document.getElementById('form-kirim-paket').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-    }
-
-    // Initialize Select2 untuk modal
-    $(document).ready(function() {
-        $('#asal-paket').select2({
-            placeholder: "Pilih Kota Asal",
-            allowClear: true,
-            width: '100%',
-            dropdownParent: $('#modal-kirim-paket')
-        });
-
-        $('#tujuan-paket').select2({
-            placeholder: "Pilih Kota Tujuan",
-            allowClear: true,
-            width: '100%',
-            dropdownParent: $('#modal-kirim-paket')
-        });
-    });
-
-    // Initialize Select2 for default form
-    $(document).ready(function() {
-        $('#departure-outlet').select2({
-            placeholder: "Pilih Outlet Keberangkatan",
-            allowClear: true,
-            width: '100%'
-        });
-
-        $('#destination-outlet').select2({
-            placeholder: "Pilih Outlet Tujuan",
-            allowClear: true,
-            width: '100%'
-        });
     });
     </script>
 </body>

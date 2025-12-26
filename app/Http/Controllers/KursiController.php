@@ -17,7 +17,7 @@ class KursiController extends Controller
     /**
      * Tampilkan halaman pemilihan kursi (LAYOUT STABIL)
      */
-    public function index(Request $request)
+   public function index(Request $request)
     {
         // Validasi parameter
         $validator = Validator::make($request->all(), [
@@ -60,22 +60,12 @@ class KursiController extends Controller
             // Pastikan shuttle memiliki layout yang valid
             if (!$shuttle->layout_kursi || $shuttle->layout_kursi === '[]') {
                 // Inisialisasi layout jika kosong
-                if (method_exists($shuttle, 'initLayoutIfEmpty')) {
-                    $shuttle->initLayoutIfEmpty();
-                } else {
-                    // Fallback: generate layout default
-                    $shuttle->layout_kursi = json_encode(KursiTerpesan::generateLayoutKursi($shuttle->total_kursi ?? 9));
-                    $shuttle->save();
-                }
+                $shuttle->layout_kursi = json_encode(KursiTerpesan::generateLayoutKursi($shuttle->total_kursi ?? 9));
+                $shuttle->save();
             }
 
             // Ambil layout dengan status terkini
-            if (method_exists($shuttle, 'getLayoutWithStatus')) {
-                $layoutKursi = $shuttle->getLayoutWithStatus($pemesanan->jadwal_id);
-            } else {
-                // Fallback: generate layout dari model KursiTerpesan
-                $layoutKursi = KursiTerpesan::generateLayoutKursi($shuttle->total_kursi ?? 9);
-            }
+            $layoutKursi = KursiTerpesan::getLayoutWithStatus($pemesanan->jadwal_id, $shuttle->id);
 
             // Backup: jika masih kosong, generate default
             if (empty($layoutKursi)) {
@@ -96,6 +86,9 @@ class KursiController extends Controller
             ));
 
         } catch (\Exception $e) {
+            \Log::error('Error in KursiController@index: ' . $e->getMessage());
+            \Log::error('Trace: ' . $e->getTraceAsString());
+
             return redirect()->route('customer.riwayat')
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
@@ -104,11 +97,12 @@ class KursiController extends Controller
     /**
      * Proses pemilihan kursi (VALIDASI GANDA)
      */
-    public function prosesKursi(Request $request)
+       public function prosesKursi(Request $request)
     {
         // Validasi input
         $validator = Validator::make($request->all(), [
             'pemesanan_id' => 'required|exists:pemesanan,id',
+            'jadwal_id' => 'required|exists:jadwals,id',
             'kursi' => 'required|array|min:1',
             'kursi.*' => 'required|string|distinct'
         ], [
@@ -130,6 +124,7 @@ class KursiController extends Controller
             $pemesanan = Pemesanan::with(['detailPenumpang', 'jadwal.shuttle'])
                 ->where('id', $request->pemesanan_id)
                 ->where('status', 'menunggu_pembayaran')
+                ->lockForUpdate() // Lock row untuk mencegah race condition
                 ->firstOrFail();
 
             // Validasi 1: Jumlah kursi harus sama dengan jumlah penumpang
@@ -139,33 +134,37 @@ class KursiController extends Controller
 
             // Validasi 2: Ambil layout FIX dari shuttle untuk validasi kursi
             $shuttle = $pemesanan->jadwal->shuttle;
-
-            // Ambil layout kursi
-            if (method_exists($shuttle, 'getLayoutWithStatus')) {
-                $layoutKursi = $shuttle->getLayoutWithStatus($pemesanan->jadwal_id);
-            } else {
-                $layoutKursi = KursiTerpesan::generateLayoutKursi($shuttle->total_kursi ?? 9);
-            }
-
+            $layoutKursi = KursiTerpesan::getLayoutWithStatus($request->jadwal_id, $shuttle->id);
             $validKursiNumbers = array_column($layoutKursi, 'nomor');
 
             // Validasi 3: Cek apakah semua kursi yang dipilih valid
+            $invalidSeats = [];
             foreach ($request->kursi as $nomorKursi) {
                 if (!in_array($nomorKursi, $validKursiNumbers)) {
-                    throw new \Exception("Kursi {$nomorKursi} tidak valid dalam layout shuttle");
+                    $invalidSeats[] = $nomorKursi;
                 }
             }
 
-            // Validasi 4: Cek apakah kursi sudah terpesan (double-check)
+            if (!empty($invalidSeats)) {
+                throw new \Exception("Kursi " . implode(', ', $invalidSeats) . " tidak valid dalam layout shuttle");
+            }
+
+            // Validasi 4: Cek apakah kursi sudah terpesan (double-check dengan lock)
+            $terpesanSeats = [];
             foreach ($request->kursi as $nomorKursi) {
-                $kursiTerpesan = KursiTerpesan::where('jadwal_id', $pemesanan->jadwal_id)
+                $kursiTerpesan = KursiTerpesan::where('jadwal_id', $request->jadwal_id)
                     ->where('nomor_kursi', $nomorKursi)
                     ->whereIn('status', ['terpesan', 'terisi'])
+                    ->lockForUpdate() // Lock untuk mencegah double booking
                     ->exists();
 
                 if ($kursiTerpesan) {
-                    throw new \Exception("Kursi {$nomorKursi} sudah terpesan. Silakan pilih kursi lain.");
+                    $terpesanSeats[] = $nomorKursi;
                 }
+            }
+
+            if (!empty($terpesanSeats)) {
+                throw new \Exception("Kursi " . implode(', ', $terpesanSeats) . " sudah terpesan oleh customer lain. Silakan pilih kursi lain.");
             }
 
             // Simpan kursi untuk setiap penumpang
@@ -179,20 +178,20 @@ class KursiController extends Controller
                     $penumpang->nomor_kursi = $nomorKursi;
                     $penumpang->save();
 
-                    // Buat record di kursi_terpesan
-                    KursiTerpesan::updateOrCreate(
-                        [
-                            'jadwal_id' => $pemesanan->jadwal_id,
-                            'nomor_kursi' => $nomorKursi
-                        ],
-                        [
-                            'detail_penumpang_id' => $penumpang->id,
-                            'pemesanan_id' => $pemesanan->id,
-                            'status' => 'terpesan'
-                        ]
-                    );
+                    // Buat record di kursi_terpesan dengan status terpesan
+                    KursiTerpesan::create([
+                        'jadwal_id' => $pemesanan->jadwal_id,
+                        'nomor_kursi' => $nomorKursi,
+                        'detail_penumpang_id' => $penumpang->id,
+                        'pemesanan_id' => $pemesanan->id,
+                        'status' => 'terpesan'
+                    ]);
                 }
             }
+
+            // Update kursi tersedia di jadwal
+            $kursiTersediaBaru = $pemesanan->jadwal->kursi_tersedia - $pemesanan->jumlah_penumpang;
+            $pemesanan->jadwal->update(['kursi_tersedia' => $kursiTersediaBaru]);
 
             DB::commit();
 
@@ -202,6 +201,9 @@ class KursiController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
+            \Log::error('Error in KursiController@prosesKursi: ' . $e->getMessage());
+            \Log::error('Request data: ' . json_encode($request->all()));
 
             return redirect()->back()
                 ->with('error', 'Gagal memilih kursi: ' . $e->getMessage())
@@ -349,12 +351,7 @@ class KursiController extends Controller
 
             // Gunakan layout FIX dari shuttle
             $shuttle = $jadwal->shuttle;
-
-            if (method_exists($shuttle, 'getLayoutWithStatus')) {
-                $layoutKursi = $shuttle->getLayoutWithStatus($jadwalId);
-            } else {
-                $layoutKursi = KursiTerpesan::generateLayoutKursi($shuttle->total_kursi ?? 9);
-            }
+            $layoutKursi = KursiTerpesan::getLayoutWithStatus($jadwalId, $shuttle->id);
 
             // Filter hanya kursi tersedia
             $availableSeats = [];
@@ -374,10 +371,13 @@ class KursiController extends Controller
                 'success' => true,
                 'data' => $availableSeats,
                 'total_kursi' => $shuttle->total_kursi,
-                'kursi_tersedia' => count($availableSeats)
+                'kursi_tersedia' => count($availableSeats),
+                'kursi_terpesan' => $shuttle->total_kursi - count($availableSeats)
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Error in getKursiTersediaAPI: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()
@@ -385,10 +385,11 @@ class KursiController extends Controller
         }
     }
 
+
     /**
      * Batalkan pemilihan kursi (KURSI KEMBALI TERSEDIA, LAYOUT TETAP)
      */
-    public function batalkanKursi($pemesananId)
+     public function batalkanKursi($pemesananId)
     {
         DB::beginTransaction();
 
@@ -398,12 +399,18 @@ class KursiController extends Controller
 
             // Hapus kursi terpesan untuk pemesanan ini
             // INI YANG DIPERBAIKI: Hanya hapus data booking, LAYOUT TETAP ADA
-            KursiTerpesan::where('pemesanan_id', $pemesananId)
+            $deleted = KursiTerpesan::where('pemesanan_id', $pemesananId)
                 ->delete();
 
             // Reset nomor kursi di detail penumpang
             DetailPenumpang::where('pemesanan_id', $pemesananId)
                 ->update(['nomor_kursi' => null]);
+
+            // Update kursi tersedia di jadwal
+            if ($deleted > 0 && $pemesanan->jadwal) {
+                $kursiTersediaBaru = $pemesanan->jadwal->kursi_tersedia + $deleted;
+                $pemesanan->jadwal->update(['kursi_tersedia' => $kursiTersediaBaru]);
+            }
 
             DB::commit();
 
@@ -412,6 +419,8 @@ class KursiController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
+            \Log::error('Error in batalkanKursi: ' . $e->getMessage());
 
             return redirect()->back()
                 ->with('error', 'Gagal membatalkan pemilihan kursi: ' . $e->getMessage());
@@ -484,7 +493,7 @@ class KursiController extends Controller
     /**
      * API untuk validasi kursi (sebelum submit form)
      */
-    public function validateSeatsAPI(Request $request)
+     public function validateSeatsAPI(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'jadwal_id' => 'required|exists:jadwals,id',
@@ -501,17 +510,14 @@ class KursiController extends Controller
             ], 422);
         }
 
+        DB::beginTransaction();
+
         try {
             $jadwal = Jadwal::with('shuttle')->find($request->jadwal_id);
 
             // Ambil layout kursi
             $shuttle = $jadwal->shuttle;
-            if (method_exists($shuttle, 'getLayoutWithStatus')) {
-                $layoutKursi = $shuttle->getLayoutWithStatus($request->jadwal_id);
-            } else {
-                $layoutKursi = KursiTerpesan::generateLayoutKursi($shuttle->total_kursi ?? 9);
-            }
-
+            $layoutKursi = KursiTerpesan::getLayoutWithStatus($request->jadwal_id, $shuttle->id);
             $validKursiNumbers = array_column($layoutKursi, 'nomor');
 
             $terpesan = [];
@@ -524,10 +530,11 @@ class KursiController extends Controller
                     continue;
                 }
 
-                // Cek apakah kursi sudah terpesan
+                // Cek apakah kursi sudah terpesan (dengan lock untuk konsistensi)
                 $kursiTerpesan = KursiTerpesan::where('jadwal_id', $request->jadwal_id)
                     ->where('nomor_kursi', $nomorKursi)
                     ->whereIn('status', ['terpesan', 'terisi'])
+                    ->lockForUpdate()
                     ->exists();
 
                 if ($kursiTerpesan) {
@@ -541,14 +548,19 @@ class KursiController extends Controller
                     $message[] = 'Kursi ' . implode(', ', $invalid) . ' tidak valid.';
                 }
                 if (count($terpesan) > 0) {
-                    $message[] = 'Kursi ' . implode(', ', $terpesan) . ' sudah terpesan.';
+                    $message[] = 'Kursi ' . implode(', ', $terpesan) . ' sudah terpesan oleh customer lain.';
                 }
+
+                DB::rollBack();
 
                 return response()->json([
                     'success' => false,
-                    'message' => implode(' ', $message)
+                    'message' => implode(' ', $message),
+                    'invalid_seats' => $terpesan
                 ], 400);
             }
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -556,12 +568,17 @@ class KursiController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            DB::rollBack();
+
+            \Log::error('Error in validateSeatsAPI: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
         }
     }
+
 
     /**
      * API untuk validasi kursi (alternatif)

@@ -201,6 +201,11 @@ Route::prefix('schedules')->group(function () {
 });
 
 // PUBLIC KURSI APIs
+Route::middleware('api')->group(function () {
+    Route::post('/validasi-kursi', [KursiController::class, 'validasiKursiAPI']);
+    Route::get('/kursi-tersedia/{jadwalId}', [KursiController::class, 'getKursiTersediaAPI']);
+    Route::post('/kursi-validate', [KursiController::class, 'validateSeatsAPI']);
+});
 Route::get('/kursi-tersedia/{jadwalId}', [KursiController::class, 'getKursiTersediaAPI'])
     ->name('api.kursi.tersedia');
 

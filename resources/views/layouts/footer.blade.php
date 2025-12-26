@@ -52,8 +52,8 @@
                     &copy; 2024 Smart Shuttle. All rights reserved.
                 </p>
                 <div class="footer-links">
-                    <a href="#" class="footer-link">Privacy Policy</a>
-                    <a href="#" class="footer-link">Terms of Service</a>
+                    <a href="#" class="footer-link policy-link" data-policy="privacy">Privacy Policy</a>
+                    <a href="#" class="footer-link policy-link" data-policy="terms">Terms of Service</a>
                     <a href="#" class="footer-link">Contact Us</a>
                 </div>
             </div>
@@ -190,22 +190,22 @@
     .footer-link:hover {
         color: white;
     }
-    
+
     @media (max-width: 768px) {
         .site-footer {
             padding: 40px 20px 20px;
         }
-        
+
         .footer-main {
             flex-direction: column;
             gap: 30px;
             margin-bottom: 30px;
         }
-        
+
         .footer-column {
             width: 100%;
         }
-        
+
         .footer-bottom-content {
             flex-direction: column;
             text-align: center;
