@@ -205,8 +205,8 @@ Route::get('/customer/artikel', function () {
 Route::fallback(function () {
     return redirect()->route('customer.beranda');
 });
-// Route untuk kursi
-Route::prefix('kursi')->name('customer.kursi.')->group(function () {
+// Route untuk kursi (separate namespace to avoid name collision)
+Route::prefix('kursi')->name('kursi.')->group(function () {
     Route::get('/', [KursiController::class, 'index'])->name('index');
     Route::post('/proses', [KursiController::class, 'prosesKursi'])->name('proses');
     Route::get('/detail/{kode}', [KursiController::class, 'detailPesanan'])->name('detail_pesanan');
