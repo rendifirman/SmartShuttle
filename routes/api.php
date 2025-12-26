@@ -242,14 +242,14 @@ Route::prefix('payment')->group(function () {
 
 // Tambahkan juga di web.php untuk web routes
 Route::post('/payment/{kodePembayaran}/simulate/{status?}', [\App\Http\Controllers\PembayaranController::class, 'simulasiPembayaran'])
-    ->name('customer.pembayaran.simulasi')
+    ->name('api.customer.pembayaran.simulasi')
     ->where('status', 'success|failed|expired');
 
 Route::get('/payment/qr-code/{kodePembayaran}', [\App\Http\Controllers\PembayaranController::class, 'generateQRCode'])
-    ->name('customer.pembayaran.qrcode');
+    ->name('api.customer.pembayaran.qrcode');
 
 Route::post('/payment/webhook', [\App\Http\Controllers\PembayaranController::class, 'webhook'])
-    ->name('customer.pembayaran.webhook');
+    ->name('api.customer.pembayaran.webhook');
     // PROFILE
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);

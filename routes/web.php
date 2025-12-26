@@ -21,7 +21,7 @@ use App\Http\Controllers\Customer\CekReservasiController;
 
 // ★★★ ROUTE UTAMA DAN TAMU ★★★
 Route::get('/', [CustomerController::class, 'beranda'])->name('customer.beranda');
-Route::get('/customer/beranda', [CustomerController::class, 'beranda'])->name('customer.beranda');
+Route::get('/customer/beranda', [CustomerController::class, 'beranda']);
 
 // Halaman statis - bisa diakses tamu
 Route::get('/bantuan', [CustomerController::class, 'bantuan'])->name('customer.bantuan');
@@ -34,13 +34,13 @@ Route::get('/syarat-ketentuan-membership', [CustomerController::class, 'syaratKe
 // Halaman outlet - bisa diakses tamu
 Route::get('/customer/outlet', [CustomerController::class, 'outlet'])->name('customer.outlet');
 Route::get('/customer/outlet/filter', [CustomerController::class, 'outlet'])->name('customer.outlet.filter');
-Route::get('/outlet', [CustomerController::class, 'outlet'])->name('customer.outlet');
+Route::get('/outlet', [CustomerController::class, 'outlet']);
 
 // Halaman pencarian shuttle - bisa diakses tamu
 Route::get('/cari-shuttle', [CustomerController::class, 'showSearch'])->name('customer.search');
 Route::post('/cari-shuttle', [CustomerController::class, 'search'])->name('customer.search.post');
-Route::get('/customer/search', [CustomerController::class, 'showSearch'])->name('customer.search');
-Route::post('/customer/search', [CustomerController::class, 'search'])->name('customer.search.post');
+Route::get('/customer/search', [CustomerController::class, 'showSearch']);
+Route::post('/customer/search', [CustomerController::class, 'search']);
 
 // ★★★ CEK RESERVASI - BISA DIAKSES TANPA LOGIN ★★★
 Route::get('/customer/cek-reservasi', function() {
