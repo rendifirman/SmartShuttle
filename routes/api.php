@@ -339,7 +339,7 @@ Route::prefix('payment')->group(function () {
 
     // Paylabs callback (public)
     Route::post('/callback', [\App\Http\Controllers\API\PaymentController::class, 'callback'])
-        ->name('api.payment.callback');
+        ->name('api.dev.payment.callback');
 
     // Test Paylabs connection
     Route::get('/test-connection', [\App\Http\Controllers\API\PaymentController::class, 'testConnection'])

@@ -37,6 +37,11 @@ Route::get('/customer/outlet', [CustomerController::class, 'outlet'])->name('cus
 Route::get('/customer/outlet/filter', [CustomerController::class, 'outlet'])->name('customer.outlet.filter');
 Route::get('/outlet', [CustomerController::class, 'outlet']);
 
+// Halaman SmartSend - bisa diakses tamu
+Route::get('/customer/smartsend', function() {
+    return view('customer.smartsend');
+})->name('customer.smartsend');
+
 // Halaman pencarian shuttle - bisa diakses tamu
 Route::get('/cari-shuttle', [CustomerController::class, 'showSearch'])->name('customer.search');
 Route::post('/cari-shuttle', [CustomerController::class, 'search'])->name('customer.search.post');
