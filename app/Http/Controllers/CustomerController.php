@@ -31,6 +31,7 @@ use App\Models\MembershipPayment;
 use App\Models\HargaPaket;
 use App\Models\PengirimanPaket;
 use App\Models\Artikel;
+use App\Models\KursiTerpesan;
 use Carbon\Carbon;
 use App\Models\Review;
 use Illuminate\Support\Str;
@@ -987,117 +988,158 @@ class CustomerController extends Controller
         return $prefix . $date . $random;
     }
 
-    /**
-     * Halaman pemilihan kursi
-     */
-    public function showPemilihanKursi(Request $request)
-    {
-        $validated = $request->validate([
-            'pemesanan_id' => 'required|exists:pemesanan,id'
-        ]);
+   // ... (kode sebelumnya tetap sama) ...
 
-        $pemesanan = Pemesanan::with(['jadwal.shuttle', 'detailPenumpang'])
-            ->where('id', $validated['pemesanan_id'])
-            ->where('customer_id', Auth::id())
-            ->firstOrFail();
+/**
+ * Halaman pemilihan kursi
+ */
+public function showPemilihanKursi(Request $request)
+{
+    $validated = $request->validate([
+        'pemesanan_id' => 'required|exists:pemesanan,id'
+    ]);
 
-        if ($pemesanan->status !== 'menunggu_pembayaran') {
-            return redirect()->route('customer.beranda')
-                ->with('error', 'Pemesanan ini sudah diproses atau dibatalkan.');
-        }
+    $pemesanan = Pemesanan::with(['jadwal.shuttle', 'detailPenumpang'])
+        ->where('id', $validated['pemesanan_id'])
+        ->where('customer_id', Auth::id())
+        ->firstOrFail();
 
-        $shuttle = $pemesanan->jadwal->shuttle;
-        $layoutKursi = $shuttle->layout_kursi_array ?? [];
-
-        $kursiTerisi = DetailPenumpang::whereHas('pemesanan', function($query) use ($pemesanan) {
-            $query->where('jadwal_id', $pemesanan->jadwal_id)
-                ->where('status', '!=', 'dibatalkan');
-        })->pluck('nomor_kursi')->filter()->toArray();
-
-        $kursiDipilih = $pemesanan->detailPenumpang->pluck('nomor_kursi')->filter()->toArray();
-
-        return view('customer.kursi', [
-            'pemesanan' => $pemesanan,
-            'shuttle' => $shuttle,
-            'layoutKursi' => $layoutKursi,
-            'kursiTerisi' => $kursiTerisi,
-            'kursiDipilih' => $kursiDipilih
-        ]);
+    if ($pemesanan->status !== 'menunggu_pembayaran') {
+        return redirect()->route('customer.beranda')
+            ->with('error', 'Pemesanan ini sudah diproses atau dibatalkan.');
     }
 
-    /**
-     * Proses pemilihan kursi
-     */
-    public function prosesPemilihanKursi(Request $request)
-    {
-        $validated = $request->validate([
-            'pemesanan_id' => 'required|exists:pemesanan,id',
-            'kursi' => 'required|array',
-            'kursi.*' => 'required|string'
-        ]);
+    $shuttle = $pemesanan->jadwal->shuttle;
 
+    // Gunakan method getLayoutWithStatus dari model Shuttle
+    $layoutKursi = $shuttle->getLayoutWithStatus($pemesanan->jadwal_id);
+
+    // Ambil kursi yang sudah dipilih oleh pemesanan ini
+    $kursiSaya = $pemesanan->detailPenumpang->pluck('nomor_kursi')->filter()->toArray();
+
+    // Ambil kursi yang sudah dipesan oleh orang lain
+    $kursiTerpesan = KursiTerpesan::where('jadwal_id', $pemesanan->jadwal_id)
+        ->where('status', 'terpesan')
+        ->where('pemesanan_id', '!=', $pemesanan->id) // kecuali milik saya
+        ->whereHas('pemesanan', function($query) {
+            $query->whereNotIn('status', ['dibatalkan', 'expired']);
+        })
+        ->pluck('nomor_kursi')
+        ->toArray();
+
+    // Update status kursi berdasarkan data real
+    foreach ($layoutKursi as &$kursi) {
+        if (in_array($kursi['nomor'], $kursiTerpesan)) {
+            // Kursi sudah dipesan orang lain
+            $kursi['status'] = 'terpesan';
+            $kursi['class'] = 'sold';
+            $kursi['icon'] = 'fa-lock';
+        } elseif (in_array($kursi['nomor'], $kursiSaya)) {
+            // Kursi sudah dipilih oleh saya
+            $kursi['status'] = 'selected';
+            $kursi['class'] = 'selected';
+            $kursi['icon'] = 'fa-user-check';
+        } else {
+            // Kursi tersedia
+            $kursi['status'] = 'tersedia';
+            $kursi['class'] = 'available';
+            $kursi['icon'] = 'fa-check';
+        }
+    }
+
+    return view('customer.kursi', [
+        'pemesanan' => $pemesanan,
+        'shuttle' => $shuttle,
+        'layoutKursi' => $layoutKursi,
+        'kursiSaya' => $kursiSaya,
+        'kursiTerpesan' => $kursiTerpesan
+    ]);
+}
+
+/**
+ * Proses pemilihan kursi
+ */
+public function prosesPemilihanKursi(Request $request)
+{
+    $validated = $request->validate([
+        'pemesanan_id' => 'required|exists:pemesanan,id',
+        'kursi' => 'required|array|min:1',
+        'kursi.*' => 'required|string|distinct'
+    ]);
+
+    DB::beginTransaction();
+
+    try {
         $pemesanan = Pemesanan::with(['detailPenumpang', 'jadwal.shuttle'])
             ->where('id', $validated['pemesanan_id'])
             ->where('customer_id', Auth::id())
+            ->where('status', 'menunggu_pembayaran')
             ->firstOrFail();
 
+        // VALIDASI 1: Jumlah kursi harus sama dengan jumlah penumpang
         if (count($validated['kursi']) !== $pemesanan->jumlah_penumpang) {
             return redirect()->back()
                 ->with('error', 'Jumlah kursi yang dipilih harus sama dengan jumlah penumpang.');
         }
 
-        if (count($validated['kursi']) !== count(array_unique($validated['kursi']))) {
+        // VALIDASI 2: Cek apakah kursi masih tersedia (tidak dipesan oleh pemesanan lain)
+        $kursiTerpesan = KursiTerpesan::where('jadwal_id', $pemesanan->jadwal_id)
+            ->whereIn('nomor_kursi', $validated['kursi'])
+            ->where('status', 'terpesan')
+            ->whereHas('pemesanan', function($query) {
+                $query->whereNotIn('status', ['dibatalkan', 'expired']);
+            })
+            ->pluck('nomor_kursi')
+            ->toArray();
+
+        if (!empty($kursiTerpesan)) {
             return redirect()->back()
-                ->with('error', 'Setiap penumpang harus memiliki kursi yang berbeda.');
+                ->with('error', 'Kursi ' . implode(', ', $kursiTerpesan) . ' sudah dipesan oleh penumpang lain.');
         }
 
-        $shuttle = $pemesanan->jadwal->shuttle;
-        $layoutKursi = $shuttle->layout_kursi_array ?? [];
-        $kursiValid = [];
+        // HAPUS KURSI LAMA untuk pemesanan ini (jika ada)
+        KursiTerpesan::where('pemesanan_id', $pemesanan->id)->delete();
 
-        foreach ($layoutKursi as $kursi) {
-            if (($kursi['status'] ?? 'tersedia') === 'tersedia') {
-                $kursiValid[] = $kursi['nomor'];
+        // SIMPAN KURSI BARU sebagai 'terpesan' (PERMANEN LOCKED)
+        $detailPenumpang = DetailPenumpang::where('pemesanan_id', $pemesanan->id)->get();
+
+        foreach ($detailPenumpang as $index => $penumpang) {
+            $nomorKursi = $validated['kursi'][$index] ?? null;
+
+            if ($nomorKursi) {
+                // SIMPAN KE KURSI_TERPESAN dengan status 'terpesan' (PERMANEN LOCKED)
+                KursiTerpesan::create([
+                    'jadwal_id' => $pemesanan->jadwal_id,
+                    'nomor_kursi' => $nomorKursi,
+                    'detail_penumpang_id' => $penumpang->id,
+                    'pemesanan_id' => $pemesanan->id,
+                    'status' => 'terpesan'
+                ]);
+
+                // Update nomor kursi di detail penumpang
+                $penumpang->update(['nomor_kursi' => $nomorKursi]);
             }
         }
 
-        foreach ($validated['kursi'] as $kursi) {
-            if (!in_array($kursi, $kursiValid)) {
-                return redirect()->back()
-                    ->with('error', 'Kursi ' . $kursi . ' tidak valid atau tidak tersedia.');
-            }
-        }
+        // Update timestamp pemesanan
+        $pemesanan->touch();
 
-        $kursiTerisi = DetailPenumpang::whereHas('pemesanan', function($query) use ($pemesanan) {
-            $query->where('jadwal_id', $pemesanan->jadwal_id)
-                ->where('id', '!=', $pemesanan->id)
-                ->where('status', '!=', 'dibatalkan');
-        })->pluck('nomor_kursi')->filter()->toArray();
+        DB::commit();
 
-        foreach ($validated['kursi'] as $kursi) {
-            if (in_array($kursi, $kursiTerisi)) {
-                return redirect()->back()
-                    ->with('error', 'Kursi ' . $kursi . ' sudah dipesan oleh penumpang lain.');
-            }
-        }
+        // Redirect ke detail pesanan dengan pesan sukses
+        return redirect()->route('customer.detail_pemesanan', ['kode_booking' => $pemesanan->kode_booking])
+            ->with('success', 'Kursi berhasil dipilih dan terkunci! Silakan lanjutkan ke pembayaran.');
 
-        try {
-            foreach ($pemesanan->detailPenumpang as $index => $penumpang) {
-                if (isset($validated['kursi'][$index])) {
-                    $penumpang->nomor_kursi = $validated['kursi'][$index];
-                    $penumpang->save();
-                }
-            }
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error in prosesPemilihanKursi: ' . $e->getMessage());
 
-            return redirect()->route('customer.detail_pemesanan', ['kode_booking' => $pemesanan->kode_booking])
-                ->with('success', 'Kursi berhasil dipilih! Silakan konfirmasi detail pesanan.');
-
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
-        }
+        return redirect()->back()
+            ->with('error', 'Gagal memilih kursi: ' . $e->getMessage());
     }
+}
 
+// ... (kode setelahnya tetap sama) ...
     /**
      * Halaman riwayat pemesanan
      */

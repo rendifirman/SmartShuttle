@@ -247,30 +247,17 @@ Route::get('/test-db', function() {
     }
 });
 // Testing Paylabs Integration - Untuk developer internal
-Route::middleware(['auth:sanctum'])->prefix('dev')->group(function () {
-    // Test connection to Paylabs
+Route::prefix('dev')->group(function () {
+    // Test connection to Paylabs (public for testing)
     Route::get('/paylabs/test-connection', function () {
         try {
             $paylabsService = new \App\Services\PaylabsService();
 
-            // Test dengan membuat dummy payment
-            $dummyPayment = \App\Models\Pembayaran::create([
-                'kode_pembayaran' => 'TEST' . time(),
-                'jumlah' => 100000,
-                'metode' => 'qris',
-                'status' => 'menunggu',
-                'waktu_kadaluarsa' => now()->addMinutes(30),
-            ]);
-
-            $result = $paylabsService->createPayment(
-                $dummyPayment,
-                'QRIS',
-                'QRIS'
-            );
+            $result = $paylabsService->testConnection();
 
             return response()->json([
-                'success' => true,
-                'message' => 'Connection to Paylabs successful',
+                'success' => $result['success'],
+                'message' => $result['success'] ? 'Connection to Paylabs successful' : 'Connection failed',
                 'data' => $result
             ]);
 

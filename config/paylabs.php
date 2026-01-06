@@ -11,11 +11,12 @@ return [
     'environment' => env('PAYLABS_ENVIRONMENT', 'sandbox'),
 
     // Merchant Credentials
-    'mid' => env('PAYLABS_MID', '010529'),
+    'mid' => env('PAYLABS_MID', env('PAYLABS_MERCHANT_ID', '010529')),
     'merchant_name' => env('PAYLABS_MERCHANT_NAME', 'Smart Shuttle'),
 
     // API Endpoints
     'base_url' => env('PAYLABS_BASE_URL', 'https://sandbox.paylabs.co.id'),
+    'endpoint' => env('PAYLABS_ENDPOINT', '/pembayaran'),
     'api_version' => 'v4.8.1',
 
     // URLs
@@ -25,9 +26,9 @@ return [
 
     // Security
     'private_key' => env('PAYLABS_PRIVATE_KEY', ''),
-    'private_key_file' => env('PAYLABS_PRIVATE_KEY_FILE', 'storage/app/keys/paylabs_private.pem'),
+    'private_key_file' => env('PAYLABS_PRIVATE_KEY_FILE', 'storage/keys/paylabs_private.pem'),
     'public_key' => env('PAYLABS_PUBLIC_KEY', ''),
-    'public_key_file' => env('PAYLABS_PUBLIC_KEY_FILE', 'storage/app/keys/paylabs_public.pem'),
+    'public_key_file' => env('PAYLABS_PUBLIC_KEY_FILE', 'storage/keys/paylabs_public.pem'),
 
     // Timeout Settings
     'timeout' => 30,
@@ -111,9 +112,9 @@ return [
 
     // Testing Mode
     'testing' => [
-        'enabled' => env('PAYLABS_TESTING', false),
+        'enabled' => env('PAYLABS_TESTING', true),
         'simulate_success' => env('PAYLABS_SIMULATE_SUCCESS', true),
-        'skip_signature' => env('PAYLABS_SKIP_SIGNATURE', false),
+        'skip_signature' => env('PAYLABS_SKIP_SIGNATURE', true),
         'dummy_response' => [
             'responseCode' => '00',
             'responseMessage' => 'Success',

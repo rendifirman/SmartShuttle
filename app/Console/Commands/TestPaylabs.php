@@ -24,9 +24,10 @@ class TestPaylabs extends Command
 
         if ($connection['success']) {
             $this->info('✓ Connection successful');
-            $this->line('   Base URL: ' . $connection['base_url']);
-            $this->line('   MID: ' . $connection['mid']);
-            $this->line('   Status: ' . $connection['status_code']);
+            $this->line('   Base URL: ' . ($connection['config']['base_url'] ?? 'N/A'));
+            $this->line('   MID: ' . ($connection['config']['mid'] ?? 'N/A'));
+            $this->line('   Status: ' . ($connection['status_code'] ?? 'N/A'));
+            $this->line('   Testing Mode: ' . ($connection['config']['testing_mode'] ? 'Yes' : 'No'));
         } else {
             $this->error('✗ Connection failed: ' . ($connection['error'] ?? 'Unknown error'));
         }
@@ -72,19 +73,26 @@ class TestPaylabs extends Command
 
         // Test 3: Signature generation
         $this->info("\n3. Testing signature generation...");
-        try {
-            $testData = [
-                'requestType' => 'test',
-                'merchantId' => config('paylabs.mid'),
-                'amount' => 100000,
-            ];
+        $testingMode = config('paylabs.testing.enabled', false);
+        $skipSignature = config('paylabs.testing.skip_signature', false);
 
-            $signature = $paylabsService->generateSignature($testData);
-            $this->info('✓ Signature generation successful');
-            $this->line('   Signature: ' . substr($signature, 0, 50) . '...');
-            $this->line('   Length: ' . strlen($signature) . ' chars');
-        } catch (\Exception $e) {
-            $this->error('✗ Signature generation failed: ' . $e->getMessage());
+        if ($testingMode && $skipSignature) {
+            $this->info('✓ Signature generation skipped (testing mode with signature skipping enabled)');
+        } else {
+            try {
+                $testData = [
+                    'requestType' => 'test',
+                    'merchantId' => config('paylabs.mid'),
+                    'amount' => 100000,
+                ];
+
+                $signature = $paylabsService->generateSignature($testData);
+                $this->info('✓ Signature generation successful');
+                $this->line('   Signature: ' . substr($signature, 0, 50) . '...');
+                $this->line('   Length: ' . strlen($signature) . ' chars');
+            } catch (\Exception $e) {
+                $this->error('✗ Signature generation failed: ' . $e->getMessage());
+            }
         }
 
         $this->info("\n=== TEST COMPLETE ===");

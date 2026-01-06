@@ -408,6 +408,14 @@ DUMMY_KEY_SMARTSHUTTLE_APP_TESTING_ONLY_12345
             $rawPrivate = str_replace('\\n', "\n", $rawPrivate);
         }
 
+        // For RSA PRIVATE KEY format, try direct loading first
+        if (strpos($rawPrivate, '-----BEGIN RSA PRIVATE KEY-----') !== false) {
+            $privateKey = openssl_pkey_get_private($rawPrivate);
+            if ($privateKey) {
+                return $privateKey;
+            }
+        }
+
         // Ensure header/footer exist; if not, wrap base64 content
         if (strpos($rawPrivate, '-----BEGIN') === false) {
             $rawPrivate = trim($rawPrivate);

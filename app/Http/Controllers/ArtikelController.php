@@ -1,4 +1,3 @@
-// app/Http/Controllers/ArtikelController.php
 <?php
 
 namespace App\Http\Controllers;
