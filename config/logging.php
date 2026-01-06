@@ -126,6 +126,20 @@ return [
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],
+        'payments' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/payments/payments.log'),
+            'level' => env('LOG_PAYMENTS_LEVEL', 'debug'),
+            'days' => 30,
+            'permission' => 0664,
+        ],
+         'paylabs' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/payments/paylabs.log'),
+            'level' => 'debug',
+            'days' => 30,
+            'permission' => 0664,
+        ],
 
     ],
 

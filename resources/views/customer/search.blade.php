@@ -5,1022 +5,1186 @@
 @push('styles')
 <style>
     :root {
-        --primary-color: #123352;
-        --secondary-color: #FF581E;
-        --accent-color: #ff7b4d;
-        --card-bg: #ffffff;
-        --light-bg: #f8f9fa;
-        --muted-text: #6c757d;
-    }
+    --primary-color: #123352;
+    --secondary-color: #FF581E;
+    --accent-color: #ff7b4d;
+    --card-bg: #ffffff;
+    --light-bg: #f8f9fa;
+    --muted-text: #6c757d;
+}
 
-    .container-fluid {
-        padding: 0;
-        margin: 0;
-        width: 100%;
-        max-width: 100%;
-        overflow-x: hidden;
-    }
+.container-fluid {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
 
-    .main-content {
-        display: flex;
-        min-height: calc(100vh - 80px);
-        margin: 0;
-        width: 100%;
-        max-width: 100%;
-    }
+.main-content {
+    display: flex;
+    min-height: calc(100vh - 80px);
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+}
 
-    .left-panel {
-        flex: 0 0 320px;
-        max-width: 320px;
-        background-color: var(--card-bg);
-        padding: 25px 20px;
-        box-shadow: 3px 0 15px rgba(0,0,0,0.05);
-        border-right: 1px solid #e9ecef;
-        height: 100vh;
-        position: sticky;
-        top: 0;
-        overflow-y: auto;
-        scrollbar-width: thin;
-        scrollbar-color: var(--secondary-color) #f1f1f1;
-    }
+.left-panel {
+    flex: 0 0 320px;
+    max-width: 320px;
+    background-color: var(--card-bg);
+    padding: 25px 20px;
+    box-shadow: 3px 0 15px rgba(0,0,0,0.05);
+    border-right: 1px solid #e9ecef;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--secondary-color) #f1f1f1;
+}
 
-    .left-panel::-webkit-scrollbar {
-        width: 6px;
-    }
+.left-panel::-webkit-scrollbar {
+    width: 6px;
+}
 
-    .left-panel::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-    }
+.left-panel::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
 
-    .left-panel::-webkit-scrollbar-thumb {
-        background: var(--secondary-color);
-        border-radius: 10px;
-    }
+.left-panel::-webkit-scrollbar-thumb {
+    background: var(--secondary-color);
+    border-radius: 10px;
+}
 
-    .right-panel {
-        flex: 1;
-        min-width: 0;
-        padding: 20px;
-        background-color: var(--light-bg);
-        width: calc(100% - 320px);
-        max-width: calc(100% - 320px);
-    }
+.right-panel {
+    flex: 1;
+    min-width: 0;
+    padding: 20px;
+    background-color: var(--light-bg);
+    width: calc(100% - 320px);
+    max-width: calc(100% - 320px);
+}
 
-    .search-section {
-        background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
-        padding: 25px;
-        border-radius: 16px;
-        margin-bottom: 0;
-        border: 1px solid #e9ecef;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-        position: relative;
-        overflow: hidden;
-    }
+.search-section {
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+    padding: 25px;
+    border-radius: 16px;
+    margin-bottom: 0;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    position: relative;
+    overflow: hidden;
+}
 
-    .search-section::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, var(--secondary-color) 0%, var(--accent-color) 100%);
-    }
+.search-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--secondary-color) 0%, var(--accent-color) 100%);
+}
 
-    .search-section h4 {
-        color: var(--primary-color);
-        margin-bottom: 24px !important;
-        font-weight: 700;
-        font-size: 18px;
-        position: relative;
-        padding-bottom: 12px;
-    }
+.search-section h4 {
+    color: var(--primary-color);
+    margin-bottom: 24px !important;
+    font-weight: 700;
+    font-size: 18px;
+    position: relative;
+    padding-bottom: 12px;
+}
 
-    .search-section h4::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 40px;
-        height: 3px;
-        background: linear-gradient(90deg, var(--secondary-color) 0%, var(--accent-color) 100%);
-        border-radius: 2px;
-    }
+.search-section h4::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--secondary-color) 0%, var(--accent-color) 100%);
+    border-radius: 2px;
+}
 
-    .form-group {
-        margin-bottom: 20px;
-        position: relative;
-        box-sizing: border-box;
-    }
+.form-group {
+    margin-bottom: 20px;
+    position: relative;
+    box-sizing: border-box;
+}
 
-    .form-label {
-        font-weight: 600;
-        margin-bottom: 8px;
-        color: var(--primary-color);
-        display: flex;
-        align-items: center;
-        font-size: 14px;
-        gap: 6px;
-    }
+.form-label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    gap: 6px;
+}
 
-    .form-label i {
-        color: var(--secondary-color);
-        font-size: 12px;
-    }
+.form-label i {
+    color: var(--secondary-color);
+    font-size: 12px;
+}
 
-    /* PERBAIKAN UTAMA: Membuat semua form control konsisten */
-    .form-control,
-    .form-control-select,
+/* PERBAIKAN UTAMA: Membuat semua form control konsisten */
+.form-control,
+.form-control-select,
+input[type="date"],
+input[type="number"],
+.searchable-select {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    height: 44px !important;
+    min-height: 44px;
+    line-height: 1.2;
+    padding: 10px 15px !important;
+    font-size: 14px;
+    border-radius: 10px;
+    border: 1.5px solid #e0e0e0;
+    background: white;
+    transition: all 0.25s ease;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    color: inherit;
+    font-family: inherit;
+    margin: 0;
+}
+
+/* Khusus untuk date input di beberapa browser */
+input[type="date"] {
+    position: relative;
+    padding-right: 15px !important;
+}
+
+/* Custom arrow untuk select */
+.form-control-select {
+    background-image: url("data:image/svg+xml;charset=UTF8,%3csvg xmlns='http://www.w3.org2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23123352' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 16px;
+    padding-right: 45px !important;
+}
+
+/* Hilangkan spinner di input number */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* Fokus seragam */
+.form-control:focus,
+.form-control-select:focus,
+input[type="date"]:focus,
+input[type="number"]:focus,
+.searchable-select:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 4px rgba(255, 88, 30, 0.12);
+    transform: translateY(-1px);
+}
+
+/* Placeholder styling */
+.form-control::placeholder,
+input[type="date"]::placeholder,
+input[type="number"]::placeholder,
+.searchable-select::placeholder {
+    color: #999;
+    opacity: 0.8;
+}
+
+/* Penyesuaian untuk browser WebKit (Chrome, Safari) */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
     input[type="date"],
-    input[type="number"],
-    .searchable-select {
-        display: block;
-        width: 100%;
-        box-sizing: border-box;
-        height: 44px !important;
-        min-height: 44px;
-        line-height: 1.2;
-        padding: 10px 15px !important;
-        font-size: 14px;
-        border-radius: 10px;
-        border: 1.5px solid #e0e0e0;
-        background: white;
-        transition: all 0.25s ease;
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        color: inherit;
-        font-family: inherit;
-        margin: 0;
-    }
-
-    /* Khusus untuk date input di beberapa browser */
-    input[type="date"] {
-        position: relative;
-        padding-right: 15px !important;
-    }
-
-    /* Custom arrow untuk select */
-    .form-control-select {
-        background-image: url("data:image/svg+xml;charset=UTF8,%3csvg xmlns='http://www.w3.org2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23123352' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-        background-repeat: no-repeat;
-        background-position: right 15px center;
-        background-size: 16px;
-        padding-right: 45px !important;
-    }
-
-    /* Hilangkan spinner di input number */
-    input[type="number"]::-webkit-outer-spin-button,
-    input[type="number"]::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-
     input[type="number"] {
-        -moz-appearance: textfield;
+        line-height: 1.2 !important;
     }
 
-    /* Fokus seragam */
-    .form-control:focus,
-    .form-control-select:focus,
-    input[type="date"]:focus,
-    input[type="number"]:focus,
-    .searchable-select:focus {
-        outline: none;
-        border-color: var(--secondary-color);
-        box-shadow: 0 0 0 4px rgba(255, 88, 30, 0.12);
-        transform: translateY(-1px);
-    }
-
-    /* Placeholder styling */
-    .form-control::placeholder,
-    input[type="date"]::placeholder,
-    input[type="number"]::placeholder,
-    .searchable-select::placeholder {
-        color: #999;
-        opacity: 0.8;
-    }
-
-    /* Penyesuaian untuk browser WebKit (Chrome, Safari) */
-    @media screen and (-webkit-min-device-pixel-ratio: 0) {
-        input[type="date"],
-        input[type="number"] {
-            line-height: 1.2 !important;
-        }
-
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            opacity: 0.5;
-            cursor: pointer;
-            margin-left: 5px;
-        }
-    }
-
-    /* Penyesuaian untuk Firefox */
-    @-moz-document url-prefix() {
-        input[type="date"],
-        input[type="number"] {
-            padding: 9px 14px !important;
-        }
-    }
-
-    .btn-search {
-        background: linear-gradient(135deg, var(--secondary-color) 0%, var(--accent-color) 100%);
-        color: white;
-        border: none;
-        padding: 12px 20px;
-        border-radius: 8px;
-        font-weight: 600;
-        width: 100%;
-        margin-top: 10px;
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        opacity: 0.5;
         cursor: pointer;
-        font-size: 14px;
-        transition: all 0.3s ease;
-        height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        margin-left: 5px;
     }
+}
 
-    .btn-search:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(255, 88, 30, 0.3);
+/* Penyesuaian untuk Firefox */
+@-moz-document url-prefix() {
+    input[type="date"],
+    input[type="number"] {
+        padding: 9px 14px !important;
     }
+}
 
-    .btn-search:disabled {
-        background: #bdc3c7;
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
-    }
+.btn-search {
+    background: linear-gradient(135deg, var(--secondary-color) 0%, var(--accent-color) 100%);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    width: 100%;
+    margin-top: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-    .loading-spinner {
-        display: none;
-        text-align: center;
-        padding: 40px 20px;
-    }
+.btn-search:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 88, 30, 0.3);
+}
 
-    .spinner {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid var(--accent-color);
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
-        margin: 0 auto 15px;
-    }
+.btn-search:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
 
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
+.loading-spinner {
+    display: none;
+    text-align: center;
+    padding: 40px 20px;
+}
 
-    .results-section {
-        margin-bottom: 0;
-        width: 100%;
-        max-width: 100%;
-    }
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--accent-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
 
-    .result-card {
-        border: 1px solid #e9ecef;
-        border-radius: 12px;
-        padding: 18px;
-        margin-bottom: 16px;
-        background-color: var(--card-bg);
-        animation: fadeIn 0.5s ease;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        transition: all 0.3s ease;
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-    }
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 
-    .result-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    }
+.results-section {
+    margin-bottom: 0;
+    width: 100%;
+    max-width: 100%;
+}
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+.result-card {
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 16px;
+    background-color: var(--card-bg);
+    animation: fadeIn 0.5s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    transition: all 0.3s ease;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
 
-    .shuttle-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-        gap: 16px;
-    }
+.result-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
 
-    .shuttle-info {
-        flex: 1;
-        min-width: 0;
-    }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
-    .shuttle-type {
-        font-weight: 700;
-        color: var(--primary-color);
-        font-size: 16px;
-        margin-bottom: 4px;
-        line-height: 1.3;
-    }
+.shuttle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 16px;
+}
 
-    .shuttle-name {
-        font-size: 13px;
-        color: var(--muted-text);
-        margin-bottom: 10px;
-        line-height: 1.4;
-    }
+.shuttle-info {
+    flex: 1;
+    min-width: 0;
+}
 
-    .route-info {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        margin-bottom: 8px;
-        gap: 8px;
-    }
+.shuttle-type {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 16px;
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
 
-    .time-info {
-        font-weight: 600;
-        font-size: 15px;
-        color: var(--primary-color);
-    }
+.shuttle-name {
+    font-size: 13px;
+    color: var(--muted-text);
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
 
-    .route-arrow {
-        color: var(--accent-color);
-        font-weight: bold;
-    }
+.route-info {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-bottom: 8px;
+    gap: 8px;
+}
 
-    .right-section {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 10px;
-        flex-shrink: 0;
-    }
+.time-info {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--primary-color);
+}
 
-    .price-info {
-        text-align: right;
-    }
+.route-arrow {
+    color: var(--accent-color);
+    font-weight: bold;
+}
 
-    .price {
-        color: var(--secondary-color);
-        font-weight: 700;
-        font-size: 18px;
-    }
+.right-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+}
 
-    .per-kursi {
-        font-size: 11px;
-        color: var(--muted-text);
-    }
+.price-info {
+    text-align: right;
+}
 
-    .btn-pilih {
-        background: linear-gradient(135deg, var(--secondary-color) 0%, var(--accent-color) 100%);
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s;
-        font-size: 13px;
-        min-width: 90px;
-        text-decoration: none;
-        display: inline-block;
-        text-align: center;
-    }
+.price {
+    color: var(--secondary-color);
+    font-weight: 700;
+    font-size: 18px;
+}
 
-    .btn-pilih:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(255, 88, 30, 0.3);
-        color: white;
-        text-decoration: none;
-    }
+.per-kursi {
+    font-size: 11px;
+    color: var(--muted-text);
+}
 
-    .btn-pilih:disabled {
-        background: #bdc3c7;
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
-    }
+.btn-pilih {
+    background: linear-gradient(135deg, var(--secondary-color) 0%, var(--accent-color) 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 13px;
+    min-width: 90px;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
 
-    .location-info {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 12px;
-        padding: 10px 0;
-        border-top: 1px solid #f0f0f0;
-        border-bottom: 1px solid #f0f0f0;
-    }
+.btn-pilih:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 88, 30, 0.3);
+    color: white;
+    text-decoration: none;
+}
 
-    .location {
-        font-size: 13px;
-        color: var(--muted-text);
-        font-weight: 500;
-        max-width: 45%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
+.btn-pilih:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
 
-    .route-details-toggle {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 12px;
-        gap: 8px;
-    }
+.location-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding: 10px 0;
+    border-top: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+}
 
-    .btn-filter, .btn-route {
-        background-color: transparent;
-        color: var(--primary-color);
-        border: 1.5px solid var(--primary-color);
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        cursor: pointer;
-        transition: all 0.3s;
-        font-weight: 500;
-        flex: 1;
-    }
+.location {
+    font-size: 13px;
+    color: var(--muted-text);
+    font-weight: 500;
+    max-width: 45%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
-    .btn-filter:hover, .btn-route:hover {
-        background-color: var(--primary-color);
-        color: white;
-        transform: translateY(-1px);
-    }
+.route-details-toggle {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    gap: 8px;
+}
 
-    .route-details, .shuttle-details {
-        display: none;
-        margin-top: 12px;
-        padding: 16px;
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: 8px;
-        border-left: 4px solid var(--secondary-color);
-    }
+.btn-filter, .btn-route {
+    background-color: transparent;
+    color: var(--primary-color);
+    border: 1.5px solid var(--primary-color);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 500;
+    flex: 1;
+}
 
-    .route-details h4, .shuttle-details h4 {
-        margin-bottom: 12px;
-        color: var(--primary-color);
-        font-size: 14px;
-        font-weight: 600;
-    }
+.btn-filter:hover, .btn-route:hover {
+    background-color: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+}
 
-    .route-stop {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 8px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid #dee2e6;
-    }
+.route-details, .shuttle-details {
+    display: none;
+    margin-top: 12px;
+    padding: 16px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    border-left: 4px solid var(--secondary-color);
+}
 
-    .route-stop:last-child {
-        border-bottom: none;
-        margin-bottom: 0;
-        padding-bottom: 0;
-    }
+.route-details h4, .shuttle-details h4 {
+    margin-bottom: 12px;
+    color: var(--primary-color);
+    font-size: 14px;
+    font-weight: 600;
+}
 
-    .stop-location {
-        font-weight: 500;
-        color: var(--primary-color);
-        font-size: 13px;
-    }
+.route-stop {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #dee2e6;
+}
 
-    .stop-time {
-        color: var(--muted-text);
-        font-size: 12px;
-    }
+.route-stop:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
 
-    .info-section {
-        margin-bottom: 20px;
-    }
+.stop-location {
+    font-weight: 500;
+    color: var(--primary-color);
+    font-size: 13px;
+}
 
-    .info-title {
-        font-size: 20px;
-        font-weight: 700;
-        margin-bottom: 16px;
-        color: var(--primary-color);
-    }
+.stop-time {
+    color: var(--muted-text);
+    font-size: 12px;
+}
 
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: var(--muted-text);
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        max-width: 100%;
-    }
+.info-section {
+    margin-bottom: 20px;
+}
 
-    .empty-state i {
-        font-size: 48px;
-        margin-bottom: 16px;
-        color: #dee2e6;
-    }
+.info-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--primary-color);
+}
 
-    .empty-state h3 {
-        margin-bottom: 12px;
-        color: var(--muted-text);
-        font-weight: 600;
-        font-size: 18px;
-    }
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted-text);
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    max-width: 100%;
+}
 
-    .empty-state p {
-        font-size: 14px;
-        line-height: 1.5;
-        max-width: 350px;
-        margin: 0 auto;
-    }
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #dee2e6;
+}
 
-    .search-summary {
-        background: white;
-        padding: 18px;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        border: 1px solid #e9ecef;
-        max-width: 100%;
-    }
+.empty-state h3 {
+    margin-bottom: 12px;
+    color: var(--muted-text);
+    font-weight: 600;
+    font-size: 18px;
+}
 
-    .search-summary h4 {
-        margin-bottom: 12px;
-        color: var(--primary-color);
-        font-size: 16px;
-        font-weight: 600;
-    }
+.empty-state p {
+    font-size: 14px;
+    line-height: 1.5;
+    max-width: 350px;
+    margin: 0 auto;
+}
 
-    .search-info {
-        display: flex;
-        gap: 20px;
-        flex-wrap: wrap;
-    }
+.search-summary {
+    background: white;
+    padding: 18px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border: 1px solid #e9ecef;
+    max-width: 100%;
+}
 
-    .search-info-item {
-        display: flex;
-        flex-direction: column;
-    }
+.search-summary h4 {
+    margin-bottom: 12px;
+    color: var(--primary-color);
+    font-size: 16px;
+    font-weight: 600;
+}
 
-    .search-info-label {
-        font-size: 11px;
-        color: var(--muted-text);
-        margin-bottom: 3px;
-        font-weight: 500;
-    }
+.search-info {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
 
-    .search-info-value {
-        font-weight: 600;
-        color: var(--primary-color);
-        font-size: 13px;
-    }
+.search-info-item {
+    display: flex;
+    flex-direction: column;
+}
 
-    /* New Styles */
-    .shuttle-status {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 8px;
-    }
+.search-info-label {
+    font-size: 11px;
+    color: var(--muted-text);
+    margin-bottom: 3px;
+    font-weight: 500;
+}
 
-    .status-badge {
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-    }
+.search-info-value {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 13px;
+}
 
-    .status-available {
-        background-color: #d1fae5;
-        color: #065f46;
-    }
+/* New Styles */
+.shuttle-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
 
-    .status-almost-full {
-        background-color: #fef3c7;
-        color: #92400e;
-    }
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
 
-    .status-full {
-        background-color: #fee2e2;
-        color: #991b1b;
-    }
+.status-available {
+    background-color: #d1fae5;
+    color: #065f46;
+}
 
-    .seat-count {
-        font-size: 13px;
-        color: #6b7280;
-    }
+.status-almost-full {
+    background-color: #fef3c7;
+    color: #92400e;
+}
 
-    .route-tag {
-        display: inline-block;
-        background: #f3f4f6;
-        color: #4b5563;
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-size: 12px;
-        margin-right: 8px;
-        margin-bottom: 8px;
-    }
+.status-full {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
 
-    .route-tag.direct {
-        background: #dbeafe;
-        color: #1e40af;
-    }
+.seat-count {
+    font-size: 13px;
+    color: #6b7280;
+}
 
-    .route-tag.transit {
-        background: #f0f9ff;
-        color: #0369a1;
-    }
+.route-tag {
+    display: inline-block;
+    background: #f3f4f6;
+    color: #4b5563;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
 
-    .shuttle-facilities {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 12px;
-    }
+.route-tag.direct {
+    background: #dbeafe;
+    color: #1e40af;
+}
 
-    .facility-item {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 12px;
-        color: #6b7280;
-        background: #f9fafb;
-        padding: 4px 8px;
-        border-radius: 6px;
-    }
+.route-tag.transit {
+    background: #f0f9ff;
+    color: #0369a1;
+}
 
-    .route-duration {
-        font-size: 13px;
-        color: #6b7280;
-        margin-top: 4px;
-    }
+.shuttle-facilities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
 
-    /* OUTLET SELECTION - UKURAN AWAL YANG LEBIH KECIL DAN RAPI */
-    .outlet-selection {
-        background: rgba(255, 88, 31, 0.08);
-        border: 1px solid rgba(255, 88, 31, 0.15);
-        border-radius: 10px;
-        padding: 15px;
-        margin-bottom: 20px;
-        display: flex;
+.facility-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #6b7280;
+    background: #f9fafb;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.route-duration {
+    font-size: 13px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+/* OUTLET SELECTION - UKURAN AWAL YANG LEBIH KECIL DAN RAPI */
+.outlet-selection {
+    background: rgba(255, 88, 31, 0.08);
+    border: 1px solid rgba(255, 88, 31, 0.15);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+}
+
+.outlet-selection:hover {
+    background: rgba(255, 88, 31, 0.12);
+    border-color: rgba(255, 88, 31, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.06);
+}
+
+.outlet-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+}
+
+.outlet-info::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 88, 31, 0.2), transparent);
+    z-index: 1;
+}
+
+.outlet-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px 12px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 2;
+}
+
+.outlet-item:hover {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.outlet-icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 88, 31, 0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 88, 31, 0.15);
+    transition: all 0.3s ease;
+}
+
+.outlet-item:hover .outlet-icon {
+    background: rgba(255, 88, 31, 0.15);
+    border-color: rgba(255, 88, 31, 0.25);
+    transform: scale(1.05);
+}
+
+.outlet-icon i {
+    font-size: 14px;
+    color: var(--secondary-color);
+}
+
+.outlet-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.outlet-details h5 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary-color);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.outlet-details p {
+    margin: 0;
+    font-size: 11px;
+    color: var(--muted-text);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.arrow-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    flex-shrink: 0;
+    z-index: 2;
+}
+
+.arrow-container i {
+    font-size: 14px;
+    color: var(--secondary-color);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 5px;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(255, 88, 31, 0.1);
+    transition: all 0.3s ease;
+}
+
+.arrow-container:hover i {
+    transform: scale(1.1);
+    box-shadow: 0 3px 8px rgba(255, 88, 31, 0.2);
+}
+
+.search-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 15px;
+    font-size: 11px;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.meta-item i {
+    color: var(--secondary-color);
+    font-size: 10px;
+}
+
+/* Responsive untuk outlet selection */
+@media (max-width: 992px) {
+    .outlet-info {
         flex-direction: column;
         gap: 12px;
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
-        transition: all 0.3s ease;
-    }
-
-    .outlet-selection:hover {
-        background: rgba(255, 88, 31, 0.12);
-        border-color: rgba(255, 88, 31, 0.25);
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.06);
-    }
-
-    .outlet-info {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        width: 100%;
     }
 
     .outlet-info::before {
-        content: '';
-        position: absolute;
         top: 50%;
         left: 50%;
-        transform: translate(-50%, -50%);
-        width: 70%;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(255, 88, 31, 0.2), transparent);
-        z-index: 1;
+        transform: translate(-50%, -50%) rotate(90deg);
+        width: 60%;
     }
 
     .outlet-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex: 1;
-        min-width: 0;
-        background: rgba(255, 255, 255, 0.9);
-        padding: 10px 12px;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        position: relative;
-        z-index: 2;
-    }
-
-    .outlet-item:hover {
-        background: white;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    }
-
-    .outlet-icon {
-        width: 36px;
-        height: 36px;
-        background: rgba(255, 88, 31, 0.1);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        border: 1px solid rgba(255, 88, 31, 0.15);
-        transition: all 0.3s ease;
-    }
-
-    .outlet-item:hover .outlet-icon {
-        background: rgba(255, 88, 31, 0.15);
-        border-color: rgba(255, 88, 31, 0.25);
-        transform: scale(1.05);
-    }
-
-    .outlet-icon i {
-        font-size: 14px;
-        color: var(--secondary-color);
-    }
-
-    .outlet-details {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .outlet-details h5 {
-        margin: 0 0 4px 0;
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--primary-color);
-        line-height: 1.3;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .outlet-details p {
-        margin: 0;
-        font-size: 11px;
-        color: var(--muted-text);
-        line-height: 1.4;
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
+        width: 100%;
+        justify-content: flex-start;
     }
 
     .arrow-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 5px;
-        flex-shrink: 0;
-        z-index: 2;
+        transform: rotate(90deg);
+        padding: 8px 0;
     }
 
     .arrow-container i {
-        font-size: 14px;
-        color: var(--secondary-color);
-        background: rgba(255, 255, 255, 0.9);
-        padding: 5px;
-        border-radius: 50%;
-        box-shadow: 0 2px 5px rgba(255, 88, 31, 0.1);
-        transition: all 0.3s ease;
-    }
-
-    .arrow-container:hover i {
-        transform: scale(1.1);
-        box-shadow: 0 3px 8px rgba(255, 88, 31, 0.2);
+        transform: rotate(-90deg);
     }
 
     .search-meta {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 15px;
-        padding-top: 10px;
-        border-top: 1px solid rgba(0, 0, 0, 0.06);
-    }
-
-    .meta-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 10px;
-        background: rgba(255, 255, 255, 0.8);
-        border-radius: 15px;
-        font-size: 11px;
-        color: var(--primary-color);
-        font-weight: 500;
-    }
-
-    .meta-item i {
-        color: var(--secondary-color);
-        font-size: 10px;
-    }
-
-    /* Responsive untuk outlet selection */
-    @media (max-width: 992px) {
-        .outlet-info {
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .outlet-info::before {
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(90deg);
-            width: 60%;
-        }
-
-        .outlet-item {
-            width: 100%;
-            justify-content: flex-start;
-        }
-
-        .arrow-container {
-            transform: rotate(90deg);
-            padding: 8px 0;
-        }
-
-        .arrow-container i {
-            transform: rotate(-90deg);
-        }
-
-        .search-meta {
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .meta-item {
-            width: 100%;
-            justify-content: center;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .outlet-selection {
-            padding: 12px;
-            gap: 10px;
-        }
-
-        .outlet-item {
-            padding: 8px 10px;
-            gap: 10px;
-        }
-
-        .outlet-icon {
-            width: 32px;
-            height: 32px;
-        }
-
-        .outlet-icon i {
-            font-size: 12px;
-        }
-
-        .outlet-details h5 {
-            font-size: 13px;
-        }
-
-        .outlet-details p {
-            font-size: 10px;
-        }
-
-        .arrow-container i {
-            font-size: 12px;
-            padding: 4px;
-        }
-
-        .meta-item {
-            font-size: 10px;
-            padding: 3px 8px;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .outlet-info::before {
-            display: none;
-        }
-    }
-
-    .search-filters {
-        background: white;
-        padding: 16px;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        border: 1px solid #e9ecef;
-    }
-
-    .filter-section {
-        margin-bottom: 16px;
-    }
-
-    .filter-title {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--primary-color);
-        margin-bottom: 8px;
-    }
-
-    .filter-options {
-        display: flex;
-        flex-wrap: wrap;
+        flex-direction: column;
         gap: 8px;
     }
 
-    .filter-btn {
-        padding: 8px 16px;
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        font-size: 13px;
-        color: #4b5563;
-        cursor: pointer;
-        transition: all 0.3s;
+    .meta-item {
+        width: 100%;
+        justify-content: center;
     }
+}
 
-    .filter-btn:hover {
-        border-color: var(--secondary-color);
-        color: var(--secondary-color);
-    }
-
-    .filter-btn.active {
-        background: var(--secondary-color);
-        color: white;
-        border-color: var(--secondary-color);
-    }
-
-    /* Shuttle Info Styles */
-    .shuttle-info-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-        margin-bottom: 20px;
-    }
-
-    .shuttle-info-item {
-        background: #ffffff;
+@media (max-width: 768px) {
+    .outlet-selection {
         padding: 12px;
-        border-radius: 8px;
-        border-left: 4px solid var(--secondary-color);
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    }
-
-    .shuttle-info-item i {
-        color: var(--secondary-color);
-        margin-right: 8px;
-        font-size: 14px;
-    }
-
-    .shuttle-info-item strong {
-        color: var(--primary-color);
-        font-size: 13px;
-    }
-
-    .shuttle-gallery {
-        margin: 20px 0;
-    }
-
-    .shuttle-gallery h6 {
-        color: var(--primary-color);
-        margin-bottom: 15px;
-        font-size: 14px;
-        font-weight: 600;
-    }
-
-    .gallery-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
         gap: 10px;
     }
 
-    .gallery-item {
-        position: relative;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-        height: 150px;
+    .outlet-item {
+        padding: 8px 10px;
+        gap: 10px;
     }
 
-    .gallery-item img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.3s ease;
+    .outlet-icon {
+        width: 32px;
+        height: 32px;
     }
 
-    .gallery-item:hover img {
-        transform: scale(1.05);
-    }
-
-    .gallery-caption {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: rgba(0,0,0,0.7);
-        color: white;
-        padding: 8px;
-        text-align: center;
+    .outlet-icon i {
         font-size: 12px;
     }
 
+    .outlet-details h5 {
+        font-size: 13px;
+    }
+
+    .outlet-details p {
+        font-size: 10px;
+    }
+
+    .arrow-container i {
+        font-size: 12px;
+        padding: 4px;
+    }
+
+    .meta-item {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .outlet-info::before {
+        display: none;
+    }
+}
+
+.search-filters {
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border: 1px solid #e9ecef;
+}
+
+.filter-section {
+    margin-bottom: 16px;
+}
+
+.filter-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+.filter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.filter-btn:hover {
+    border-color: var(--secondary-color);
+    color: var(--secondary-color);
+}
+
+.filter-btn.active {
+    background: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+}
+
+/* Shuttle Info Styles */
+.shuttle-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.shuttle-info-item {
+    background: #ffffff;
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 4px solid var(--secondary-color);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.shuttle-info-item i {
+    color: var(--secondary-color);
+    margin-right: 8px;
+    font-size: 14px;
+}
+
+.shuttle-info-item strong {
+    color: var(--primary-color);
+    font-size: 13px;
+}
+
+/* Compact Carousel Styles */
+.shuttle-gallery {
+    margin: 20px 0;
+    padding: 15px;
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+}
+
+.shuttle-gallery h6 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.shuttle-gallery h6 i {
+    color: var(--secondary-color);
+    font-size: 14px;
+}
+
+.compact-carousel {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+}
+
+.carousel-compact-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.carousel-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary-color);
+    padding: 6px 12px;
+    background: rgba(255, 88, 30, 0.08);
+    border-radius: 6px;
+    border-left: 3px solid var(--secondary-color);
+}
+
+.carousel-counter {
+    font-size: 13px;
+    color: var(--muted-text);
+    background: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid #dee2e6;
+}
+
+.carousel-compact-container {
+    position: relative;
+    width: 100%;
+    height: 225px; /* 16:9 ratio - 400x225 */
+    border-radius: 6px;
+    overflow: hidden;
+    background: #000;
+    margin-bottom: 15px;
+}
+
+.carousel-track {
+    display: flex;
+    width: 400%;
+    height: 100%;
+    transition: transform 0.4s ease;
+}
+
+.carousel-slide {
+    width: 25%; /* 4 slides = 25% each */
+    height: 100%;
+    flex-shrink: 0;
+    padding: 2px;
+}
+
+.slide-img-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+}
+
+.slide-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid var(--secondary-color);
+    border-radius: 50%;
+    color: var(--secondary-color);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+    padding: 0;
+}
+
+.carousel-btn:hover {
+    background: var(--secondary-color);
+    color: white;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.prev-btn {
+    left: 10px;
+}
+
+.next-btn {
+    right: 10px;
+}
+
+.carousel-dots-nav {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.carousel-dot {
+    padding: 6px 12px;
+    background: #e9ecef;
+    border: 1px solid #dee2e6;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--muted-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.carousel-dot:hover {
+    background: #dee2e6;
+    border-color: var(--secondary-color);
+    color: var(--primary-color);
+}
+
+.carousel-dot.active {
+    background: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+    font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .shuttle-gallery {
+        padding: 12px;
+    }
+
+    .carousel-compact-container {
+        height: 180px; /* Slightly smaller on mobile */
+    }
+
+    .carousel-title {
+        font-size: 13px;
+        padding: 5px 10px;
+    }
+
+    .carousel-counter {
+        font-size: 12px;
+        padding: 3px 8px;
+    }
+
+    .carousel-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+
+    .carousel-dot {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    .carousel-compact-container {
+        height: 150px;
+    }
+
+    .carousel-dots-nav {
+        gap: 5px;
+    }
+
+    .carousel-dot {
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+}
     .fasilitas-section {
         background: #ffffff;
         padding: 15px;
@@ -1472,6 +1636,194 @@
         color: var(--secondary-color);
     }
 
+    /* Side-by-side Layout for Gallery and Seats - PERBAIKAN UTAMA */
+    .shuttle-media-combined {
+        display: flex;
+        gap: 20px;
+        margin: 25px 0;
+        align-items: stretch;
+    }
+
+    .shuttle-gallery-side {
+        flex: 1;
+        min-width: 0;
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        min-height: 550px; /* Tambahkan tinggi minimum */
+    }
+
+    .seat-layout-side {
+        flex: 1;
+        min-width: 0;
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        min-height: 550px; /* Tambahkan tinggi minimum */
+    }
+
+    /* Heading untuk kedua side */
+    .shuttle-gallery-side h6,
+    .seat-layout-side h6 {
+        margin: 0 0 15px 0;
+        padding: 0;
+        color: var(--primary-color);
+        font-size: 15px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 28px;
+    }
+
+    .shuttle-gallery-side h6 i,
+    .seat-layout-side h6 i {
+        color: var(--secondary-color);
+        font-size: 14px;
+    }
+
+    /* Adjust Gallery untuk Side Layout */
+    .shuttle-gallery-side .compact-carousel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        border: 1px solid #dee2e6;
+        height: 100%;
+        min-height: 400px; /* Tambahkan tinggi minimum untuk carousel */
+    }
+
+    .shuttle-gallery-side .carousel-compact-container {
+        flex: 1;
+        min-height: 200px;
+        position: relative;
+    }
+
+    .shuttle-gallery-side .carousel-track {
+        height: 100%;
+    }
+
+    .shuttle-gallery-side .carousel-slide {
+        height: 100%;
+    }
+
+    .shuttle-gallery-side .slide-img-container {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .shuttle-gallery-side .slide-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    /* Adjust Seat Layout untuk Side Layout */
+    .seat-layout-side .dynamic-seat-layout {
+        flex: 1;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 200px; /* Tinggi minimum untuk seat layout */
+    }
+
+    .seat-layout-side .seat-row-dynamic {
+        gap: 8px;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .seat-layout-side .seat-dynamic {
+        width: 40px;
+        height: 40px;
+        font-size: 11px;
+        flex-shrink: 0;
+    }
+
+    .seat-layout-side .seat-info-panel {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e9ecef;
+        flex-shrink: 0;
+    }
+
+    .seat-layout-side .info-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .seat-layout-side .seat-legend {
+        padding: 12px;
+        margin-top: 0;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    /* Responsive Layout */
+    @media (max-width: 1200px) {
+        .shuttle-media-combined {
+            gap: 20px;
+        }
+
+        .shuttle-gallery-side,
+        .seat-layout-side {
+            min-height: 500px; /* Sesuaikan untuk ukuran lebih kecil */
+        }
+    }
+
+    @media (max-width: 992px) {
+        .shuttle-media-combined {
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .shuttle-gallery-side,
+        .seat-layout-side {
+            width: 100%;
+            min-height: auto; /* Hapus min-height untuk mobile */
+        }
+
+        .shuttle-gallery-side .compact-carousel {
+            min-height: 300px; /* Tetap berikan tinggi untuk mobile */
+        }
+
+        .seat-layout-side .dynamic-seat-layout {
+            min-height: auto;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .seat-layout-side .seat-dynamic {
+            width: 35px;
+            height: 35px;
+            font-size: 10px;
+        }
+
+        .seat-layout-side .info-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
     /* Responsive Design */
     @media (max-width: 1200px) {
         .left-panel {
@@ -1731,6 +2083,198 @@
         align-items: center;
         justify-content: center;
     }
+
+    /* Carousel Styles */
+.carousel {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+.carousel-inner {
+    border-radius: 12px;
+}
+
+.carousel-item img {
+    border-radius: 12px;
+}
+
+.carousel-indicators {
+    bottom: 10px;
+}
+
+.carousel-indicators button {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid white;
+    background-color: rgba(255, 255, 255, 0.5);
+    margin: 0 4px;
+}
+
+.carousel-indicators button.active {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.carousel-control-prev,
+.carousel-control-next {
+    width: 40px;
+    height: 40px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0 15px;
+}
+
+.carousel-control-prev:hover,
+.carousel-control-next:hover {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.carousel-caption {
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    padding: 8px 16px;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+}
+
+.carousel-caption .caption-bg {
+    background: rgba(18, 51, 82, 0.8);
+    padding: 8px 12px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.carousel-caption h5 {
+    color: white;
+    font-size: 14px;
+    margin: 0;
+    font-weight: 600;
+}
+
+/* Thumbnail Styles */
+.thumbnail-container {
+    overflow-x: auto;
+    padding-bottom: 10px;
+}
+
+.thumbnail-scroll {
+    display: flex;
+    gap: 10px;
+    padding: 0 5px;
+}
+
+.thumbnail-item {
+    flex: 0 0 auto;
+    width: 80px;
+    text-align: center;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.thumbnail-item:hover,
+.thumbnail-item.active {
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+.thumbnail-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--secondary-color);
+    border-radius: 2px;
+}
+
+.thumbnail-item img {
+    width: 100%;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    transition: border-color 0.3s ease;
+}
+
+.thumbnail-item.active img {
+    border-color: var(--secondary-color);
+}
+
+.thumbnail-item:hover img {
+    border-color: var(--accent-color);
+}
+
+.thumbnail-caption {
+    font-size: 11px;
+    color: var(--muted-text);
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .carousel-item img {
+        height: 250px;
+    }
+
+    .carousel-caption {
+        display: block !important;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 5px 10px;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+    }
+
+    .carousel-caption h5 {
+        font-size: 12px;
+    }
+
+    .thumbnail-item {
+        width: 70px;
+    }
+
+    .thumbnail-item img {
+        height: 50px;
+    }
+}
+
+@media (max-width: 576px) {
+    .carousel-item img {
+        height: 200px;
+    }
+
+    .thumbnail-scroll {
+        gap: 8px;
+    }
+
+    .thumbnail-item {
+        width: 60px;
+    }
+
+    .thumbnail-item img {
+        height: 40px;
+    }
+}
 </style>
 @endpush
 
@@ -2074,14 +2618,13 @@
 
                                     <!-- Route Details Toggle -->
                                     <div class="route-details-toggle">
-                                        <button class="btn-route" onclick="toggleRouteDetails({{ $jadwal->id }})">
-                                            <i class="fas fa-route"></i> Lihat Rute Detail
-                                        </button>
-                                        <button class="btn-filter" onclick="toggleShuttleInfo({{ $jadwal->id }})">
-                                            <i class="fas fa-info-circle"></i> Info Shuttle
-                                        </button>
-                                    </div>
-
+    <button class="btn-route" onclick="toggleRouteDetails({{ $jadwal->id }})">
+        <i class="fas fa-route"></i> Lihat Rute Detail
+    </button>
+    <button class="btn-filter" onclick="toggleShuttleInfo({{ $jadwal->id }})">
+        <i class="fas fa-info-circle"></i> Info Shuttle
+    </button>
+</div>
                                     <!-- Route Details (Collapsed) -->
                                     <div class="route-details" id="route-details-{{ $jadwal->id }}" style="display: none;">
                                         <h2>Rincian Perjalanan</h2>
@@ -2154,7 +2697,7 @@
                                         @endif
                                     </div>
 
-                                    <!-- Shuttle Details (Collapsed) - MENGGUNAKAN LAYOUT DINAMIS -->
+                                    <!-- Shuttle Details (Collapsed) - MENGGUNAKAN LAYOUT SIDE-BY-SIDE -->
                                     <div class="shuttle-details" id="shuttle-details-{{ $jadwal->id }}" style="display: none;">
                                         <h4><i class="fas fa-bus"></i> Informasi Shuttle</h4>
 
@@ -2192,196 +2735,231 @@
                                             @endif
                                         </div>
 
-                                        <div class="info-divider"></div>
+<div class="info-divider"></div>
 
-                                        <!-- Shuttle Gallery -->
-                                        <div class="shuttle-gallery">
-                                            <h6><i class="fas fa-images"></i> Gallery Shuttle</h6>
-                                            <div class="gallery-grid">
-                                                <div class="gallery-item">
-                                                    <img src="{{ $shuttle->gambar_depan ? asset('storage/shuttles/' . $shuttle->gambar_depan) : 'https://via.placeholder.com/400x200?text=Tampak+Depan' }}"
-                                                         alt="Tampak Depan">
-                                                    <div class="gallery-caption">Tampak Depan</div>
-                                                </div>
-                                                <div class="gallery-item">
-                                                    <img src="{{ $shuttle->gambar_samping ? asset('storage/shuttles/' . $shuttle->gambar_samping) : 'https://via.placeholder.com/400x200?text=Tampak+Samping' }}"
-                                                         alt="Tampak Samping">
-                                                    <div class="gallery-caption">Tampak Samping</div>
-                                                </div>
-                                                <div class="gallery-item">
-                                                    <img src="{{ $shuttle->gambar_belakang ? asset('storage/shuttles/' . $shuttle->gambar_belakang) : 'https://via.placeholder.com/400x200?text=Tampak+Belakang' }}"
-                                                         alt="Tampak Belakang">
-                                                    <div class="gallery-caption">Tampak Belakang</div>
-                                                </div>
-                                                <div class="gallery-item">
-                                                    <img src="{{ $shuttle->gambar_interior ? asset('storage/shuttles/' . $shuttle->gambar_interior) : 'https://via.placeholder.com/400x200?text=Interior+Shuttle' }}"
-                                                         alt="Interior">
-                                                    <div class="gallery-caption">Interior</div>
-                                                </div>
-                                            </div>
-                                        </div>
+<!-- Shuttle Facilities -->
+<div class="fasilitas-section">
+    <h6><i class="fas fa-cogs"></i> Fasilitas Shuttle</h6>
+    @if(!empty($fasilitasArray))
+    <div class="fasilitas-list">
+        @foreach($fasilitasArray as $fasilitasItem)
+        <div class="fasilitas-list-item">
+            <i class="fas fa-check-circle"></i>
+            <span>{{ trim($fasilitasItem) }}</span>
+        </div>
+        @endforeach
+    </div>
+    @else
+    <p style="color: var(--muted-text); font-size: 13px;">Fasilitas tidak tersedia</p>
+    @endif
+</div>
 
-                                        <div class="info-divider"></div>
+<div class="info-divider"></div>
 
-                                        <!-- Shuttle Facilities -->
-                                        <div class="fasilitas-section">
-                                            <h6><i class="fas fa-cogs"></i> Fasilitas Shuttle</h6>
-                                            @if(!empty($fasilitasArray))
-                                            <div class="fasilitas-list">
-                                                @foreach($fasilitasArray as $fasilitasItem)
-                                                <div class="fasilitas-list-item">
-                                                    <i class="fas fa-check-circle"></i>
-                                                    <span>{{ trim($fasilitasItem) }}</span>
-                                                </div>
-                                                @endforeach
-                                            </div>
-                                            @else
-                                            <p style="color: var(--muted-text); font-size: 13px;">Fasilitas tidak tersedia</p>
-                                            @endif
-                                        </div>
+<!-- COMBINED GALLERY AND SEAT LAYOUT (SIDE-BY-SIDE) -->
+<div class="shuttle-media-combined">
+    <!-- Left Column: Gallery -->
+    <div class="shuttle-gallery-side">
+        <h6><i class="fas fa-images"></i> Gallery Shuttle</h6>
 
-                                        <div class="info-divider"></div>
+        <div class="compact-carousel" id="shuttleCarousel-{{ $jadwal->id }}">
+            <!-- Header -->
+            <div class="carousel-compact-header">
+                <div class="carousel-title">Tampak Depan</div>
+                <div class="carousel-counter">1/4</div>
+            </div>
 
-                                        <!-- DYNAMIC SEAT LAYOUT BASED ON DATABASE -->
-                                        <div class="seat-layout-section">
-                                            <h6>
-                                                <i class="fas fa-chair"></i>
-                                                Layout Kursi ({{ $shuttle->total_kursi ?? 9 }} Kursi)
-                                                <small style="font-size: 12px; color: #666; margin-left: 8px;">
-                                                    {{ $shuttle->seat_rows ?? 3 }} Baris × {{ $shuttle->seat_columns ?? 3 }} Kolom
-                                                </small>
-                                            </h6>
+            <!-- Slides Container -->
+            <div class="carousel-compact-container">
+                <div class="carousel-track" id="carouselTrack-{{ $jadwal->id }}">
+                    @php
+                        $images = [
+                            ['gambar' => $shuttle->gambar_depan, 'caption' => 'Tampak Depan'],
+                            ['gambar' => $shuttle->gambar_samping, 'caption' => 'Tampak Samping'],
+                            ['gambar' => $shuttle->gambar_belakang, 'caption' => 'Tampak Belakang'],
+                            ['gambar' => $shuttle->gambar_interior, 'caption' => 'Interior']
+                        ];
+                    @endphp
 
-                                            <div class="dynamic-seat-layout">
-                                                @if(isset($shuttle->seat_grid) && !empty($shuttle->seat_grid))
-                                                    @foreach($shuttle->seat_grid as $rowIndex => $row)
-                                                    <div class="seat-row-dynamic">
-                                                        @foreach($row as $seat)
-                                                        <div class="seat-dynamic
-                                                            @if(($seat['tipe'] ?? 'reguler') === 'premium') seat-premium @endif
-                                                            @if(($seat['posisi'] ?? '') === 'tengah') seat-middle @endif">
+                    @foreach($images as $index => $image)
+                    <div class="carousel-slide" data-index="{{ $index }}">
+                        <div class="slide-img-container">
+                            @if($image['gambar'])
+                                <img src="{{ asset('images/shuttle/' . $image['gambar']) }}"
+                                     alt="{{ $image['caption'] }}"
+                                     class="slide-img"
+                                     onerror="this.src='https://via.placeholder.com/400x225?text={{ urlencode($image['caption']) }}'">
+                            @else
+                                <img src="https://via.placeholder.com/400x225?text={{ urlencode($image['caption']) }}"
+                                     alt="{{ $image['caption'] }}"
+                                     class="slide-img">
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
 
-                                                            <div class="seat-number">{{ $seat['nomor'] ?? '?' }}</div>
+                <!-- Navigation Buttons -->
+                <button class="carousel-btn prev-btn">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="carousel-btn next-btn">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
 
-                                                            @if(($seat['tipe'] ?? 'reguler') === 'premium')
-                                                            <div class="seat-badge-premium">
-                                                                <i class="fas fa-crown"></i>
-                                                            </div>
-                                                            @endif
+            <!-- Dots Navigation -->
+            <div class="carousel-dots-nav">
+                @for($i = 0; $i < 4; $i++)
+                    <button class="carousel-dot {{ $i == 0 ? 'active' : '' }}">
+                        {{ $images[$i]['caption'] ?? 'Slide ' . ($i+1) }}
+                    </button>
+                @endfor
+            </div>
+        </div>
+    </div>
 
-                                                            @if(($seat['harga_tambahan'] ?? 0) > 0)
-                                                            <div class="seat-price-extra">
-                                                                +{{ number_format($seat['harga_tambahan'], 0, ',', '.') }}
-                                                            </div>
-                                                            @endif
-                                                        </div>
-                                                        @endforeach
-                                                    </div>
-                                                    @endforeach
-                                                @else
-                                                    <!-- Fallback: Generate layout secara manual -->
-                                                    @php
-                                                        $totalSeats = $shuttle->total_kursi ?? 9;
-                                                        $rows = ceil($totalSeats / 3);
-                                                        $seatCounter = 0;
-                                                    @endphp
+    <!-- Right Column: Seat Layout -->
+    <div class="seat-layout-side">
+        <h6>
+            <i class="fas fa-chair"></i>
+            Layout Kursi ({{ $shuttle->total_kursi ?? 9 }} Kursi)
+            <small style="font-size: 12px; color: #666; margin-left: 8px;">
+                {{ $shuttle->seat_rows ?? 3 }} Baris × {{ $shuttle->seat_columns ?? 3 }} Kolom
+            </small>
+        </h6>
 
-                                                    @for($row = 1; $row <= $rows; $row++)
-                                                    <div class="seat-row-dynamic">
-                                                        @for($col = 1; $col <= 3; $col++)
-                                                            @php
-                                                                if($seatCounter >= $totalSeats) break;
-                                                                $colLetter = chr(64 + $col); // A, B, C
-                                                                $seatNumber = $row . $colLetter; // 1A, 1B, 1C, 2A, dst
-                                                                $seatCounter++;
-                                                            @endphp
+        <div class="dynamic-seat-layout">
+            @if(isset($shuttle->seat_grid) && !empty($shuttle->seat_grid))
+                @foreach($shuttle->seat_grid as $rowIndex => $row)
+                <div class="seat-row-dynamic">
+                    @foreach($row as $seat)
+                    <div class="seat-dynamic
+                        @if(($seat['tipe'] ?? 'reguler') === 'premium') seat-premium @endif
+                        @if(($seat['posisi'] ?? '') === 'tengah') seat-middle @endif">
 
-                                                            <div class="seat-dynamic">
-                                                                <div class="seat-number">{{ $seatNumber }}</div>
-                                                            </div>
-                                                        @endfor
-                                                    </div>
-                                                    @endfor
-                                                @endif
-                                            </div>
+                        <div class="seat-number">{{ $seat['nomor'] ?? '?' }}</div>
 
-                                            <!-- Seat Information Panel -->
-                                            <div class="seat-info-panel">
-                                                <div class="info-row">
-                                                    <div class="info-item">
-                                                        <div class="info-icon">
-                                                            <i class="fas fa-chair"></i>
-                                                        </div>
-                                                        <div class="info-text">
-                                                            <div class="info-label">Total Kapasitas</div>
-                                                            <div class="info-value">{{ $shuttle->kapasitas_kursi ?? 12 }} kursi</div>
-                                                        </div>
-                                                    </div>
+                        @if(($seat['tipe'] ?? 'reguler') === 'premium')
+                        <div class="seat-badge-premium">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        @endif
 
-                                                    <div class="info-item">
-                                                        <div class="info-icon available">
-                                                            <i class="fas fa-check-circle"></i>
-                                                        </div>
-                                                        <div class="info-text">
-                                                            <div class="info-label">Tersedia</div>
-                                                            <div class="info-value">{{ $jadwal->kursi_tersedia ?? 0 }} kursi</div>
-                                                        </div>
-                                                    </div>
+                        @if(($seat['harga_tambahan'] ?? 0) > 0)
+                        <div class="seat-price-extra">
+                            +{{ number_format($seat['harga_tambahan'], 0, ',', '.') }}
+                        </div>
+                        @endif
+                    </div>
+                    @endforeach
+                </div>
+                @endforeach
+            @else
+                <!-- Fallback: Generate layout secara manual -->
+                @php
+                    $totalSeats = $shuttle->total_kursi ?? 9;
+                    $rows = ceil($totalSeats / 3);
+                    $seatCounter = 0;
+                @endphp
 
-                                                    <div class="info-item">
-                                                        <div class="info-icon">
-                                                            <i class="fas fa-layer-group"></i>
-                                                        </div>
-                                                        <div class="info-text">
-                                                            <div class="info-label">Layout</div>
-                                                            <div class="info-value">
-                                                                {{ $shuttle->total_kursi ?? 9 }} kursi
-                                                                ({{ ceil(($shuttle->total_kursi ?? 9) / 3) }}×3)
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                @for($row = 1; $row <= $rows; $row++)
+                <div class="seat-row-dynamic">
+                    @for($col = 1; $col <= 3; $col++)
+                        @php
+                            if($seatCounter >= $totalSeats) break;
+                            $colLetter = chr(64 + $col); // A, B, C
+                            $seatNumber = $row . $colLetter; // 1A, 1B, 1C, 2A, dst
+                            $seatCounter++;
+                        @endphp
 
-                                                    @if(isset($shuttle->dynamic_seat_layout) && is_array($shuttle->dynamic_seat_layout))
-                                                        @php
-                                                            $premiumCount = collect($shuttle->dynamic_seat_layout)
-                                                                ->where('tipe', 'premium')
-                                                                ->count();
-                                                        @endphp
-                                                        @if($premiumCount > 0)
-                                                        <div class="info-item">
-                                                            <div class="info-icon premium">
-                                                                <i class="fas fa-crown"></i>
-                                                            </div>
-                                                            <div class="info-text">
-                                                                <div class="info-label">Kursi Premium</div>
-                                                                <div class="info-value">{{ $premiumCount }} kursi</div>
-                                                            </div>
-                                                        </div>
-                                                        @endif
-                                                    @endif
-                                                </div>
+                        <div class="seat-dynamic">
+                            <div class="seat-number">{{ $seatNumber }}</div>
+                        </div>
+                    @endfor
+                </div>
+                @endfor
+            @endif
+        </div>
 
-                                                <!-- Seat Legend -->
-                                                <div class="seat-legend">
-                                                    <div class="legend-item">
-                                                        <div class="legend-box seat-regular"></div>
-                                                        <span class="legend-text">Reguler</span>
-                                                    </div>
-                                                    <div class="legend-item">
-                                                        <div class="legend-box seat-premium-legend"></div>
-                                                        <span class="legend-text">Premium</span>
-                                                    </div>
-                                                    <div class="legend-item">
-                                                        <div class="legend-box seat-middle-legend"></div>
-                                                        <span class="legend-text">Tengah</span>
-                                                    </div>
-                                                    <div class="legend-item">
-                                                        <div class="legend-box seat-sold"></div>
-                                                        <span class="legend-text">Terjual</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+        <!-- Seat Information Panel -->
+        <div class="seat-info-panel">
+            <div class="info-row">
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-chair"></i>
+                    </div>
+                    <div class="info-text">
+                        <div class="info-label">Total Kapasitas</div>
+                        <div class="info-value">{{ $shuttle->kapasitas_kursi ?? 12 }} kursi</div>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-icon available">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="info-text">
+                        <div class="info-label">Tersedia</div>
+                        <div class="info-value">{{ $jadwal->kursi_tersedia ?? 0 }} kursi</div>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div class="info-text">
+                        <div class="info-label">Layout</div>
+                        <div class="info-value">
+                            {{ $shuttle->total_kursi ?? 9 }} kursi
+                            ({{ ceil(($shuttle->total_kursi ?? 9) / 3) }}×3)
+                        </div>
+                    </div>
+                </div>
+
+                @if(isset($shuttle->dynamic_seat_layout) && is_array($shuttle->dynamic_seat_layout))
+                    @php
+                        $premiumCount = collect($shuttle->dynamic_seat_layout)
+                            ->where('tipe', 'premium')
+                            ->count();
+                    @endphp
+                    @if($premiumCount > 0)
+                    <div class="info-item">
+                        <div class="info-icon premium">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <div class="info-text">
+                            <div class="info-label">Kursi Premium</div>
+                            <div class="info-value">{{ $premiumCount }} kursi</div>
+                        </div>
+                    </div>
+                    @endif
+                @endif
+            </div>
+
+            <!-- Seat Legend -->
+            <div class="seat-legend">
+                <div class="legend-item">
+                    <div class="legend-box seat-regular"></div>
+                    <span class="legend-text">Reguler</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box seat-premium-legend"></div>
+                    <span class="legend-text">Premium</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box seat-middle-legend"></div>
+                    <span class="legend-text">Tengah</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box seat-sold"></div>
+                    <span class="legend-text">Terjual</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                                     </div>
                                 </div>
                                 @endforeach
@@ -2865,6 +3443,10 @@ document.addEventListener('DOMContentLoaded', function() {
             details.style.display = 'none';
         } else {
             details.style.display = 'block';
+            // Inisialisasi carousel jika belum
+            setTimeout(() => {
+                initCarousel(jadwalId);
+            }, 50);
         }
     }
 
@@ -2936,5 +3518,182 @@ document.addEventListener('DOMContentLoaded', function() {
     enforceUniformHeight();
     window.addEventListener('resize', enforceUniformHeight);
 });
+
+    /// Shuttle Gallery Carousel Functions
+document.addEventListener('DOMContentLoaded', function() {
+    // Inisialisasi semua carousel saat halaman dimuat
+    initializeAllCarousels();
+
+    // Pastikan tombol "Info Shuttle" tetap berfungsi
+    initShuttleInfoButtons();
+});
+
+function initializeAllCarousels() {
+    document.querySelectorAll('.compact-carousel').forEach(container => {
+        const jadwalId = container.id.replace('shuttleCarousel-', '');
+        initCarousel(jadwalId);
+    });
+}
+
+function initCarousel(jadwalId) {
+    const container = document.getElementById(`shuttleCarousel-${jadwalId}`);
+    if (!container) return;
+
+    const track = container.querySelector('.carousel-track');
+    const dots = container.querySelectorAll('.carousel-dot');
+    const title = container.querySelector('.carousel-title');
+    const counter = container.querySelector('.carousel-counter');
+    const prevBtn = container.querySelector('.prev-btn');
+    const nextBtn = container.querySelector('.next-btn');
+
+    if (!track || dots.length === 0) return;
+
+    // Inisialisasi state
+    let currentIndex = 0;
+    const totalSlides = 4; // Selalu 4 slide (depan, samping, belakang, interior)
+
+    function updateCarousel() {
+        // Update track position
+        const translateX = -currentIndex * 25; // 25% per slide
+        track.style.transform = `translateX(${translateX}%)`;
+
+        // Update active dot
+        dots.forEach((dot, index) => {
+            dot.classList.toggle('active', index === currentIndex);
+        });
+
+        // Update title (ambil dari dot yang aktif)
+        if (title && dots[currentIndex]) {
+            title.textContent = dots[currentIndex].textContent.trim();
+        }
+
+        // Update counter
+        if (counter) {
+            counter.textContent = `${currentIndex + 1}/${totalSlides}`;
+        }
+    }
+
+    // Event listeners untuk tombol navigasi
+    if (prevBtn) {
+        prevBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+            updateCarousel();
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            currentIndex = (currentIndex + 1) % totalSlides;
+            updateCarousel();
+        });
+    }
+
+    // Event listeners untuk dots
+    dots.forEach((dot, index) => {
+        dot.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            currentIndex = index;
+            updateCarousel();
+        });
+    });
+
+    // Inisialisasi awal
+    updateCarousel();
+
+    // Simpan reference ke carousel
+    window[`carousel_${jadwalId}`] = {
+        next: function() {
+            currentIndex = (currentIndex + 1) % totalSlides;
+            updateCarousel();
+        },
+        prev: function() {
+            currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+            updateCarousel();
+        },
+        goTo: function(index) {
+            if (index >= 0 && index < totalSlides) {
+                currentIndex = index;
+                updateCarousel();
+            }
+        }
+    };
+}
+
+function initShuttleInfoButtons() {
+    // Pastikan tombol "Info Shuttle" berfungsi
+    document.querySelectorAll('.btn-filter[onclick*="toggleShuttleInfo"]').forEach(button => {
+        const match = button.getAttribute('onclick').match(/toggleShuttleInfo\((\d+)\)/);
+        if (match) {
+            const jadwalId = match[1];
+
+            // Tambah event listener baru
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                toggleShuttleInfo(jadwalId);
+            });
+
+            // Hapus onclick lama agar tidak double
+            button.removeAttribute('onclick');
+        }
+    });
+
+    // Juga untuk tombol route details
+    document.querySelectorAll('.btn-route[onclick*="toggleRouteDetails"]').forEach(button => {
+        const match = button.getAttribute('onclick').match(/toggleRouteDetails\((\d+)\)/);
+        if (match) {
+            const jadwalId = match[1];
+
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                toggleRouteDetails(jadwalId);
+            });
+
+            button.removeAttribute('onclick');
+        }
+    });
+}
+
+// Fungsi toggle shuttle info (original)
+window.toggleShuttleInfo = function(jadwalId) {
+    const details = document.getElementById(`shuttle-details-${jadwalId}`);
+    const routeDetails = document.getElementById(`route-details-${jadwalId}`);
+
+    // Tutup route details jika terbuka
+    if (routeDetails && routeDetails.style.display === 'block') {
+        routeDetails.style.display = 'none';
+    }
+
+    if (details.style.display === 'block') {
+        details.style.display = 'none';
+    } else {
+        details.style.display = 'block';
+        // Inisialisasi carousel jika belum
+        setTimeout(() => {
+            initCarousel(jadwalId);
+        }, 50);
+    }
+};
+
+// Fungsi toggle route details (original)
+window.toggleRouteDetails = function(jadwalId) {
+    const details = document.getElementById(`route-details-${jadwalId}`);
+    const shuttleDetails = document.getElementById(`shuttle-details-${jadwalId}`);
+
+    // Tutup shuttle details jika terbuka
+    if (shuttleDetails && shuttleDetails.style.display === 'block') {
+        shuttleDetails.style.display = 'none';
+    }
+
+    if (details.style.display === 'block') {
+        details.style.display = 'none';
+    } else {
+        details.style.display = 'block';
+    }
+};
 </script>
 @endpush

@@ -10,7 +10,7 @@ class MetodePembayaran extends Model
     use HasFactory;
 
     protected $table = 'metode_pembayaran';
-    
+
     protected $fillable = [
         'nama',
         'kode',
@@ -19,38 +19,28 @@ class MetodePembayaran extends Model
         'biaya_admin',
         'estimasi_waktu',
         'instruksi',
-        'aktif'
+        'aktif',
+        'nomor_rekening',
+        'nama_rekening',
+        'gambar',
+        'urutan',
+        'is_paylabs',
+        'paylabs_channel_code',
+        'paylabs_channel_name'
     ];
 
     protected $casts = [
         'biaya_admin' => 'decimal:2',
         'estimasi_waktu' => 'integer',
-        'instruksi' => 'array',
-        'aktif' => 'boolean'
+        'instruksi' => 'array', // Perhatikan: di database tipe JSON
+        'aktif' => 'boolean',
+        'is_paylabs' => 'boolean'
     ];
 
     // Scope untuk metode aktif
     public function scopeAktif($query)
     {
-        return $query->where('aktif', true)->orderBy('nama', 'asc');
-    }
-
-    // Scope untuk metode berdasarkan jenis
-    public function scopeJenis($query, $jenis)
-    {
-        return $query->where('jenis', $jenis)->where('aktif', true);
-    }
-
-    // Scope untuk metode berdasarkan kode
-    public function scopeKode($query, $kode)
-    {
-        return $query->where('kode', $kode)->where('aktif', true);
-    }
-
-    // Cek apakah metode tersedia
-    public function getTersediaAttribute()
-    {
-        return $this->aktif;
+        return $query->where('aktif', true)->orderBy('urutan', 'asc');
     }
 
     // Format biaya admin
@@ -59,15 +49,20 @@ class MetodePembayaran extends Model
         return 'Rp ' . number_format($this->biaya_admin, 0, ',', '.');
     }
 
-    // Format estimasi waktu
-    public function getEstimasiWaktuFormattedAttribute()
-    {
-        return $this->estimasi_waktu . ' menit';
-    }
-
     // Get instruksi sebagai array
     public function getInstruksiArrayAttribute()
     {
-        return is_array($this->instruksi) ? $this->instruksi : [];
+        // Jika instruksi sudah array, return langsung
+        if (is_array($this->instruksi)) {
+            return $this->instruksi;
+        }
+
+        // Jika string (JSON), decode
+        if (is_string($this->instruksi)) {
+            return json_decode($this->instruksi, true) ?? [];
+        }
+
+        // Default
+        return [];
     }
 }

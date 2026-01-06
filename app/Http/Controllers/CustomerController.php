@@ -303,6 +303,11 @@ class CustomerController extends Controller
                 'membership_level' => $user->membership_level,
             ]);
 
+            // Check if user has admin role and redirect accordingly
+            if ($user->hasRole('admin_pusat') || $user->hasRole('admin_cabang')) {
+                return redirect()->route('admin.dashboard');
+            }
+
             return redirect()->route('customer.beranda');
 
         } catch (\Exception $e) {
@@ -958,7 +963,7 @@ class CustomerController extends Controller
 
             DB::commit();
 
-            return redirect()->route('customer.kursi', ['pemesanan_id' => $pemesanan->id])
+            return redirect('/customer/kursi?pemesanan_id=' . $pemesanan->id)
                 ->with('success', 'Pemesanan berhasil! Silakan pilih kursi untuk penumpang.');
 
         } catch (\Exception $e) {
@@ -1259,65 +1264,191 @@ class CustomerController extends Controller
     }
 
     /**
-     * Update profil
-     */
-    public function updateProfile(Request $request)
-    {
-        if (!Auth::check()) {
-            return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
+ * Update profil dengan upload avatar
+ */
+public function updateProfile(Request $request)
+{
+    if (!Auth::check()) {
+        return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
+    }
+
+    $user = Auth::user();
+
+    // Validasi
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'username' => 'nullable|string|max:50|unique:users,username,' . $user->id,
+        'email' => 'required|email|unique:users,email,' . $user->id,
+        'phone' => 'nullable|string|max:20',
+        'nik' => 'nullable|string|max:16|min:16',
+        'tanggal_lahir' => 'nullable|date',
+        'jenis_kelamin' => 'nullable|in:L,P',
+        'password' => 'nullable|string|min:6|confirmed',
+        'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Max 2MB
+    ], [
+        'avatar.image' => 'File harus berupa gambar',
+        'avatar.mimes' => 'Format gambar harus jpeg, png, jpg, gif, atau webp',
+        'avatar.max' => 'Ukuran gambar maksimal 2MB',
+        'nik.min' => 'NIK harus 16 digit',
+        'nik.max' => 'NIK harus 16 digit',
+    ]);
+
+    DB::beginTransaction();
+
+    try {
+        // Update data user
+        $user->name = $validated['name'];
+        $user->username = $validated['username'] ?? $user->username;
+        $user->email = $validated['email'];
+        $user->phone = $validated['phone'] ?? $user->phone;
+        $user->nik = $validated['nik'] ?? $user->nik;
+        $user->tanggal_lahir = $validated['tanggal_lahir'] ?? $user->tanggal_lahir;
+        $user->jenis_kelamin = $validated['jenis_kelamin'] ?? $user->jenis_kelamin;
+
+        // Update password jika diisi
+        if ($request->filled('password')) {
+            $user->password = bcrypt($validated['password']);
         }
 
-        $user = Auth::user();
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'username' => 'nullable|string|max:50|unique:users,username,' . $user->id,
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'phone' => 'nullable|string|max:20',
-            'nik' => 'nullable|string|max:20',
-            'tanggal_lahir' => 'nullable|date',
-            'jenis_kelamin' => 'nullable|in:L,P',
-            'password' => 'nullable|string|min:6|confirmed',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        // Handle upload avatar
+        if ($request->hasFile('avatar')) {
+            // Hapus avatar lama jika ada (kecuali dari Google Auth)
+            $user->deleteOldAvatar();
+
+            // Simpan file baru
+            $avatarPath = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar = $avatarPath;
+        }
+
+        $user->save();
+
+        DB::commit();
+
+        // Update session
+        session()->put('user', [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'nik' => $user->nik,
+            'avatar' => $user->avatar_url,
+            'membership_status' => $user->membership_status,
+            'membership_level' => $user->membership_level,
         ]);
 
-        try {
-            $user->name = $validated['name'];
-            $user->username = $validated['username'] ?? $user->username;
-            $user->email = $validated['email'];
-            $user->phone = $validated['phone'] ?? $user->phone;
-            $user->nik = $validated['nik'] ?? $user->nik;
-            $user->tanggal_lahir = $validated['tanggal_lahir'] ?? $user->tanggal_lahir;
-            $user->jenis_kelamin = $validated['jenis_kelamin'] ?? $user->jenis_kelamin;
+        return redirect()->route('customer.profilcust')
+            ->with('success', 'Profil berhasil diperbarui!');
 
-            if ($request->filled('password')) {
-                $user->password = bcrypt($validated['password']);
-            }
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Update profile error: ' . $e->getMessage());
 
-            if ($request->hasFile('avatar')) {
-                $avatarPath = $request->file('avatar')->store('avatars', 'public');
-                $user->avatar = $avatarPath;
-            }
-
-            $user->save();
-
-            session()->put('user', [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'nik' => $user->nik,
-                'avatar' => $user->avatar_url,
-                'membership_status' => $user->membership_status,
-                'membership_level' => $user->membership_level,
-            ]);
-
-            return redirect()->route('customer.profilcust')->with('success', 'Profil berhasil diperbarui!');
-
-        } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Gagal memperbarui profil: ' . $e->getMessage()])
-                        ->withInput();
-        }
+        return back()->withErrors(['error' => 'Gagal memperbarui profil: ' . $e->getMessage()])
+                    ->withInput();
     }
+}
+
+/**
+ * Upload avatar secara langsung (AJAX)
+ */
+public function uploadAvatar(Request $request)
+{
+    if (!Auth::check()) {
+        return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+    }
+
+    $user = Auth::user();
+
+    // Validasi
+    $validated = $request->validate([
+        'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+    ]);
+
+    DB::beginTransaction();
+
+    try {
+        // Hapus avatar lama jika ada
+        $user->deleteOldAvatar();
+
+        // Simpan avatar baru
+        $avatarPath = $request->file('avatar')->store('avatars', 'public');
+        $user->avatar = $avatarPath;
+        $user->save();
+
+        DB::commit();
+
+        // Update session
+        session()->put('user', [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'nik' => $user->nik,
+            'avatar' => $user->avatar_url,
+            'membership_status' => $user->membership_status,
+            'membership_level' => $user->membership_level,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Foto profil berhasil diupload',
+            'avatar_url' => $user->avatar_url,
+            'has_avatar' => !empty($user->avatar)
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Upload avatar error: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengupload foto: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Hapus avatar (AJAX)
+ */
+public function deleteAvatar(Request $request)
+{
+    if (!Auth::check()) {
+        return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+    }
+
+    $user = Auth::user();
+
+    try {
+        // Hapus avatar dari storage
+        $user->deleteOldAvatar();
+
+        // Set avatar ke null di database
+        $user->avatar = null;
+        $user->save();
+
+        // Update session
+        session()->put('user', [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'nik' => $user->nik,
+            'avatar' => $user->avatar_url,
+            'membership_status' => $user->membership_status,
+            'membership_level' => $user->membership_level,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Foto profil berhasil dihapus',
+            'initials' => $user->initials
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('Delete avatar error: ' . $e->getMessage());
+        return response()->json(['success' => false, 'message' => 'Gagal menghapus foto profil'], 500);
+    }
+}
 
     /**
      * Halaman membership

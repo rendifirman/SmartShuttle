@@ -11,13 +11,8 @@ use App\Http\Controllers\API\OutletController;
 use App\Http\Controllers\API\LayananController;
 use App\Http\Controllers\API\ScheduleController;
 use App\Http\Controllers\API\PemesananController; // TAMBAHKAN INI
+use App\Http\Controllers\API\PasswordResetController;
 use App\Http\Controllers\KursiController;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use App\Notifications\SmartShuttlePasswordReset;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,128 +32,11 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 // PASSWORD RESET
-Route::post('/forgot-password', function (Request $request) {
-    try {
-        Log::info('Forgot password request', ['email' => $request->email]);
+Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
+Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
 
-        $request->validate([
-            'email' => 'required|email|exists:users,email'
-        ]);
-
-        $user = \App\Models\User::where('email', $request->email)->first();
-
-        if (!$user) {
-            return response()->json(['message' => 'Email tidak ditemukan'], 404);
-        }
-
-        // Generate simple token 6 digit
-        $token = Str::upper(Str::random(6));
-
-        // Simpan token ke database
-        DB::table('password_reset_tokens')->updateOrInsert(
-            ['email' => $request->email],
-            [
-                'token' => Hash::make($token),
-                'created_at' => now()
-            ]
-        );
-
-        // Kirim token via email yang lebih baik
-        try {
-            $user->notify(new SmartShuttlePasswordReset($token));
-            Log::info('Password reset email sent', ['email' => $request->email]);
-        } catch (\Exception $e) {
-            Log::error('Failed to send email', [
-                'email' => $request->email,
-                'error' => $e->getMessage()
-            ]);
-            return response()->json([
-                'message' => 'Token berhasil dibuat tapi gagal mengirim email',
-                'token' => $token // Hanya untuk development
-            ], 200);
-        }
-
-        return response()->json([
-            'message' => 'Kode reset password telah dikirim ke email Anda'
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Forgot password error', [
-            'email' => $request->email,
-            'error' => $e->getMessage()
-        ]);
-
-        return response()->json([
-            'message' => 'Terjadi kesalahan sistem'
-        ], 500);
-    }
-});
-
-Route::post('/reset-password', function (Request $request) {
-    try {
-        Log::info('Reset password request', ['email' => $request->email]);
-
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-            'token' => 'required|string|size:6',
-            'password' => 'required|confirmed|min:8'
-        ]);
-
-        // Cari token di database
-        $record = DB::table('password_reset_tokens')
-                    ->where('email', $request->email)
-                    ->first();
-
-        if (!$record) {
-            return response()->json([
-                'message' => 'Tidak ada permintaan reset password untuk email ini'
-            ], 400);
-        }
-
-        if (!Hash::check($request->token, $record->token)) {
-            Log::warning('Invalid token attempt', [
-                'email' => $request->email,
-                'provided_token' => $request->token
-            ]);
-            return response()->json([
-                'message' => 'Kode reset password tidak valid'
-            ], 400);
-        }
-
-        // Check token expiry (60 menit)
-        if (now()->diffInMinutes($record->created_at) > 60) {
-            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
-            return response()->json([
-                'message' => 'Kode reset password telah kadaluarsa'
-            ], 400);
-        }
-
-        // Update password user
-        $user = \App\Models\User::where('email', $request->email)->first();
-        $user->update([
-            'password' => Hash::make($request->password)
-        ]);
-
-        // Hapus token setelah digunakan
-        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
-
-        Log::info('Password reset successful', ['email' => $request->email]);
-
-        return response()->json([
-            'message' => 'Password berhasil direset! Silakan login dengan password baru Anda'
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Reset password error', [
-            'email' => $request->email,
-            'error' => $e->getMessage()
-        ]);
-
-        return response()->json([
-            'message' => 'Terjadi kesalahan sistem'
-        ], 500);
-    }
-});
+// Paylabs public callback (expects POST from Paylabs)
+Route::post('/pembayaran/callback', [\App\Http\Controllers\PembayaranController::class, 'webhook']);
 
 // PUBLIC BRANCH APIs
 Route::prefix('branches')->group(function () {
@@ -337,4 +215,141 @@ Route::middleware(['auth:sanctum', 'admin.role'])->group(function () {
     Route::post('/users/assign-role', [RoleController::class, 'assignRole']);
     Route::post('/users/remove-role', [RoleController::class, 'removeRole']);
     Route::get('/users/{userId}/roles', [RoleController::class, 'getUserRoles']);
+});
+Route::get('/test-db', function() {
+    try {
+        // Test 1: Cek koneksi
+        \DB::connection()->getPdo();
+        $dbName = \DB::connection()->getDatabaseName();
+
+        // Test 2: Cek tabel
+        $tableExists = \Schema::hasTable('metode_pembayaran');
+
+        // Test 3: Query sederhana
+        $count = \DB::table('metode_pembayaran')->count();
+        $first = \DB::table('metode_pembayaran')->first();
+
+        return response()->json([
+            'success' => true,
+            'database' => $dbName,
+            'table_exists' => $tableExists,
+            'count' => $count,
+            'first_record' => $first,
+            'columns' => array_keys((array)$first)
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+});
+// Testing Paylabs Integration - Untuk developer internal
+Route::middleware(['auth:sanctum'])->prefix('dev')->group(function () {
+    // Test connection to Paylabs
+    Route::get('/paylabs/test-connection', function () {
+        try {
+            $paylabsService = new \App\Services\PaylabsService();
+
+            // Test dengan membuat dummy payment
+            $dummyPayment = \App\Models\Pembayaran::create([
+                'kode_pembayaran' => 'TEST' . time(),
+                'jumlah' => 100000,
+                'metode' => 'qris',
+                'status' => 'menunggu',
+                'waktu_kadaluarsa' => now()->addMinutes(30),
+            ]);
+
+            $result = $paylabsService->createPayment(
+                $dummyPayment,
+                'QRIS',
+                'QRIS'
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Connection to Paylabs successful',
+                'data' => $result
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Connection failed: ' . $e->getMessage(),
+                'error_details' => $e->getTraceAsString()
+            ], 500);
+        }
+    });
+
+    // Test signature generation
+    Route::get('/paylabs/test-signature', function () {
+        try {
+            $paylabsService = new \App\Services\PaylabsService();
+
+            $testData = [
+                'merchantId' => config('paylabs.mid'),
+                'merchantTradeNo' => 'TEST' . time(),
+                'amount' => 100000,
+                'currency' => 'IDR'
+            ];
+
+            $signature = $paylabsService->generateSignature($testData);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Signature generated successfully',
+                'data' => [
+                    'original_data' => $testData,
+                    'signature' => $signature,
+                    'signature_length' => strlen($signature)
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Signature generation failed: ' . $e->getMessage()
+            ], 500);
+        }
+    });
+
+    // Simulate Paylabs callback (for testing)
+    Route::post('/paylabs/simulate-callback', function (Request $request) {
+        \Log::info('Simulated Paylabs Callback:', $request->all());
+
+        // Panggil callback handler yang asli
+        $paymentController = new \App\Http\Controllers\API\PaymentController(
+            new \App\Services\PaylabsService()
+        );
+
+        return $paymentController->callback($request);
+    });
+    // Tambahkan di routes/api.php
+Route::prefix('payment')->group(function () {
+    // Create payment
+    Route::post('/create', [\App\Http\Controllers\API\PaymentController::class, 'createPayment']);
+
+    // Get payment status
+    Route::get('/status/{kodePembayaran}', [\App\Http\Controllers\API\PaymentController::class, 'getPaymentStatus']);
+
+    // Get payment methods
+    Route::get('/methods', [\App\Http\Controllers\API\PaymentController::class, 'getPaymentMethods']);
+
+    // Paylabs callback (public)
+    Route::post('/callback', [\App\Http\Controllers\API\PaymentController::class, 'callback'])
+        ->name('api.payment.callback');
+
+    // Test Paylabs connection
+    Route::get('/test-connection', [\App\Http\Controllers\API\PaymentController::class, 'testConnection'])
+        ->name('api.payment.test');
+
+    // Simulate payment (for demo)
+    Route::post('/simulate', [\App\Http\Controllers\API\PaymentController::class, 'simulatePayment'])
+        ->middleware('auth:sanctum');
+
+    // Get QR code
+    Route::get('/qr-code/{kodePembayaran}', [\App\Http\Controllers\API\PaymentController::class, 'getQRCode']);
+});
 });

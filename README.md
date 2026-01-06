@@ -57,3 +57,34 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Paylabs Integration (Quick Setup)
+
+Add the Paylabs PEM files and env variables as follows:
+
+- Place private key at: `storage/keys/paylabs_private.pem` and public key at `storage/keys/paylabs_public.pem`.
+- Ensure PHP can read the files (adjust filesystem permissions).
+- Do NOT hardcode the private key value in code or `.env`.
+
+Required `.env` variables (examples already present in project):
+
+- `PAYLABS_MID=010529`
+- `PAYLABS_BASE_URL=https://pay.paylabs.co.id`
+- `PAYLABS_ENDPOINT=/pembayaran`
+- `PAYLABS_CALLBACK_URL=http://localhost:8000/api/pembayaran/callback`
+- `PAYLABS_PRIVATE_KEY_FILE=storage/keys/paylabs_private.pem`
+- `PAYLABS_PUBLIC_KEY_FILE=storage/keys/paylabs_public.pem`
+
+Test endpoints included for local/dev testing (keep these in place):
+
+- `GET /api/dev/paylabs/test-signature` — generates a signature for sample payload (requires auth).
+- `GET /api/dev/paylabs/test-connection` — attempts a test request to Paylabs (requires auth).
+- `POST /api/dev/paylabs/simulate-callback` — simulate an incoming Paylabs callback to the webhook (useful for testing).
+
+How it works:
+
+- `App\Services\PaylabsService` builds a sorted payload, signs it with RSA SHA256 using OpenSSL, and base64-encodes the signature.
+- The service reads the private/public key from `.env`/config and supports relative paths via `base_path()`/`storage_path()`.
+- The public callback route is available at `/api/pembayaran/callback` and handled by `App\Http\Controllers\PembayaranController@webhook`.
+
+Run tests manually by calling the dev routes after authenticating as a developer user.

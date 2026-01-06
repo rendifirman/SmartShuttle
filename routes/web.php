@@ -12,6 +12,7 @@ use App\Http\Controllers\KursiController;
 use App\Http\Controllers\ETicketController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Customer\CekReservasiController;
+use App\Http\Controllers\ArtikelController;
 
 /*
 |--------------------------------------------------------------------------
@@ -151,6 +152,9 @@ Route::middleware(['auth.customer'])->group(function () {
     Route::get('/customer/kirim-paket', function() {
         return view('customer.kirim_paket');
     })->name('customer.kirim-paket');
+    Route::get('/customer/smartsend', function() {
+        return view('customer.smartsend');
+    })->name('customer.smartsend');
     Route::post('/cek-harga-paket', [CustomerController::class, 'cekHargaPaket'])->name('customer.cek-harga-paket');
     Route::post('/kirim-paket/proses', [CustomerController::class, 'prosesKirimPaket'])->name('customer.kirim-paket.proses');
 });
@@ -193,13 +197,99 @@ Route::get('/debug/e-ticket/{kode_booking}', function($kode_booking) {
     return redirect()->route('customer.e_ticket', ['kode_booking' => $kode_booking]);
 })->name('debug.e_ticket');
 
+// Test route: generate RSA signature only (no external API call)
+Route::get('/paylabs/signature-test', function () {
+    try {
+        $keyFile = config('paylabs.private_key_file');
+
+        $privateKeyContent = null;
+        if ($keyFile) {
+            $pathsToTry = [$keyFile, base_path($keyFile), storage_path($keyFile)];
+            foreach ($pathsToTry as $p) {
+                if ($p && file_exists($p)) {
+                    $privateKeyContent = file_get_contents($p);
+                    break;
+                }
+            }
+        }
+
+        if (empty($privateKeyContent)) {
+            throw new \Exception('Private key file not found. Check config("paylabs.private_key_file").');
+        }
+
+        // Temporarily set the private key in config so PaylabsService will pick it up
+        config(['paylabs.private_key' => $privateKeyContent]);
+
+        // Sample payload to sign
+        $payload = [
+            'requestType' => 'createPayment',
+            'merchantId' => config('paylabs.mid'),
+            'merchantTradeNo' => 'TEST' . time(),
+            'amount' => 1000,
+            'currency' => 'IDR',
+        ];
+
+        // Build the string to sign (same logic as in PaylabsService::generateSignature)
+        ksort($payload);
+        $stringToSign = '';
+        foreach ($payload as $key => $value) {
+            if ($value !== null && $value !== '') {
+                $stringToSign .= $key . '=' . $value . '&';
+            }
+        }
+        $stringToSign = rtrim($stringToSign, '&');
+
+        $service = new \App\Services\PaylabsService();
+        $signatureBase64 = $service->generateSignature($payload);
+        $signatureRaw = base64_decode($signatureBase64);
+        $signatureLong = bin2hex($signatureRaw);
+
+        return response()->json([
+            'success' => true,
+            'signed_payload' => $stringToSign,
+            'signature_base64' => $signatureBase64,
+            'signature_raw_hex' => $signatureLong,
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Paylabs signature test error', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+})->name('paylabs.signature_test');
+
+// Test route: create payment (sends POST to Paylabs)
+Route::get('/paylabs/create-payment-test', function () {
+    try {
+        $service = new \App\Services\PaylabsService();
+        $result = $service->createPaymentTest();
+
+        return response()->json($result);
+    } catch (\Exception $e) {
+        \Log::error('Paylabs create-payment-test error', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+})->name('paylabs.create_payment_test');
+
 // Route untuk review
 Route::post('/customer/review', [CustomerController::class, 'storeReview'])->name('customer.review.store');
 
-// Route artikel (placeholder) — jika belum ada halaman artikel, redirect ke beranda
-Route::get('/customer/artikel', function () {
-    return redirect()->route('customer.beranda');
-})->name('customer.artikel');
+// Route artikel
+Route::get('/customer/artikel', [ArtikelController::class, 'index'])->name('customer.artikel');
+Route::get('/customer/artikel/{slug}', [ArtikelController::class, 'show'])->name('customer.artikel.detail');
+Route::get('/customer/artikel/kategori/{kategori}', [ArtikelController::class, 'kategori'])->name('customer.artikel.kategori');
 
 // ★★★ ROUTE FALLBACK ★★★
 Route::fallback(function () {

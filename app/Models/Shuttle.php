@@ -134,26 +134,45 @@ class Shuttle extends Model
         return $this;
     }
 
-    /**
-     * Method untuk mendapatkan layout dengan status untuk jadwal tertentu
-     */
-    public function getLayoutWithStatus($jadwalId = null)
-    {
-        $layout = $this->layout_kursi_array;
+    // GANTI method getLayoutWithStatus DI Shuttle.php:
 
-        if ($jadwalId) {
-            $terpesan = KursiTerpesan::where('jadwal_id', $jadwalId)
-                ->whereIn('status', ['terpesan', 'terisi'])
-                ->pluck('nomor_kursi')
-                ->toArray();
+/**
+ * Method untuk mendapatkan layout dengan status untuk jadwal tertentu
+ */
+public function getLayoutWithStatus($jadwalId = null)
+{
+    $layout = $this->layout_kursi_array;
 
-            foreach ($layout as &$kursi) {
-                $kursi['status'] = in_array($kursi['nomor'], $terpesan) ? 'terpesan' : 'tersedia';
+    if ($jadwalId) {
+        // HANYA ambil kursi yang sudah dipesan secara permanen (terpesan)
+        $terpesan = KursiTerpesan::where('jadwal_id', $jadwalId)
+            ->where('status', 'terpesan')
+            ->whereHas('pemesanan', function($query) {
+                // Hanya pemesanan aktif (tidak dibatalkan/expired)
+                $query->whereNotIn('status', ['dibatalkan', 'expired']);
+            })
+            ->pluck('nomor_kursi')
+            ->toArray();
+
+        foreach ($layout as &$kursi) {
+            if (in_array($kursi['nomor'], $terpesan)) {
+                // KURSI SUDAH DIPESAN OLEH USER LAIN
+                $kursi['status'] = 'terpesan';
+                $kursi['class'] = 'sold';
+                $kursi['icon'] = 'fa-lock';
+                $kursi['dapat_dipilih'] = false; // TAMBAHKAN FLAG INI
+            } else {
+                // KURSI MASIH TERSEDIA
+                $kursi['status'] = 'tersedia';
+                $kursi['class'] = 'available';
+                $kursi['icon'] = 'fa-check';
+                $kursi['dapat_dipilih'] = true; // TAMBAHKAN FLAG INI
             }
         }
-
-        return $layout;
     }
+
+    return $layout;
+}
 
     /**
      * Method untuk update total kursi dan layout

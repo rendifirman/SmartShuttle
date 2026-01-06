@@ -30,10 +30,10 @@ class ShuttleSeeder extends Seeder
                 'layout_kursi' => KursiTerpesan::generateLayoutKursi(9),
                 'fasilitas' => 'AC Double,WiFi High Speed,Charger USB-C,TV LED 32",Snack Premium,Mineral Water,Toilet,Bagasi Luas',
                 'nomor_polisi' => 'B 1234 SS',
-                'gambar_depan' => 'shuttle-front-1.jpg',
-                'gambar_samping' => 'shuttle-side-1.jpg',
-                'gambar_belakang' => 'shuttle-rear-1.jpg',
-                'gambar_interior' => 'shuttle-interior-1.jpg',
+                'gambar_depan' => 'pandu.png',
+                'gambar_samping' => 'pandu2.jfif',
+                'gambar_belakang' => 'pandu3.jfif',
+                'gambar_interior' => 'pandu4.jfif',
                 'status' => 'aktif'
             ],
             [
@@ -66,41 +66,18 @@ class ShuttleSeeder extends Seeder
                 'gambar_interior' => 'shuttle-interior-3.jpg',
                 'status' => 'aktif'
             ],
-            // Tambahkan shuttle untuk layanan lain (Smart Send, Smart Rent)
-            [
-                'layanan_id' => MLayanan::where('kode_layanan', 'SMARTSEND')->value('id_layanan'),
-                'nama_shuttle' => 'Logistics Van 1',
-                'tipe_shuttle' => 'Logistics',
-                'kapasitas_kursi' => 3,
-                'total_kursi' => 3,
-                'layout_kursi' => KursiTerpesan::generateLayoutKursi(3),
-                'fasilitas' => 'AC,GPS Tracking,Loading Ramp,Safety Box',
-                'nomor_polisi' => 'B 3456 LS',
-                'status' => 'aktif'
-            ],
-            [
-                'layanan_id' => MLayanan::where('kode_layanan', 'SMARTRENT')->value('id_layanan'),
-                'nama_shuttle' => 'Rental Car 1',
-                'tipe_shuttle' => 'Premium',
-                'kapasitas_kursi' => 6,
-                'total_kursi' => 6,
-                'layout_kursi' => KursiTerpesan::generateLayoutKursi(6),
-                'fasilitas' => 'AC,Leather Seat,Entertainment System,Sunroof',
-                'nomor_polisi' => 'B 7890 RC',
-                'status' => 'aktif'
-            ],
         ];
 
         foreach ($shuttles as $shuttleData) {
             $shuttle = Shuttle::updateOrCreate(
-                ['nama_shuttle' => $shuttleData['nama_shuttle']],
+                [
+                    'nama_shuttle' => $shuttleData['nama_shuttle'],
+                    'nomor_polisi' => $shuttleData['nomor_polisi']
+                ],
                 $shuttleData
             );
 
-            // Pastikan layout sudah tersimpan dengan benar
-            $shuttle->initLayoutIfEmpty();
-
-            echo "Created/Updated shuttle: {$shuttle->nama_shuttle} (Layanan: {$shuttle->layanan_id})\n";
+            echo "Created/Updated shuttle: {$shuttle->nama_shuttle}\n";
         }
 
         echo "ShuttleSeeder completed successfully!\n";
