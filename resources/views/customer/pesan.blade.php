@@ -1150,6 +1150,19 @@
         .promo-card:hover .promo-select-btn {
             display: block;
         }
+
+        /* Promo conditions styling */
+        .promo-conditions {
+            margin-bottom: 15px;
+        }
+
+        .promo-conditions .fa-check-circle {
+            color: #28a745;
+        }
+
+        .promo-conditions .fa-times-circle {
+            color: #dc3545;
+        }
     </style>
 @endpush
 
@@ -1579,17 +1592,52 @@
     </div>
 </div>
 
-<!-- Modal Daftar Promo -->
+<!-- Modal Daftar Promo - UPDATED -->
 <div class="modal fade" id="promoModal" tabindex="-1" aria-labelledby="promoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="promoModalLabel">
                     <i class="fas fa-tags text-orange me-2"></i>Promo Tersedia
+                    @if(isset($userData['is_member']) && $userData['is_member'])
+                        <span class="badge bg-success ms-2">
+                            <i class="fas fa-crown me-1"></i>Member
+                        </span>
+                    @endif
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <!-- Info Kondisi -->
+                <div class="alert alert-info mb-4">
+                    <div class="d-flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle fa-lg"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="alert-heading">Syarat Promo Aktif</h6>
+                            <p class="mb-1">
+                                <i class="fas fa-users me-1"></i>
+                                <strong>Jumlah Tiket:</strong> {{ $penumpang ?? 1 }} 
+                                @if($penumpang >= 3)
+                                    <span class="badge bg-success">✓ Promo Keluarga Aktif</span>
+                                @else
+                                    <span class="badge bg-secondary">Promo Keluarga butuh ≥ 3 tiket</span>
+                                @endif
+                            </p>
+                            <p class="mb-0">
+                                <i class="fas fa-user-tie me-1"></i>
+                                <strong>Status Member:</strong> 
+                                @if(isset($userData['is_member']) && $userData['is_member'])
+                                    <span class="badge bg-success">✓ Member Aktif</span>
+                                @else
+                                    <span class="badge bg-secondary">Promo Membership tidak tersedia</span>
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Search and Filter -->
                 <div class="promo-search mb-4">
                     <div class="input-group">
@@ -1608,142 +1656,218 @@
                     <button class="btn btn-sm btn-outline-primary promo-filter-btn active" data-filter="all">
                         Semua Promo
                     </button>
-                    <button class="btn btn-sm btn-outline-success promo-filter-btn" data-filter="active">
-                        <i class="fas fa-check-circle me-1"></i>Aktif
+                    <button class="btn btn-sm btn-outline-success promo-filter-btn" data-filter="eligible">
+                        <i class="fas fa-check-circle me-1"></i>Bisa Dipakai
                     </button>
-                    <button class="btn btn-sm btn-outline-warning promo-filter-btn" data-filter="shuttle">
-                        <i class="fas fa-bus me-1"></i>Shuttle
+                    <button class="btn btn-sm btn-outline-warning promo-filter-btn" data-filter="keluarga">
+                        <i class="fas fa-users me-1"></i>Keluarga
                     </button>
-                    <button class="btn btn-sm btn-outline-info promo-filter-btn" data-filter="persentase">
-                        <i class="fas fa-percent me-1"></i>Diskon %
+                    <button class="btn btn-sm btn-outline-info promo-filter-btn" data-filter="membership">
+                        <i class="fas fa-crown me-1"></i>Membership
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary promo-filter-btn" data-filter="umum">
+                        <i class="fas fa-tag me-1"></i>Umum
                     </button>
                 </div>
 
                 <!-- Promo List -->
                 <div class="row" id="promoListContainer">
-                    @forelse($promos as $promo)
                     @php
-                        $isActive = $promo->status &&
-                                   $promo->tanggal_berakhir >= now() &&
-                                   ($promo->kuota === null || $promo->terpakai < $promo->kuota);
-                        $cardClass = $isActive ? '' : 'promo-inactive';
+                        // Fallback jika $eligiblePromos tidak ada, gunakan $promos
+                        if (!isset($eligiblePromos) && isset($promos)) {
+                            $eligiblePromos = [];
+                            foreach ($promos as $promo) {
+                                $eligiblePromos[] = [
+                                    'promo' => $promo,
+                                    'eligible' => true,
+                                    'reason' => null
+                                ];
+                            }
+                        }
                     @endphp
 
-                    <div class="col-md-6 mb-3 promo-card-item"
-                         data-filter="
-                         {{ $isActive ? 'active ' : 'inactive ' }}
-                         {{ $promo->tipe_promo }}
-                         {{ $promo->jenis_diskon }}
-                         {{ strtolower($promo->nama_promo) }}
-                         {{ strtolower($promo->kode_promo) }}
-                         "
-                         data-status="{{ $isActive ? 'active' : 'inactive' }}">
-                        <div class="card promo-card h-100 border-0 shadow-sm {{ $cardClass }}"
-                             data-code="{{ $promo->kode_promo }}"
-                             data-name="{{ $promo->nama_promo }}"
-                             data-description="{{ $promo->deskripsi }}"
-                             data-discount-type="{{ $promo->jenis_diskon }}"
-                             data-discount-value="{{ $promo->nilai_diskon }}"
-                             data-min-purchase="{{ $promo->minimal_pembelian }}"
-                             data-max-discount="{{ $promo->maksimal_diskon }}"
-                             data-expired="{{ \Carbon\Carbon::parse($promo->tanggal_berakhir)->format('d M Y') }}"
-                             data-active="{{ $isActive ? 'true' : 'false' }}">
+                    @forelse($eligiblePromos as $promoItem)
+                        @php
+                            $promo = $promoItem['promo'];
+                            $eligible = $promoItem['eligible'];
+                            $reason = $promoItem['reason'];
+                            $cardClass = $eligible ? '' : 'promo-inactive';
+                            
+                            // Tentukan badge berdasarkan kategori
+                            $categoryBadge = match($promo->kategori_promo) {
+                                'keluarga' => ['class' => 'bg-warning', 'icon' => 'fas fa-users', 'label' => 'Keluarga'],
+                                'membership' => ['class' => 'bg-info', 'icon' => 'fas fa-crown', 'label' => 'Membership'],
+                                default => ['class' => 'bg-secondary', 'icon' => 'fas fa-tag', 'label' => 'Umum']
+                            };
+                        @endphp
 
-                            <!-- Status Badge -->
-                            <div class="position-absolute top-0 end-0 m-2">
-                                @if($isActive)
-                                    <span class="badge bg-success promo-badge">
-                                        <i class="fas fa-bolt me-1"></i>Aktif
-                                    </span>
-                                @else
-                                    <span class="badge bg-secondary promo-badge">
-                                        <i class="fas fa-ban me-1"></i>Tidak Aktif
-                                    </span>
-                                @endif
-                            </div>
+                        <div class="col-md-6 mb-3 promo-card-item"
+                             data-filter="
+                             {{ $eligible ? 'eligible ' : 'ineligible ' }}
+                             {{ $promo->kategori_promo }}
+                             {{ strtolower($promo->nama_promo) }}
+                             "
+                             data-eligible="{{ $eligible ? 'true' : 'false' }}"
+                             data-category="{{ $promo->kategori_promo }}">
 
-                            <div class="card-body">
-                                <!-- Promo Type Badge -->
-                                <div class="mb-2">
-                                    <span class="badge
-                                        @if($promo->tipe_promo == 'shuttle') bg-primary
-                                        @elseif($promo->tipe_promo == 'paket') bg-info
-                                        @elseif($promo->tipe_promo == 'sewa') bg-warning
-                                        @else bg-secondary @endif">
-                                        {{ ucfirst($promo->tipe_promo) }}
-                                    </span>
+                            <div class="card promo-card h-100 border-0 shadow-sm {{ $cardClass }}"
+                                 data-code="{{ $promo->kode_promo }}"
+                                 data-name="{{ $promo->nama_promo }}"
+                                 data-description="{{ $promo->deskripsi }}"
+                                 data-category="{{ $promo->kategori_promo }}"
+                                 data-eligible="{{ $eligible ? 'true' : 'false' }}"
+                                 data-reason="{{ $reason }}"
+                                 @if(!$eligible) style="opacity: 0.7; cursor: not-allowed;" @endif>
+
+                                <!-- Status Badge -->
+                                <div class="position-absolute top-0 end-0 m-2">
+                                    @if($eligible)
+                                        <span class="badge bg-success promo-badge">
+                                            <i class="fas fa-check-circle me-1"></i>Bisa Dipakai
+                                        </span>
+                                    @else
+                                        <span class="badge bg-secondary promo-badge">
+                                            <i class="fas fa-ban me-1"></i>Tidak Eligible
+                                        </span>
+                                    @endif
                                 </div>
 
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 class="card-title fw-bold text-dark mb-0">
+                                <div class="card-body">
+                                    <!-- Category Badge -->
+                                    <div class="mb-2">
+                                        <span class="badge {{ $categoryBadge['class'] }}">
+                                            <i class="{{ $categoryBadge['icon'] }} me-1"></i>
+                                            {{ $categoryBadge['label'] }}
+                                        </span>
+                                        @if($promo->khusus_member)
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-crown me-1"></i>Khusus Member
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    <h6 class="card-title fw-bold text-dark mb-2">
                                         {{ $promo->nama_promo }}
                                     </h6>
-                                </div>
 
-                                <!-- Kode Promo dengan highlight -->
-                                <div class="mb-3">
-                                    <span class="badge bg-orange text-white fs-6 px-3 py-2">
-                                        <i class="fas fa-ticket-alt me-2"></i>{{ $promo->kode_promo }}
-                                    </span>
-                                </div>
+                                    <!-- Kode Promo -->
+                                    <div class="mb-3">
+                                        <span class="badge bg-orange text-white fs-6 px-3 py-2">
+                                            <i class="fas fa-ticket-alt me-2"></i>{{ $promo->kode_promo }}
+                                        </span>
+                                    </div>
 
-                                <!-- Detail Diskon -->
-                                <div class="promo-details mb-3">
-                                    <small class="text-muted d-block mb-1">
-                                        <i class="fas @if($promo->jenis_diskon == 'persentase') fa-percentage text-success @else fa-money-bill-wave text-success @endif me-1"></i>
-                                        @if($promo->jenis_diskon == 'persentase')
-                                            Diskon: <span class="fw-bold text-success">{{ $promo->nilai_diskon }}%</span>
-                                            @if($promo->maksimal_diskon)
-                                                <br><small class="ms-4">(Maks: Rp {{ number_format($promo->maksimal_diskon, 0, ',', '.') }})</small>
-                                            @endif
-                                        @else
-                                            Diskon: <span class="fw-bold text-success">Rp {{ number_format($promo->nilai_diskon, 0, ',', '.') }}</span>
+                                    <!-- Syarat Promo -->
+                                    <div class="promo-conditions mb-3">
+                                        @if($promo->kategori_promo === 'keluarga' && $promo->min_tiket)
+                                            <div class="d-flex align-items-center mb-1">
+                                                <i class="fas fa-users text-warning me-2" style="width: 16px;"></i>
+                                                <small>
+                                                    Minimal <strong>{{ $promo->min_tiket }} tiket</strong>
+                                                    @if($penumpang >= $promo->min_tiket)
+                                                        <i class="fas fa-check-circle text-success ms-1"></i>
+                                                    @else
+                                                        <i class="fas fa-times-circle text-danger ms-1"></i>
+                                                    @endif
+                                                </small>
+                                            </div>
                                         @endif
-                                    </small>
 
-                                    @if($promo->minimal_pembelian > 0)
-                                    <small class="text-muted d-block mb-1">
-                                        <i class="fas fa-shopping-cart text-info me-1"></i>
-                                        Min. belanja: <span class="fw-bold">Rp {{ number_format($promo->minimal_pembelian, 0, ',', '.') }}</span>
-                                    </small>
+                                        @if($promo->kategori_promo === 'membership' || $promo->khusus_member)
+                                            <div class="d-flex align-items-center mb-1">
+                                                <i class="fas fa-crown text-info me-2" style="width: 16px;"></i>
+                                                <small>
+                                                    Khusus Member
+                                                    @if(isset($userData['is_member']) && $userData['is_member'])
+                                                        <i class="fas fa-check-circle text-success ms-1"></i>
+                                                    @else
+                                                        <i class="fas fa-times-circle text-danger ms-1"></i>
+                                                    @endif
+                                                </small>
+                                            </div>
+                                        @endif
+
+                                        @if($promo->minimal_pembelian > 0)
+                                            <div class="d-flex align-items-center mb-1">
+                                                <i class="fas fa-shopping-cart text-primary me-2" style="width: 16px;"></i>
+                                                <small>
+                                                    Min. belanja: <strong>Rp {{ number_format($promo->minimal_pembelian, 0, ',', '.') }}</strong>
+                                                    @if($totalHarga >= $promo->minimal_pembelian)
+                                                        <i class="fas fa-check-circle text-success ms-1"></i>
+                                                    @else
+                                                        <i class="fas fa-times-circle text-danger ms-1"></i>
+                                                    @endif
+                                                </small>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <!-- Detail Diskon -->
+                                    <div class="promo-details mb-3">
+                                        <small class="text-muted d-block mb-1">
+                                            <i class="fas @if($promo->jenis_diskon == 'persentase') fa-percentage text-success @else fa-money-bill-wave text-success @endif me-1"></i>
+                                            @if($promo->jenis_diskon == 'persentase')
+                                                Diskon: <span class="fw-bold text-success">{{ $promo->nilai_diskon }}%</span>
+                                                @if($promo->maksimal_diskon)
+                                                    <br><small class="ms-4">(Maks: Rp {{ number_format($promo->maksimal_diskon, 0, ',', '.') }})</small>
+                                                @endif
+                                            @else
+                                                Diskon: <span class="fw-bold text-success">Rp {{ number_format($promo->nilai_diskon, 0, ',', '.') }}</span>
+                                            @endif
+                                        </small>
+                                    </div>
+
+                                    <!-- Pesan Error/Keterangan -->
+                                    @if(!$eligible && $reason)
+                                        <div class="alert alert-warning py-2 mb-3">
+                                            <small>
+                                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                                {{ $reason }}
+                                            </small>
+                                        </div>
                                     @endif
 
-                                    <small class="text-muted d-block mb-1">
-                                        <i class="fas fa-calendar-alt text-warning me-1"></i>
-                                        Berlaku hingga: <span class="fw-bold">{{ \Carbon\Carbon::parse($promo->tanggal_berakhir)->translatedFormat('d F Y') }}</span>
-                                    </small>
-
-                                    @if($promo->kuota !== null)
-                                    <small class="text-muted d-block mb-1">
-                                        <i class="fas fa-users text-primary me-1"></i>
-                                        Kuota: <span class="fw-bold">{{ $promo->terpakai }}/{{ $promo->kuota }}</span> promo
-                                    </small>
-                                    @endif
+                                    <!-- Deskripsi -->
+                                    <p class="card-text small text-secondary mb-0">
+                                        {{ $promo->deskripsi }}
+                                    </p>
                                 </div>
 
-                                <!-- Deskripsi -->
-                                <p class="card-text small text-secondary mb-0">
-                                    {{ $promo->deskripsi }}
-                                </p>
+                                @if($eligible)
+                                <!-- Tombol Pilih Promo -->
+                                <div class="card-footer bg-transparent border-top-0">
+                                    <button type="button" 
+                                            class="btn btn-sm btn-orange promo-select-btn w-100"
+                                            data-promo-code="{{ $promo->kode_promo }}"
+                                            onclick="applyPromoFromModal('{{ $promo->kode_promo }}')">
+                                        <i class="fas fa-check me-1"></i>Pilih Promo Ini
+                                    </button>
+                                </div>
+                                @else
+                                <div class="card-footer bg-transparent border-top-0">
+                                    <button type="button" 
+                                            class="btn btn-sm btn-secondary w-100"
+                                            disabled
+                                            title="{{ $reason }}">
+                                        <i class="fas fa-lock me-1"></i>Tidak Memenuhi Syarat
+                                    </button>
+                                </div>
+                                @endif
                             </div>
-
-                            @if($isActive)
-                            <!-- Tombol Pilih Promo Langsung -->
-                            <div class="card-footer bg-transparent border-top-0">
-                                <button type="button" class="btn btn-sm btn-orange promo-select-btn" data-promo-code="{{ $promo->kode_promo }}">
-                                    <i class="fas fa-check me-1"></i>Pilih & Terapkan Promo Ini
-                                </button>
-                            </div>
-                            @endif
                         </div>
-                    </div>
                     @empty
-                    <div class="col-12 text-center py-4">
-                        <div class="py-5">
-                            <i class="fas fa-tag fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">Tidak ada promo tersedia saat ini</p>
+                        <div class="col-12 text-center py-4">
+                            <div class="py-5">
+                                <i class="fas fa-tag fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Tidak ada promo yang sesuai dengan kondisi Anda</p>
+                                <small class="text-muted">
+                                    @if($penumpang < 3 && (!isset($userData['is_member']) || !$userData['is_member']))
+                                        Promo keluarga membutuhkan minimal 3 tiket.<br>
+                                        Promo membership hanya untuk member aktif.
+                                    @endif
+                                </small>
+                            </div>
                         </div>
-                    </div>
                     @endforelse
                 </div>
             </div>
@@ -1751,7 +1875,7 @@
                 <div class="w-100 d-flex justify-content-between align-items-center">
                     <div>
                         <span class="text-muted small" id="promoCount">
-                            {{ count($promos) }} promo tersedia
+                            {{ count($eligiblePromos ?? []) }} promo tersedia
                         </span>
                     </div>
                     <div>
@@ -1803,6 +1927,131 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Current Total:', currentTotal);
     console.log('Current Diskon:', currentDiskon);
 
+    // ========== PROMO ELIGIBILITY FUNCTIONS ==========
+
+    // Fungsi untuk cek promo yang eligible
+    function checkPromoEligibility() {
+        const ticketCount = {{ $penumpang ?? 1 }};
+        const totalAmount = {{ $totalHarga ?? 0 }};
+        
+        fetch('/api/promo/eligible', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                ticket_count: ticketCount,
+                total_amount: totalAmount,
+                service_type: 'shuttle'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updatePromoModal(data.promos);
+            }
+        })
+        .catch(error => {
+            console.error('Error checking promo eligibility:', error);
+        });
+    }
+
+    // Update modal promo dengan data eligible
+    function updatePromoModal(promos) {
+        const promoListContainer = document.getElementById('promoListContainer');
+        if (!promoListContainer) return;
+        
+        // Logic untuk update UI berdasarkan promos yang eligible
+        promos.forEach(promoItem => {
+            const promoCard = promoListContainer.querySelector(
+                `.promo-card[data-code="${promoItem.promo.kode_promo}"]`
+            );
+            
+            if (promoCard) {
+                if (promoItem.eligible) {
+                    promoCard.classList.remove('promo-inactive');
+                    promoCard.style.opacity = '1';
+                    promoCard.style.cursor = 'pointer';
+                    
+                    // Enable select button
+                    const selectBtn = promoCard.querySelector('.promo-select-btn');
+                    if (selectBtn) {
+                        selectBtn.disabled = false;
+                        selectBtn.classList.remove('btn-secondary');
+                        selectBtn.classList.add('btn-orange');
+                    }
+                } else {
+                    promoCard.classList.add('promo-inactive');
+                    promoCard.style.opacity = '0.7';
+                    promoCard.style.cursor = 'not-allowed';
+                    
+                    // Disable select button
+                    const selectBtn = promoCard.querySelector('.promo-select-btn');
+                    if (selectBtn) {
+                        selectBtn.disabled = true;
+                        selectBtn.classList.remove('btn-orange');
+                        selectBtn.classList.add('btn-secondary');
+                        selectBtn.innerHTML = '<i class="fas fa-lock me-1"></i>Tidak Memenuhi Syarat';
+                        selectBtn.title = promoItem.reason || 'Tidak memenuhi syarat';
+                    }
+                }
+            }
+        });
+    }
+
+    // Fungsi untuk apply promo dengan validasi
+    function applyPromoWithValidation(promoCode) {
+        const ticketCount = {{ $penumpang ?? 1 }};
+        const totalAmount = {{ $totalHarga ?? 0 }};
+        
+        // Show loading
+        if (applyPromoBtn) {
+            applyPromoBtn.disabled = true;
+            applyPromoBtn.innerHTML = '<span class="spinner"></span> Memvalidasi...';
+        }
+        
+        fetch('{{ route("customer.apply-promo") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                promo_code: promoCode,
+                total_amount: totalAmount,
+                ticket_count: ticketCount
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showPromoSuccess(data.message);
+                updatePromoDisplay(data);
+                updateSummary(data.diskon, data.total_after_discount);
+                
+                // Update hidden inputs
+                document.getElementById('kode_promo_input').value = data.promo.kode;
+                document.getElementById('diskon_amount').value = data.diskon;
+                document.getElementById('total_after_discount').value = data.total_after_discount;
+                
+            } else {
+                showPromoError(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showPromoError('Terjadi kesalahan saat validasi promo');
+        })
+        .finally(() => {
+            if (applyPromoBtn) {
+                applyPromoBtn.disabled = false;
+                applyPromoBtn.innerHTML = 'Terapkan';
+            }
+        });
+    }
+
     // ========== FUNGSI UNTUK PROMO MODAL ==========
 
     // Fungsi untuk menerapkan promo langsung dari tombol di modal
@@ -1842,8 +2091,8 @@ document.addEventListener('DOMContentLoaded', function() {
             promoInput.value = promoCode;
         }
 
-        // Terapkan promo
-        applyPromo();
+        // Terapkan promo dengan validasi
+        applyPromoWithValidation(promoCode);
     }
 
     // Event listener untuk tombol pilih promo langsung
@@ -1863,11 +2112,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const promoCard = e.target.closest('.promo-card');
             if (promoCard && !e.target.closest('.promo-select-btn')) {
                 // Cek apakah promo aktif
-                const active = promoCard.dataset.active === 'true';
+                const eligible = promoCard.dataset.eligible === 'true';
                 const name = promoCard.dataset.name || '';
                 const code = promoCard.dataset.code || '';
 
-                if (active) {
+                if (eligible) {
                     // Hapus class selected dari semua card
                     document.querySelectorAll('.promo-card').forEach(card => {
                         card.classList.remove('selected');
@@ -1881,7 +2130,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         applyPromoFromButton(code);
                     }, 1000);
                 } else {
-                    const msg = `Promo "${name || code}" tidak dapat dipilih (non-aktif atau sudah kadaluarsa).`;
+                    const reason = promoCard.dataset.reason || 'Tidak memenuhi syarat';
+                    const msg = `Promo "${name || code}" tidak dapat dipilih. ${reason}`;
                     alert(msg);
                 }
             }
@@ -1894,10 +2144,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const searchTerm = this.value.toLowerCase().trim();
 
             document.querySelectorAll('.promo-card-item').forEach(item => {
-                const filterData = item.getAttribute('data-filter') || '';
+                const code = item.querySelector('.promo-card')?.dataset.code || '';
+                const name = item.querySelector('.promo-card')?.dataset.name || '';
+                const category = item.querySelector('.promo-card')?.dataset.category || '';
                 const cardText = item.textContent.toLowerCase();
 
-                if (searchTerm === '' || filterData.includes(searchTerm) || cardText.includes(searchTerm)) {
+                if (searchTerm === '' || 
+                    code.toLowerCase().includes(searchTerm) || 
+                    name.toLowerCase().includes(searchTerm) ||
+                    category.toLowerCase().includes(searchTerm) ||
+                    cardText.includes(searchTerm)) {
                     item.style.display = 'block';
                 } else {
                     item.style.display = 'none';
@@ -1916,37 +2172,39 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Fungsi untuk filter promo
+    // Update filter function untuk promo modal
     promoFilterBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            // Update active button
             promoFilterBtns.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-
+            
             const filter = this.dataset.filter;
-
+            
             document.querySelectorAll('.promo-card-item').forEach(item => {
-                const filterData = item.getAttribute('data-filter') || '';
-                const status = item.dataset.status;
-
+                const eligible = item.dataset.eligible === 'true';
+                const category = item.dataset.category;
+                
                 switch(filter) {
                     case 'all':
                         item.style.display = 'block';
                         break;
-                    case 'active':
-                        item.style.display = status === 'active' ? 'block' : 'none';
+                    case 'eligible':
+                        item.style.display = eligible ? 'block' : 'none';
                         break;
-                    case 'shuttle':
-                        item.style.display = filterData.includes('shuttle') ? 'block' : 'none';
+                    case 'keluarga':
+                        item.style.display = category === 'keluarga' ? 'block' : 'none';
                         break;
-                    case 'persentase':
-                        item.style.display = filterData.includes('persentase') ? 'block' : 'none';
+                    case 'membership':
+                        item.style.display = category === 'membership' ? 'block' : 'none';
+                        break;
+                    case 'umum':
+                        item.style.display = category === 'umum' ? 'block' : 'none';
                         break;
                     default:
                         item.style.display = 'block';
                 }
             });
-
+            
             updatePromoCount();
         });
     });
@@ -1991,6 +2249,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             updatePromoCount();
+        });
+    }
+
+    // Saat modal dibuka, refresh eligibility
+    if (promoModal) {
+        promoModal.addEventListener('show.bs.modal', function () {
+            checkPromoEligibility();
         });
     }
 
@@ -2328,10 +2593,11 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Promo already applied:', '{{ $appliedPromo["kode"] ?? "" }}');
     @endif
 
-    // Apply promo button click handler
+    // Apply promo button click handler dengan validasi
     if (applyPromoBtn) {
         applyPromoBtn.addEventListener('click', function() {
-            applyPromo();
+            const promoCode = promoInput ? promoInput.value.trim().toUpperCase() : '';
+            applyPromoWithValidation(promoCode);
         });
     }
 
@@ -2352,73 +2618,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Fungsi untuk apply promo
+    // Fungsi untuk apply promo (dipanggil dari fungsi lain)
     function applyPromo() {
+        // Fungsi ini digantikan oleh applyPromoWithValidation
         const promoCode = promoInput ? promoInput.value.trim().toUpperCase() : '';
-
-        if (!promoCode) {
-            showPromoError('Masukkan kode promo terlebih dahulu');
-            return;
-        }
-
-        // Show loading
-        if (applyPromoBtn) {
-            applyPromoBtn.disabled = true;
-            applyPromoBtn.innerHTML = '<span class="spinner"></span> Memproses...';
-        }
-
-        // Send AJAX request
-        fetch('{{ route("customer.apply-promo") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-                promo_code: promoCode,
-                total_amount: originalTotal
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(data => {
-                    throw new Error(data.message || 'Network response was not ok');
-                });
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Promo response:', data);
-
-            // Reset button
-            if (applyPromoBtn) {
-                applyPromoBtn.disabled = false;
-                applyPromoBtn.innerHTML = 'Terapkan';
-            }
-
-            if (data.success) {
-                showPromoSuccess(data.message);
-                updatePromoDisplay(data);
-                updateSummary(data.diskon, data.total_after_discount);
-
-                // Update hidden inputs
-                document.getElementById('kode_promo_input').value = data.promo.kode;
-                document.getElementById('diskon_amount').value = data.diskon;
-                document.getElementById('total_after_discount').value = data.total_after_discount;
-
-            } else {
-                showPromoError(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            if (applyPromoBtn) {
-                applyPromoBtn.disabled = false;
-                applyPromoBtn.innerHTML = 'Terapkan';
-            }
-            showPromoError(error.message || 'Terjadi kesalahan, silakan coba lagi');
-        });
+        applyPromoWithValidation(promoCode);
     }
 
     // Fungsi untuk remove promo

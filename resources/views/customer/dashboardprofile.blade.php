@@ -633,12 +633,19 @@
         <!-- KIRI - PROFILE -->
         <div class="profile-card">
             <div class="profile-image-container">
+                <!-- Ganti bagian profile image dengan: -->
                 <div class="profile-image">
-                    @if(!empty($user->avatar_url))
-                        <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}">
+                    @php
+                        $avatarData = $user->getAvatarOrInitials();
+                    @endphp
+                    
+                    @if($avatarData['has_avatar'])
+                        <img src="{{ $avatarData['avatar_url'] }}" 
+                            alt="{{ $user->name }}"
+                            onerror="this.onerror=null; this.src='{{ asset('images/default-avatar.png') }}';">
                     @else
                         <div class="profile-image-initials">
-                            {{ getInitials($user->name ?? 'LA') }}
+                            {{ $avatarData['initials'] }}
                         </div>
                     @endif
                 </div>

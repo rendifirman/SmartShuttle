@@ -12,6 +12,7 @@ use App\Http\Controllers\KursiController;
 use App\Http\Controllers\ETicketController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Customer\CekReservasiController;
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ArtikelController;
 
 /*
@@ -94,6 +95,22 @@ Route::middleware(['guest.customer'])->group(function () {
 Route::post('/customer/logout', [CustomerController::class, 'logout'])
     ->name('customer.logout')
     ->middleware('auth.customer');
+
+// ============================================================
+// ★★★ AVATAR ROUTES - TAMBAHKAN DI SINI SEBELUM MIDDLEWARE ★★★
+// ============================================================
+
+// AVATAR UPLOAD ROUTE
+Route::post('/customer/avatar/upload', [CustomerController::class, 'uploadAvatar'])
+    ->middleware('auth')
+    ->name('customer.avatar.upload');
+
+// AVATAR DELETE ROUTE
+Route::delete('/customer/avatar/delete', [CustomerController::class, 'deleteAvatar'])
+    ->middleware('auth')
+    ->name('customer.avatar.delete');
+
+// ============================================================
 
 // ★★★ ROUTES YANG BUTUH LOGIN ★★★
 Route::middleware(['auth.customer'])->group(function () {
@@ -188,8 +205,37 @@ Route::prefix('api')->group(function () {
 
 // ★★★ ADMIN ROUTES ★★★
 Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
     Route::get('/kursi/peta/{jadwalId}', [KursiController::class, 'petaKursi'])
         ->name('admin.kursi.peta');
+
+    // Master Data Routes
+    Route::get('/profileperusahaan', [AdminController::class, 'profilePerusahaan'])->name('admin.profileperusahaan');
+    Route::get('/pusat', [AdminController::class, 'pusat'])->name('admin.pusat');
+    Route::get('/cabangperusahaan', [AdminController::class, 'cabangPerusahaan'])->name('admin.cabangperusahaan');
+    Route::get('/armada', [AdminController::class, 'armada'])->name('admin.armada');
+    Route::get('/driver', [AdminController::class, 'driver'])->name('admin.driver');
+    Route::get('/pegawai', [AdminController::class, 'pegawai'])->name('admin.pegawai');
+    Route::get('/rute', [AdminController::class, 'rute'])->name('admin.rute');
+
+    // Transaksi Routes
+    Route::get('/tiket-perjalanan', [AdminController::class, 'tiketPerjalanan'])->name('admin.tiket-perjalanan');
+    Route::get('/tiket-armada', [AdminController::class, 'tiketArmada'])->name('admin.tiket-armada');
+
+    // SmartSend Routes
+    Route::get('/smartsend-tiket', [AdminController::class, 'smartsendTiket'])->name('admin.smartsend-tiket');
+    Route::get('/smartsend-perjalanan', [AdminController::class, 'smartsendPerjalanan'])->name('admin.smartsend-perjalanan');
+    Route::get('/smartsend-armada', [AdminController::class, 'smartsendArmada'])->name('admin.smartsend-armada');
+
+    // SmartRent Route
+    Route::get('/smartrent', [AdminController::class, 'smartrent'])->name('admin.smartrent');
+
+    // Laporan Route
+    Route::get('/laporan', [AdminController::class, 'laporan'])->name('admin.laporan');
+
+    // Pengaturan Routes
+    Route::get('/user', [AdminController::class, 'user'])->name('admin.user');
+    Route::get('/menu', [AdminController::class, 'menu'])->name('admin.menu');
 });
 
 // ★★★ ROUTE DEBUG (UNTUK TESTING) ★★★
@@ -313,4 +359,12 @@ Route::prefix('api')->group(function () {
     Route::post('/validasi-kursi', [KursiController::class, 'validasiKursiAPI']);
     Route::get('/kursi-tersedia/{jadwalId}', [KursiController::class, 'getKursiTersediaAPI']);
     Route::post('/kursi-validate', [KursiController::class, 'validateSeatsAPI']);
+});
+
+// Promo routes
+Route::prefix('api/promo')->group(function () {
+    Route::post('/eligible', [CustomerController::class, 'getEligiblePromos'])
+        ->name('api.promo.eligible');
+    Route::post('/validate', [CustomerController::class, 'validatePromo'])
+        ->name('api.promo.validate');
 });

@@ -2,7 +2,6 @@
 
 @section('title', 'Profil Saya - SmartShuttle')
 
-<!-- TAMBAHKAN INI -->
 @section('header-title', 'Profil Saya')
 @section('header-icon', '<i class="fas fa-user-circle"></i>')
 
@@ -291,6 +290,25 @@
         background: #ddd;
     }
 
+    .avatar-delete-btn {
+        background: #dc3545;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: none;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-left: 10px;
+    }
+
+    .avatar-delete-btn:hover {
+        background: #c82333;
+    }
+
     /* Success message */
     .success-message {
         background: #d4edda;
@@ -306,6 +324,21 @@
 
     .success-message i {
         font-size: 18px;
+    }
+
+    /* Error message */
+    .alert-danger {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        border: 1px solid #f5c6cb;
+    }
+
+    .alert-danger ul {
+        margin: 0;
+        padding-left: 20px;
     }
 
     /* Tambahkan di bagian atas CSS setelah .data-empty */
@@ -359,6 +392,34 @@
         cursor: pointer;
     }
 
+    /* Avatar buttons container */
+    .avatar-buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    /* Loading overlay */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        display: none;
+    }
+
+    .loading-spinner {
+        color: white;
+        font-size: 2rem;
+    }
+
     /* Responsive untuk layar kecil */
     @media (max-width: 768px) {
         .profile-box h3 {
@@ -392,6 +453,16 @@
         button[type="submit"], .btn-secondary, .edit-profile-btn, .cancel-edit-btn {
             width: 100%;
         }
+
+        .avatar-buttons {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .avatar-delete-btn {
+            margin-left: 0;
+            margin-top: 5px;
+        }
     }
 
     /* Grid layout for form */
@@ -423,30 +494,6 @@
 </style>
 @endpush
 
-@php
-    // Function untuk mendapatkan inisial dari nama
-    function getInitials($name) {
-        $words = explode(' ', $name);
-        $initials = '';
-
-        foreach ($words as $word) {
-            if (!empty($word)) {
-                $initials .= strtoupper(substr($word, 0, 1));
-            }
-        }
-
-        // Jika hanya 1 kata, ambil 2 karakter pertama
-        if (strlen($initials) == 1) {
-            $initials = strtoupper(substr($name, 0, 2));
-        } else {
-            // Ambil maksimal 2 huruf inisial
-            $initials = substr($initials, 0, 2);
-        }
-
-        return $initials;
-    }
-@endphp
-
 @section('content')
 <!-- Success Message (if any) -->
 @if(session('success'))
@@ -458,8 +505,8 @@
 
 <!-- Error Messages -->
 @if($errors->any())
-    <div class="alert alert-danger" style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #f5c6cb;">
-        <ul style="margin: 0; padding-left: 20px;">
+    <div class="alert alert-danger">
+        <ul>
             @foreach($errors->all() as $error)
                 <li>{{ $error }}</li>
             @endforeach
@@ -467,22 +514,54 @@
     </div>
 @endif
 
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner">
+        <i class="fas fa-spinner fa-spin"></i>
+    </div>
+</div>
+
 <!-- Profile Header with Avatar -->
 <div class="profile-header">
-    <div style="position: relative;">
-        @if(!empty($user->avatar_url))
-            <img src="{{ $user->avatar_url }}" alt="Profile Picture" class="profile-avatar">
+    <div style="position: relative; text-align: center;">
+        @php
+            // Menggunakan method getAvatarOrInitials dari model User
+            $avatarData = $user->getAvatarOrInitials();
+        @endphp
+        
+        @if($avatarData['has_avatar'])
+            <img src="{{ $avatarData['avatar_url'] }}" 
+                 alt="Profile Picture" 
+                 class="profile-avatar"
+                 id="avatarImage"
+                 onerror="this.onerror=null; this.style.display='none'; document.getElementById('avatarInitials').style.display='flex';">
+            <div class="profile-avatar-initials" id="avatarInitials" style="display: none;">
+                {{ $avatarData['initials'] }}
+            </div>
         @else
-            <div class="profile-avatar-initials">
-                {{ getInitials($user->name) }}
+            <div class="profile-avatar-initials" id="avatarInitials">
+                {{ $avatarData['initials'] }}
             </div>
         @endif
-        <div class="file-input-container" style="margin-top: 10px;">
-            <button class="avatar-edit-btn" onclick="document.getElementById('avatar').click()">
+        
+        <!-- Form upload avatar (hidden) -->
+        <form id="avatarUploadForm" style="display: none;" enctype="multipart/form-data">
+            @csrf
+            <input type="file" id="avatarInput" name="avatar" accept="image/*">
+        </form>
+        
+        <div class="avatar-buttons">
+            <button class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()">
                 <i class="fas fa-camera"></i> Ganti Foto
             </button>
+            @if($avatarData['has_avatar'])
+                <button class="avatar-delete-btn" onclick="deleteAvatar()">
+                    <i class="fas fa-trash"></i> Hapus
+                </button>
+            @endif
         </div>
     </div>
+    
     <div class="profile-header-info">
         <h2>{{ $user->name }}</h2>
         <p>{{ $user->email }}</p>
@@ -589,11 +668,9 @@
         <i class="fas fa-edit"></i> Edit Profil
     </h4>
 
-    <form action="{{ route('customer.profilcust.update') }}" method="POST" id="profileForm" enctype="multipart/form-data">
+    <form action="{{ route('customer.profilcust.update') }}" method="POST" id="profileForm">
         @csrf
         @method('PUT')
-
-        <input type="file" id="avatar" name="avatar" accept="image/*" style="display: none;" onchange="handleAvatarChange(event)">
 
         <div class="form-grid">
             <div>
@@ -688,6 +765,7 @@
         const showEditFormBtn = document.getElementById('showEditFormBtn');
         const cancelEditBtn = document.getElementById('cancelEditBtn');
         const editProfileForm = document.getElementById('editProfileForm');
+        const loadingOverlay = document.getElementById('loadingOverlay');
 
         // Show edit form when button is clicked
         if (showEditFormBtn) {
@@ -793,56 +871,130 @@
                 }
 
                 // Show loading
-                const submitBtn = profileForm.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
-                submitBtn.disabled = true;
-
+                showLoading();
+                
                 // Form will submit normally
             });
         }
-    });
 
-    // Handle avatar change
-    function handleAvatarChange(event) {
-        const file = event.target.files[0];
-        if (file) {
-            // Validate file size (max 2MB)
+        // Avatar upload handling
+        document.getElementById('avatarInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // Validasi file
             if (file.size > 2 * 1024 * 1024) {
                 alert('Ukuran file maksimal 2MB');
-                event.target.value = '';
                 return;
             }
-
-            // Validate file type
-            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg'];
+            
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg'];
             if (!validTypes.includes(file.type)) {
-                alert('Format file harus JPG, PNG, atau GIF');
-                event.target.value = '';
+                alert('Format file harus JPG, PNG, GIF, atau WebP');
                 return;
             }
+            
+            // Upload via AJAX
+            uploadAvatar(file);
+        });
+    });
 
-            // Show preview
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const avatarContainer = document.querySelector('.profile-avatar, .profile-avatar-initials');
-                if (avatarContainer.classList.contains('profile-avatar-initials')) {
-                    // Replace initials with image
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.className = 'profile-avatar';
-                    img.alt = 'Profile Picture';
-                    avatarContainer.parentNode.replaceChild(img, avatarContainer);
-                } else if (avatarContainer.classList.contains('profile-avatar')) {
-                    // Update existing image
-                    avatarContainer.src = e.target.result;
-                }
-            };
-            reader.readAsDataURL(file);
+    // Show loading overlay
+    function showLoading() {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+    }
 
-            // Show success message
-            showSuccessMessage('Foto profil akan diubah setelah disimpan!');
+    // Hide loading overlay
+    function hideLoading() {
+        document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
+    // Upload avatar function
+    function uploadAvatar(file) {
+        const formData = new FormData();
+        formData.append('avatar', file);
+        formData.append('_token', '{{ csrf_token() }}');
+        
+        // Show loading
+        showLoading();
+        
+        fetch('{{ route("customer.avatar.upload") }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showSuccessMessage('Foto profil berhasil diupload!');
+                
+                // Reload halaman setelah 1.5 detik
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                hideLoading();
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat upload');
+        });
+    }
+    
+    // Delete avatar function
+    function deleteAvatar() {
+        if (!confirm('Yakin ingin menghapus foto profil?')) {
+            return;
         }
+        
+        // Show loading
+        showLoading();
+        
+        fetch('{{ route("customer.avatar.delete") }}', {
+            method: 'DELETE',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showSuccessMessage('Foto profil berhasil dihapus!');
+                
+                // Reload halaman setelah 1.5 detik
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                hideLoading();
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menghapus');
+        });
     }
 
     // Function to show success message

@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 use App\Models\Outlet;
 use App\Models\Jadwal;
 use App\Models\Rute;
@@ -65,6 +67,145 @@ if (!function_exists('getInitials')) {
 
 class CustomerController extends Controller
 {
+    /**
+     * Helper: Dapatkan data user
+     */
+    private function getUserData(): array
+    {
+        $user = session()->get('user', []);
+        $userModel = Auth::user();
+
+        return [
+            'id' => $user['id'] ?? null,
+            'name' => $user['name'] ?? null,
+            'email' => $user['email'] ?? null,
+            'membership_status' => $user['membership_status'] ?? 'non_member',
+            'membership_level' => $user['membership_level'] ?? null,
+            'is_member' => ($user['membership_status'] ?? 'non_member') === 'active'
+        ];
+    }
+
+    /**
+     * Helper: Get eligible promos (temporary solution)
+     */
+    private function getEligiblePromosWithStatus(array $userData, array $bookingData, $serviceType = 'shuttle'): array
+    {
+        $isMember = isset($userData['membership_status']) && $userData['membership_status'] === 'active';
+        $jumlahTiket = $bookingData['jumlah_tiket'] ?? 1;
+        $totalPembelian = $bookingData['total_pembelian'] ?? 0;
+
+        $promos = Promo::active()
+            ->where(function($query) use ($serviceType) {
+                $query->where('tipe_promo', $serviceType)
+                      ->orWhere('tipe_promo', 'all');
+            })
+            ->get()
+            ->map(function ($promo) use ($userData, $jumlahTiket, $totalPembelian, $isMember) {
+                // Validasi sederhana
+                $eligible = true;
+                $reason = null;
+
+                // Cek status dasar
+                if (!$promo->isValid()) {
+                    $eligible = false;
+                    $reason = 'Promo tidak aktif';
+                }
+
+                // Cek minimal pembelian
+                elseif ($totalPembelian < $promo->minimal_pembelian) {
+                    $eligible = false;
+                    $reason = 'Min. pembelian Rp ' . number_format($promo->minimal_pembelian, 0, ',', '.');
+                }
+
+                // Cek kategori keluarga
+                elseif ($promo->kategori_promo === 'keluarga' && $promo->min_tiket && $jumlahTiket < $promo->min_tiket) {
+                    $eligible = false;
+                    $reason = "Minimal {$promo->min_tiket} tiket";
+                }
+
+                // Cek kategori membership
+                elseif ($promo->kategori_promo === 'membership' && !$isMember) {
+                    $eligible = false;
+                    $reason = 'Khusus member';
+                }
+
+                // Cek khusus member
+                elseif ($promo->khusus_member && !$isMember) {
+                    $eligible = false;
+                    $reason = 'Hanya untuk member';
+                }
+
+                return [
+                    'promo' => $promo,
+                    'eligible' => $eligible,
+                    'reason' => $reason,
+                ];
+            });
+
+        return $promos->toArray();
+    }
+
+    /**
+     * Helper: Validasi promo dengan kondisi user
+     */
+    private function validatePromoWithUser(Promo $promo, array $userData, array $bookingData): array
+    {
+        $isMember = isset($userData['membership_status']) && $userData['membership_status'] === 'active';
+        $jumlahTiket = $bookingData['jumlah_tiket'] ?? 1;
+        $totalPembelian = $bookingData['total_pembelian'] ?? 0;
+
+        // Cek status promo
+        if (!$promo->isValid()) {
+            return [
+                'valid' => false,
+                'message' => 'Promo tidak aktif atau sudah kadaluarsa'
+            ];
+        }
+
+        // Cek minimal pembelian
+        if ($totalPembelian < $promo->minimal_pembelian) {
+            return [
+                'valid' => false,
+                'message' => 'Minimal pembelian Rp ' . number_format($promo->minimal_pembelian, 0, ',', '.')
+            ];
+        }
+
+        // Cek kategori keluarga
+        if ($promo->kategori_promo === 'keluarga' && $promo->min_tiket && $jumlahTiket < $promo->min_tiket) {
+            return [
+                'valid' => false,
+                'message' => "Minimal {$promo->min_tiket} tiket untuk promo keluarga"
+            ];
+        }
+
+        // Cek kategori membership
+        if ($promo->kategori_promo === 'membership' && !$isMember) {
+            return [
+                'valid' => false,
+                'message' => 'Promo ini hanya untuk member'
+            ];
+        }
+
+        // Cek khusus member
+        if ($promo->khusus_member && !$isMember) {
+            return [
+                'valid' => false,
+                'message' => 'Promo ini hanya untuk member'
+            ];
+        }
+
+        // Hitung diskon
+        $diskon = $promo->calculateDiscount($totalPembelian);
+        $totalSetelahDiskon = $totalPembelian - $diskon;
+
+        return [
+            'valid' => true,
+            'message' => 'Promo berhasil diterapkan',
+            'diskon' => $diskon,
+            'total_setelah_diskon' => $totalSetelahDiskon
+        ];
+    }
+
     /**
      * Halaman beranda
      */
@@ -306,6 +447,9 @@ class CustomerController extends Controller
 
             // Check if user has admin role and redirect accordingly
             if ($user->hasRole('admin_pusat') || $user->hasRole('admin_cabang')) {
+                // Log out from web guard and log in with admin guard
+                Auth::logout();
+                Auth::guard('admin')->login($user);
                 return redirect()->route('admin.dashboard');
             }
 
@@ -691,6 +835,17 @@ class CustomerController extends Controller
             $ruteString = $rutePertama->kota_asal . ' → ' . $ruteTerakhir->kota_tujuan;
         }
 
+        // Dapatkan promo yang eligible
+        $userData = $this->getUserData();
+        $eligiblePromos = $this->getEligiblePromosWithStatus(
+            $userData,
+            [
+                'jumlah_tiket' => $validated['penumpang'],
+                'total_pembelian' => $totalHarga
+            ],
+            'shuttle'
+        );
+
         return view('customer.pesan', [
             'jadwal' => $jadwal,
             'penumpang' => $validated['penumpang'],
@@ -710,58 +865,64 @@ class CustomerController extends Controller
             'promos' => Promo::orderByDesc('status')->get(),
             'loyaltyDiscount' => $loyaltyDiscount,
             'user' => $user,
+            'eligiblePromos' => $eligiblePromos,
+            'userData' => $userData,
         ]);
     }
 
     /**
-     * Validasi promo (AJAX)
+     * Validasi promo dengan kondisi user (UPDATE METHOD)
      */
     public function validatePromo(Request $request)
     {
         try {
             $request->validate([
                 'promo_code' => 'required|string',
-                'total_amount' => 'required|numeric'
+                'total_amount' => 'required|numeric',
+                'ticket_count' => 'required|integer|min:1'
             ]);
 
             $promoCode = strtoupper($request->promo_code);
-            $promo = Promo::where('kode_promo', $promoCode)
-                ->where('status', true)
-                ->whereDate('tanggal_mulai', '<=', now())
-                ->whereDate('tanggal_berakhir', '>=', now())
-                ->first();
+            $promo = Promo::where('kode_promo', $promoCode)->first();
 
             if (!$promo) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Kode promo tidak valid atau sudah kadaluarsa'
+                    'message' => 'Kode promo tidak ditemukan'
                 ]);
             }
 
-            if ($promo->kuota && $promo->terpakai >= $promo->kuota) {
+            // Dapatkan data user
+            $userData = $this->getUserData();
+
+            // Validasi promo dengan kondisi
+            $validation = $this->validatePromoWithUser(
+                $promo,
+                $userData,
+                [
+                    'jumlah_tiket' => $request->ticket_count,
+                    'total_pembelian' => $request->total_amount
+                ]
+            );
+
+            if (!$validation['valid']) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Kuota promo sudah habis'
+                    'message' => $validation['message']
                 ]);
             }
 
-            if ($request->total_amount < $promo->minimal_pembelian) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Minimal pembelian Rp ' . number_format($promo->minimal_pembelian, 0, ',', '.')
-                ]);
-            }
-
-            $diskon = $promo->hitungDiskon($request->total_amount);
-            $totalAfterDiscount = $request->total_amount - $diskon;
-
+            // Simpan promo ke session
             session()->put('applied_promo', [
                 'id' => $promo->id,
                 'kode' => $promo->kode_promo,
                 'nama' => $promo->nama_promo,
                 'deskripsi' => $promo->deskripsi,
-                'diskon' => $diskon,
-                'total_setelah_diskon' => $totalAfterDiscount
+                'kategori' => $promo->kategori_promo,
+                'min_tiket' => $promo->min_tiket,
+                'khusus_member' => $promo->khusus_member,
+                'diskon' => $validation['diskon'],
+                'total_setelah_diskon' => $validation['total_setelah_diskon']
             ]);
 
             return response()->json([
@@ -771,20 +932,59 @@ class CustomerController extends Controller
                     'id' => $promo->id,
                     'nama' => $promo->nama_promo,
                     'kode' => $promo->kode_promo,
+                    'kategori' => $promo->kategori_promo,
                     'jenis_diskon' => $promo->jenis_diskon,
                     'nilai_diskon' => $promo->nilai_diskon,
                     'maksimal_diskon' => $promo->maksimal_diskon,
                     'deskripsi' => $promo->deskripsi,
-                    'minimal_pembelian' => $promo->minimal_pembelian
+                    'minimal_pembelian' => $promo->minimal_pembelian,
+                    'min_tiket' => $promo->min_tiket,
+                    'khusus_member' => $promo->khusus_member
                 ],
-                'diskon' => $diskon,
-                'total_after_discount' => $totalAfterDiscount
+                'diskon' => $validation['diskon'],
+                'total_after_discount' => $validation['total_setelah_diskon']
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Dapatkan promo yang eligible untuk user (NEW METHOD)
+     */
+    public function getEligiblePromos(Request $request)
+    {
+        try {
+            $request->validate([
+                'ticket_count' => 'required|integer|min:1',
+                'total_amount' => 'required|numeric',
+                'service_type' => 'nullable|string'
+            ]);
+
+            $userData = $this->getUserData();
+            $eligiblePromos = $this->getEligiblePromosWithStatus(
+                $userData,
+                [
+                    'jumlah_tiket' => $request->ticket_count,
+                    'total_pembelian' => $request->total_amount
+                ],
+                $request->service_type ?? 'shuttle'
+            );
+
+            return response()->json([
+                'success' => true,
+                'promos' => $eligiblePromos,
+                'user_member_status' => $userData['membership_status'] ?? 'non_member'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat promo: ' . $e->getMessage()
             ]);
         }
     }
@@ -830,7 +1030,7 @@ class CustomerController extends Controller
     }
 
     /**
-     * Proses pemesanan shuttle
+     * Proses pemesanan shuttle dengan validasi promo di backend
      */
     public function prosesPemesanan(Request $request)
     {
@@ -873,18 +1073,26 @@ class CustomerController extends Controller
             $diskon = $request->diskon_amount ?? 0;
             $promoId = null;
 
+            // VALIDASI PROMO DI BACKEND
             if ($request->kode_promo) {
-                $promo = Promo::where('kode_promo', strtoupper($request->kode_promo))
-                    ->where('status', true)
-                    ->whereDate('tanggal_mulai', '<=', now())
-                    ->whereDate('tanggal_berakhir', '>=', now())
-                    ->first();
+                $userData = $this->getUserData();
+                $validation = $this->validatePromoWithUser(
+                    Promo::where('kode_promo', strtoupper($request->kode_promo))->first(),
+                    $userData,
+                    [
+                        'jumlah_tiket' => $request->jumlah_penumpang,
+                        'total_pembelian' => $hargaTotal
+                    ]
+                );
 
+                if (!$validation['valid']) {
+                    throw new \Exception($validation['message']);
+                }
+
+                $promo = Promo::where('kode_promo', strtoupper($request->kode_promo))->first();
                 if ($promo) {
                     $promoId = $promo->id;
-                    if ($diskon == 0 && method_exists($promo, 'hitungDiskon')) {
-                        $diskon = $promo->hitungDiskon($hargaTotal);
-                    }
+                    $diskon = $validation['diskon'];
                 }
             }
 
@@ -988,158 +1196,155 @@ class CustomerController extends Controller
         return $prefix . $date . $random;
     }
 
-   // ... (kode sebelumnya tetap sama) ...
+   /**
+     * Halaman pemilihan kursi
+     */
+    public function showPemilihanKursi(Request $request)
+    {
+        $validated = $request->validate([
+            'pemesanan_id' => 'required|exists:pemesanan,id'
+        ]);
 
-/**
- * Halaman pemilihan kursi
- */
-public function showPemilihanKursi(Request $request)
-{
-    $validated = $request->validate([
-        'pemesanan_id' => 'required|exists:pemesanan,id'
-    ]);
-
-    $pemesanan = Pemesanan::with(['jadwal.shuttle', 'detailPenumpang'])
-        ->where('id', $validated['pemesanan_id'])
-        ->where('customer_id', Auth::id())
-        ->firstOrFail();
-
-    if ($pemesanan->status !== 'menunggu_pembayaran') {
-        return redirect()->route('customer.beranda')
-            ->with('error', 'Pemesanan ini sudah diproses atau dibatalkan.');
-    }
-
-    $shuttle = $pemesanan->jadwal->shuttle;
-
-    // Gunakan method getLayoutWithStatus dari model Shuttle
-    $layoutKursi = $shuttle->getLayoutWithStatus($pemesanan->jadwal_id);
-
-    // Ambil kursi yang sudah dipilih oleh pemesanan ini
-    $kursiSaya = $pemesanan->detailPenumpang->pluck('nomor_kursi')->filter()->toArray();
-
-    // Ambil kursi yang sudah dipesan oleh orang lain
-    $kursiTerpesan = KursiTerpesan::where('jadwal_id', $pemesanan->jadwal_id)
-        ->where('status', 'terpesan')
-        ->where('pemesanan_id', '!=', $pemesanan->id) // kecuali milik saya
-        ->whereHas('pemesanan', function($query) {
-            $query->whereNotIn('status', ['dibatalkan', 'expired']);
-        })
-        ->pluck('nomor_kursi')
-        ->toArray();
-
-    // Update status kursi berdasarkan data real
-    foreach ($layoutKursi as &$kursi) {
-        if (in_array($kursi['nomor'], $kursiTerpesan)) {
-            // Kursi sudah dipesan orang lain
-            $kursi['status'] = 'terpesan';
-            $kursi['class'] = 'sold';
-            $kursi['icon'] = 'fa-lock';
-        } elseif (in_array($kursi['nomor'], $kursiSaya)) {
-            // Kursi sudah dipilih oleh saya
-            $kursi['status'] = 'selected';
-            $kursi['class'] = 'selected';
-            $kursi['icon'] = 'fa-user-check';
-        } else {
-            // Kursi tersedia
-            $kursi['status'] = 'tersedia';
-            $kursi['class'] = 'available';
-            $kursi['icon'] = 'fa-check';
-        }
-    }
-
-    return view('customer.kursi', [
-        'pemesanan' => $pemesanan,
-        'shuttle' => $shuttle,
-        'layoutKursi' => $layoutKursi,
-        'kursiSaya' => $kursiSaya,
-        'kursiTerpesan' => $kursiTerpesan
-    ]);
-}
-
-/**
- * Proses pemilihan kursi
- */
-public function prosesPemilihanKursi(Request $request)
-{
-    $validated = $request->validate([
-        'pemesanan_id' => 'required|exists:pemesanan,id',
-        'kursi' => 'required|array|min:1',
-        'kursi.*' => 'required|string|distinct'
-    ]);
-
-    DB::beginTransaction();
-
-    try {
-        $pemesanan = Pemesanan::with(['detailPenumpang', 'jadwal.shuttle'])
+        $pemesanan = Pemesanan::with(['jadwal.shuttle', 'detailPenumpang'])
             ->where('id', $validated['pemesanan_id'])
             ->where('customer_id', Auth::id())
-            ->where('status', 'menunggu_pembayaran')
             ->firstOrFail();
 
-        // VALIDASI 1: Jumlah kursi harus sama dengan jumlah penumpang
-        if (count($validated['kursi']) !== $pemesanan->jumlah_penumpang) {
-            return redirect()->back()
-                ->with('error', 'Jumlah kursi yang dipilih harus sama dengan jumlah penumpang.');
+        if ($pemesanan->status !== 'menunggu_pembayaran') {
+            return redirect()->route('customer.beranda')
+                ->with('error', 'Pemesanan ini sudah diproses atau dibatalkan.');
         }
 
-        // VALIDASI 2: Cek apakah kursi masih tersedia (tidak dipesan oleh pemesanan lain)
+        $shuttle = $pemesanan->jadwal->shuttle;
+
+        // Gunakan method getLayoutWithStatus dari model Shuttle
+        $layoutKursi = $shuttle->getLayoutWithStatus($pemesanan->jadwal_id);
+
+        // Ambil kursi yang sudah dipilih oleh pemesanan ini
+        $kursiSaya = $pemesanan->detailPenumpang->pluck('nomor_kursi')->filter()->toArray();
+
+        // Ambil kursi yang sudah dipesan oleh orang lain
         $kursiTerpesan = KursiTerpesan::where('jadwal_id', $pemesanan->jadwal_id)
-            ->whereIn('nomor_kursi', $validated['kursi'])
             ->where('status', 'terpesan')
+            ->where('pemesanan_id', '!=', $pemesanan->id) // kecuali milik saya
             ->whereHas('pemesanan', function($query) {
                 $query->whereNotIn('status', ['dibatalkan', 'expired']);
             })
             ->pluck('nomor_kursi')
             ->toArray();
 
-        if (!empty($kursiTerpesan)) {
-            return redirect()->back()
-                ->with('error', 'Kursi ' . implode(', ', $kursiTerpesan) . ' sudah dipesan oleh penumpang lain.');
-        }
-
-        // HAPUS KURSI LAMA untuk pemesanan ini (jika ada)
-        KursiTerpesan::where('pemesanan_id', $pemesanan->id)->delete();
-
-        // SIMPAN KURSI BARU sebagai 'terpesan' (PERMANEN LOCKED)
-        $detailPenumpang = DetailPenumpang::where('pemesanan_id', $pemesanan->id)->get();
-
-        foreach ($detailPenumpang as $index => $penumpang) {
-            $nomorKursi = $validated['kursi'][$index] ?? null;
-
-            if ($nomorKursi) {
-                // SIMPAN KE KURSI_TERPESAN dengan status 'terpesan' (PERMANEN LOCKED)
-                KursiTerpesan::create([
-                    'jadwal_id' => $pemesanan->jadwal_id,
-                    'nomor_kursi' => $nomorKursi,
-                    'detail_penumpang_id' => $penumpang->id,
-                    'pemesanan_id' => $pemesanan->id,
-                    'status' => 'terpesan'
-                ]);
-
-                // Update nomor kursi di detail penumpang
-                $penumpang->update(['nomor_kursi' => $nomorKursi]);
+        // Update status kursi berdasarkan data real
+        foreach ($layoutKursi as &$kursi) {
+            if (in_array($kursi['nomor'], $kursiTerpesan)) {
+                // Kursi sudah dipesan orang lain
+                $kursi['status'] = 'terpesan';
+                $kursi['class'] = 'sold';
+                $kursi['icon'] = 'fa-lock';
+            } elseif (in_array($kursi['nomor'], $kursiSaya)) {
+                // Kursi sudah dipilih oleh saya
+                $kursi['status'] = 'selected';
+                $kursi['class'] = 'selected';
+                $kursi['icon'] = 'fa-user-check';
+            } else {
+                // Kursi tersedia
+                $kursi['status'] = 'tersedia';
+                $kursi['class'] = 'available';
+                $kursi['icon'] = 'fa-check';
             }
         }
 
-        // Update timestamp pemesanan
-        $pemesanan->touch();
-
-        DB::commit();
-
-        // Redirect ke detail pesanan dengan pesan sukses
-        return redirect()->route('customer.detail_pemesanan', ['kode_booking' => $pemesanan->kode_booking])
-            ->with('success', 'Kursi berhasil dipilih dan terkunci! Silakan lanjutkan ke pembayaran.');
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error in prosesPemilihanKursi: ' . $e->getMessage());
-
-        return redirect()->back()
-            ->with('error', 'Gagal memilih kursi: ' . $e->getMessage());
+        return view('customer.kursi', [
+            'pemesanan' => $pemesanan,
+            'shuttle' => $shuttle,
+            'layoutKursi' => $layoutKursi,
+            'kursiSaya' => $kursiSaya,
+            'kursiTerpesan' => $kursiTerpesan
+        ]);
     }
-}
 
-// ... (kode setelahnya tetap sama) ...
+    /**
+     * Proses pemilihan kursi
+     */
+    public function prosesPemilihanKursi(Request $request)
+    {
+        $validated = $request->validate([
+            'pemesanan_id' => 'required|exists:pemesanan,id',
+            'kursi' => 'required|array|min:1',
+            'kursi.*' => 'required|string|distinct'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $pemesanan = Pemesanan::with(['detailPenumpang', 'jadwal.shuttle'])
+                ->where('id', $validated['pemesanan_id'])
+                ->where('customer_id', Auth::id())
+                ->where('status', 'menunggu_pembayaran')
+                ->firstOrFail();
+
+            // VALIDASI 1: Jumlah kursi harus sama dengan jumlah penumpang
+            if (count($validated['kursi']) !== $pemesanan->jumlah_penumpang) {
+                return redirect()->back()
+                    ->with('error', 'Jumlah kursi yang dipilih harus sama dengan jumlah penumpang.');
+            }
+
+            // VALIDASI 2: Cek apakah kursi masih tersedia (tidak dipesan oleh pemesanan lain)
+            $kursiTerpesan = KursiTerpesan::where('jadwal_id', $pemesanan->jadwal_id)
+                ->whereIn('nomor_kursi', $validated['kursi'])
+                ->where('status', 'terpesan')
+                ->whereHas('pemesanan', function($query) {
+                    $query->whereNotIn('status', ['dibatalkan', 'expired']);
+                })
+                ->pluck('nomor_kursi')
+                ->toArray();
+
+            if (!empty($kursiTerpesan)) {
+                return redirect()->back()
+                    ->with('error', 'Kursi ' . implode(', ', $kursiTerpesan) . ' sudah dipesan oleh penumpang lain.');
+            }
+
+            // HAPUS KURSI LAMA untuk pemesanan ini (jika ada)
+            KursiTerpesan::where('pemesanan_id', $pemesanan->id)->delete();
+
+            // SIMPAN KURSI BARU sebagai 'terpesan' (PERMANEN LOCKED)
+            $detailPenumpang = DetailPenumpang::where('pemesanan_id', $pemesanan->id)->get();
+
+            foreach ($detailPenumpang as $index => $penumpang) {
+                $nomorKursi = $validated['kursi'][$index] ?? null;
+
+                if ($nomorKursi) {
+                    // SIMPAN KE KURSI_TERPESAN dengan status 'terpesan' (PERMANEN LOCKED)
+                    KursiTerpesan::create([
+                        'jadwal_id' => $pemesanan->jadwal_id,
+                        'nomor_kursi' => $nomorKursi,
+                        'detail_penumpang_id' => $penumpang->id,
+                        'pemesanan_id' => $pemesanan->id,
+                        'status' => 'terpesan'
+                    ]);
+
+                    // Update nomor kursi di detail penumpang
+                    $penumpang->update(['nomor_kursi' => $nomorKursi]);
+                }
+            }
+
+            // Update timestamp pemesanan
+            $pemesanan->touch();
+
+            DB::commit();
+
+            // Redirect ke detail pesanan dengan pesan sukses
+            return redirect()->route('customer.detail_pemesanan', ['kode_booking' => $pemesanan->kode_booking])
+                ->with('success', 'Kursi berhasil dipilih dan terkunci! Silakan lanjutkan ke pembayaran.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error in prosesPemilihanKursi: ' . $e->getMessage());
+
+            return redirect()->back()
+                ->with('error', 'Gagal memilih kursi: ' . $e->getMessage());
+        }
+    }
+
     /**
      * Halaman riwayat pemesanan
      */
@@ -1293,7 +1498,7 @@ public function prosesPemilihanKursi(Request $request)
     }
 
     /**
-     * Halaman detail profil
+     * Halaman profil customer dengan avatar
      */
     public function profilDetail()
     {
@@ -1306,191 +1511,222 @@ public function prosesPemilihanKursi(Request $request)
     }
 
     /**
- * Update profil dengan upload avatar
- */
-public function updateProfile(Request $request)
-{
-    if (!Auth::check()) {
-        return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
-    }
-
-    $user = Auth::user();
-
-    // Validasi
-    $validated = $request->validate([
-        'name' => 'required|string|max:255',
-        'username' => 'nullable|string|max:50|unique:users,username,' . $user->id,
-        'email' => 'required|email|unique:users,email,' . $user->id,
-        'phone' => 'nullable|string|max:20',
-        'nik' => 'nullable|string|max:16|min:16',
-        'tanggal_lahir' => 'nullable|date',
-        'jenis_kelamin' => 'nullable|in:L,P',
-        'password' => 'nullable|string|min:6|confirmed',
-        'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Max 2MB
-    ], [
-        'avatar.image' => 'File harus berupa gambar',
-        'avatar.mimes' => 'Format gambar harus jpeg, png, jpg, gif, atau webp',
-        'avatar.max' => 'Ukuran gambar maksimal 2MB',
-        'nik.min' => 'NIK harus 16 digit',
-        'nik.max' => 'NIK harus 16 digit',
-    ]);
-
-    DB::beginTransaction();
-
-    try {
-        // Update data user
-        $user->name = $validated['name'];
-        $user->username = $validated['username'] ?? $user->username;
-        $user->email = $validated['email'];
-        $user->phone = $validated['phone'] ?? $user->phone;
-        $user->nik = $validated['nik'] ?? $user->nik;
-        $user->tanggal_lahir = $validated['tanggal_lahir'] ?? $user->tanggal_lahir;
-        $user->jenis_kelamin = $validated['jenis_kelamin'] ?? $user->jenis_kelamin;
-
-        // Update password jika diisi
-        if ($request->filled('password')) {
-            $user->password = bcrypt($validated['password']);
+     * Update profil dengan upload avatar
+     */
+    public function updateProfile(Request $request)
+    {
+        if (!Auth::check()) {
+            return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        // Handle upload avatar
-        if ($request->hasFile('avatar')) {
-            // Hapus avatar lama jika ada (kecuali dari Google Auth)
+        $user = Auth::user();
+
+        // Validasi
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'username' => 'nullable|string|max:50|unique:users,username,' . $user->id,
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'phone' => 'nullable|string|max:20',
+            'nik' => 'nullable|string|max:16|min:16',
+            'tanggal_lahir' => 'nullable|date',
+            'jenis_kelamin' => 'nullable|in:L,P',
+            'password' => 'nullable|string|min:6|confirmed',
+            'avatar' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:2048', // Max 2MB
+        ], [
+            'avatar.image' => 'File harus berupa gambar',
+            'avatar.mimes' => 'Format gambar harus JPG, JPEG, PNG, GIF, atau WebP',
+            'avatar.max' => 'Ukuran gambar maksimal 2MB',
+            'nik.min' => 'NIK harus 16 digit',
+            'nik.max' => 'NIK harus 16 digit',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Update data user
+            $user->name = $validated['name'];
+            $user->username = $validated['username'] ?? $user->username;
+            $user->email = $validated['email'];
+            $user->phone = $validated['phone'] ?? $user->phone;
+            $user->nik = $validated['nik'] ?? $user->nik;
+            $user->tanggal_lahir = $validated['tanggal_lahir'] ?? $user->tanggal_lahir;
+            $user->jenis_kelamin = $validated['jenis_kelamin'] ?? $user->jenis_kelamin;
+
+            // Update password jika diisi
+            if ($request->filled('password')) {
+                $user->password = bcrypt($validated['password']);
+            }
+
+            // Handle upload avatar
+            if ($request->hasFile('avatar')) {
+                // Validasi file
+                $file = $request->file('avatar');
+
+                // Generate nama file unik
+                $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+
+                // Simpan file ke storage
+                $path = $file->storeAs('avatars', $filename, 'public');
+
+                // Hapus avatar lama jika ada
+                $user->deleteOldAvatar();
+
+                // Simpan path ke database
+                $user->avatar = $path;
+            }
+
+            $user->save();
+
+            DB::commit();
+
+            // Update session
+            session()->put('user', [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'nik' => $user->nik,
+                'avatar' => $user->avatar_url,
+                'membership_status' => $user->membership_status,
+                'membership_level' => $user->membership_level,
+            ]);
+
+            return redirect()->route('customer.profilcust')
+                ->with('success', 'Profil berhasil diperbarui!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Update profile error: ' . $e->getMessage());
+
+            return back()->withErrors(['error' => 'Gagal memperbarui profil: ' . $e->getMessage()])
+                        ->withInput();
+        }
+    }
+
+    /**
+     * Upload avatar secara langsung (AJAX)
+     */
+    public function uploadAvatar(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $user = Auth::user();
+
+        // Validasi
+        $validator = Validator::make($request->all(), [
+            'avatar' => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => implode(', ', $validator->errors()->all())
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $file = $request->file('avatar');
+
+            // Generate nama file unik
+            $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+
+            // Simpan file ke storage
+            $path = $file->storeAs('avatars', $filename, 'public');
+
+            // Hapus avatar lama jika ada
             $user->deleteOldAvatar();
 
-            // Simpan file baru
-            $avatarPath = $request->file('avatar')->store('avatars', 'public');
-            $user->avatar = $avatarPath;
+            // Update database
+            $user->avatar = $path;
+            $user->save();
+
+            DB::commit();
+
+            // Update session
+            session()->put('user', [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'nik' => $user->nik,
+                'avatar' => $user->avatar_url,
+                'membership_status' => $user->membership_status,
+                'membership_level' => $user->membership_level,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Foto profil berhasil diupload',
+                'avatar_url' => $user->getSafeAvatarUrl(),
+                'has_avatar' => !empty($user->avatar)
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Upload avatar error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengupload foto: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Hapus avatar (AJAX)
+     */
+    public function deleteAvatar(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $user->save();
+        $user = Auth::user();
 
-        DB::commit();
+        DB::beginTransaction();
 
-        // Update session
-        session()->put('user', [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'nik' => $user->nik,
-            'avatar' => $user->avatar_url,
-            'membership_status' => $user->membership_status,
-            'membership_level' => $user->membership_level,
-        ]);
+        try {
+            // Hapus avatar dari storage
+            $user->deleteOldAvatar();
 
-        return redirect()->route('customer.profilcust')
-            ->with('success', 'Profil berhasil diperbarui!');
+            // Set avatar ke null di database
+            $user->avatar = null;
+            $user->save();
 
-    } catch (\Exception $e) {
-        DB::rollBack();
-        \Log::error('Update profile error: ' . $e->getMessage());
+            DB::commit();
 
-        return back()->withErrors(['error' => 'Gagal memperbarui profil: ' . $e->getMessage()])
-                    ->withInput();
+            // Update session
+            session()->put('user', [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'nik' => $user->nik,
+                'avatar' => null,
+                'membership_status' => $user->membership_status,
+                'membership_level' => $user->membership_level,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Foto profil berhasil dihapus',
+                'initials' => $user->initials,
+                'avatar_url' => asset('images/default-avatar.png')
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Delete avatar error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus foto profil'
+            ], 500);
+        }
     }
-}
-
-/**
- * Upload avatar secara langsung (AJAX)
- */
-public function uploadAvatar(Request $request)
-{
-    if (!Auth::check()) {
-        return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-    }
-
-    $user = Auth::user();
-
-    // Validasi
-    $validated = $request->validate([
-        'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-    ]);
-
-    DB::beginTransaction();
-
-    try {
-        // Hapus avatar lama jika ada
-        $user->deleteOldAvatar();
-
-        // Simpan avatar baru
-        $avatarPath = $request->file('avatar')->store('avatars', 'public');
-        $user->avatar = $avatarPath;
-        $user->save();
-
-        DB::commit();
-
-        // Update session
-        session()->put('user', [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'nik' => $user->nik,
-            'avatar' => $user->avatar_url,
-            'membership_status' => $user->membership_status,
-            'membership_level' => $user->membership_level,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Foto profil berhasil diupload',
-            'avatar_url' => $user->avatar_url,
-            'has_avatar' => !empty($user->avatar)
-        ]);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        \Log::error('Upload avatar error: ' . $e->getMessage());
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengupload foto: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-/**
- * Hapus avatar (AJAX)
- */
-public function deleteAvatar(Request $request)
-{
-    if (!Auth::check()) {
-        return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-    }
-
-    $user = Auth::user();
-
-    try {
-        // Hapus avatar dari storage
-        $user->deleteOldAvatar();
-
-        // Set avatar ke null di database
-        $user->avatar = null;
-        $user->save();
-
-        // Update session
-        session()->put('user', [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'nik' => $user->nik,
-            'avatar' => $user->avatar_url,
-            'membership_status' => $user->membership_status,
-            'membership_level' => $user->membership_level,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Foto profil berhasil dihapus',
-            'initials' => $user->initials
-        ]);
-
-    } catch (\Exception $e) {
-        \Log::error('Delete avatar error: ' . $e->getMessage());
-        return response()->json(['success' => false, 'message' => 'Gagal menghapus foto profil'], 500);
-    }
-}
 
     /**
      * Halaman membership
@@ -1987,31 +2223,7 @@ public function deleteAvatar(Request $request)
 
     /**
      * Halaman kontak
-
-    /**
-     * API: return policy content for AJAX modal
-     * type: 'privacy' or 'terms'
      */
-    public function getPolicy(Request $request, $type)
-    {
-        $type = strtolower($type);
-        if (in_array($type, ['privacy', 'kebijakan', 'kebijakan-privasi'])) {
-            $k = KebijakanPrivasi::getAktif();
-            $title = $k->kp_judul ?? 'Kebijakan Privasi';
-            $content = $k->kp_konten_html ?? '';
-        } else {
-            // default to terms
-            $s = SyaratKetentuan::getUntukPengguna();
-            $title = $s->sk_judul ?? 'Syarat & Ketentuan';
-            $content = $s->sk_konten_html ?? '';
-        }
-
-        return response()->json([
-            'title' => $title,
-            'content' => $content,
-        ]);
-    }
-
     public function contact()
     {
         $user = session()->get('user');
@@ -2085,6 +2297,30 @@ public function deleteAvatar(Request $request)
                 ->with('error', 'Terjadi kesalahan saat mengirim pesan. Silakan coba lagi nanti.')
                 ->withInput();
         }
+    }
+
+    /**
+     * API: return policy content for AJAX modal
+     * type: 'privacy' or 'terms'
+     */
+    public function getPolicy(Request $request, $type)
+    {
+        $type = strtolower($type);
+        if (in_array($type, ['privacy', 'kebijakan', 'kebijakan-privasi'])) {
+            $k = KebijakanPrivasi::getAktif();
+            $title = $k->kp_judul ?? 'Kebijakan Privasi';
+            $content = $k->kp_konten_html ?? '';
+        } else {
+            // default to terms
+            $s = SyaratKetentuan::getUntukPengguna();
+            $title = $s->sk_judul ?? 'Syarat & Ketentuan';
+            $content = $s->sk_konten_html ?? '';
+        }
+
+        return response()->json([
+            'title' => $title,
+            'content' => $content,
+        ]);
     }
 
     /**
@@ -2277,7 +2513,11 @@ public function deleteAvatar(Request $request)
             ], 500);
         }
     }
-     public function getPromos(Request $request)
+
+    /**
+     * Get all promos (AJAX)
+     */
+    public function getPromos(Request $request)
     {
         try {
             // Get current date
@@ -2374,5 +2614,4 @@ public function deleteAvatar(Request $request)
             'days_remaining' => $isActive ? max(0, $now->diffInDays($endDate, false)) : 0
         ];
     }
-
 }

@@ -1,4 +1,5 @@
 <?php
+// app/Models/User.php
 
 namespace App\Models;
 
@@ -23,7 +24,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'nik',
         'tanggal_lahir',
         'jenis_kelamin',
-        'avatar',
+        'avatar', // Kolom untuk menyimpan path avatar
         'member_point',
         'loyalty_point',
         'membership_level',
@@ -36,8 +37,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'membership_transaction_id',
         'two_factor_enabled',
         'status',
-        'google_id',    // Field untuk Google Auth
-        'provider'      // Field untuk Google Auth
+        'google_id',
+        'provider'
     ];
 
     protected $hidden = [
@@ -55,6 +56,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'membership_end_date' => 'date',
         'membership_fee' => 'decimal:2'
     ];
+
+    protected $appends = ['avatar_url', 'initials'];
 
     protected $attributes = [
         'status' => 'active',
@@ -189,36 +192,30 @@ class User extends Authenticatable implements MustVerifyEmail
         return $pointsNeeded > 0 ? $pointsNeeded : 0;
     }
 
-    public function getAvatarUrlAttribute()
+     public function getAvatarUrlAttribute()
     {
+        // Jika avatar kosong, return null (akan ditangani di view)
         if (empty($this->avatar)) {
             return null;
         }
 
-        // Jika avatar sudah berupa URL eksternal (mis. Google avatar), kembalikan apa adanya
-        if (preg_match('/^https?:\/\//i', $this->avatar) || preg_match('/^\/\//', $this->avatar)) {
+        // Jika avatar sudah berupa URL eksternal (Google), return langsung
+        if (filter_var($this->avatar, FILTER_VALIDATE_URL)) {
             return $this->avatar;
         }
 
-        // Kalau bukan URL, anggap disimpan di storage. Pastikan file ada agar tidak menampilkan broken image.
-        $relative = ltrim($this->avatar, '/');
-
-        try {
-            if (Storage::disk('public')->exists($relative) || file_exists(public_path('storage/' . $relative))) {
-                return asset('storage/' . $relative);
-            }
-        } catch (\Exception $e) {
-            \Log::warning('Error checking avatar file existence', ['avatar' => $this->avatar, 'error' => $e->getMessage()]);
+        // Cek file avatar di storage
+        $disk = Storage::disk('public');
+        if ($disk->exists($this->avatar)) {
+            return $disk->url($this->avatar);
         }
 
-        // Jika file tidak ditemukan, kembalikan null sehingga view menampilkan inisial/fallback,
-        // bukan <img> dengan src yang menyebabkan alt text terlihat (mis. "AVAT").
-        \Log::info('Avatar file missing or inaccessible', ['user_id' => $this->id, 'avatar' => $this->avatar]);
+        // File tidak ditemukan, return null
         return null;
     }
 
     // Method untuk mendapatkan inisial nama
-    public function getInitialsAttribute()
+      public function getInitialsAttribute()
     {
         $words = explode(' ', $this->name);
         $initials = '';
@@ -238,6 +235,47 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return $initials;
+    }
+
+    /**
+     * Hapus avatar lama dari storage
+     */
+    public function deleteOldAvatar()
+    {
+        if ($this->avatar && !filter_var($this->avatar, FILTER_VALIDATE_URL)) {
+            $disk = Storage::disk('public');
+            if ($disk->exists($this->avatar)) {
+                $disk->delete($this->avatar);
+            }
+        }
+    }
+
+     /**
+     * Method untuk mendapatkan URL avatar dengan fallback
+     * Digunakan di view untuk menghindari broken image
+     */
+    public function getSafeAvatarUrl()
+    {
+        $url = $this->avatar_url;
+        
+        // Jika URL tidak valid atau file tidak ditemukan, return default avatar
+        if (!$url || !filter_var($url, FILTER_VALIDATE_URL)) {
+            return asset('images/default-avatar.png');
+        }
+        
+        return $url;
+    }
+
+    /**
+     * Method untuk mendapatkan URL avatar atau inisial untuk tampilan
+     */
+    public function getAvatarOrInitials()
+    {
+        return [
+            'has_avatar' => !empty($this->avatar_url),
+            'avatar_url' => $this->getSafeAvatarUrl(),
+            'initials' => $this->initials
+        ];
     }
 
     public function getMembershipStatusLabelAttribute()

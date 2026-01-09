@@ -1,17 +1,16 @@
-# Paylabs QRIS Payment Fix
+# Admin Login Fix - TODO
 
-## Current Issues
-- HTTP 403 paramInvalid error when creating QRIS payment
-- Mixing v4.x API headers with v2.3 endpoints
-- Signature in headers instead of request body
-- Missing required parameters: requestType, channelCode
-- Callback URL using localhost in production
+## Completed Tasks
+- [x] Added missing admin dashboard route to routes/web.php
+- [x] Modified CustomerController login method to use admin guard for admin users
+- [x] Verified routes are properly registered
+- [x] Checked for syntax errors
 
-## Tasks
-- [x] Update PaylabsService to use v2.3 API format
-- [x] Move signature from headers to request body
-- [x] Add missing required parameters (requestType, channelCode)
-- [x] Update signature generation for v2.3
-- [x] Update config callback URL
-- [x] Test QRIS payment creation
-- [ ] Configure production callback URL in .env
+## Summary of Changes
+1. **Added admin dashboard route**: Added `Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');` to the admin routes group in routes/web.php
+2. **Fixed authentication guard**: Modified the login logic in CustomerController to log out from web guard and log in with admin guard when user has admin roles
+
+## Testing Required
+- Test admin login with admin@smartshuttle.test / admin123
+- Verify admin is redirected to admin/dashboard.blade.php
+- Verify customer login still works normally

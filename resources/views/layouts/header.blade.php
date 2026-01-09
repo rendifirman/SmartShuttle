@@ -47,16 +47,22 @@
     @auth
         <div class="profile-wrapper">
             <button id="profile-dropdown" class="profile-btn" type="button" aria-expanded="false">
-                @if(!empty(Auth::user()->avatar_url))
+                @php
+                    $avatarData = Auth::user()->getAvatarOrInitials();
+                @endphp
+                
+                @if($avatarData['has_avatar'])
                     <span class="profile-avatar">
-                        <img src="{{ Auth::user()->avatar_url }}" alt="avatar">
+                        <img src="{{ $avatarData['avatar_url'] }}" 
+                             alt="avatar"
+                             onerror="this.onerror=null; this.style.display='none'; this.parentNode.innerHTML='{{ Auth::user()->initials }}';">
                     </span>
                 @else
                     <span class="profile-avatar">
-                        {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
+                        {{ Auth::user()->initials }}
                     </span>
                 @endif
-
+                
                 <span class="profile-name">
                     {{ strlen(Auth::user()->name ?? '') > 12
                         ? substr(Auth::user()->name, 0, 12).'...'
