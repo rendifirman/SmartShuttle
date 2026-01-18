@@ -1,5 +1,5 @@
 <?php
-
+// config/paylabs.php (update)
 return [
     /*
     |--------------------------------------------------------------------------
@@ -11,35 +11,46 @@ return [
     'environment' => env('PAYLABS_ENVIRONMENT', 'sandbox'),
 
     // Merchant Credentials
-    'mid' => env('PAYLABS_MID', env('PAYLABS_MERCHANT_ID', '010529')),
+    // Support legacy keys: MID / PRIVATE_KEY / PUBLIC_KEY
+    'mid' => env('PAYLABS_MID', env('MID', '010529')),
     'merchant_name' => env('PAYLABS_MERCHANT_NAME', 'Smart Shuttle'),
+    'store_id' => env('PAYLABS_STORE_ID', ''),
 
     // API Endpoints
-    'base_url' => env('PAYLABS_BASE_URL', 'https://sandbox.paylabs.co.id'),
-    'endpoint' => env('PAYLABS_ENDPOINT', '/pembayaran'),
-    'api_version' => 'v4.8.1',
+    // For Pay-in v2.3 (QRIS) base URLs are typically:
+    // SIT  => https://sit-pay.paylabs.co.id
+    // PROD => https://pay.paylabs.co.id
+    'base_url' => env(
+        'PAYLABS_BASE_URL',
+        env('PAYLABS_ENVIRONMENT', 'sandbox') === 'production'
+            ? 'https://pay.paylabs.co.id'
+            : 'https://sit-pay.paylabs.co.id'
+    ),
+    'api_version' => 'v2.3',
+
+    // QRIS Specific Settings
+    'qris' => [
+        'merchant_name' => env('QRIS_MERCHANT_NAME', 'SMART SHUTTLE'),
+        'merchant_city' => env('QRIS_MERCHANT_CITY', 'JAKARTA'),
+        'terminal_id' => env('QRIS_TERMINAL_ID', '001'),
+        'store_id' => env('QRIS_STORE_ID', '001'),
+        'fee_type' => env('QRIS_FEE_TYPE', 'BEN'), // BEN: Merchant, OUR: Customer
+    ],
 
     // URLs
-    'callback_url' => env('PAYLABS_CALLBACK_URL', 'http://localhost:8000/api/payment/callback'),
+    'callback_url' => env('PAYLABS_CALLBACK_URL', 'http://localhost:8000/api/payment/callback-v23'),
     'return_url' => env('PAYLABS_RETURN_URL', 'http://localhost:8000/customer/detail-pemesanan'),
-    'notify_url' => env('PAYLABS_NOTIFY_URL', 'http://localhost:8000/api/payment/callback'),
+    'notify_url' => env('PAYLABS_NOTIFY_URL', 'http://localhost:8000/api/payment/callback-v23'),
 
     // Security
-    'private_key' => env('PAYLABS_PRIVATE_KEY', ''),
-    'private_key_file' => env('PAYLABS_PRIVATE_KEY_FILE', 'storage/keys/paylabs_private.pem'),
-    'public_key' => env('PAYLABS_PUBLIC_KEY', ''),
-    'public_key_file' => env('PAYLABS_PUBLIC_KEY_FILE', 'storage/keys/paylabs_public.pem'),
+    'private_key' => env('PAYLABS_PRIVATE_KEY', env('PRIVATE_KEY', '')),
+    'private_key_file' => env('PAYLABS_PRIVATE_KEY_FILE', env('PAYLABS_PRIVATE_KEY_PATH', storage_path('app/keys/paylabs_private.pem'))),
+    'public_key' => env('PAYLABS_PUBLIC_KEY', env('PUBLIC_KEY', '')),
+    'public_key_file' => env('PAYLABS_PUBLIC_KEY_FILE', env('PAYLABS_PUBLIC_KEY_PATH', storage_path('app/keys/paylabs_public.pem'))),
 
     // Timeout Settings
     'timeout' => 30,
     'connect_timeout' => 10,
-
-    // Retry Settings
-    'retry' => [
-        'times' => 3,
-        'sleep' => 1000,
-        'throw' => false,
-    ],
 
     // Payment Settings
     'payment' => [
@@ -49,92 +60,10 @@ return [
         'country' => 'ID',
     ],
 
-    // Channel Mapping
-    'channels' => [
-        'qris' => [
-            'code' => 'QRIS',
-            'name' => 'QRIS',
-            'endpoint' => '/payment/qris/create',
-        ],
-        'bca_va' => [
-            'code' => 'VA_BCA',
-            'name' => 'BCA Virtual Account',
-            'endpoint' => '/payment/va/create',
-        ],
-        'mandiri_va' => [
-            'code' => 'VA_MANDIRI',
-            'name' => 'Mandiri Virtual Account',
-            'endpoint' => '/payment/va/create',
-        ],
-        'bni_va' => [
-            'code' => 'VA_BNI',
-            'name' => 'BNI Virtual Account',
-            'endpoint' => '/payment/va/create',
-        ],
-        'bri_va' => [
-            'code' => 'VA_BRI',
-            'name' => 'BRI Virtual Account',
-            'endpoint' => '/payment/va/create',
-        ],
-        'dana' => [
-            'code' => 'EW_DANA',
-            'name' => 'DANA',
-            'endpoint' => '/payment/ewallet/create',
-        ],
-        'gopay' => [
-            'code' => 'EW_GOPAY',
-            'name' => 'GoPay',
-            'endpoint' => '/payment/ewallet/create',
-        ],
-        'ovo' => [
-            'code' => 'EW_OVO',
-            'name' => 'OVO',
-            'endpoint' => '/payment/ewallet/create',
-        ],
-        'shopeepay' => [
-            'code' => 'EW_SHOPEEPAY',
-            'name' => 'ShopeePay',
-            'endpoint' => '/payment/ewallet/create',
-        ],
-    ],
-
-    // Status Mapping
-    'status_mapping' => [
-        'PENDING' => 'menunggu',
-        'PROCESSING' => 'diproses',
-        'PAID' => 'berhasil',
-        'EXPIRED' => 'kadaluarsa',
-        'FAILED' => 'gagal',
-        'CANCELLED' => 'dibatalkan',
-        'REFUNDED' => 'dikembalikan',
-        'UNKNOWN' => 'menunggu',
-    ],
-
-    // Testing Mode
+    // Testing Mode - DISABLED by default for security
     'testing' => [
-        'enabled' => env('PAYLABS_TESTING', true),
-        'simulate_success' => env('PAYLABS_SIMULATE_SUCCESS', true),
-        'skip_signature' => env('PAYLABS_SKIP_SIGNATURE', true),
-        'dummy_response' => [
-            'responseCode' => '00',
-            'responseMessage' => 'Success',
-            'transactionId' => 'T' . time() . rand(1000, 9999),
-            'status' => 'PENDING',
-            'amount' => 100000,
-            'currency' => 'IDR',
-            'paymentChannel' => 'QRIS',
-            'vaNumber' => null,
-            'qrCode' => 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TEST' . time(),
-            'expiredTime' => now()->addMinutes(30)->toISOString(),
-            'checkoutUrl' => null,
-            'deepLink' => null,
-        ],
-    ],
-
-    // Logging
-    'logging' => [
-        'enabled' => env('LOG_PAYMENTS', true),
-        'channel' => env('LOG_PAYMENTS_CHANNEL', 'daily'),
-        'level' => env('LOG_PAYMENTS_LEVEL', 'debug'),
+        'enabled' => env('PAYLABS_TESTING', false),
+        'simulate_success' => env('PAYLABS_SIMULATE_SUCCESS', false),
+        'skip_signature' => env('PAYLABS_SKIP_SIGNATURE', false),
     ],
 ];

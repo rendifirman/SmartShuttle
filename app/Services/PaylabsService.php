@@ -1,11 +1,14 @@
 <?php
+// app/Services/PaylabsService.php
 
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\Pembayaran;
+use App\Models\MetodePembayaran;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class PaylabsService
 {
@@ -14,196 +17,163 @@ class PaylabsService
     protected $publicKey;
     protected $baseUrl;
     protected $callbackUrl;
-    protected $endpoint;
+    protected $returnUrl;
+    protected $merchantName;
+    protected $storeId;
+    protected $environment;
 
     public function __construct()
     {
         $this->mid = config('paylabs.mid', '010529');
         $this->privateKey = config('paylabs.private_key', '');
         $this->publicKey = config('paylabs.public_key', '');
-        $this->baseUrl = config('paylabs.base_url', 'https://sandbox.paylabs.co.id');
-        $this->endpoint = config('paylabs.endpoint', '/pembayaran');
-        $this->callbackUrl = config('paylabs.callback_url', 'http://localhost:8000/api/payment/callback');
+        // Pay-in v2.3 base URL defaults:
+        // SIT  => https://sit-pay.paylabs.co.id
+        // PROD => https://pay.paylabs.co.id
+        $this->baseUrl = config('paylabs.base_url', 'https://sit-pay.paylabs.co.id');
+        $this->callbackUrl = config('paylabs.callback_url', 'http://localhost:8000/api/payment/callback-v23');
+        $this->returnUrl = config('paylabs.return_url', 'http://localhost:8000/customer/detail-pemesanan');
+        $this->merchantName = config('paylabs.merchant_name', 'Smart Shuttle');
+        $this->storeId = config('paylabs.store_id', '');
+        $this->environment = config('paylabs.environment', 'sandbox');
 
-        Log::info('PAYLABS Service initialized for Smart Shuttle App:', [
+        Log::info('PAYLABS Service initialized:', [
             'mid' => $this->mid,
             'base_url' => $this->baseUrl,
-            'environment' => config('paylabs.environment', 'sandbox'),
+            'environment' => $this->environment,
             'testing_mode' => config('paylabs.testing.enabled', false)
         ]);
     }
 
     /**
-     * Create payment request to Paylabs v4.8.1
+     * Backward-compatible helper used by existing dev routes.
+     * Note: Signature string is endpoint-path dependent in v2.3.
+     */
+    public function generateSignature(array $requestData, ?string $timestamp = null, string $endpointPath = '/payment/v2.3/qris/create')
+    {
+        $timestamp = $timestamp ?: Carbon::now()->format('Y-m-d\TH:i:s.vP');
+        return $this->generateSignatureV23($requestData, $timestamp, $endpointPath);
+    }
+
+    /**
+     * Create QRIS order directly (v2.3) - useful for Postman testing.
+     */
+    public function qrisCreateV23(array $body)
+    {
+        $requestId = $body['requestId'] ?? $this->generateRequestId();
+        $merchantTradeNo = $body['merchantTradeNo'] ?? ('TEST-' . now()->format('YmdHis') . '-' . Str::random(6));
+
+        $payload = array_merge([
+            'requestId' => $requestId,
+            'merchantId' => $this->mid,
+            'storeId' => $this->storeId ?: null,
+            'paymentType' => 'QRIS',
+            'amount' => isset($body['amount']) ? number_format((float) $body['amount'], 2, '.', '') : '0.00',
+            'merchantTradeNo' => $merchantTradeNo,
+            'notifyUrl' => $body['notifyUrl'] ?? $this->callbackUrl,
+            'feeType' => $body['feeType'] ?? (config('paylabs.qris.fee_type', 'BEN') ?: 'BEN'),
+            'productName' => $body['productName'] ?? 'Smart Shuttle Ticket',
+        ], $body);
+
+        // Remove null storeId to avoid confusing Paylabs API
+        if (empty($payload['storeId'])) {
+            unset($payload['storeId']);
+        }
+
+        return $this->requestV23('/payment/v2.3/qris/create', $payload, $requestId);
+    }
+
+    /**
+     * Query QRIS order status directly (v2.3).
+     */
+    public function qrisQueryV23(array $body)
+    {
+        $requestId = $body['requestId'] ?? $this->generateRequestId();
+
+        $payload = array_merge([
+            'requestId' => $requestId,
+            'merchantId' => $this->mid,
+            'paymentType' => 'QRIS',
+        ], $body);
+
+        return $this->requestV23('/payment/v2.3/qris/query', $payload, $requestId);
+    }
+
+    /**
+     * Cancel QRIS order directly (v2.3).
+     */
+    public function qrisCancelV23(array $body)
+    {
+        $requestId = $body['requestId'] ?? $this->generateRequestId();
+
+        $payload = array_merge([
+            'requestId' => $requestId,
+            'merchantId' => $this->mid,
+            'paymentType' => 'QRIS',
+        ], $body);
+
+        return $this->requestV23('/payment/v2.3/qris/cancel', $payload, $requestId);
+    }
+
+    /**
+     * Create Virtual Account order directly (v2.3) - useful for Postman testing.
+     */
+    public function vaCreateV23(array $body)
+    {
+        $requestId = $body['requestId'] ?? $this->generateRequestId();
+        $merchantTradeNo = $body['merchantTradeNo'] ?? ('VA-TEST-' . now()->format('YmdHis') . '-' . Str::random(6));
+
+        $payload = array_merge([
+            'requestId' => $requestId,
+            'merchantId' => $this->mid,
+            'storeId' => $this->storeId ?: null,
+            'amount' => isset($body['amount']) ? number_format((float) $body['amount'], 2, '.', '') : '0.00',
+            'merchantTradeNo' => $merchantTradeNo,
+            'notifyUrl' => $body['notifyUrl'] ?? $this->callbackUrl,
+            'feeType' => $body['feeType'] ?? (config('paylabs.va.fee_type', 'BEN') ?: 'BEN'),
+            'productName' => $body['productName'] ?? 'Smart Shuttle Ticket',
+            'productInfo' => $body['productInfo'] ?? [],
+            'payer' => $body['payer'] ?? 'Customer',
+        ], $body);
+
+        // Remove null storeId to avoid confusing Paylabs API
+        if (empty($payload['storeId'])) {
+            unset($payload['storeId']);
+        }
+
+        return $this->requestV23('/payment/v2.3/va/create', $payload, $requestId);
+    }
+
+    /**
+     * Create payment request
      */
     public function createPayment(Pembayaran $payment, $channelCode, $channelName)
     {
         try {
-            Log::info('PAYLABS: Creating payment for Smart Shuttle App', [
+            Log::info('PAYLABS: Creating payment', [
                 'payment_id' => $payment->id,
                 'kode_pembayaran' => $payment->kode_pembayaran,
                 'amount' => $payment->jumlah,
-                'channel' => $channelCode,
+                'channel_code' => $channelCode,
+                'channel_name' => $channelName,
                 'mid' => $this->mid
             ]);
 
             // Jika testing mode aktif, langsung return dummy
             if (config('paylabs.testing.enabled', false)) {
                 Log::info('PAYLABS: Using testing mode');
-
-                $dummyResponse = [
-                    'responseCode' => '00',
-                    'responseMessage' => 'Success (Test Mode)',
-                    'transactionId' => 'T' . time() . rand(1000, 9999),
-                    'status' => 'PENDING',
-                    'amount' => (int) $payment->jumlah,
-                    'currency' => 'IDR',
-                    'paymentChannel' => $channelCode,
-                    'expiredTime' => now()->addMinutes(30)->toISOString(),
-                ];
-
-                // Tambahkan data spesifik channel
-                if ($channelCode === 'QRIS') {
-                    $dummyResponse['qrCode'] = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' .
-                        urlencode('SMARTSHUTTLEAPP|' . $payment->kode_pembayaran . '|' . $payment->jumlah);
-                }
-
-                if (strpos($channelCode, 'VA_') === 0) {
-                    $bankCode = str_replace('VA_', '', $channelCode);
-                    $dummyResponse['vaNumber'] = '888' . rand(100000000, 999999999);
-                    $dummyResponse['bankName'] = $bankCode;
-                }
-
-                // Update payment
-                $updateData = [
-                    'paylabs_transaction_id' => $dummyResponse['transactionId'],
-                    'paylabs_status' => $dummyResponse['status'],
-                    'paylabs_response' => json_encode($dummyResponse),
-                    'updated_at' => now(),
-                ];
-
-                if (isset($dummyResponse['qrCode'])) {
-                    $updateData['qr_code'] = $dummyResponse['qrCode'];
-                }
-
-                if (isset($dummyResponse['vaNumber'])) {
-                    $updateData['no_virtual_account'] = $dummyResponse['vaNumber'];
-                    $updateData['nama_bank'] = $dummyResponse['bankName'];
-                }
-
-                $payment->update($updateData);
-
-                return [
-                    'success' => true,
-                    'transaction_id' => $dummyResponse['transactionId'],
-                    'payment_data' => $dummyResponse,
-                    'is_test_mode' => true,
-                ];
+                return $this->createTestPayment($payment, $channelCode, $channelName);
             }
 
-            // Prepare request data
-            $requestData = [
-                'requestType' => 'createPayment',
-                'merchantId' => $this->mid,
-                'merchantTradeNo' => $payment->kode_pembayaran,
-                'amount' => (string) intval($payment->jumlah),
-                'currency' => 'IDR',
-                'productName' => 'Smart Shuttle App Ticket',
-                'productDetail' => 'Payment for booking: ' . ($payment->pemesanan->kode_booking ?? 'N/A'),
-                'feeType' => 'MERCHANT',
-                'customerName' => $payment->pemesanan->user->name ?? 'Customer',
-                'customerEmail' => $payment->pemesanan->user->email ?? 'customer@example.com',
-                'customerPhone' => $payment->pemesanan->user->telepon ?? '08123456789',
-                'channelCode' => $channelCode,
-                'notifyUrl' => $this->callbackUrl,
-                'returnUrl' => url('/customer/detail-pemesanan/' . ($payment->pemesanan->kode_booking ?? 'test')),
-                'expiredTime' => 30,
-            ];
-
-            Log::info('PAYLABS Request Data:', $requestData);
-
-            // Minify JSON
-            $minifiedBody = $this->minifyJson($requestData);
-            $timestamp = time() * 1000;
-
-            // Generate signature
-            $signature = $this->generateSignatureV481($minifiedBody, $timestamp, $channelCode);
-
-            // Determine endpoint
-            $endpointPath = $this->getEndpointPath($channelCode);
-            $endpointUrl = rtrim($this->baseUrl, '/') . $endpointPath;
-
-            Log::info('PAYLABS API Call:', [
-                'url' => $endpointUrl,
-                'timestamp' => $timestamp,
-                'signature_length' => strlen($signature)
-            ]);
-
-            // Make HTTP request
-            $response = Http::timeout(30)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                    'X-TIMESTAMP' => $timestamp,
-                    'X-SIGNATURE' => $signature,
-                    'X-MERCHANT-ID' => $this->mid,
-                ])
-                ->post($endpointUrl, $requestData);
-
-            $statusCode = $response->status();
-            $responseBody = $response->body();
-
-            Log::info('PAYLABS Response:', [
-                'status' => $statusCode,
-                'body' => $responseBody
-            ]);
-
-            if (!$response->successful()) {
-                $errorMsg = "HTTP {$statusCode}: ";
-                if (str_contains($responseBody, '<!DOCTYPE html>')) {
-                    $errorMsg .= 'HTML response received (possibly 404)';
-                } else {
-                    $errorMsg .= substr($responseBody, 0, 100);
-                }
-                throw new \Exception($errorMsg);
-            }
-
-            $responseData = $response->json();
-
-            if (isset($responseData['responseCode']) && $responseData['responseCode'] === '00') {
-                // Update payment with response data
-                $updateData = [
-                    'paylabs_transaction_id' => $responseData['transactionId'] ?? null,
-                    'paylabs_status' => $responseData['status'] ?? 'PENDING',
-                    'paylabs_response' => json_encode($responseData),
-                    'updated_at' => now(),
-                ];
-
-                if (isset($responseData['vaNumber'])) {
-                    $updateData['no_virtual_account'] = $responseData['vaNumber'];
-                    $updateData['nama_bank'] = $responseData['bankName'] ?? $channelName;
-                }
-
-                if (isset($responseData['qrCode'])) {
-                    $updateData['qr_code'] = $responseData['qrCode'];
-                }
-
-                if (isset($responseData['checkoutUrl'])) {
-                    $updateData['checkout_url'] = $responseData['checkoutUrl'];
-                }
-
-                $payment->update($updateData);
-
-                return [
-                    'success' => true,
-                    'transaction_id' => $responseData['transactionId'] ?? null,
-                    'payment_data' => $this->formatPaymentData($responseData, $channelCode),
-                    'is_test_mode' => false,
-                ];
+            // Pilih metode berdasarkan channel code
+            if ($channelCode === 'QRIS') {
+                return $this->createQRISPayment($payment, $channelCode, $channelName);
+            } elseif (strpos($channelCode, 'VA_') === 0) {
+                return $this->createVirtualAccountPayment($payment, $channelCode, $channelName);
+            } elseif (strpos($channelCode, 'EW_') === 0) {
+                return $this->createEWalletPayment($payment, $channelCode, $channelName);
             } else {
-                $errorCode = $responseData['responseCode'] ?? 'N/A';
-                $errorMessage = $responseData['responseMessage'] ?? $responseData['errCodeDes'] ?? 'Unknown error';
-                throw new \Exception("Paylabs Error {$errorCode}: {$errorMessage}");
+                throw new \Exception("Unsupported payment channel: {$channelCode}");
             }
 
         } catch (\Exception $e) {
@@ -224,139 +194,492 @@ class PaylabsService
     }
 
     /**
-     * Create payment with fallback to local QRIS
+     * Create QRIS payment (v2.3)
      */
-    public function createPaymentWithFallback(Pembayaran $payment, $channelCode, $channelName)
+    private function createQRISPayment(Pembayaran $payment, $channelCode, $channelName)
     {
-        // Try Paylabs first
-        $paylabsResult = $this->createPayment($payment, $channelCode, $channelName);
+        try {
+            // Generate request ID
+            $requestId = $this->generateRequestId();
 
-        if ($paylabsResult['success']) {
-            return $paylabsResult;
+            // Prepare product info
+            $productInfo = $this->prepareProductInfo($payment);
+
+            // Prepare request data sesuai spesifikasi v2.3
+            $requestData = [
+                'requestId' => $requestId,
+                'merchantId' => $this->mid,
+                'storeId' => $this->storeId,
+                'paymentType' => 'QRIS',
+                'amount' => number_format($payment->jumlah, 2, '.', ''),
+                'merchantTradeNo' => $payment->kode_pembayaran,
+                'notifyUrl' => $this->callbackUrl,
+                'feeType' => 'BEN', // BEN: Merchant, OUR: Customer
+                'productName' => 'Smart Shuttle Ticket',
+                'productInfo' => $productInfo
+            ];
+
+            // Tambahkan expire time jika ada waktu kadaluarsa
+            if ($payment->waktu_kadaluarsa) {
+                $expireSeconds = Carbon::now()->diffInSeconds($payment->waktu_kadaluarsa);
+                if ($expireSeconds > 0) {
+                    $requestData['expire'] = $expireSeconds;
+                }
+            }
+
+            Log::info('PAYLABS v2.3 QRIS Request Data:', $requestData);
+
+            // Generate timestamp
+            $timestamp = Carbon::now()->format('Y-m-d\TH:i:s.vP');
+
+            // Generate signature
+            $signature = $this->generateSignatureV23($requestData, $timestamp, '/payment/v2.3/qris/create');
+
+            // Build endpoint URL
+            $endpointUrl = rtrim($this->baseUrl, '/') . '/payment/v2.3/qris/create';
+
+            Log::info('PAYLABS v2.3 QRIS API Call:', [
+                'url' => $endpointUrl,
+                'timestamp' => $timestamp,
+                'request_id' => $requestId
+            ]);
+
+            // Make HTTP request
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Content-Type' => 'application/json;charset=utf-8',
+                    'Accept' => 'application/json',
+                    'X-TIMESTAMP' => $timestamp,
+                    'X-SIGNATURE' => $signature,
+                    'X-PARTNER-ID' => $this->mid,
+                    'X-REQUEST-ID' => $requestId,
+                ])
+                ->post($endpointUrl, $requestData);
+
+            $statusCode = $response->status();
+            $responseBody = (string) $response->body();
+
+            Log::info('PAYLABS v2.3 QRIS Response:', [
+                'status' => $statusCode,
+                'body' => $responseBody
+            ]);
+
+            if (!$response->successful()) {
+                $errorMsg = "HTTP {$statusCode}: " . substr($responseBody, 0, 200);
+                throw new \Exception($errorMsg);
+            }
+
+            $responseData = json_decode($responseBody, true);
+
+            // Process response
+            return $this->processQRISResponse($payment, $responseData, $requestId);
+
+        } catch (\Exception $e) {
+            Log::error('PAYLABS v2.3 Create QRIS Error:', [
+                'error' => $e->getMessage(),
+                'payment_id' => $payment->id ?? 'N/A',
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            throw $e;
         }
-
-        // If Paylabs fails, use local fallback
-        Log::warning('Paylabs failed, using local fallback', [
-            'error' => $paylabsResult['error'] ?? 'Unknown',
-            'payment_id' => $payment->id
-        ]);
-
-        return $this->createLocalPayment($payment, $channelCode);
     }
 
     /**
-     * Create local payment (fallback)
+     * Create Virtual Account payment
      */
-    private function createLocalPayment(Pembayaran $payment, $channelCode)
+   // Di dalam PaylabsService.php - method createVirtualAccountPayment()
+
+private function createVirtualAccountPayment(Pembayaran $payment, $channelCode, $channelName)
+{
+    try {
+        // Generate request ID
+        $requestId = $this->generateRequestId();
+
+        // Extract bank code from channel code (VA_BCA -> BCA)
+        $bankCode = str_replace('VA_', '', $channelCode);
+
+        // Map kode bank ke format Paylabs
+        $paylabsBankMap = [
+            'BCA' => 'BCAVA',
+            'MANDIRI' => 'MandiriVA',
+            'BNI' => 'BNIVA',
+            'BRI' => 'BRIVA',
+            'PERMATA' => 'PermataVA',
+            'CIMB' => 'CIMBVA',
+            'DANAMON' => 'DanamonVA',
+            'MAYBANK' => 'MaybankVA',
+            'BTN' => 'BTNVA',
+            'SINARMAS' => 'SinarmasVA',
+            'BJB' => 'BJBVA',
+            'BTPN' => 'BTPNVA',
+            'OCBC' => 'OCBCVA',
+        ];
+
+        $paylabsPaymentType = $paylabsBankMap[$bankCode] ?? $bankCode . 'VA';
+
+        // Prepare product info
+        $productInfo = $this->prepareProductInfo($payment);
+
+        // Prepare request data sesuai dokumentasi Paylabs v2.3 VA
+        $requestData = [
+            'requestId' => $requestId,
+            'merchantId' => $this->mid,
+            'storeId' => $this->storeId ?: null,
+            'paymentType' => $paylabsPaymentType,
+            'amount' => number_format($payment->jumlah, 2, '.', ''),
+            'merchantTradeNo' => $payment->kode_pembayaran,
+            'notifyUrl' => $this->callbackUrl,
+            'feeType' => 'BEN', // BEN: Merchant, OUR: Customer
+            'productName' => 'Smart Shuttle Ticket',
+            'productInfo' => $productInfo,
+            'payer' => $payment->pemesanan->nama_pemesan ?? 'Customer',
+        ];
+
+        // Remove null storeId
+        if (empty($requestData['storeId'])) {
+            unset($requestData['storeId']);
+        }
+
+        // Tambahkan expire time
+        if ($payment->waktu_kadaluarsa) {
+            $expireSeconds = Carbon::now()->diffInSeconds($payment->waktu_kadaluarsa);
+            if ($expireSeconds > 0) {
+                $requestData['expire'] = $expireSeconds;
+            }
+        }
+
+        Log::info('PAYLABS Virtual Account Request Data:', $requestData);
+
+        // Generate timestamp
+        $timestamp = Carbon::now()->format('Y-m-d\TH:i:s.vP');
+
+        // Generate signature - PERHATIAN: endpoint berbeda dengan QRIS
+        $signature = $this->generateSignatureV23($requestData, $timestamp, '/payment/v2.3/va/create');
+
+        // Build endpoint URL sesuai dokumentasi
+        $endpointUrl = rtrim($this->baseUrl, '/') . '/payment/v2.3/va/create';
+
+        Log::info('PAYLABS Virtual Account API Call:', [
+            'url' => $endpointUrl,
+            'timestamp' => $timestamp,
+            'request_id' => $requestId
+        ]);
+
+        // Make HTTP request
+        $response = Http::timeout(30)
+            ->withHeaders([
+                'Content-Type' => 'application/json;charset=utf-8',
+                'Accept' => 'application/json',
+                'X-TIMESTAMP' => $timestamp,
+                'X-SIGNATURE' => $signature,
+                'X-PARTNER-ID' => $this->mid,
+                'X-REQUEST-ID' => $requestId,
+            ])
+            ->post($endpointUrl, $requestData);
+
+        $statusCode = $response->status();
+        $responseBody = (string) $response->body();
+
+        Log::info('PAYLABS Virtual Account Response:', [
+            'status' => $statusCode,
+            'body' => $responseBody
+        ]);
+
+        if (!$response->successful()) {
+            $errorMsg = "HTTP {$statusCode}: " . substr($responseBody, 0, 200);
+            throw new \Exception($errorMsg);
+        }
+
+        $responseData = json_decode($responseBody, true);
+
+        // Process response
+        return $this->processVirtualAccountResponse($payment, $responseData, $requestId, $bankCode, $channelName);
+
+    } catch (\Exception $e) {
+        Log::error('PAYLABS Create Virtual Account Error:', [
+            'error' => $e->getMessage(),
+            'payment_id' => $payment->id ?? 'N/A',
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        throw $e;
+    }
+}
+    /**
+     * Create E-Wallet payment
+     */
+    private function createEWalletPayment(Pembayaran $payment, $channelCode, $channelName)
     {
         try {
-            $updateData = [
-                'paylabs_transaction_id' => 'LOCAL_' . time(),
-                'paylabs_status' => 'PENDING',
-                'paylabs_response' => json_encode(['local_fallback' => true]),
-                'updated_at' => now(),
+            // Generate request ID
+            $requestId = $this->generateRequestId();
+
+            // Extract e-wallet type from channel code (EW_DANA -> DANA)
+            $walletType = str_replace('EW_', '', $channelCode);
+
+            // Prepare product info
+            $productInfo = $this->prepareProductInfo($payment);
+
+            // Prepare request data untuk E-Wallet
+            $requestData = [
+                'requestId' => $requestId,
+                'merchantId' => $this->mid,
+                'storeId' => $this->storeId,
+                'paymentType' => 'E_WALLET',
+                'amount' => number_format($payment->jumlah, 2, '.', ''),
+                'merchantTradeNo' => $payment->kode_pembayaran,
+                'notifyUrl' => $this->callbackUrl,
+                'returnUrl' => $this->returnUrl,
+                'feeType' => 'BEN',
+                'productName' => 'Smart Shuttle Ticket',
+                'productInfo' => $productInfo,
+                'walletType' => $walletType,
+                'customerInfo' => [
+                    'name' => $payment->pemesanan->nama_pemesan ?? 'Customer',
+                    'email' => $payment->pemesanan->email_pemesan ?? 'customer@example.com',
+                    'phone' => $payment->pemesanan->telepon_pemesan ?? '08123456789'
+                ]
             ];
 
-            // Generate local QRIS
-            if ($channelCode === 'QRIS') {
-                $updateData['qr_code'] = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' .
-                    urlencode('SMARTSHUTTLEAPP|' . $payment->kode_pembayaran . '|' . $payment->jumlah . '|' . time());
-                $updateData['instruksi_pembayaran'] = json_encode([
-                    '1. Buka aplikasi e-wallet (DANA, OVO, GoPay, dll)',
-                    '2. Pilih menu "Scan QR"',
-                    '3. Scan QR code di atas',
-                    '4. Bayar: Rp ' . number_format($payment->jumlah, 0, ',', '.'),
-                    '5. Sistem akan otomatis mendeteksi pembayaran'
-                ]);
+            // Tambahkan expire time
+            if ($payment->waktu_kadaluarsa) {
+                $expireSeconds = Carbon::now()->diffInSeconds($payment->waktu_kadaluarsa);
+                if ($expireSeconds > 0) {
+                    $requestData['expire'] = $expireSeconds;
+                }
             }
 
-            // For Virtual Account
-            if (strpos($channelCode, 'VA_') === 0) {
-                $bankCode = str_replace('VA_', '', $channelCode);
-                $updateData['no_virtual_account'] = '888' . rand(100000000, 999999999);
-                $updateData['nama_bank'] = $bankCode;
-                $updateData['instruksi_pembayaran'] = json_encode([
-                    '1. Transfer ke Virtual Account: ' . $updateData['no_virtual_account'],
-                    '2. Bank: ' . $bankCode,
-                    '3. Jumlah: Rp ' . number_format($payment->jumlah, 0, ',', '.'),
-                    '4. Pembayaran akan diverifikasi otomatis'
-                ]);
+            Log::info('PAYLABS E-Wallet Request Data:', $requestData);
+
+            // Generate timestamp
+            $timestamp = Carbon::now()->format('Y-m-d\TH:i:s.vP');
+
+            // Generate signature
+            $signature = $this->generateSignatureV23($requestData, $timestamp, '/payment/v2.3/e-wallet/create');
+
+            // Build endpoint URL
+            $endpointUrl = rtrim($this->baseUrl, '/') . '/payment/v2.3/e-wallet/create';
+
+            Log::info('PAYLABS E-Wallet API Call:', [
+                'url' => $endpointUrl,
+                'timestamp' => $timestamp,
+                'request_id' => $requestId
+            ]);
+
+            // Make HTTP request
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Content-Type' => 'application/json;charset=utf-8',
+                    'Accept' => 'application/json',
+                    'X-TIMESTAMP' => $timestamp,
+                    'X-SIGNATURE' => $signature,
+                    'X-PARTNER-ID' => $this->mid,
+                    'X-REQUEST-ID' => $requestId,
+                ])
+                ->post($endpointUrl, $requestData);
+
+            $statusCode = $response->status();
+            $responseBody = (string) $response->body();
+
+            Log::info('PAYLABS E-Wallet Response:', [
+                'status' => $statusCode,
+                'body' => $responseBody
+            ]);
+
+            if (!$response->successful()) {
+                $errorMsg = "HTTP {$statusCode}: " . substr($responseBody, 0, 200);
+                throw new \Exception($errorMsg);
             }
+
+            $responseData = json_decode($responseBody, true);
+
+            // Process response
+            return $this->processEWalletResponse($payment, $responseData, $requestId, $walletType);
+
+        } catch (\Exception $e) {
+            Log::error('PAYLABS Create E-Wallet Error:', [
+                'error' => $e->getMessage(),
+                'payment_id' => $payment->id ?? 'N/A',
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Process QRIS response
+     */
+    private function processQRISResponse($payment, $responseData, $requestId)
+    {
+        if (isset($responseData['errCode']) && $responseData['errCode'] === '0') {
+            // Map QRIS status to Paylabs status
+            $paylabsStatus = $this->mapQRISStatus($responseData['status'] ?? '01');
+            $localStatus = $this->mapPaylabsStatusToLocal($paylabsStatus);
+
+            // Update payment with response data
+            $updateData = [
+                'paylabs_request_id' => $requestId,
+                'paylabs_transaction_id' => $responseData['platformTradeNo'] ?? null,
+                'paylabs_status' => $paylabsStatus,
+                'status' => $localStatus,
+                'paylabs_response' => json_encode($responseData),
+                'paylabs_raw_response' => json_encode($responseData),
+                'qr_code' => $responseData['qrCode'] ?? null,
+                'qris_url' => $responseData['qrisUrl'] ?? null,
+                'nmid' => $responseData['nmid'] ?? null,
+                'platform_trade_no' => $responseData['platformTradeNo'] ?? null,
+                'tid' => $responseData['tid'] ?? null,
+                'rrn' => $responseData['rrn'] ?? null,
+                'payer_name' => $responseData['payer'] ?? null,
+                'payer_phone' => $responseData['phoneNumber'] ?? null,
+                'issuer_id' => $responseData['issuerId'] ?? null,
+                'trans_fee_rate' => $responseData['transFeeRate'] ?? null,
+                'trans_fee_amount' => $responseData['transFeeAmount'] ?? null,
+                'total_trans_fee' => $responseData['totalTransFee'] ?? null,
+                'vat_fee' => $responseData['vatFee'] ?? null,
+                'account_no' => $responseData['accountNo'] ?? null,
+                'create_time' => $responseData['createTime'] ?? null,
+                'expired_time' => $responseData['expiredTime'] ?? null,
+                'updated_at' => now(),
+            ];
 
             $payment->update($updateData);
 
             return [
                 'success' => true,
-                'transaction_id' => $updateData['paylabs_transaction_id'],
-                'payment_data' => $updateData,
-                'is_fallback' => true,
+                'transaction_id' => $responseData['platformTradeNo'] ?? $requestId,
+                'payment_data' => $responseData,
+                'is_test_mode' => false,
+            ];
+        } else {
+            $errorCode = $responseData['errCode'] ?? 'UNKNOWN';
+            $errorMessage = $responseData['errCodeDes'] ?? 'Unknown error from Paylabs';
+            throw new \Exception("Paylabs Error {$errorCode}: {$errorMessage}");
+        }
+    }
+
+    /**
+     * Process Virtual Account response
+     */
+  private function processVirtualAccountResponse($payment, $responseData, $requestId, $bankCode, $channelName)
+{
+    if (isset($responseData['errCode']) && $responseData['errCode'] === '0') {
+        // Map status - VA menggunakan status 01, 02, 09 (bukan string)
+        $statusCode = $responseData['status'] ?? '01';
+        $paylabsStatus = $this->mapVAStatusToPaylabs($statusCode);
+        $localStatus = $this->mapPaylabsStatusToLocal($paylabsStatus);
+
+        // Update payment with response data
+        $updateData = [
+            'paylabs_request_id' => $requestId,
+            'paylabs_transaction_id' => $responseData['platformTradeNo'] ?? null,
+            'paylabs_status' => $paylabsStatus,
+            'status' => $localStatus,
+            'paylabs_response' => json_encode($responseData),
+            'paylabs_raw_response' => json_encode($responseData),
+            'no_virtual_account' => $responseData['vaCode'] ?? $responseData['vaNumber'] ?? null,
+            'nama_bank' => $channelName,
+            'platform_trade_no' => $responseData['platformTradeNo'] ?? null,
+            'create_time' => $responseData['createTime'] ?? null,
+            'expired_time' => $responseData['expiredTime'] ?? null,
+            'trans_fee_rate' => $responseData['transFeeRate'] ?? null,
+            'trans_fee_amount' => $responseData['transFeeAmount'] ?? null,
+            'total_trans_fee' => $responseData['totalTransFee'] ?? null,
+            'vat_fee' => $responseData['vatFee'] ?? null,
+            'fee_type' => $responseData['feeType'] ?? null,
+            'payer_name' => $responseData['payer'] ?? null,
+            'account_no' => $responseData['accountNo'] ?? null,
+            'updated_at' => now(),
+        ];
+
+        $payment->update($updateData);
+
+        return [
+            'success' => true,
+            'transaction_id' => $responseData['platformTradeNo'] ?? $requestId,
+            'payment_data' => $responseData,
+            'is_test_mode' => false,
+        ];
+    } else {
+        $errorCode = $responseData['errCode'] ?? 'UNKNOWN';
+        $errorMessage = $responseData['errCodeDes'] ?? 'Unknown error from Paylabs';
+        throw new \Exception("Paylabs Error {$errorCode}: {$errorMessage}");
+    }
+}
+
+/**
+ * Map VA status code to Paylabs status
+ */
+private function mapVAStatusToPaylabs($statusCode)
+{
+    $mapping = [
+        '01' => 'PENDING',
+        '02' => 'PAID',
+        '09' => 'FAILED',
+    ];
+
+    return $mapping[$statusCode] ?? 'PENDING';
+}
+
+    /**
+     * Process E-Wallet response
+     */
+    private function processEWalletResponse($payment, $responseData, $requestId, $walletType)
+    {
+        if (isset($responseData['errCode']) && $responseData['errCode'] === '0') {
+            // Map status
+            $paylabsStatus = $responseData['status'] ?? 'PENDING';
+            $localStatus = $this->mapPaylabsStatusToLocal($paylabsStatus);
+
+            // Update payment with response data
+            $updateData = [
+                'paylabs_request_id' => $requestId,
+                'paylabs_transaction_id' => $responseData['platformTradeNo'] ?? null,
+                'paylabs_status' => $paylabsStatus,
+                'status' => $localStatus,
+                'paylabs_response' => json_encode($responseData),
+                'paylabs_raw_response' => json_encode($responseData),
+                'platform_trade_no' => $responseData['platformTradeNo'] ?? null,
+                'create_time' => $responseData['createTime'] ?? null,
+                'expired_time' => $responseData['expiredTime'] ?? null,
+                'checkout_url' => $responseData['checkoutUrl'] ?? null,
+                'deeplink' => $responseData['deeplink'] ?? null,
+                'updated_at' => now(),
             ];
 
-        } catch (\Exception $e) {
-            Log::error('Local payment fallback failed: ' . $e->getMessage());
+            $payment->update($updateData);
 
             return [
-                'success' => false,
-                'error' => 'Both Paylabs and local fallback failed: ' . $e->getMessage(),
-                'is_fallback' => true,
+                'success' => true,
+                'transaction_id' => $responseData['platformTradeNo'] ?? $requestId,
+                'payment_data' => $responseData,
+                'is_test_mode' => false,
             ];
+        } else {
+            $errorCode = $responseData['errCode'] ?? 'UNKNOWN';
+            $errorMessage = $responseData['errCodeDes'] ?? 'Unknown error from Paylabs';
+            throw new \Exception("Paylabs Error {$errorCode}: {$errorMessage}");
         }
     }
 
     /**
-     * Minify JSON string (remove whitespace)
+     * Generate signature for Paylabs v2.3
      */
-    private function minifyJson($data)
-    {
-        return json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    }
-
-    /**
-     * Get correct endpoint path based on channel code
-     */
-    private function getEndpointPath($channelCode)
-    {
-        // Untuk Paylabs v4.8.1, endpoint biasanya:
-        // - Virtual Account: /payment/va/create
-        // - QRIS: /payment/qris/create
-        // - E-Wallet: /payment/ewallet/create
-
-        // Namun jika 404, coba endpoint alternatif:
-
-        // Alternatif 1: Tanpa "payment/" prefix
-        if (strpos($channelCode, 'VA_') === 0) {
-            return '/va/create'; // Coba tanpa "payment/"
-        }
-
-        if ($channelCode === 'QRIS') {
-            return '/qris/create'; // Coba tanpa "payment/"
-        }
-
-        if (strpos($channelCode, 'EW_') === 0) {
-            return '/ewallet/create'; // Coba tanpa "payment/"
-        }
-
-        // Default fallback
-        return '/va/create';
-    }
-
-    /**
-     * Generate signature for Paylabs v4.8.1
-     * Format: POST:{endpoint}:sha256(minified_json_body):X-TIMESTAMP
-     */
-    private function generateSignatureV481($minifiedBody, $timestamp, $channelCode)
+    private function generateSignatureV23($requestData, $timestamp, $endpointPath)
     {
         try {
+            // Minify JSON (without whitespace)
+            $minifiedBody = json_encode($requestData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
             // Hash the minified JSON body using SHA256 (hex lowercase)
             $bodyHash = hash('sha256', $minifiedBody);
-
-            // Get correct endpoint path based on channel
-            $endpointPath = $this->getEndpointPath($channelCode);
 
             // Create signature string
             $signatureString = "POST:{$endpointPath}:{$bodyHash}:{$timestamp}";
 
-            Log::debug('PAYLABS v4.8.1 Signature String:', ['string' => $signatureString]);
+            Log::debug('PAYLABS v2.3 Signature String:', ['string' => $signatureString]);
 
             // Load private key
             $privateKey = $this->loadPrivateKey();
@@ -373,7 +696,7 @@ class PaylabsService
             return base64_encode($signature);
 
         } catch (\Exception $e) {
-            Log::error('PAYLABS v4.8.1 Signature Generation Error:', [
+            Log::error('PAYLABS v2.3 Signature Generation Error:', [
                 'error' => $e->getMessage()
             ]);
             throw $e;
@@ -381,25 +704,363 @@ class PaylabsService
     }
 
     /**
-     * Load and prepare private key
+     * Verify signature for callback v2.3
      */
-    private function loadPrivateKey()
+    public function verifySignatureV23($data, $signature, $timestamp, $endpointPath = null)
     {
-        // Coba load dari file dulu
-        $keyFile = config('paylabs.private_key_file');
-        if ($keyFile && file_exists($keyFile)) {
-            $rawPrivate = file_get_contents($keyFile);
-        } else {
-            $rawPrivate = $this->privateKey;
+        try {
+            if (!$endpointPath) {
+                // Backward compatible default (caller should pass the actual path)
+                $endpointPath = '/';
+            }
+
+            if (is_string($data)) {
+                $bodyHash = hash('sha256', $data);
+            } else {
+                // Minify JSON (without whitespace)
+                $minifiedBody = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                $bodyHash = hash('sha256', $minifiedBody);
+            }
+
+            // Create signature string
+            $signatureString = "POST:{$endpointPath}:{$bodyHash}:{$timestamp}";
+
+            Log::debug('PAYLABS v2.3 Signature Verification String:', ['string' => $signatureString]);
+
+            // Load public key
+            $publicKey = $this->loadPublicKey();
+
+            if (!$publicKey) {
+                throw new \Exception('Invalid public key format: ' . openssl_error_string());
+            }
+
+            // Verify signature
+            $result = openssl_verify($signatureString, base64_decode($signature), $publicKey, OPENSSL_ALGO_SHA256);
+            openssl_free_key($publicKey);
+
+            return $result === 1;
+
+        } catch (\Exception $e) {
+            Log::error('PAYLABS v2.3 Signature Verification Error:', [
+                'error' => $e->getMessage(),
+                'data' => $data
+            ]);
+            return false;
+        }
+    }
+
+    private function requestV23(string $endpointPath, array $requestData, string $requestId)
+    {
+        // Generate timestamp
+        $timestamp = Carbon::now()->format('Y-m-d\TH:i:s.vP');
+
+        // Signature string uses endpoint path, not full URL
+        $signature = $this->generateSignatureV23($requestData, $timestamp, $endpointPath);
+
+        $endpointUrl = rtrim($this->baseUrl, '/') . $endpointPath;
+
+        Log::info('PAYLABS v2.3 API Call', [
+            'url' => $endpointUrl,
+            'path' => $endpointPath,
+            'request_id' => $requestId,
+        ]);
+
+        $response = Http::timeout((int) config('paylabs.timeout', 30))
+            ->withHeaders([
+                'Content-Type' => 'application/json;charset=utf-8',
+                'Accept' => 'application/json',
+                'X-TIMESTAMP' => $timestamp,
+                'X-SIGNATURE' => $signature,
+                'X-PARTNER-ID' => $this->mid,
+                'X-REQUEST-ID' => $requestId,
+            ])
+            ->post($endpointUrl, $requestData);
+
+        return [
+            'http_status' => $response->status(),
+            'success' => $response->successful(),
+            'request' => [
+                'url' => $endpointUrl,
+                'path' => $endpointPath,
+                'timestamp' => $timestamp,
+                'requestId' => $requestId,
+            ],
+            'response' => $response->json() ?? ['raw' => (string) $response->body()],
+        ];
+    }
+
+    /**
+     * Check payment status
+     */
+   public function checkStatus($merchantTradeNo, $platformTradeNo = null)
+{
+    try {
+        $requestId = $this->generateRequestId();
+
+        // Prepare request data
+        $requestData = [
+            'requestId' => $requestId,
+            'merchantId' => $this->mid,
+            'merchantTradeNo' => $merchantTradeNo,
+        ];
+
+        if ($platformTradeNo) {
+            $requestData['platformTradeNo'] = $platformTradeNo;
         }
 
-        // Jika masih kosong, buat dummy untuk testing
-        if (empty($rawPrivate)) {
-            Log::warning('PAYLABS: No private key found, using dummy key for testing');
-            $rawPrivate = "-----BEGIN PRIVATE KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC0vWQp5iJ8Q8Pz
-DUMMY_KEY_SMARTSHUTTLE_APP_TESTING_ONLY_12345
------END PRIVATE KEY-----";
+        // Cari payment untuk menentukan tipe
+        $pembayaran = Pembayaran::where('kode_pembayaran', $merchantTradeNo)->first();
+        if ($pembayaran) {
+            $method = MetodePembayaran::where('kode', $pembayaran->metode)->first();
+            if ($method && strpos($method->paylabs_channel_code ?? '', 'VA_') === 0) {
+                // Ini adalah VA, gunakan endpoint VA query
+                return $this->vaQueryV23($requestData);
+            }
+        }
+
+        // Default ke order query
+        Log::info('PAYLABS Check Status Request:', $requestData);
+
+        // Generate timestamp
+        $timestamp = Carbon::now()->format('Y-m-d\TH:i:s.vP');
+
+        // Generate signature
+        $signature = $this->generateSignatureV23($requestData, $timestamp, '/payment/v2.3/order/query');
+
+        // Build endpoint URL
+        $endpointUrl = rtrim($this->baseUrl, '/') . '/payment/v2.3/order/query';
+
+            Log::info('PAYLABS Check Status API Call:', [
+                'url' => $endpointUrl,
+                'timestamp' => $timestamp,
+                'request_id' => $requestId
+            ]);
+
+            // Make HTTP request
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Content-Type' => 'application/json;charset=utf-8',
+                    'Accept' => 'application/json',
+                    'X-TIMESTAMP' => $timestamp,
+                    'X-SIGNATURE' => $signature,
+                    'X-PARTNER-ID' => $this->mid,
+                    'X-REQUEST-ID' => $requestId,
+                ])
+                ->post($endpointUrl, $requestData);
+
+            $statusCode = $response->status();
+            $responseBody = $response->body();
+
+            Log::info('PAYLABS Check Status Response:', [
+                'status' => $statusCode,
+                'body' => $responseBody
+            ]);
+
+            if (!$response->successful()) {
+                throw new \Exception('Failed to check status: ' . $responseBody);
+            }
+
+            $responseData = $response->json();
+
+            $responseData = $response->json();
+
+            if (isset($responseData['errCode']) && $responseData['errCode'] === '0') {
+                return [
+                    'success' => true,
+                    'status' => $responseData['status'] ?? 'UNKNOWN',
+                    'merchantTradeNo' => $responseData['merchantTradeNo'] ?? $merchantTradeNo,
+                    'platformTradeNo' => $responseData['platformTradeNo'] ?? $platformTradeNo,
+                    'amount' => $responseData['amount'] ?? 0,
+                    'paymentType' => $responseData['paymentType'] ?? '',
+                    'successTime' => $responseData['successTime'] ?? null,
+                    'expiredTime' => $responseData['expiredTime'] ?? null,
+                    'raw_response' => $responseData
+                ];
+            }
+
+            $errorCode = $responseData['errCode'] ?? 'UNKNOWN';
+            $errorMessage = $responseData['errCodeDes'] ?? 'Unknown error from Paylabs';
+            throw new \Exception("Paylabs Error {$errorCode}: {$errorMessage}");
+
+        } catch (\Exception $e) {
+            Log::error('PAYLABS Check Status Error:', [
+                'error' => $e->getMessage(),
+                'merchantTradeNo' => $merchantTradeNo,
+                'platformTradeNo' => $platformTradeNo
+            ]);
+
+            return [
+                'success' => false,
+                'status' => 'UNKNOWN',
+                'merchantTradeNo' => $merchantTradeNo,
+                'platformTradeNo' => $platformTradeNo,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Generate test payment (for testing mode)
+     */
+    private function createTestPayment(Pembayaran $payment, $channelCode, $channelName)
+    {
+        $requestId = 'TEST' . time() . rand(1000, 9999);
+        $platformTradeNo = 'PLT' . time() . rand(1000, 9999);
+
+        $testResponse = [
+            'errCode' => '0',
+            'errCodeDes' => 'Success (Test Mode)',
+            'requestId' => $requestId,
+            'merchantId' => $this->mid,
+            'paymentType' => $channelCode,
+            'amount' => number_format($payment->jumlah, 2, '.', ''),
+            'merchantTradeNo' => $payment->kode_pembayaran,
+            'platformTradeNo' => $platformTradeNo,
+            'createTime' => date('YmdHis'),
+            'expiredTime' => date('YmdHis', strtotime('+30 minutes')),
+            'status' => 'PENDING',
+            'productName' => 'Smart Shuttle Ticket',
+        ];
+
+        // Tambahkan data spesifik berdasarkan channel
+        if ($channelCode === 'QRIS') {
+            $testResponse['qrCode'] = '00020101021126650013ID.CO.QRIS.WWW0118936009110020721986020215SMART SHUTTLE0303UMI51440014ID.CO.QRIS.WWW0215SMART SHUTTLE0303UMI5204581253033605802ID5912SmartShuttle6007Jakarta61051064062070703A016304';
+            $testResponse['qrisUrl'] = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' . urlencode('SMARTSHUTTLE|' . $payment->kode_pembayaran);
+            $testResponse['nmid'] = 'ID123456789012345';
+            $testResponse['status'] = '01'; // Pending for QRIS
+        }
+
+        if (strpos($channelCode, 'VA_') === 0) {
+            $bankCode = str_replace('VA_', '', $channelCode);
+            $testResponse['vaNumber'] = '888' . rand(100000000, 999999999);
+            $testResponse['bankName'] = $bankCode;
+        }
+
+        if (strpos($channelCode, 'EW_') === 0) {
+            $testResponse['checkoutUrl'] = 'https://sandbox.paylabs.co.id/payment/checkout/' . $platformTradeNo;
+            $testResponse['deeplink'] = 'dana://payment?orderId=' . $platformTradeNo;
+        }
+
+        // Map status
+        $paylabsStatus = $channelCode === 'QRIS' ? $this->mapQRISStatus($testResponse['status']) : $testResponse['status'];
+        $localStatus = $this->mapPaylabsStatusToLocal($paylabsStatus);
+
+        // Update payment data
+        $updateData = [
+            'paylabs_request_id' => $requestId,
+            'paylabs_transaction_id' => $platformTradeNo,
+            'paylabs_status' => $paylabsStatus,
+            'status' => $localStatus,
+            'paylabs_response' => json_encode($testResponse),
+            'paylabs_raw_response' => json_encode($testResponse),
+            'platform_trade_no' => $platformTradeNo,
+            'create_time' => $testResponse['createTime'],
+            'expired_time' => $testResponse['expiredTime'],
+            'updated_at' => now(),
+        ];
+
+        if (isset($testResponse['qrCode'])) {
+            $updateData['qr_code'] = $testResponse['qrCode'];
+            $updateData['qris_url'] = $testResponse['qrisUrl'];
+            $updateData['nmid'] = $testResponse['nmid'];
+        }
+
+        if (isset($testResponse['vaNumber'])) {
+            $updateData['no_virtual_account'] = $testResponse['vaNumber'];
+            $updateData['nama_bank'] = $testResponse['bankName'];
+        }
+
+        if (isset($testResponse['checkoutUrl'])) {
+            $updateData['checkout_url'] = $testResponse['checkoutUrl'];
+        }
+
+        if (isset($testResponse['deeplink'])) {
+            $updateData['deeplink'] = $testResponse['deeplink'];
+        }
+
+        $payment->update($updateData);
+
+        return [
+            'success' => true,
+            'transaction_id' => $platformTradeNo,
+            'payment_data' => $testResponse,
+            'is_test_mode' => true,
+        ];
+    }
+
+    /**
+     * Helper methods
+     */
+
+    private function generateRequestId()
+    {
+        return date('YmdHis') . rand(1000, 9999);
+    }
+
+    private function prepareProductInfo($payment)
+    {
+        $productInfo = [
+            [
+                'id' => 'TICKET001',
+                'name' => 'Smart Shuttle Ticket',
+                'price' => number_format($payment->jumlah, 2, '.', ''),
+                'type' => 'Ticket',
+                'url' => url('/customer/detail-pemesanan/' . ($payment->pemesanan->kode_booking ?? '')),
+                'quantity' => $payment->pemesanan->jumlah_penumpang ?? 1
+            ]
+        ];
+
+        // Tambahkan detail rute jika tersedia
+        if ($payment->pemesanan && $payment->pemesanan->jadwal) {
+            $rutePertama = $payment->pemesanan->jadwal->rutes->first();
+            $ruteTerakhir = $payment->pemesanan->jadwal->rutes->last();
+
+            if ($rutePertama && $ruteTerakhir) {
+                $productInfo[0]['name'] = 'Ticket: ' . $rutePertama->kota_asal . ' to ' . $ruteTerakhir->kota_tujuan;
+            }
+        }
+
+        return $productInfo;
+    }
+
+    private function mapQRISStatus($qrisStatus)
+    {
+        $mapping = [
+            '01' => 'PENDING',
+            '02' => 'PAID',
+            '09' => 'FAILED'
+        ];
+
+        return $mapping[$qrisStatus] ?? $qrisStatus;
+    }
+
+    private function mapPaylabsStatusToLocal($paylabsStatus)
+    {
+        $mapping = [
+            'PENDING' => 'menunggu',
+            'PROCESSING' => 'diproses',
+            'PAID' => 'berhasil',
+            'EXPIRED' => 'kadaluarsa',
+            'FAILED' => 'gagal',
+            'CANCELLED' => 'dibatalkan',
+            'REFUNDED' => 'dikembalikan',
+            '01' => 'menunggu', // QRIS Pending
+            '02' => 'berhasil', // QRIS Success
+            '09' => 'gagal', // QRIS Failed
+        ];
+
+        return $mapping[$paylabsStatus] ?? 'menunggu';
+    }
+
+    private function loadPrivateKey()
+    {
+        // Prefer inline key from config/.env; fall back to file if empty.
+        $rawPrivate = $this->privateKey;
+        if (empty(trim((string) $rawPrivate))) {
+            $keyFile = config('paylabs.private_key_file');
+            if ($keyFile && file_exists($keyFile)) {
+                $rawPrivate = file_get_contents($keyFile);
+            }
         }
 
         $rawPrivate = trim($rawPrivate);
@@ -408,198 +1069,48 @@ DUMMY_KEY_SMARTSHUTTLE_APP_TESTING_ONLY_12345
             $rawPrivate = str_replace('\\n', "\n", $rawPrivate);
         }
 
-        // For RSA PRIVATE KEY format, try direct loading first
-        if (strpos($rawPrivate, '-----BEGIN RSA PRIVATE KEY-----') !== false) {
-            $privateKey = openssl_pkey_get_private($rawPrivate);
+        if (empty($rawPrivate)) {
+            throw new \Exception('PAYLABS: Private key is empty. Set PRIVATE_KEY or PAYLABS_PRIVATE_KEY in .env');
+        }
+
+        $candidates = [];
+
+        // If it's already PEM, try as-is first.
+        if (strpos($rawPrivate, '-----BEGIN') !== false) {
+            $candidates[] = $rawPrivate;
+        } else {
+            $base64 = preg_replace('/\s+/', '', $rawPrivate);
+
+            // Try PKCS#8
+            $candidates[] = "-----BEGIN PRIVATE KEY-----\n" . chunk_split($base64, 64, "\n") . "-----END PRIVATE KEY-----";
+
+            // Try PKCS#1
+            $candidates[] = "-----BEGIN RSA PRIVATE KEY-----\n" . chunk_split($base64, 64, "\n") . "-----END RSA PRIVATE KEY-----";
+        }
+
+        $lastError = null;
+        foreach ($candidates as $pem) {
+            $privateKey = openssl_pkey_get_private($pem);
             if ($privateKey) {
                 return $privateKey;
             }
+
+            $lastError = openssl_error_string() ?: $lastError;
         }
 
-        // Ensure header/footer exist; if not, wrap base64 content
-        if (strpos($rawPrivate, '-----BEGIN') === false) {
-            $rawPrivate = trim($rawPrivate);
-            $rawPrivate = "-----BEGIN PRIVATE KEY-----\n" .
-                chunk_split(preg_replace('/\s+/', '', $rawPrivate), 64, "\n") .
-                "-----END PRIVATE KEY-----";
-        }
-
-        $privateKey = openssl_pkey_get_private($rawPrivate);
-
-        if (!$privateKey) {
-            $sample = substr(preg_replace('/\s+/', ' ', $rawPrivate), 0, 80);
-            throw new \Exception('Invalid private key format: ' . openssl_error_string() . ' (sample: ' . $sample . ', len=' . strlen($rawPrivate) . ')');
-        }
-
-        return $privateKey;
+        $preview = substr(preg_replace('/\s+/', '', $rawPrivate), 0, 16);
+        throw new \Exception('Invalid private key format: ' . ($lastError ?: 'unknown openssl error') . ' (key starts with: ' . $preview . '...)');
     }
 
-    /**
-     * Check payment status (legacy method - may need update for v4.8.1)
-     */
-    public function checkStatus($transactionId)
-    {
-        try {
-            $requestData = [
-                'requestType' => 'queryPayment',
-                'merchantId' => $this->mid,
-                'transactionId' => $transactionId,
-            ];
-
-            $requestData['signature'] = $this->generateSignature($requestData);
-
-            Log::info('PAYLABS Check Status Request:', ['transactionId' => $transactionId]);
-
-            $endpointUrl = rtrim($this->baseUrl, '/') . '/' . ltrim($this->endpoint, '/');
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-            ])->post($endpointUrl, $requestData);
-
-            $responseData = $response->json();
-
-            Log::info('PAYLABS Check Status Response:', $responseData);
-
-            if ($response->successful()) {
-                return [
-                    'success' => true,
-                    'status' => $responseData['status'] ?? 'UNKNOWN',
-                    'transactionId' => $responseData['transactionId'] ?? $transactionId,
-                    'amount' => $responseData['amount'] ?? 0,
-                    'paymentChannel' => $responseData['paymentChannel'] ?? '',
-                    'paymentTime' => $responseData['paymentTime'] ?? null,
-                    'raw_response' => $responseData
-                ];
-            }
-
-            throw new \Exception('Failed to check status: ' . $response->body());
-
-        } catch (\Exception $e) {
-            Log::error('PAYLABS Check Status Error:', [
-                'error' => $e->getMessage(),
-                'transaction_id' => $transactionId
-            ]);
-
-            return [
-                'success' => false,
-                'status' => 'UNKNOWN',
-                'transactionId' => $transactionId,
-                'error' => $e->getMessage()
-            ];
-        }
-    }
-
-    /**
-     * Generate signature for legacy requests (backward compatibility)
-     */
-    public function generateSignature($data)
-    {
-        try {
-            // Sort data by key
-            ksort($data);
-
-            // Create string to sign (exclude signature if exists)
-            if (isset($data['signature'])) {
-                unset($data['signature']);
-            }
-
-            $stringToSign = '';
-            foreach ($data as $key => $value) {
-                if ($value !== null && $value !== '') {
-                    $stringToSign .= $key . '=' . $value . '&';
-                }
-            }
-            $stringToSign = rtrim($stringToSign, '&');
-
-            Log::debug('PAYLABS Legacy String to sign:', ['string' => $stringToSign]);
-
-            $privateKey = $this->loadPrivateKey();
-
-            // Sign the data
-            $signature = '';
-            if (!openssl_sign($stringToSign, $signature, $privateKey, OPENSSL_ALGO_SHA256)) {
-                throw new \Exception('Failed to sign data: ' . openssl_error_string());
-            }
-
-            openssl_free_key($privateKey);
-
-            // Return base64 encoded signature
-            return base64_encode($signature);
-
-        } catch (\Exception $e) {
-            Log::error('PAYLABS Legacy Signature Generation Error:', [
-                'error' => $e->getMessage(),
-                'data' => $data
-            ]);
-            throw $e;
-        }
-    }
-
-    /**
-     * Verify callback signature (legacy method - may need update for v4.8.1)
-     */
-    public function verifySignature($data, $signature)
-    {
-        try {
-            // Extract signature from data
-            $dataToVerify = $data;
-            unset($dataToVerify['signature']);
-
-            // Sort data by key
-            ksort($dataToVerify);
-
-            // Create string to verify
-            $stringToVerify = '';
-            foreach ($dataToVerify as $key => $value) {
-                if ($value !== null && $value !== '') {
-                    $stringToVerify .= $key . '=' . $value . '&';
-                }
-            }
-            $stringToVerify = rtrim($stringToVerify, '&');
-
-            Log::debug('PAYLABS String to verify:', ['string' => $stringToVerify]);
-
-            // Load public key
-            $publicKey = $this->loadPublicKey();
-            if (!$publicKey) {
-                throw new \Exception('Invalid public key format: ' . openssl_error_string());
-            }
-
-            // Verify signature
-            $result = openssl_verify($stringToVerify, base64_decode($signature), $publicKey, OPENSSL_ALGO_SHA256);
-            openssl_free_key($publicKey);
-
-            return $result === 1;
-
-        } catch (\Exception $e) {
-            Log::error('PAYLABS Signature Verification Error:', [
-                'error' => $e->getMessage(),
-                'data' => $data
-            ]);
-            return false;
-        }
-    }
-
-    /**
-     * Load and prepare public key
-     */
     private function loadPublicKey()
     {
-        // Coba load dari file dulu
-        $keyFile = config('paylabs.public_key_file');
-        if ($keyFile && file_exists($keyFile)) {
-            $rawPublic = file_get_contents($keyFile);
-        } else {
-            $rawPublic = $this->publicKey;
-        }
-
-        // Jika masih kosong, buat dummy untuk testing
-        if (empty($rawPublic)) {
-            Log::warning('PAYLABS: No public key found, using dummy key for testing');
-            $rawPublic = "-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtL1kKeYifEPD8z
-DUMMY_KEY_SMARTSHUTTLE_APP_TESTING_ONLY_12345
------END PUBLIC KEY-----";
+        // Prefer inline key from config/.env; fall back to file if empty.
+        $rawPublic = $this->publicKey;
+        if (empty(trim((string) $rawPublic))) {
+            $keyFile = config('paylabs.public_key_file');
+            if ($keyFile && file_exists($keyFile)) {
+                $rawPublic = file_get_contents($keyFile);
+            }
         }
 
         $rawPublic = trim($rawPublic);
@@ -608,195 +1119,42 @@ DUMMY_KEY_SMARTSHUTTLE_APP_TESTING_ONLY_12345
             $rawPublic = str_replace('\\n', "\n", $rawPublic);
         }
 
-        // Ensure header/footer exist; if not, wrap base64 content
-        if ($rawPublic && strpos($rawPublic, '-----BEGIN') === false) {
-            $rawPublic = trim($rawPublic);
-            $rawPublic = "-----BEGIN PUBLIC KEY-----\n" .
-                chunk_split(preg_replace('/\s+/', '', $rawPublic), 64, "\n") .
-                "-----END PUBLIC KEY-----";
+        if (empty($rawPublic)) {
+            throw new \Exception('PAYLABS: Public key is empty. Set PUBLIC_KEY or PAYLABS_PUBLIC_KEY in .env');
         }
 
-        return openssl_pkey_get_public($rawPublic);
+        $candidates = [];
+        if (strpos($rawPublic, '-----BEGIN') !== false) {
+            $candidates[] = $rawPublic;
+        } else {
+            $base64 = preg_replace('/\s+/', '', $rawPublic);
+            $candidates[] = "-----BEGIN PUBLIC KEY-----\n" . chunk_split($base64, 64, "\n") . "-----END PUBLIC KEY-----";
+            $candidates[] = "-----BEGIN RSA PUBLIC KEY-----\n" . chunk_split($base64, 64, "\n") . "-----END RSA PUBLIC KEY-----";
+        }
+
+        $lastError = null;
+        foreach ($candidates as $pem) {
+            $publicKey = openssl_pkey_get_public($pem);
+            if ($publicKey) {
+                return $publicKey;
+            }
+            $lastError = openssl_error_string() ?: $lastError;
+        }
+
+        $preview = substr(preg_replace('/\s+/', '', $rawPublic), 0, 16);
+        throw new \Exception('Invalid public key format: ' . ($lastError ?: 'unknown openssl error') . ' (key starts with: ' . $preview . '...)');
     }
 
     /**
-     * Generate payment instructions based on payment channel
-     */
-    private function generatePaymentInstructions($responseData, $channelCode)
-    {
-        $instructions = [];
-
-        if (strpos($channelCode, 'VA_') === 0) {
-            // Virtual Account
-            $instructions = [
-                '1. Login ke aplikasi mobile banking Anda',
-                '2. Pilih menu "Transfer" atau "Pembayaran"',
-                '3. Pilih "Virtual Account" atau "Transfer ke VA"',
-                '4. Masukkan nomor VA: <strong>' . ($responseData['vaNumber'] ?? '') . '</strong>',
-                '5. Masukkan jumlah: <strong>Rp ' . number_format($responseData['amount'] ?? 0, 0, ',', '.') . '</strong>',
-                '6. Konfirmasi dan selesaikan pembayaran',
-                '7. Pembayaran akan diproses otomatis dalam 1-2 menit'
-            ];
-        } elseif (strpos($channelCode, 'EW_') === 0) {
-            // E-Wallet
-            $instructions = [
-                '1. Buka aplikasi e-wallet Anda',
-                '2. Scan QR code yang tersedia',
-                '3. Konfirmasi jumlah pembayaran',
-                '4. Selesaikan transaksi',
-                '5. Atau klik link pembayaran jika tersedia'
-            ];
-        } elseif ($channelCode === 'QRIS') {
-            // QRIS
-            $instructions = [
-                '1. Buka aplikasi mobile banking atau e-wallet',
-                '2. Pilih menu "Scan QR"',
-                '3. Scan QR code yang tersedia',
-                '4. Konfirmasi jumlah pembayaran',
-                '5. Selesaikan transaksi',
-                '6. Mendukung: DANA, OVO, GoPay, ShopeePay, LinkAja, dll'
-            ];
-        }
-
-        return json_encode($instructions);
-    }
-
-    /**
-     * Format payment data for frontend
-     */
-    private function formatPaymentData($responseData, $channelCode)
-    {
-        $data = [
-            'transaction_id' => $responseData['transactionId'] ?? null,
-            'amount' => $responseData['amount'] ?? 0,
-            'status' => $responseData['status'] ?? 'PENDING',
-            'expired_time' => $responseData['expiredTime'] ?? null,
-            'response_code' => $responseData['responseCode'] ?? null,
-            'response_message' => $responseData['responseMessage'] ?? null
-        ];
-
-        if (strpos($channelCode, 'VA_') === 0) {
-            $data['virtual_account'] = $responseData['vaNumber'] ?? null;
-            $data['bank_name'] = $responseData['bankName'] ?? null;
-        } elseif ($channelCode === 'QRIS') {
-            $data['qr_code'] = $responseData['qrCode'] ?? null;
-            $data['qr_content'] = $responseData['qrContent'] ?? null;
-        } elseif (strpos($channelCode, 'EW_') === 0) {
-            $data['deeplink'] = $responseData['deeplink'] ?? null;
-            $data['checkout_url'] = $responseData['checkoutUrl'] ?? null;
-        }
-
-        return $data;
-    }
-
-    /**
-     * Get channel-specific parameters
-     */
-    private function getChannelSpecificParams($channelCode)
-    {
-        $params = [];
-
-        // Virtual Account channels
-        if (strpos($channelCode, 'VA_') === 0) {
-            // VA channels may need additional bank-specific parameters
-            // For now, no additional params needed
-        }
-
-        // QRIS
-        elseif ($channelCode === 'QRIS') {
-            // QRIS may need additional parameters
-            // For now, no additional params needed
-        }
-
-        // E-Wallet channels
-        elseif (strpos($channelCode, 'EW_') === 0) {
-            // E-wallet channels may need additional parameters
-            // For now, no additional params needed
-        }
-
-        return $params;
-    }
-
-    /**
-     * Test connection to Paylabs v4.8.1
+     * Test connection to Paylabs
      */
     public function testConnection()
-    {
-        try {
-            // If testing mode is enabled, return dummy response
-            if (config('paylabs.testing.enabled', false)) {
-                Log::info('PAYLABS: Test connection in testing mode');
-
-                return [
-                    'success' => true,
-                    'status_code' => 200,
-                    'response' => [
-                        'responseCode' => '00',
-                        'responseMessage' => 'Test Mode - Success',
-                        'merchantId' => $this->mid,
-                        'merchantName' => 'Smart Shuttle App (Test Mode)',
-                        'status' => 'ACTIVE'
-                    ],
-                    'config' => [
-                        'base_url' => $this->baseUrl,
-                        'mid' => $this->mid,
-                        'callback_url' => $this->callbackUrl,
-                        'testing_mode' => true
-                    ]
-                ];
-            }
-
-            // Test dengan membuat request sederhana
-            $testData = [
-                'requestType' => 'queryMerchant',
-                'merchantId' => $this->mid,
-            ];
-
-            $minifiedBody = $this->minifyJson($testData);
-            $timestamp = time() * 1000;
-            $signature = $this->generateSignatureV481($minifiedBody, $timestamp, 'QRIS');
-
-            $response = Http::timeout(10)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                    'X-TIMESTAMP' => $timestamp,
-                    'X-SIGNATURE' => $signature,
-                    'X-MERCHANT-ID' => $this->mid,
-                ])
-                ->post(rtrim($this->baseUrl, '/') . '/merchant/query', $testData);
-
-            return [
-                'success' => $response->successful(),
-                'status_code' => $response->status(),
-                'response' => $response->json() ?? $response->body(),
-                'config' => [
-                    'base_url' => $this->baseUrl,
-                    'mid' => $this->mid,
-                    'callback_url' => $this->callbackUrl,
-                    'endpoint_test' => rtrim($this->baseUrl, '/') . '/merchant/query',
-                    'testing_mode' => false
-                ]
-            ];
-
-        } catch (\Exception $e) {
-            Log::error('PAYLABS Test Connection Error:', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-                'config' => [
-                    'base_url' => $this->baseUrl,
-                    'mid' => $this->mid,
-                    'testing_mode' => config('paylabs.testing.enabled', false)
-                ]
-            ];
-        }
-    }
-
+{
+    return [
+        'success' => false,
+        'message' => 'Paylabs does not support merchant connection test. Use QRIS/VA create instead.'
+    ];
+}
     /**
      * Quick test for development
      */
@@ -808,12 +1166,17 @@ DUMMY_KEY_SMARTSHUTTLE_APP_TESTING_ONLY_12345
             $payment->id = 999;
             $payment->kode_pembayaran = 'TEST' . time();
             $payment->jumlah = 100000;
+            $payment->waktu_kadaluarsa = Carbon::now()->addMinutes(30);
             $payment->pemesanan = (object) [
                 'kode_booking' => 'BOOKTEST',
-                'user' => (object) [
-                    'name' => 'Test User',
-                    'email' => 'test@example.com',
-                    'telepon' => '08123456789'
+                'jumlah_penumpang' => 1,
+                'nama_pemesan' => 'Test User',
+                'email_pemesan' => 'test@example.com',
+                'telepon_pemesan' => '08123456789',
+                'jadwal' => (object) [
+                    'rutes' => collect([
+                        (object) ['kota_asal' => 'Jakarta', 'kota_tujuan' => 'Bandung']
+                    ])
                 ]
             ];
 
@@ -827,7 +1190,7 @@ DUMMY_KEY_SMARTSHUTTLE_APP_TESTING_ONLY_12345
                     'amount' => $payment->jumlah,
                 ],
                 'paylabs_result' => $result,
-                'environment' => config('paylabs.environment', 'sandbox'),
+                'environment' => $this->environment,
                 'testing_mode' => config('paylabs.testing.enabled', false)
             ];
 
@@ -839,4 +1202,183 @@ DUMMY_KEY_SMARTSHUTTLE_APP_TESTING_ONLY_12345
             ];
         }
     }
+
+    /**
+     * Real API test - Creates actual payment with Paylabs sandbox
+     * This verifies true integration by receiving authentic responses
+     */
+    public function realApiTest($paymentMethod = 'QRIS', $channelCode = 'QRIS', $channelName = 'QRIS')
+    {
+        try {
+            // Ensure we're not in testing mode for real API testing
+            if (config('paylabs.testing.enabled', false)) {
+                throw new \Exception('Cannot run real API test while testing mode is enabled. Set PAYLABS_TESTING=false in .env');
+            }
+
+            // Create a temporary test payment record
+            $payment = new Pembayaran();
+            $payment->id = 'REAL_TEST_' . time() . '_' . rand(1000, 9999);
+            $payment->kode_pembayaran = 'REALTEST-' . time() . '-' . Str::random(6);
+            $payment->jumlah = config('paylabs.real_api_testing.test_amount', 10000); // Small test amount
+            $payment->metode = strtolower($paymentMethod);
+            $payment->status = 'menunggu';
+            $payment->waktu_kadaluarsa = Carbon::now()->addMinutes(30);
+
+            // Mock pemesanan relationship for testing
+            $payment->pemesanan = (object) [
+                'id' => 999999,
+                'kode_booking' => 'REALAPITEST-' . time(),
+                'jumlah_penumpang' => 1,
+                'nama_pemesan' => 'Real API Test User',
+                'email_pemesan' => 'realapi@test.com',
+                'telepon_pemesan' => '081234567890',
+                'jadwal' => (object) [
+                    'rutes' => collect([
+                        (object) ['kota_asal' => 'Jakarta', 'kota_tujuan' => 'Bandung']
+                    ])
+                ]
+            ];
+
+            Log::info('REAL API TEST: Starting payment creation', [
+                'method' => $paymentMethod,
+                'channel_code' => $channelCode,
+                'channel_name' => $channelName,
+                'amount' => $payment->jumlah,
+                'payment_code' => $payment->kode_pembayaran
+            ]);
+
+            // Create actual payment with Paylabs
+            $result = $this->createPayment($payment, $channelCode, $channelName);
+
+            $testResult = [
+                'success' => $result['success'] ?? false,
+                'test_type' => 'real_api_integration',
+                'payment_method' => $paymentMethod,
+                'channel_code' => $channelCode,
+                'channel_name' => $channelName,
+                'test_payment' => [
+                    'id' => $payment->id,
+                    'kode_pembayaran' => $payment->kode_pembayaran,
+                    'amount' => $payment->jumlah,
+                    'status' => $payment->status ?? 'unknown',
+                ],
+                'paylabs_response' => $result,
+                'environment' => $this->environment,
+                'base_url' => $this->baseUrl,
+                'mid' => $this->mid,
+                'testing_mode' => false, // Explicitly false for real API test
+                'timestamp' => now()->toISOString(),
+            ];
+
+            // Log the result
+            if ($result['success'] ?? false) {
+                Log::info('REAL API TEST SUCCESS: Payment created with Paylabs', [
+                    'payment_code' => $payment->kode_pembayaran,
+                    'transaction_id' => $result['transaction_id'] ?? null,
+                    'qr_code' => isset($result['payment_data']['qr_code']),
+                    'va_number' => $result['payment_data']['no_virtual_account'] ?? null,
+                ]);
+            } else {
+                Log::error('REAL API TEST FAILED: Paylabs payment creation failed', [
+                    'payment_code' => $payment->kode_pembayaran,
+                    'error' => $result['error'] ?? 'Unknown error',
+                ]);
+            }
+
+            // Auto cleanup if enabled
+            if (config('paylabs.real_api_testing.auto_cleanup', true) && isset($result['transaction_id'])) {
+                Log::info('REAL API TEST: Auto cleanup enabled, would cancel payment if needed', [
+                    'transaction_id' => $result['transaction_id']
+                ]);
+                // Note: In real scenario, you might want to cancel the test payment
+                // But for verification purposes, we keep it to check callback handling
+            }
+
+            return $testResult;
+
+        } catch (\Exception $e) {
+            Log::error('REAL API TEST ERROR: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'payment_method' => $paymentMethod
+            ]);
+
+            return [
+                'success' => false,
+                'test_type' => 'real_api_integration',
+                'error' => $e->getMessage(),
+                'payment_method' => $paymentMethod,
+                'environment' => $this->environment,
+                'testing_mode' => false,
+                'timestamp' => now()->toISOString(),
+                'trace' => $e->getTraceAsString()
+            ];
+        }
+    }
+    /**
+ * Query Virtual Account status (v2.3)
+ */
+public function vaQueryV23(array $body)
+{
+    $requestId = $body['requestId'] ?? $this->generateRequestId();
+
+    $payload = array_merge([
+        'requestId' => $requestId,
+        'merchantId' => $this->mid,
+        'paymentType' => $body['paymentType'] ?? 'VA',
+    ], $body);
+
+    return $this->requestV23('/payment/v2.3/va/query', $payload, $requestId);
+}
+public function testVAConnection()
+{
+    try {
+        $requestId = $this->generateRequestId();
+        $testData = [
+            'requestId' => $requestId,
+            'merchantId' => $this->mid,
+            'paymentType' => 'BCAVA',
+            'amount' => '10000.00',
+            'merchantTradeNo' => 'TEST-VA-' . time(),
+            'payer' => 'Test User',
+            'productName' => 'Test VA Payment',
+            'productInfo' => [[
+                'id' => '1',
+                'name' => 'Test Product',
+                'price' => '10000.00',
+                'type' => 'Test',
+                'quantity' => 1
+            ]],
+            'notifyUrl' => $this->callbackUrl,
+            'feeType' => 'BEN'
+        ];
+
+        $timestamp = Carbon::now()->format('Y-m-d\TH:i:s.vP');
+        $signature = $this->generateSignatureV23($testData, $timestamp, '/payment/v2.3/va/create');
+
+        $response = Http::timeout(10)
+            ->withHeaders([
+                'Content-Type' => 'application/json;charset=utf-8',
+                'Accept' => 'application/json',
+                'X-TIMESTAMP' => $timestamp,
+                'X-SIGNATURE' => $signature,
+                'X-PARTNER-ID' => $this->mid,
+                'X-REQUEST-ID' => $requestId,
+            ])
+            ->post(rtrim($this->baseUrl, '/') . '/payment/v2.3/va/create', $testData);
+
+        return [
+            'success' => $response->successful(),
+            'status_code' => $response->status(),
+            'response' => $response->json() ?? $response->body(),
+            'test_data' => $testData
+        ];
+
+    } catch (\Exception $e) {
+        return [
+            'success' => false,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ];
+    }
+}
 }

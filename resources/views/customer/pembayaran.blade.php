@@ -114,45 +114,100 @@
             margin: 0 2px;
         }
 
+        /* STYLE UNTUK PANAH SEDERHANA */
         .arrow-icon {
             color: #FF581E;
             font-size: 24px;
             margin: 0 10px;
         }
 
-        .payment-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: #f0f9ff;
-            border: 1px solid #bae6fd;
-            border-radius: 20px;
-            font-size: 12px;
-            color: #0369a1;
-            font-weight: 500;
+        .metode-selected {
+            border: 2px solid #3b82f6 !important;
+            background-color: #eff6ff !important;
+            transform: scale(1.02);
+            transition: all 0.3s ease;
         }
 
-        .payment-badge i {
-            font-size: 14px;
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Warning untuk waktu 5 menit terakhir */
+        .timer-warning {
+            background-color: #f59e0b !important;
+            animation: warningPulse 1s infinite;
+        }
+
+        @keyframes warningPulse {
+            0%, 100% { background-color: #f59e0b; }
+            50% { background-color: #d97706; }
+        }
+
+        /* Danger untuk waktu 1 menit terakhir */
+        .timer-danger {
+            background-color: #dc2626 !important;
+            animation: dangerPulse 0.5s infinite;
+        }
+
+        @keyframes dangerPulse {
+            0%, 100% { background-color: #dc2626; }
+            50% { background-color: #b91c1c; }
+        }
+
+        /* PERBAIKAN UTAMA: Atur padding pada body dan main untuk mencegah tumpukan dengan navbar */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f3f4f6;
+    padding-top: 20px !important; /* Tambahkan padding atas untuk navbar fixed */
+    min-height: 100vh;
+}
+
+/* Pastikan main content tidak tertumpuk dengan navbar */
+main {
+    min-height: calc(100vh - 80px);
+    position: relative;
+    z-index: 1;
+}
+
+/* Responsive padding untuk mobile */
+@media (max-width: 768px) {
+    body {
+        padding-top: 60px !important;
+    }
+
+    main {
+        min-height: calc(100vh - 60px);
+    }
+}
+
+/* Layout khusus untuk halaman pembayaran */
+.payment-page {
+    padding-top: 20px;
+}
+
+.box-shadow {
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+.dashed {
+    border-bottom: 2px dashed #d9d9d9;
+}
+
     </style>
 </head>
 
 <body class="min-h-screen">
-    <main class="px-4 md:px-10 py-6 md:py-10">
+    <main class="px-4 md:px-10 py-6 md:py-10 payment-page" style="padding-top: 100px;">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
 
             <!-- LEFT CARD - DETAIL PESANAN -->
             <div class="bg-white p-6 md:p-8 rounded-xl box-shadow">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">DETAIL PESANAN</h2>
-                    @if($pembayaran->paylabs_transaction_id)
-                        <span class="payment-badge">
-                            <i class="fas fa-shield-alt"></i> Paylabs Gateway
-                        </span>
-                    @endif
-                </div>
+                <h2 class="text-xl font-bold mb-4">DETAIL PESANAN</h2>
                 <div class="dashed mb-4"></div>
 
                 <!-- SHUTTLE INFO -->
@@ -180,6 +235,7 @@
                         <p class="text-sm text-gray-600">
                             @php
                                 use Carbon\Carbon;
+                                // Format tanggal Indonesia
                                 $hariIndo = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
                                 $bulanIndo = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -298,18 +354,12 @@
 
             <!-- RIGHT CARD - PEMBAYARAN -->
             <div x-data="paymentHandler()" x-init="init()" class="bg-white p-6 md:p-8 rounded-xl box-shadow">
-                <!-- KODE PEMBAYARAN & TRANSACTION ID -->
+                <!-- KODE PEMBAYARAN -->
                 <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <div class="flex justify-between items-center">
                         <div>
                             <p class="text-sm text-gray-600">Kode Pembayaran</p>
                             <p class="font-bold text-lg text-[#00215E]">{{ $pembayaran->kode_pembayaran }}</p>
-                            @if($pembayaran->paylabs_transaction_id)
-                                <p class="text-xs text-gray-500 mt-1">
-                                    <i class="fas fa-exchange-alt mr-1"></i>
-                                    Transaction ID: {{ $pembayaran->paylabs_transaction_id }}
-                                </p>
-                            @endif
                         </div>
                         <button onclick="copyToClipboard('{{ $pembayaran->kode_pembayaran }}')"
                                 class="px-3 py-1 bg-blue-100 text-blue-600 rounded text-sm hover:bg-blue-200">
@@ -318,27 +368,30 @@
                     </div>
                 </div>
 
-                <!-- TIMER JAM-MENIT-DETIK -->
-                <div :class="{'timer-expired': timeLeft <= 0}"
-                     class="flex items-center justify-between bg-[#00215E] text-white px-5 py-3 rounded-lg mb-6">
-                    <span class="font-semibold">Selesaikan Pembayaran dalam</span>
+                <!-- TIMER - AWALNYA DISEMBUNYIKAN -->
+                <div x-show="showTimer" x-transition.fade.in
+                     :class="{
+                         'timer-expired': timeLeft <= 0,
+                         'timer-warning': timeLeft <= 300 && timeLeft > 60, // 5-1 menit
+                         'timer-danger': timeLeft <= 60 && timeLeft > 0 // <1 menit
+                     }"
+                     class="flex items-center justify-between bg-[#00215E] text-white px-5 py-3 rounded-lg mb-6 fade-in">
+                    <div class="flex items-center">
+                        <i class="fas fa-clock mr-2"></i>
+                        <span class="font-semibold">Batas Waktu Pembayaran</span>
+                    </div>
                     <div class="flex items-center space-x-1 countdown-timer">
-                        <!-- JAM -->
-                        <div class="timer-box"
-                             :class="{'bg-red-600': hours === 0 && minutes < 5}">
-                            <div class="timer-value"
-                                 :class="{'text-red-300': hours === 0 && minutes < 5}"
-                                 x-text="formatTwoDigits(hours)">00</div>
-                            <div class="timer-label">JAM</div>
-                        </div>
-
-                        <div class="timer-separator">:</div>
-
                         <!-- MENIT -->
                         <div class="timer-box"
-                             :class="{'bg-yellow-600': minutes < 5 && minutes > 0, 'bg-red-600': minutes === 0 && seconds > 0}">
+                             :class="{
+                                 'bg-yellow-600': timeLeft <= 300 && timeLeft > 60,
+                                 'bg-red-600': timeLeft <= 60 && timeLeft > 0
+                             }">
                             <div class="timer-value"
-                                 :class="{'text-yellow-300': minutes < 5 && minutes > 0, 'text-red-300': minutes === 0 && seconds > 0}"
+                                 :class="{
+                                     'text-yellow-300': timeLeft <= 300 && timeLeft > 60,
+                                     'text-red-300': timeLeft <= 60 && timeLeft > 0
+                                 }"
                                  x-text="formatTwoDigits(minutes)">00</div>
                             <div class="timer-label">MENIT</div>
                         </div>
@@ -347,22 +400,44 @@
 
                         <!-- DETIK -->
                         <div class="timer-box"
-                             :class="{'bg-red-600 animate-pulse': seconds < 30 && seconds > 0}">
+                             :class="{
+                                 'bg-yellow-600': timeLeft <= 300 && timeLeft > 60,
+                                 'bg-red-600': timeLeft <= 60 && timeLeft > 0,
+                                 'animate-pulse': timeLeft <= 60 && timeLeft > 0
+                             }">
                             <div class="timer-value"
-                                 :class="{'text-red-300 animate-pulse': seconds < 30 && seconds > 0}"
+                                 :class="{
+                                     'text-yellow-300': timeLeft <= 300 && timeLeft > 60,
+                                     'text-red-300': timeLeft <= 60 && timeLeft > 0
+                                 }"
                                  x-text="formatTwoDigits(seconds)">00</div>
                             <div class="timer-label">DETIK</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Pesan waktu habis -->
-                <div x-show="timeLeft <= 0" x-transition class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <div class="flex items-center text-red-700">
+                <!-- Pesan peringatan waktu -->
+                <div x-show="showTimer && timeLeft <= 300 && timeLeft > 0" x-transition class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg fade-in">
+                    <div class="flex items-center text-yellow-700">
                         <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span class="font-semibold" x-text="getWarningMessage()"></span>
+                    </div>
+                    <p class="text-sm text-yellow-600 mt-1">Segera selesaikan pembayaran sebelum waktu habis!</p>
+                </div>
+
+                <!-- Pesan waktu habis -->
+                <div x-show="showTimer && timeLeft <= 0" x-transition class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg fade-in">
+                    <div class="flex items-center text-red-700">
+                        <i class="fas fa-times-circle mr-2"></i>
                         <span class="font-semibold">Waktu pembayaran telah habis</span>
                     </div>
-                    <p class="text-sm text-red-600 mt-1">Silakan hubungi customer service atau buat pemesanan baru.</p>
+                    <p class="text-sm text-red-600 mt-1">Pesanan Anda telah dibatalkan karena melewati batas waktu pembayaran.</p>
+                    <div class="mt-3">
+                        <a href="{{ route('customer.riwayat') }}"
+                           class="inline-block bg-red-600 text-white py-2 px-4 rounded text-sm font-semibold hover:bg-red-700 transition">
+                            Lihat Riwayat
+                        </a>
+                    </div>
                 </div>
 
                 <h2 class="text-xl font-bold mb-4">PEMBAYARAN</h2>
@@ -374,316 +449,446 @@
                     <input type="hidden" name="metode" id="inputMetode">
                 </form>
 
-                <div x-show="timeLeft > 0">
-                    <p class="font-semibold mb-3">Pilih Metode Pembayaran</p>
+                <!-- STEP 1: PILIH METODE (hanya ini yang ditampilkan awal) -->
+                <div x-show="!paymentMethodSelected" x-transition>
+                    <div class="mb-6">
+                        <div class="flex items-center mb-3">
+                            <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold mr-2">1</div>
+                            <p class="font-semibold text-lg">Pilih Metode Pembayaran</p>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-4">
+                            <i class="fas fa-clock text-orange-500 mr-1"></i>
+                            <span class="font-semibold text-orange-600">Batas waktu: 30 menit</span> setelah memilih metode
+                        </p>
+                    </div>
 
                     <div class="space-y-3 mb-6">
-                        @foreach($metodePembayaran as $metode)
+                        <!-- Hanya tampilkan QRIS, BCA, Mandiri, BNI, BRI -->
+                        @php
+                            $allowedMethods = ['qris', 'bca_va', 'mandiri_va', 'bni_va', 'bri_va'];
+                            $filteredMethods = $metodePembayaran->whereIn('kode', $allowedMethods);
+                        @endphp
+
+                        @foreach($filteredMethods as $metode)
                         <button
-                            :disabled="timeLeft <= 0"
-                            @click="selectMetode('{{ $metode->kode }}')"
+                            @click="selectMetode('{{ $metode->kode }}', '{{ $metode->nama }}')"
                             :class="{
-                                'border-2 border-blue-500 bg-blue-50': selectedMetode == '{{ $metode->kode }}',
-                                'border': selectedMetode != '{{ $metode->kode }}',
-                                'opacity-50 cursor-not-allowed': timeLeft <= 0
+                                'metode-selected border-blue-600 bg-blue-50': selectedMetode == '{{ $metode->kode }}',
+                                'border border-gray-300 hover:bg-gray-50': selectedMetode != '{{ $metode->kode }}'
                             }"
-                            class="w-full rounded-lg py-4 font-semibold text-left px-4 transition flex justify-between items-center hover:bg-gray-50">
-                            <div class="flex items-center space-x-3">
-                                @if($metode->is_paylabs)
-                                    <span class="payment-badge">
-                                        <i class="fas fa-bolt"></i> Paylabs
-                                    </span>
-                                @endif
-                                <span>{{ $metode->nama }}</span>
+                            class="w-full rounded-lg py-4 font-semibold text-left px-4 transition flex justify-between items-center">
+                            <div class="flex items-center">
+                                <i class="fas fa-credit-card mr-3 text-blue-500"></i>
+                                <div>
+                                    <p class="text-lg">{{ $metode->nama }}</p>
+                                    <p class="text-xs text-gray-500 mt-1">Batas waktu: 30 menit</p>
+                                </div>
                             </div>
-                            <div class="flex items-center space-x-2">
-                                @if($metode->biaya_admin > 0)
-                                <span class="text-sm text-gray-600">+Rp {{ number_format($metode->biaya_admin, 0, ',', '.') }}</span>
-                                @endif
-                                @if($metode->kode == $pembayaran->metode)
-                                    <i class="fas fa-check-circle text-green-500"></i>
-                                @endif
-                            </div>
+                            @if($metode->biaya_admin > 0)
+                            <span class="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">+Rp {{ number_format($metode->biaya_admin, 0, ',', '.') }}</span>
+                            @endif
                         </button>
                         @endforeach
                     </div>
 
-                    <div class="dashed my-6"></div>
+                    <!-- Tombol Lanjut ke Detail Pembayaran -->
+                    <div class="mt-8 pt-6 border-t">
+                        <div x-show="selectedMetode" x-transition>
+                            <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p class="text-sm font-semibold text-blue-800">Metode yang dipilih:</p>
+                                <p class="text-lg font-bold text-blue-600" x-text="selectedMetodeName"></p>
+                                <p class="text-sm text-orange-600 mt-2">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>
+                                    Setelah dikonfirmasi, timer 30 menit akan langsung dimulai!
+                                </p>
+                            </div>
+
+                            <button @click="confirmPaymentMethod()"
+                                    class="w-full bg-[#00215E] text-white py-3 rounded-lg font-semibold text-center hover:bg-[#001a4d] transition flex items-center justify-center">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                Konfirmasi Metode & Mulai Timer 30 Menit
+                            </button>
+                        </div>
+
+                        <div x-show="!selectedMetode" class="text-center py-6">
+                            <i class="fas fa-hand-pointer text-4xl text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">Silakan pilih metode pembayaran terlebih dahulu</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: DETAIL PEMBAYARAN & TIMER (muncul setelah metode dipilih) -->
+                <div x-show="paymentMethodSelected" x-transition.fade.in>
+                    <!-- Header dengan metode yang dipilih -->
+                    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold mr-2">2</div>
+                                    <p class="font-bold text-lg text-blue-600" x-text="selectedMetodeName"></p>
+                                </div>
+                                <p class="text-sm text-gray-600 mt-1">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    Selesaikan dalam <span class="font-semibold" x-text="getRemainingTimeText()"></span>
+                                </p>
+                            </div>
+                            <button @click="changePaymentMethod()"
+                                    class="px-3 py-1 bg-white text-blue-600 border border-blue-300 rounded text-sm hover:bg-blue-50">
+                                <i class="fas fa-exchange-alt mr-1"></i> Ganti
+                            </button>
+                        </div>
+                    </div>
 
                     <!-- QRIS SECTION -->
-                    <div x-show="selectedMetode == 'qris'" x-transition>
-                        <h2 class="text-lg font-bold mb-4">QRIS</h2>
+                    <div x-show="selectedMetode == 'qris'" x-transition.fade.in class="fade-in">
+                        <div class="text-center mb-6">
+                            <h3 class="text-lg font-bold mb-2">Scan QR Code</h3>
+                            <p class="text-sm text-gray-600">Gunakan aplikasi e-wallet atau mobile banking untuk scan QR di bawah</p>
+                        </div>
 
-                        <div class="border rounded-lg p-5 flex flex-col items-center mb-5">
-                            <!-- QR Code dari Paylabs -->
+                        <div class="border-2 border-dashed border-blue-300 rounded-lg p-6 flex flex-col items-center mb-6 bg-blue-50/30">
+                            <!-- QR Code -->
                             <div class="mb-4 relative">
                                 @if($pembayaran->qr_code)
                                     <img id="qrCodeImage"
-                                         src="{{ $pembayaran->qr_code }}"
+                                         src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={{ urlencode($pembayaran->qr_code) }}&format=png&margin=15&color=0A2540&bgcolor=FFFFFF"
                                          alt="QR Code Pembayaran"
-                                         class="w-48 h-48 object-contain rounded-lg border"
-                                         onerror="this.onerror=null; this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=SMARTSHUTTLE-{{ $pembayaran->kode_pembayaran }}&format=png&error=L&margin=10'">
+                                         class="w-60 h-60 object-contain rounded-lg border-2 border-blue-200 shadow-md"
+                                         onload="this.classList.remove('qr-loading')"
+                                         onerror="this.onerror=null; this.src='https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=SMARTSHUTTLE-{{ $pembayaran->kode_pembayaran }}&format=png&error=L&margin=15'">
+                                @elseif($pembayaran->qris_url)
+                                    <img id="qrCodeImage"
+                                         src="{{ $pembayaran->qris_url }}"
+                                         alt="QR Code Pembayaran"
+                                         class="w-60 h-60 object-contain rounded-lg border-2 border-blue-200 shadow-md"
+                                         onload="this.classList.remove('qr-loading')"
+                                         onerror="this.onerror=null; this.src='https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=SMARTSHUTTLE-{{ $pembayaran->kode_pembayaran }}&format=png&error=L&margin=15'">
                                 @else
                                     <img id="qrCodeImage"
-                                         src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=SMARTSHUTTLE-{{ $pembayaran->kode_pembayaran }}&format=png&margin=10&color=0A2540&bgcolor=F8FAFC"
+                                         src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=SMARTSHUTTLE-{{ $pembayaran->kode_pembayaran }}&format=png&margin=15&color=0A2540&bgcolor=FFFFFF"
                                          alt="QR Code Pembayaran"
-                                         class="w-48 h-48 object-contain rounded-lg border qr-loading"
+                                         class="w-60 h-60 object-contain rounded-lg border-2 border-blue-200 shadow-md qr-loading"
                                          onload="this.classList.remove('qr-loading')"
-                                         onerror="this.onerror=null; this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=SMARTSHUTTLE-{{ $pembayaran->kode_pembayaran }}&format=png&error=L&margin=10'">
-                                @endif
-                                @if($pembayaran->paylabs_status)
-                                    <div class="absolute top-2 right-2 px-2 py-1 rounded text-xs font-semibold
-                                        @if($pembayaran->paylabs_status == 'PENDING') bg-yellow-100 text-yellow-800
-                                        @elseif($pembayaran->paylabs_status == 'PAID') bg-green-100 text-green-800
-                                        @elseif($pembayaran->paylabs_status == 'EXPIRED') bg-red-100 text-red-800
-                                        @else bg-gray-100 text-gray-800 @endif">
-                                        {{ $pembayaran->paylabs_status }}
-                                    </div>
+                                         onerror="this.onerror=null; this.src='https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=SMARTSHUTTLE-{{ $pembayaran->kode_pembayaran }}&format=png&error=L&margin=15'">
                                 @endif
                             </div>
 
                             <!-- Nominal -->
-                            <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div class="mb-4 p-4 bg-white border border-yellow-200 rounded-lg shadow-sm w-full max-w-md">
                                 <p class="text-sm text-gray-600 mb-1">Total Pembayaran</p>
-                                <p class="font-bold text-xl text-[#00215E]">Rp {{ number_format($total, 0, ',', '.') }}</p>
+                                <p class="font-bold text-2xl text-[#00215E]">Rp {{ number_format($total, 0, ',', '.') }}</p>
                             </div>
 
-                            <p class="text-sm text-gray-500 text-center mb-4">Scan QR Code dengan aplikasi e-wallet atau mobile banking yang mendukung QRIS</p>
+                            <p class="text-sm text-gray-500 text-center mb-4">Scan QR Code dengan aplikasi yang mendukung QRIS</p>
 
                             <!-- Dukungan E-Wallet -->
-                            <div class="mt-4 flex flex-wrap justify-center gap-2 mb-4">
-                                <div class="bg-gray-100 px-3 py-1 rounded-lg">
-                                    <span class="text-xs font-semibold">DANA</span>
+                            <div class="mt-4 flex flex-wrap justify-center gap-3 mb-6">
+                                <div class="bg-white px-4 py-2 rounded-lg shadow-sm border">
+                                    <span class="text-xs font-semibold text-blue-700">DANA</span>
                                 </div>
-                                <div class="bg-gray-100 px-3 py-1 rounded-lg">
-                                    <span class="text-xs font-semibold">OVO</span>
+                                <div class="bg-white px-4 py-2 rounded-lg shadow-sm border">
+                                    <span class="text-xs font-semibold text-purple-700">OVO</span>
                                 </div>
-                                <div class="bg-gray-100 px-3 py-1 rounded-lg">
-                                    <span class="text-xs font-semibold">GOPAY</span>
+                                <div class="bg-white px-4 py-2 rounded-lg shadow-sm border">
+                                    <span class="text-xs font-semibold text-green-700">GOPAY</span>
                                 </div>
-                                <div class="bg-gray-100 px-3 py-1 rounded-lg">
-                                    <span class="text-xs font-semibold">SHOPEEPAY</span>
+                                <div class="bg-white px-4 py-2 rounded-lg shadow-sm border">
+                                    <span class="text-xs font-semibold text-orange-700">SHOPEEPAY</span>
                                 </div>
-                                <div class="bg-gray-100 px-3 py-1 rounded-lg">
-                                    <span class="text-xs font-semibold">LinkAja</span>
+                                <div class="bg-white px-4 py-2 rounded-lg shadow-sm border">
+                                    <span class="text-xs font-semibold text-red-700">LinkAja</span>
                                 </div>
                             </div>
-
-                            <!-- Instruksi Pembayaran -->
-                            @if($pembayaran->instruksi_pembayaran)
-                                <div class="bg-blue-50 p-4 rounded-lg w-full text-sm mb-4">
-                                    <p class="font-semibold text-blue-800 mb-2">Cara Pembayaran:</p>
-                                    @php
-                                        $instructions = json_decode($pembayaran->instruksi_pembayaran, true);
-                                    @endphp
-                                    @if(is_array($instructions))
-                                        <ol class="list-decimal pl-4 space-y-1 text-gray-700">
-                                            @foreach($instructions as $instruction)
-                                                <li>{{ $instruction }}</li>
-                                            @endforeach
-                                        </ol>
-                                    @endif
-                                </div>
-                            @else
-                                <div class="bg-blue-50 p-4 rounded-lg w-full text-sm mb-4">
-                                    <p class="font-semibold text-blue-800 mb-2">Cara Pembayaran:</p>
-                                    <ol class="list-decimal pl-4 space-y-1 text-gray-700">
-                                        <li>Buka aplikasi e-wallet atau mobile banking</li>
-                                        <li>Pilih menu "Scan QR Code"</li>
-                                        <li>Arahkan kamera ke QR Code di atas</li>
-                                        <li>Konfirmasi dan selesaikan pembayaran</li>
-                                    </ol>
-                                </div>
-                            @endif
-
-                            <!-- Deeplink untuk Mobile -->
-                            @if(isset($payment_data['deeplink']))
-                                <a href="{{ $payment_data['deeplink'] }}"
-                                   target="_blank"
-                                   class="w-full bg-green-500 text-white py-3 rounded-lg font-semibold text-center block hover:bg-green-600 transition mb-3">
-                                    <i class="fas fa-external-link-alt mr-2"></i> Buka di Aplikasi
-                                </a>
-                            @endif
-
-                            <!-- Tombol Refresh QR Code -->
-                            <button onclick="refreshPayment()"
-                                    class="w-full bg-gray-100 text-gray-700 py-2 rounded-lg font-semibold text-center block hover:bg-gray-200 transition mb-3">
-                                <i class="fas fa-sync-alt mr-2"></i> Refresh QR Code
-                            </button>
                         </div>
 
-                        <!-- Hanya untuk testing/development -->
-                        @if(config('app.debug'))
-                        <div class="mt-6 border-t pt-4">
-                            <p class="text-sm font-semibold text-gray-600 mb-2">Testing Mode:</p>
-                            <button onclick="showConfirmationModal()"
-                                   class="w-full bg-[#FF581E] text-white py-3 rounded-lg font-semibold text-center block hover:bg-[#e54e1a] transition">
-                                Simulasi Pembayaran Berhasil
-                            </button>
+                        <!-- Instruksi -->
+                        <div class="bg-blue-50 p-5 rounded-lg mb-6">
+                            <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
+                                <i class="fas fa-info-circle mr-2"></i> Cara Pembayaran QRIS:
+                            </h4>
+                            <ol class="list-decimal pl-5 space-y-2 text-gray-700">
+                                <li>Buka aplikasi e-wallet atau mobile banking Anda</li>
+                                <li>Pilih menu "Scan QR Code" atau "Bayar dengan QRIS"</li>
+                                <li>Arahkan kamera ke QR Code di atas</li>
+                                <li>Pastikan nominal sudah sesuai: <span class="font-semibold">Rp {{ number_format($total, 0, ',', '.') }}</span></li>
+                                <li>Konfirmasi dan selesaikan pembayaran</li>
+                            </ol>
                         </div>
-                        @endif
+
+                        <button onclick="showConfirmationModal()"
+                               class="w-full bg-[#FF581E] text-white py-4 rounded-lg font-semibold text-center block hover:bg-[#e54e1a] transition text-lg">
+                            <i class="fas fa-check-circle mr-2"></i> Simulasi Pembayaran Berhasil
+                        </button>
                     </div>
 
-                   <!-- Di bagian QR Code Section -->
-<div x-show="selectedMetode == 'qris'" x-transition>
-    <h2 class="text-lg font-bold mb-4">QRIS</h2>
-
-    <div class="border rounded-lg p-5 flex flex-col items-center mb-5">
-        <!-- QR Code dari Paylabs -->
-        <div class="mb-4 relative">
-            @if($pembayaran->qr_code)
-                <img id="qrCodeImage"
-                     src="{{ $pembayaran->qr_code }}"
-                     alt="QR Code Pembayaran"
-                     class="w-48 h-48 object-contain rounded-lg border">
-                <div class="text-center mt-2">
-                    <button onclick="downloadQRCode('{{ $pembayaran->qr_code }}', '{{ $pembayaran->kode_pembayaran }}')"
-                            class="px-3 py-1 bg-blue-100 text-blue-600 rounded text-sm hover:bg-blue-200">
-                        <i class="fas fa-download mr-1"></i> Download QR
-                    </button>
-                </div>
-            @else
-                <div class="w-48 h-48 flex items-center justify-center bg-gray-100 rounded-lg border">
-                    <div class="text-center">
-                        <i class="fas fa-spinner fa-spin text-gray-400 text-2xl mb-2"></i>
-                        <p class="text-sm text-gray-500">Memuat QR Code...</p>
-                    </div>
-                </div>
-            @endif
-
-            @if($pembayaran->paylabs_status)
-                <div class="absolute top-2 right-2 px-2 py-1 rounded text-xs font-semibold
-                    @if($pembayaran->paylabs_status == 'PENDING') bg-yellow-100 text-yellow-800
-                    @elseif($pembayaran->paylabs_status == 'PAID') bg-green-100 text-green-800
-                    @elseif($pembayaran->paylabs_status == 'EXPIRED') bg-red-100 text-red-800
-                    @elseif($pembayaran->paylabs_status == 'PROCESSING') bg-blue-100 text-blue-800
-                    @else bg-gray-100 text-gray-800 @endif">
-                    {{ $pembayaran->paylabs_status }}
-                </div>
-            @endif
-        </div>
-
-        <!-- Payment Status Info -->
-        @if($pembayaran->paylabs_status == 'PAID')
-            <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-center">
-                <i class="fas fa-check-circle text-green-500 text-2xl mb-2"></i>
-                <p class="font-semibold text-green-700">Pembayaran Berhasil!</p>
-                <p class="text-sm text-green-600">Tiket Anda sudah aktif</p>
-            </div>
-        @elseif($pembayaran->paylabs_status == 'EXPIRED')
-            <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-center">
-                <i class="fas fa-exclamation-circle text-red-500 text-2xl mb-2"></i>
-                <p class="font-semibold text-red-700">Pembayaran Kadaluarsa</p>
-                <p class="text-sm text-red-600">Silakan buat pemesanan baru</p>
-            </div>
-        @else
-            <!-- Nominal -->
-            <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
-                <p class="text-sm text-gray-600 mb-1">Total Pembayaran</p>
-                <p class="font-bold text-xl text-[#00215E]">Rp {{ number_format($pemesanan->total_bayar, 0, ',', '.') }}</p>
-                <p class="text-xs text-gray-500 mt-1">Kode: {{ $pembayaran->kode_pembayaran }}</p>
-            </div>
-        @endif
-
-        <!-- Instruksi Pembayaran -->
-        @if(!empty($instruksi))
-            <div class="bg-blue-50 p-4 rounded-lg w-full text-sm mb-4">
-                <p class="font-semibold text-blue-800 mb-2">Cara Pembayaran:</p>
-                <ol class="list-decimal pl-4 space-y-1 text-gray-700">
-                    @foreach($instruksi as $instruction)
-                        <li>{!! $instruction !!}</li>
-                    @endforeach
-                </ol>
-            </div>
-        @endif
-
-        <!-- Tombol Refresh -->
-        <button onclick="refreshPayment()"
-                class="w-full bg-gray-100 text-gray-700 py-2 rounded-lg font-semibold text-center block hover:bg-gray-200 transition mb-3">
-            <i class="fas fa-sync-alt mr-2"></i> Refresh Status
-        </button>
-    </div>
-</div>
-                    <!-- MANDIRI VA SECTION -->
-                    <div x-show="selectedMetode == 'mandiri_va'" x-transition>
-                        <h2 class="text-lg font-bold mb-4">Mandiri Virtual Account</h2>
+                    <!-- BCA VA SECTION -->
+                    <div x-show="selectedMetode == 'bca_va'" x-transition.fade.in class="fade-in">
+                        <div class="text-center mb-6">
+                            <h3 class="text-lg font-bold mb-2">BCA Virtual Account</h3>
+                            <p class="text-sm text-gray-600">Bayar menggunakan Virtual Account BCA</p>
+                        </div>
 
                         <div class="space-y-4 mb-6">
                             <div>
                                 <label class="text-sm font-semibold block mb-2">Nomor Virtual Account</label>
-                                <div class="border rounded-lg p-3 font-semibold flex justify-between items-center bg-gray-50">
-                                    <span id="vaNumberMandiri">{{ $pembayaran->no_virtual_account ?? '88' . rand(100000000, 999999999) }}</span>
-                                    <button type="button" onclick="copyToClipboard('{{ $pembayaran->no_virtual_account ?? '' }}')"
-                                            class="text-blue-600 hover:text-blue-800">
-                                        📋 Salin
+                                <div class="border-2 border-blue-300 rounded-lg p-4 font-semibold flex justify-between items-center bg-white shadow-sm">
+                                    <span id="vaNumber" class="text-xl text-blue-700 tracking-wider">{{ $pembayaran->no_virtual_account ?? '88' . rand(100000000, 999999999) }}</span>
+                                    <button type="button" onclick="copyToClipboard('{{ $pembayaran->no_virtual_account ?? '88' . rand(100000000, 999999999) }}')"
+                                            class="bg-blue-100 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-200 transition">
+                                        <i class="fas fa-copy mr-1"></i> Salin
                                     </button>
                                 </div>
+                                <p class="text-xs text-gray-500 mt-1">Salin nomor VA untuk melakukan pembayaran</p>
                             </div>
 
                             <div>
                                 <label class="text-sm font-semibold block mb-2">Total Pembayaran</label>
-                                <div class="border rounded-lg p-3 font-semibold flex justify-between items-center bg-gray-50">
-                                    <span>Rp {{ number_format($total, 0, ',', '.') }}</span>
+                                <div class="border-2 border-yellow-300 rounded-lg p-4 font-semibold flex justify-between items-center bg-yellow-50 shadow-sm">
+                                    <span class="text-2xl text-[#00215E]">Rp {{ number_format($total, 0, ',', '.') }}</span>
                                     <button type="button" onclick="copyToClipboard('{{ $total }}')"
-                                            class="text-blue-600 hover:text-blue-800">
-                                        📋 Salin
+                                            class="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-lg hover:bg-yellow-200 transition">
+                                        <i class="fas fa-copy mr-1"></i> Salin
                                     </button>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Instruksi Pembayaran -->
-                        @if($pembayaran->instruksi_pembayaran)
-                            <div class="mb-6">
-                                <h3 class="font-semibold mb-2">Instruksi Pembayaran:</h3>
-                                <div class="bg-gray-50 p-4 rounded-lg text-sm space-y-2">
-                                    @php
-                                        $instructions = json_decode($pembayaran->instruksi_pembayaran, true);
-                                    @endphp
-                                    @if(is_array($instructions))
-                                        @foreach($instructions as $instruction)
-                                            <p>{{ $instruction }}</p>
-                                        @endforeach
-                                    @endif
+                        <div class="bg-blue-50 p-5 rounded-lg mb-6">
+                            <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
+                                <i class="fas fa-info-circle mr-2"></i> Instruksi Pembayaran BCA VA:
+                            </h4>
+                            <div class="space-y-3 text-gray-700">
+                                <div class="flex items-start">
+                                    <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">1</span>
+                                    <p>Buka aplikasi BCA Mobile atau m-BCA</p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">2</span>
+                                    <p>Pilih menu "Transfer" → "BCA Virtual Account"</p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">3</span>
+                                    <p>Masukkan nomor VA di atas: <span class="font-semibold" id="vaNumberDisplay">{{ $pembayaran->no_virtual_account ?? '88' . rand(100000000, 999999999) }}</span></p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">4</span>
+                                    <p>Konfirmasi nominal: <span class="font-semibold">Rp {{ number_format($total, 0, ',', '.') }}</span></p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">5</span>
+                                    <p>Ikuti instruksi sampai pembayaran selesai</p>
                                 </div>
                             </div>
-                        @else
-                            <div class="mb-6">
-                                <h3 class="font-semibold mb-2">Instruksi Pembayaran:</h3>
-                                <div class="bg-gray-50 p-4 rounded-lg text-sm space-y-2">
-                                    <p>1. Buka aplikasi Livin by Mandiri</p>
-                                    <p>2. Pilih menu "Pembayaran"</p>
-                                    <p>3. Pilih "Virtual Account"</p>
-                                    <p>4. Masukkan nomor VA di atas</p>
-                                    <p>5. Konfirmasi dan bayar</p>
-                                </div>
-                            </div>
-                        @endif
-
-                        <!-- Hanya untuk testing/development -->
-                        @if(config('app.debug'))
-                        <div class="mt-6 border-t pt-4">
-                            <p class="text-sm font-semibold text-gray-600 mb-2">Testing Mode:</p>
-                            <button onclick="showConfirmationModal()"
-                                   class="w-full bg-[#FF581E] text-white py-3 rounded-lg font-semibold text-center block hover:bg-[#e54e1a] transition">
-                                Simulasi Pembayaran Berhasil
-                            </button>
                         </div>
-                        @endif
-                    </div>
-                </div>
 
-                <!-- Tombol ketika waktu habis -->
-                <div x-show="timeLeft <= 0" x-transition>
-                    <div class="text-center p-8">
-                        <i class="fas fa-clock text-5xl text-red-500 mb-4"></i>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">Waktu Pembayaran Telah Habis</h3>
-                        <p class="text-gray-600 mb-6">Pesanan Anda telah kadaluarsa karena melewati batas waktu pembayaran.</p>
-                        <a href="{{ route('customer.riwayat') }}"
-                           class="inline-block bg-[#00215E] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#001a4d] transition">
-                            Lihat Riwayat Pemesanan
-                        </a>
+                        <button onclick="showConfirmationModal()"
+                               class="w-full bg-[#FF581E] text-white py-4 rounded-lg font-semibold text-center block hover:bg-[#e54e1a] transition text-lg">
+                            <i class="fas fa-check-circle mr-2"></i> Simulasi Pembayaran Berhasil
+                        </button>
                     </div>
+
+                    <!-- MANDIRI VA SECTION -->
+                    <div x-show="selectedMetode == 'mandiri_va'" x-transition.fade.in class="fade-in">
+                        <div class="text-center mb-6">
+                            <h3 class="text-lg font-bold mb-2">Mandiri Virtual Account</h3>
+                            <p class="text-sm text-gray-600">Bayar menggunakan Virtual Account Mandiri</p>
+                        </div>
+
+                        <div class="space-y-4 mb-6">
+                            <div>
+                                <label class="text-sm font-semibold block mb-2">Nomor Virtual Account</label>
+                                <div class="border-2 border-green-300 rounded-lg p-4 font-semibold flex justify-between items-center bg-white shadow-sm">
+                                    <span id="vaNumberMandiri" class="text-xl text-green-700 tracking-wider">{{ $pembayaran->no_virtual_account ?? '88' . rand(100000000, 999999999) }}</span>
+                                    <button type="button" onclick="copyToClipboard('{{ $pembayaran->no_virtual_account ?? '88' . rand(100000000, 999999999) }}')"
+                                            class="bg-green-100 text-green-600 px-4 py-2 rounded-lg hover:bg-green-200 transition">
+                                        <i class="fas fa-copy mr-1"></i> Salin
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Salin nomor VA untuk melakukan pembayaran</p>
+                            </div>
+
+                            <div>
+                                <label class="text-sm font-semibold block mb-2">Total Pembayaran</label>
+                                <div class="border-2 border-yellow-300 rounded-lg p-4 font-semibold flex justify-between items-center bg-yellow-50 shadow-sm">
+                                    <span class="text-2xl text-[#00215E]">Rp {{ number_format($total, 0, ',', '.') }}</span>
+                                    <button type="button" onclick="copyToClipboard('{{ $total }}')"
+                                            class="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-lg hover:bg-yellow-200 transition">
+                                        <i class="fas fa-copy mr-1"></i> Salin
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Instruksi Pembayaran -->
+                        <div class="bg-green-50 p-5 rounded-lg mb-6">
+                            <h4 class="font-semibold text-green-800 mb-3 flex items-center">
+                                <i class="fas fa-info-circle mr-2"></i> Instruksi Pembayaran Mandiri VA:
+                            </h4>
+                            <div class="space-y-3 text-gray-700">
+                                <div class="flex items-start">
+                                    <span class="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">1</span>
+                                    <p>Buka aplikasi Livin by Mandiri</p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">2</span>
+                                    <p>Pilih menu "Pembayaran" → "Virtual Account"</p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">3</span>
+                                    <p>Masukkan nomor VA di atas: <span class="font-semibold" id="vaNumberMandiriDisplay">{{ $pembayaran->no_virtual_account ?? '88' . rand(100000000, 999999999) }}</span></p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">4</span>
+                                    <p>Konfirmasi nominal: <span class="font-semibold">Rp {{ number_format($total, 0, ',', '.') }}</span></p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">5</span>
+                                    <p>Ikuti instruksi sampai pembayaran selesai</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="showConfirmationModal()"
+                               class="w-full bg-[#FF581E] text-white py-4 rounded-lg font-semibold text-center block hover:bg-[#e54e1a] transition text-lg">
+                            <i class="fas fa-check-circle mr-2"></i> Simulasi Pembayaran Berhasil
+                        </button>
+                    </div>
+
+                    <!-- BNI VA SECTION -->
+                    <div x-show="selectedMetode == 'bni_va'" x-transition.fade.in class="fade-in">
+                        <div class="text-center mb-6">
+                            <h3 class="text-lg font-bold mb-2">BNI Virtual Account</h3>
+                            <p class="text-sm text-gray-600">Bayar menggunakan Virtual Account BNI</p>
+                        </div>
+
+                        <div class="space-y-4 mb-6">
+                            <div>
+                                <label class="text-sm font-semibold block mb-2">Nomor Virtual Account</label>
+                                <div class="border-2 border-red-300 rounded-lg p-4 font-semibold flex justify-between items-center bg-white shadow-sm">
+                                    <span id="vaNumberBni" class="text-xl text-red-700 tracking-wider">{{ $pembayaran->no_virtual_account ?? '88' . rand(100000000, 999999999) }}</span>
+                                    <button type="button" onclick="copyToClipboard('{{ $pembayaran->no_virtual_account ?? '88' . rand(100000000, 999999999) }}')"
+                                            class="bg-red-100 text-red-600 px-4 py-2 rounded-lg hover:bg-red-200 transition">
+                                        <i class="fas fa-copy mr-1"></i> Salin
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Salin nomor VA untuk melakukan pembayaran</p>
+                            </div>
+
+                            <div>
+                                <label class="text-sm font-semibold block mb-2">Total Pembayaran</label>
+                                <div class="border-2 border-yellow-300 rounded-lg p-4 font-semibold flex justify-between items-center bg-yellow-50 shadow-sm">
+                                    <span class="text-2xl text-[#00215E]">Rp {{ number_format($total, 0, ',', '.') }}</span>
+                                    <button type="button" onclick="copyToClipboard('{{ $total }}')"
+                                            class="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-lg hover:bg-yellow-200 transition">
+                                        <i class="fas fa-copy mr-1"></i> Salin
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Instruksi Pembayaran -->
+                        <div class="bg-red-50 p-5 rounded-lg mb-6">
+                            <h4 class="font-semibold text-red-800 mb-3 flex items-center">
+                                <i class="fas fa-info-circle mr-2"></i> Instruksi Pembayaran BNI VA:
+                            </h4>
+                            <div class="space-y-3 text-gray-700">
+                                <div class="flex items-start">
+                                    <span class="bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">1</span>
+                                    <p>Buka aplikasi BNI Mobile Banking</p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">2</span>
+                                    <p>Pilih menu "Transfer" → "Virtual Account Billing"</p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">3</span>
+                                    <p>Masukkan nomor VA di atas: <span class="font-semibold" id="vaNumberBniDisplay">{{ $pembayaran->no_virtual_account ?? '88' . rand(100000000, 999999999) }}</span></p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">4</span>
+                                    <p>Konfirmasi nominal: <span class="font-semibold">Rp {{ number_format($total, 0, ',', '.') }}</span></p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">5</span>
+                                    <p>Ikuti instruksi sampai pembayaran selesai</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="showConfirmationModal()"
+                               class="w-full bg-[#FF581E] text-white py-4 rounded-lg font-semibold text-center block hover:bg-[#e54e1a] transition text-lg">
+                            <i class="fas fa-check-circle mr-2"></i> Simulasi Pembayaran Berhasil
+                        </button>
+                    </div>
+
+                    <!-- BRI VA SECTION -->
+                    <div x-show="selectedMetode == 'bri_va'" x-transition.fade.in class="fade-in">
+                        <div class="text-center mb-6">
+                            <h3 class="text-lg font-bold mb-2">BRI Virtual Account</h3>
+                            <p class="text-sm text-gray-600">Bayar menggunakan Virtual Account BRI</p>
+                        </div>
+
+                        <div class="space-y-4 mb-6">
+                            <div>
+                                <label class="text-sm font-semibold block mb-2">Nomor Virtual Account</label>
+                                <div class="border-2 border-purple-300 rounded-lg p-4 font-semibold flex justify-between items-center bg-white shadow-sm">
+                                    <span id="vaNumberBri" class="text-xl text-purple-700 tracking-wider">{{ $pembayaran->no_virtual_account ?? '88' . rand(100000000, 999999999) }}</span>
+                                    <button type="button" onclick="copyToClipboard('{{ $pembayaran->no_virtual_account ?? '88' . rand(100000000, 999999999) }}')"
+                                            class="bg-purple-100 text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-200 transition">
+                                        <i class="fas fa-copy mr-1"></i> Salin
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Salin nomor VA untuk melakukan pembayaran</p>
+                            </div>
+
+                            <div>
+                                <label class="text-sm font-semibold block mb-2">Total Pembayaran</label>
+                                <div class="border-2 border-yellow-300 rounded-lg p-4 font-semibold flex justify-between items-center bg-yellow-50 shadow-sm">
+                                    <span class="text-2xl text-[#00215E]">Rp {{ number_format($total, 0, ',', '.') }}</span>
+                                    <button type="button" onclick="copyToClipboard('{{ $total }}')"
+                                            class="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-lg hover:bg-yellow-200 transition">
+                                        <i class="fas fa-copy mr-1"></i> Salin
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Instruksi Pembayaran -->
+                        <div class="bg-purple-50 p-5 rounded-lg mb-6">
+                            <h4 class="font-semibold text-purple-800 mb-3 flex items-center">
+                                <i class="fas fa-info-circle mr-2"></i> Instruksi Pembayaran BRI VA:
+                            </h4>
+                            <div class="space-y-3 text-gray-700">
+                                <div class="flex items-start">
+                                    <span class="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">1</span>
+                                    <p>Buka aplikasi BRI Mobile Banking</p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">2</span>
+                                    <p>Pilih menu "Pembayaran" → "Virtual Account"</p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">3</span>
+                                    <p>Masukkan nomor VA di atas: <span class="font-semibold" id="vaNumberBriDisplay">{{ $pembayaran->no_virtual_account ?? '88' . rand(100000000, 999999999) }}</span></p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">4</span>
+                                    <p>Konfirmasi nominal: <span class="font-semibold">Rp {{ number_format($total, 0, ',', '.') }}</span></p>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">5</span>
+                                    <p>Ikuti instruksi sampai pembayaran selesai</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="showConfirmationModal()"
+                               class="w-full bg-[#FF581E] text-white py-4 rounded-lg font-semibold text-center block hover:bg-[#e54e1a] transition text-lg">
+                            <i class="fas fa-check-circle mr-2"></i> Simulasi Pembayaran Berhasil
+                        </button>
+                    </div>
+
                 </div>
 
             </div>
@@ -712,12 +917,13 @@
                 <h3 class="text-xl font-bold text-gray-900 mb-2 text-center">Konfirmasi Pembayaran</h3>
                 <p class="text-gray-600 mb-6 text-center">Apakah Anda yakin ingin menyelesaikan pembayaran ini?</p>
                 <div class="flex justify-center space-x-4">
-                    <button onclick="hideConfirmationModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg transition duration-300">
-                        Batal
-                    </button>
                     <button onclick="processPayment()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition duration-300">
                         Ya, Bayar Sekarang
                     </button>
+                    <button onclick="hideConfirmationModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg transition duration-300">
+                        Batal
+                    </button>
+
                 </div>
             </div>
         </div>
@@ -763,131 +969,69 @@
 <script>
 function paymentHandler() {
     return {
-        selectedMetode: '{{ $pembayaran->metode ?? "" }}',
-        timeLeft: Math.max(0, Math.floor(Number('{{ $sisa_waktu_detik ?? 0 }}'))),
-        hours: 0,
+        selectedMetode: '',
+        selectedMetodeName: '',
+        paymentMethodSelected: false,
+        showTimer: false,
+
+        // WAKTU 30 MENIT = 1800 detik
+        timeLeft: 0,
         minutes: 0,
         seconds: 0,
         interval: null,
-        isProcessing: false,
-        pollingInterval: null,
 
         init() {
-            console.log('Payment handler initialized. Time left:', this.timeLeft, 'seconds');
-            console.log('Payment method:', this.selectedMetode);
-            console.log('Paylabs Transaction ID:', '{{ $pembayaran->paylabs_transaction_id ?? "None" }}');
+            console.log('Payment handler initialized - 30 menit');
 
-            this.calculateTimeParts();
-
-            if (this.timeLeft > 0) {
-                this.startTimer();
-                // Mulai polling untuk cek status pembayaran
-                this.startPolling();
-            } else {
-                this.disablePayment();
-                setTimeout(() => {
-                    this.checkPaymentStatus();
-                }, 1000);
-            }
-
-            this.loadPaymentDetails();
-        },
-
-        calculateTimeParts() {
-            const totalSeconds = Math.max(0, Math.floor(Number(this.timeLeft)));
-            this.hours = Math.floor(totalSeconds / 3600);
-            this.minutes = Math.floor((totalSeconds % 3600) / 60);
-            this.seconds = totalSeconds % 60;
-        },
-
-        startTimer() {
-            if (this.interval) {
-                clearInterval(this.interval);
-            }
-
-            this.interval = setInterval(() => {
-                if (this.timeLeft > 0) {
-                    this.timeLeft = Math.max(0, Math.floor(Number(this.timeLeft)) - 1);
-                    this.calculateTimeParts();
-
-                    if (this.timeLeft <= 0) {
-                        this.handleTimerExpired();
+            // Cek jika sudah ada metode dari server
+            const serverMetode = '{{ $pembayaran->metode ?? "" }}';
+            if (serverMetode) {
+                this.selectedMetode = serverMetode;
+                // Cari nama metode
+                const metodeButtons = document.querySelectorAll('button[onclick*="selectMetode"]');
+                metodeButtons.forEach(btn => {
+                    const match = btn.getAttribute('onclick').match(/selectMetode\('([^']+)',\s*'([^']+)'/);
+                    if (match && match[1] === this.selectedMetode) {
+                        this.selectedMetodeName = match[2];
                     }
+                });
+
+                this.paymentMethodSelected = true;
+                this.showTimer = true;
+
+                // Set waktu dari server atau 30 menit
+                this.timeLeft = Math.max(0, Math.floor(Number('{{ $sisa_waktu_detik ?? 0 }}')));
+                if (this.timeLeft === 0) {
+                    this.timeLeft = 30 * 60; // 30 menit
                 }
-            }, 1000);
-        },
-
-        startPolling() {
-            // Polling setiap 10 detik untuk cek status pembayaran
-            if (this.pollingInterval) {
-                clearInterval(this.pollingInterval);
-            }
-
-            this.pollingInterval = setInterval(() => {
-                this.checkPaymentStatus();
-            }, 10000); // 10 detik
-        },
-
-        handleTimerExpired() {
-            clearInterval(this.interval);
-            clearInterval(this.pollingInterval);
-            this.disablePayment();
-
-            this.hours = 0;
-            this.minutes = 0;
-            this.seconds = 0;
-
-            this.showExpiredNotification();
-
-            setTimeout(() => {
-                this.checkPaymentStatus(true);
-            }, 2000);
-        },
-
-        disablePayment() {
-            const buttons = Array.from(document.querySelectorAll('button')).filter(btn => {
-                const onClick = btn.getAttribute('onclick') || '';
-                return !onClick.includes('copyToClipboard');
-            });
-            buttons.forEach(button => {
-                button.disabled = true;
-                button.classList.add('opacity-50', 'cursor-not-allowed');
-            });
-
-            const timerElement = document.querySelector('.countdown-timer');
-            if (timerElement && timerElement.parentElement) {
-                timerElement.parentElement.classList.add('timer-expired');
+                this.calculateTimeParts();
+                this.startTimer();
             }
         },
 
-        showExpiredNotification() {
-            const toast = document.createElement('div');
-            toast.className = 'fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 bg-red-500 text-white animate-bounce';
-            toast.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i> Waktu pembayaran telah habis!';
-            document.body.appendChild(toast);
+        selectMetode(metode, nama) {
+            this.selectedMetode = metode;
+            this.selectedMetodeName = nama;
 
-            setTimeout(() => {
-                toast.remove();
-            }, 5000);
+            // Remove all selected classes
+            document.querySelectorAll('button[onclick*="selectMetode"]').forEach(btn => {
+                btn.classList.remove('metode-selected');
+            });
+
+            // Add selected class to clicked button
+            event.currentTarget.classList.add('metode-selected');
         },
 
-        formatTwoDigits(number) {
-            number = Number(Math.floor(Number(number))) || 0;
-            return number.toString().padStart(2, '0');
-        },
-
-        async selectMetode(metode) {
-            if (this.timeLeft <= 0) {
-                this.showExpiredNotification();
+        async confirmPaymentMethod() {
+            if (!this.selectedMetode) {
+                showToast('Silakan pilih metode pembayaran terlebih dahulu', 'error');
                 return;
             }
 
-            this.selectedMetode = metode;
-            this.isProcessing = true;
-
             try {
+                // Kirim ke server untuk menyimpan metode
                 const formData = new FormData();
-                formData.append('metode', metode);
+                formData.append('metode', this.selectedMetode);
                 formData.append('_token', '{{ csrf_token() }}');
 
                 const response = await fetch('{{ route("customer.pembayaran.pilih_metode", ["kode_booking" => $pemesanan->kode_booking]) }}', {
@@ -896,46 +1040,130 @@ function paymentHandler() {
                 });
 
                 if (response.ok) {
-                    // Refresh halaman untuk mendapatkan data pembayaran yang baru
-                    window.location.reload();
+                    // Tampilkan detail pembayaran dan timer
+                    this.paymentMethodSelected = true;
+                    this.showTimer = true;
+
+                    // Set waktu 30 menit = 1800 detik
+                    this.timeLeft = 30 * 60;
+                    this.calculateTimeParts();
+                    this.startTimer();
+
+                    showToast('Metode pembayaran berhasil dipilih. Timer 30 menit dimulai!', 'success');
+
+                    // Reload page to show updated payment data (VA number, etc.)
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
                 } else {
-                    showToast('Gagal memilih metode pembayaran', 'error');
-                    this.selectedMetode = '{{ $pembayaran->metode ?? "" }}';
+                    const errorData = await response.json();
+                    showToast(errorData.message || 'Gagal memilih metode pembayaran', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
                 showToast('Terjadi kesalahan', 'error');
-                this.selectedMetode = '{{ $pembayaran->metode ?? "" }}';
-            } finally {
-                this.isProcessing = false;
             }
         },
 
-        async loadPaymentDetails() {
-            try {
-                const response = await fetch(`{{ route('customer.pembayaran.cek_status', ['kodePembayaran' => $pembayaran->kode_pembayaran]) }}`);
-                const data = await response.json();
+        changePaymentMethod() {
+            if (confirm('Apakah Anda yakin ingin mengganti metode pembayaran?\n\nTimer 30 menit akan direset dan dimulai ulang.')) {
+                this.paymentMethodSelected = false;
+                this.showTimer = false;
+                this.selectedMetode = '';
+                this.selectedMetodeName = '';
+                clearInterval(this.interval);
 
-                if (data.success) {
-                    if (data.data.status === 'berhasil') {
-                        window.location.href = '{{ route("customer.detail_pemesanan", ["kode_booking" => $pemesanan->kode_booking]) }}';
-                        return;
+                // Remove selected class from all method buttons
+                document.querySelectorAll('button[onclick*="selectMetode"]').forEach(btn => {
+                    btn.classList.remove('metode-selected');
+                });
+
+                showToast('Silakan pilih metode pembayaran baru', 'info');
+            }
+        },
+
+        calculateTimeParts() {
+            const totalSeconds = Math.max(0, Math.floor(Number(this.timeLeft)));
+            this.minutes = Math.floor(totalSeconds / 60);
+            this.seconds = totalSeconds % 60;
+        },
+
+        startTimer() {
+            // Hitung bagian waktu
+            this.calculateTimeParts();
+
+            // Clear timer lama
+            if (this.interval) {
+                clearInterval(this.interval);
+            }
+
+            // Mulai timer baru
+            this.interval = setInterval(() => {
+                if (this.timeLeft > 0) {
+                    this.timeLeft = Math.max(0, Math.floor(Number(this.timeLeft)) - 1);
+                    this.calculateTimeParts();
+
+                    // Cek jika waktu habis
+                    if (this.timeLeft <= 0) {
+                        this.handleTimerExpired();
                     }
 
-                    if (data.data.remaining_time !== undefined) {
-                        const serverTimeLeft = Number(data.data.remaining_time);
-                        if (serverTimeLeft <= 0 && this.timeLeft > 0) {
-                            this.timeLeft = 0;
-                            this.handleTimerExpired();
-                        } else if (Math.abs(this.timeLeft - serverTimeLeft) > 10) {
-                            this.timeLeft = Math.max(0, Math.floor(serverTimeLeft));
-                            this.calculateTimeParts();
-                            console.log('Timer synchronized with server:', this.timeLeft);
-                        }
+                    // Auto check payment status setiap 30 detik
+                    if (this.timeLeft % 30 === 0) {
+                        this.checkPaymentStatus();
                     }
+
+                    // Tampilkan peringatan pada menit-menit tertentu
+                    this.showTimeWarnings();
                 }
-            } catch (error) {
-                console.error('Error loading payment details:', error);
+            }, 1000);
+        },
+
+        showTimeWarnings() {
+            // Peringatan pada menit-menit tertentu
+            if (this.timeLeft === 300) { // 5 menit
+                showToast('Sisa waktu 5 menit! Segera selesaikan pembayaran.', 'warning');
+            } else if (this.timeLeft === 60) { // 1 menit
+                showToast('Sisa waktu 1 menit! Waktu hampir habis!', 'error');
+            }
+        },
+
+        handleTimerExpired() {
+            clearInterval(this.interval);
+
+            // Tampilkan notifikasi
+            showToast('Waktu pembayaran 30 menit telah habis!', 'error');
+
+            // Cek status terakhir ke server
+            setTimeout(() => {
+                this.checkPaymentStatus(true);
+            }, 2000);
+        },
+
+        formatTwoDigits(number) {
+            number = Number(Math.floor(Number(number))) || 0;
+            return number.toString().padStart(2, '0');
+        },
+
+        getWarningMessage() {
+            if (this.timeLeft <= 60) {
+                return 'Waktu hampir habis! Sisa kurang dari 1 menit';
+            } else if (this.timeLeft <= 300) {
+                return `Sisa waktu ${Math.floor(this.timeLeft / 60)} menit!`;
+            }
+            return '';
+        },
+
+        getRemainingTimeText() {
+            const mins = Math.floor(this.timeLeft / 60);
+            const secs = this.timeLeft % 60;
+
+            if (this.timeLeft <= 0) {
+                return 'Waktu habis';
+            } else if (this.timeLeft < 60) {
+                return `${secs} detik`;
+            } else {
+                return `${mins} menit ${secs} detik`;
             }
         },
 
@@ -946,69 +1174,48 @@ function paymentHandler() {
 
                 if (data.success) {
                     if (data.data.status === 'berhasil') {
-                        clearInterval(this.pollingInterval);
-                        showPaymentSuccess(data);
-                        return;
+                        window.location.href = '{{ route("customer.detail_pemesanan", ["kode_booking" => $pemesanan->kode_booking]) }}';
+                    } else if (data.data.is_kadaluarsa && force) {
+                        showToast('Pembayaran telah kadaluarsa', 'error');
                     }
 
-                    if (data.data.is_kadaluarsa && force) {
-                        window.location.reload();
-                    } else if (data.data.remaining_time !== undefined) {
-                        const serverTimeLeft = Number(data.data.remaining_time);
-                        if (Math.abs(this.timeLeft - serverTimeLeft) > 10) {
-                            this.timeLeft = Math.max(0, Math.floor(serverTimeLeft));
-                            this.calculateTimeParts();
-                        }
+                    // Update QR code if available in response
+                    if (data.data.qr_code && this.selectedMetode === 'qris') {
+                        this.updateQRCode(data.data.qr_code, data.data.qris_url);
                     }
                 }
             } catch (error) {
                 console.error('Error checking payment status:', error);
             }
-        }
-    }
-}
+        },
 
-// Fungsi untuk refresh payment
-async function refreshPayment() {
-    try {
-        showToast('Memperbarui data pembayaran...');
+        updateQRCode(qrCode, qrisUrl) {
+            const qrImage = document.getElementById('qrCodeImage');
+            if (qrImage && qrisUrl) {
+                qrImage.src = qrisUrl;
+                qrImage.classList.remove('qr-loading');
+            } else if (qrImage && qrCode) {
+                qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrCode)}&format=png&margin=15&color=0A2540&bgcolor=FFFFFF`;
+                qrImage.classList.remove('qr-loading');
+            }
+        },
 
-        const response = await fetch(`{{ route('customer.pembayaran.cek_status', ['kodePembayaran' => $pembayaran->kode_pembayaran]) }}`);
-        const data = await response.json();
+        async refreshQRCode() {
+            try {
+                const response = await fetch(`{{ route('api.payment.qrcode', ['kodePembayaran' => $pembayaran->kode_pembayaran]) }}`);
+                const data = await response.json();
 
-        if (data.success) {
-            showToast('Data pembayaran diperbarui');
-            if (data.data.status === 'berhasil') {
-                showPaymentSuccess(data);
+                if (data.success && data.data) {
+                    this.updateQRCode(data.data.qr_code, data.data.qris_url);
+                }
+            } catch (error) {
+                console.error('Error refreshing QR code:', error);
             }
         }
-    } catch (error) {
-        console.error('Error refreshing payment:', error);
-        showToast('Gagal memperbarui data', 'error');
     }
 }
 
-// Fungsi untuk menampilkan sukses pembayaran
-function showPaymentSuccess(data) {
-    const successModal = document.getElementById('successModal');
-    if (!successModal) return;
-
-    successModal.querySelector('p').innerHTML = '<div class="flex items-center justify-center"><i class="fas fa-spinner fa-spin mr-2"></i> Memproses pembayaran...</div>';
-    successModal.classList.remove('hidden');
-
-    setTimeout(() => {
-        successModal.querySelector('h3').textContent = 'Pembayaran Berhasil!';
-        successModal.querySelector('p').textContent = 'Selamat! Pembayaran Anda telah berhasil diproses. Tiket Anda sudah aktif.';
-
-        if (data.data.payment && data.data.payment.pemesanan) {
-            setTimeout(() => {
-                window.location.href = `{{ route("customer.detail_pemesanan", ["kode_booking" => $pemesanan->kode_booking]) }}`;
-            }, 2000);
-        }
-    }, 1500);
-}
-
-// API function untuk cek status pembayaran (untuk polling manual)
+// API function untuk cek status pembayaran (untuk polling)
 async function checkPaymentStatusPolling() {
     try {
         const response = await fetch(`{{ route('customer.pembayaran.cek_status', ['kodePembayaran' => $pembayaran->kode_pembayaran]) }}`);
@@ -1017,8 +1224,6 @@ async function checkPaymentStatusPolling() {
         if (data.success) {
             if (data.data.status === 'berhasil') {
                 window.location.href = '{{ route("customer.detail_pemesanan", ["kode_booking" => $pemesanan->kode_booking]) }}';
-            } else if (data.data.is_kadaluarsa) {
-                window.location.reload();
             }
         }
     } catch (error) {
@@ -1026,12 +1231,10 @@ async function checkPaymentStatusPolling() {
     }
 }
 
-function copyToClipboard(text) {
-    if (!text) {
-        showToast('Tidak ada teks untuk disalin', 'error');
-        return;
-    }
+// Polling setiap 10 detik untuk mengecek status pembayaran
+setInterval(checkPaymentStatusPolling, 10000);
 
+function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => {
         showToast('Teks berhasil disalin!');
     }).catch(err => {
@@ -1042,8 +1245,8 @@ function copyToClipboard(text) {
 
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'} animate-bounce`;
-    toast.textContent = message;
+    toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 ${type === 'success' ? 'bg-green-500 text-white' : type === 'warning' ? 'bg-yellow-500 text-white' : 'bg-red-500 text-white'}`;
+    toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'times-circle'} mr-2"></i>${message}`;
     document.body.appendChild(toast);
 
     setTimeout(() => {
@@ -1084,10 +1287,6 @@ function processPayment() {
                             showPointsModal(data);
                         }, 1500);
                     }
-
-                    setTimeout(() => {
-                        window.location.href = '{{ route("customer.detail_pemesanan", ["kode_booking" => $pemesanan->kode_booking]) }}';
-                    }, 3000);
                 } else {
                     successModal.querySelector('h3').textContent = 'Pembayaran Gagal';
                     successModal.querySelector('p').textContent = data.message || 'Maaf, terjadi kesalahan saat memproses pembayaran.';
@@ -1101,10 +1300,6 @@ function processPayment() {
                 console.error('Error:', error);
                 successModal.querySelector('h3').textContent = 'Pembayaran Berhasil';
                 successModal.querySelector('p').textContent = 'Selamat! Pembayaran Anda telah berhasil diproses. Tiket Anda sudah aktif.';
-
-                setTimeout(() => {
-                    window.location.href = '{{ route("customer.detail_pemesanan", ["kode_booking" => $pemesanan->kode_booking]) }}';
-                }, 3000);
             });
     }, 1500);
 }
@@ -1122,8 +1317,5 @@ function hidePointsModal() {
 function redirectToRiwayat() {
     window.location.href = '{{ route("customer.riwayat") }}';
 }
-
-// Inisialisasi polling tambahan (fallback)
-setInterval(checkPaymentStatusPolling, 15000); // 15 detik
 </script>
 @endsection

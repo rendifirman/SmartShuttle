@@ -4,28 +4,48 @@
 
 @push('styles')
 <style>
-/* ===== RESET ===== */
-* { box-sizing: border-box; }
-body {
+/* ================= BASE ================= */
+.page-container {
+    padding: 24px 30px;
+    background: #f8f7f3;
+    min-height: 100vh;
+}
+
+/* ================= HEADER ================= */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+.page-header h2 {
+    font-size: 22px;
+    color: #0b2a4a;
     margin: 0;
-    font-family: 'Segoe UI', sans-serif;
-    background: #f4f6fb;
+}
+.btn-add {
+    background: #1e88e5;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+.btn-add:hover {
+    background: #0d7dd8;
 }
 
-/* ===== CONTENT ===== */
-.wrapper {
-    margin-left: -280px;
-}
-.content {
-    padding: 25px;
-}
-
-/* ===== SUMMARY ===== */
+/* ================= SUMMARY ================= */
 .summary {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 20px;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 .summary-card {
     background: #fff;
@@ -37,6 +57,7 @@ body {
 .summary-card h3 {
     margin: 0;
     font-size: 24px;
+    color: #0b2a4a;
 }
 .summary-card p {
     margin: 5px 0 0;
@@ -44,92 +65,107 @@ body {
     font-size: 13px;
 }
 
-/* ===== FILTER ===== */
+/* ================= FILTER ================= */
 .filter-box {
     background: #fff;
-    border-radius: 10px;
+    border-radius: 14px;
     padding: 20px;
-    margin-bottom: 20px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.08);
+    margin-bottom: 25px;
 }
-.filter-row {
+.filter-top {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 15px;
+    margin-bottom: 15px;
 }
-.filter-row select {
-    padding: 10px;
-    border-radius: 6px;
+.filter-box select {
+    padding: 12px;
+    border-radius: 10px;
     border: 1px solid #ddd;
     font-size: 14px;
+    background: white;
 }
-.filter-action {
-    margin-top: 15px;
+.filter-bottom {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
     gap: 15px;
 }
-.search-box {
+.filter-bottom input {
     flex: 1;
-    display: flex;
-    gap: 10px;
-}
-.search-box input {
-    flex: 1;
-    padding: 10px 15px;
-    border-radius: 6px;
+    padding: 12px 15px;
+    border-radius: 10px;
     border: 1px solid #ddd;
     font-size: 14px;
 }
 .btn-filter {
     background: #ff6a00;
     color: #fff;
-    padding: 10px 25px;
-    border-radius: 6px;
+    padding: 12px 30px;
+    border-radius: 25px;
     border: none;
+    font-weight: 600;
     cursor: pointer;
-    font-size: 14px;
-    white-space: nowrap;
     transition: background-color 0.3s;
+    white-space: nowrap;
 }
 .btn-filter:hover {
     background: #e55c00;
 }
 
-/* ===== BUTTON ===== */
-.btn-add {
-    background: #1e88e5;
-    color: #fff;
-    padding: 12px 18px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    margin-bottom: 15px;
-    font-size: 14px;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
+/* ================= BUTTONS ================= */
 .btn-back {
     background: #6c757d;
     color: #fff;
     padding: 10px 18px;
-    border-radius: 8px;
+    border-radius: 10px;
     border: none;
     cursor: pointer;
-    font-size: 14px;
+    margin-bottom: 15px;
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 20px;
+    text-decoration: none;
 }
 
-/* ===== TABLE ===== */
-.table-box {
+/* ================= TABLE ================= */
+.table-wrapper {
     background: #fff;
-    border-radius: 10px;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.08);
     overflow-x: auto;
+    margin-bottom: 20px;
+}
+.table-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.btn-excel {
+    background: #12b600;
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.btn-pdf {
+    background: #ddd;
+    color: #333;
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 table {
     width: 100%;
@@ -137,32 +173,145 @@ table {
     font-size: 13px;
 }
 thead {
-    background: #0b2a4a;
-    color: #fff;
+    background: #f1f1f1;
 }
-th, td {
-    padding: 12px;
+th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #ddd;
+    font-size: 13px;
+}
+td {
+    padding: 15px;
     border-bottom: 1px solid #eee;
+    font-size: 13px;
 }
-.status {
-    padding: 5px 12px;
+tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 6px 14px;
     border-radius: 20px;
-    color: #fff;
     font-size: 12px;
+    font-weight: 600;
     display: inline-block;
-    min-width: 70px;
+    min-width: 80px;
     text-align: center;
 }
-.status.active { background: #2ecc71; }
-.status.inactive { background: #e74c3c; }
+.status-active {
+    background: #b8f0a3;
+    color: #1e7e34;
+}
+.status-inactive {
+    background: #ff9a9a;
+    color: #8b0000;
+}
 
-/* ===== FORM CARD ===== */
-.form-card {
-    max-width: 1200px;
+/* Action Buttons */
+.btn-action {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    margin-right: 5px;
+    transition: all 0.3s;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.btn-view {
+    background: #888;
+    color: #fff;
+}
+.btn-view:hover {
+    background: #777;
+}
+.btn-edit {
+    background: #f9b000;
+    color: #fff;
+}
+.btn-edit:hover {
+    background: #e09b00;
+}
+.btn-delete {
+    background: #dc3545;
+    color: #fff;
+}
+.btn-delete:hover {
+    background: #c82333;
+}
+
+/* ================= PAGINATION ================= */
+.pagination {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.pagination button,
+.pagination .page-btn {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    min-width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.pagination button.active,
+.pagination .page-btn.active {
+    background: #0b2a4a;
+    color: white;
+    border-color: #0b2a4a;
+}
+.pagination-info {
+    font-size: 13px;
+    color: #666;
+    margin-left: 15px;
+}
+
+/* ================= NO DATA ================= */
+.no-data {
+    text-align: center;
+    padding: 60px 20px;
     background: #fff;
-    padding: 30px;
     border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+.no-data i {
+    font-size: 60px;
+    color: #ddd;
+    margin-bottom: 20px;
+}
+.no-data h3 {
+    margin: 0 0 10px 0;
+    color: #666;
+}
+.no-data p {
+    color: #999;
+    margin: 0;
+}
+
+/* ================= FORM CARD ================= */
+.form-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 30px;
     box-shadow: 0 5px 20px rgba(0,0,0,.08);
+    margin-bottom: 25px;
 }
 .form-card h3 {
     margin-top: 0;
@@ -170,6 +319,7 @@ th, td {
     border-bottom: 2px solid #ff6a00;
     padding-bottom: 12px;
     font-size: 20px;
+    color: #0b2a4a;
 }
 .form-row {
     display: grid;
@@ -188,8 +338,8 @@ th, td {
     color: #333;
 }
 .form-group input,
-.form-group textarea,
-.form-group select {
+.form-group select,
+.form-group textarea {
     width: 100%;
     padding: 12px 15px;
     border-radius: 6px;
@@ -198,8 +348,8 @@ th, td {
     transition: border-color 0.3s;
 }
 .form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
     outline: none;
     border-color: #1e88e5;
     box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.1);
@@ -208,17 +358,8 @@ textarea {
     resize: none;
     min-height: 80px;
 }
-.time-row {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 10px;
-    align-items: center;
-}
-.time-separator {
-    text-align: center;
-    font-weight: bold;
-    color: #666;
-}
+
+/* ================= FORM ACTIONS ================= */
 .form-actions {
     display: flex;
     gap: 12px;
@@ -236,6 +377,9 @@ textarea {
     font-size: 14px;
     font-weight: 500;
     transition: background-color 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 .btn-save:hover {
     background: #1a3a5f;
@@ -250,6 +394,9 @@ textarea {
     font-size: 14px;
     font-weight: 500;
     transition: background-color 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 .btn-reset:hover {
     background: #e55c00;
@@ -264,28 +411,53 @@ textarea {
     font-size: 14px;
     font-weight: 500;
     transition: background-color 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 .btn-cancel:hover {
     background: #5a6268;
 }
-.hidden {
-    display: none;
+
+/* ================= ALERTS ================= */
+.alert {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+.alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
 }
 
-/* Form Layout for Responsive */
+/* ================= UTILITIES ================= */
+.hidden {
+    display: none !important;
+}
+
+/* ================= RESPONSIVE ================= */
 @media (max-width: 768px) {
+    .summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .filter-top {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
     .form-row {
         grid-template-columns: 1fr;
         gap: 15px;
-    }
-
-    .time-row {
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-
-    .time-separator {
-        display: none;
     }
 
     .form-actions {
@@ -298,87 +470,162 @@ textarea {
         width: 100%;
         text-align: center;
     }
+
+    .table-actions {
+        flex-wrap: wrap;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
 }
 
-@media (max-width: 576px) {
-    .filter-row {
+@media (max-width: 480px) {
+    .summary {
         grid-template-columns: 1fr;
     }
 
-    .filter-action {
+    .filter-top {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-bottom {
         flex-direction: column;
     }
 
-    .search-box {
+    .filter-bottom input {
         width: 100%;
     }
 
     .btn-filter {
         width: 100%;
     }
+
+    .page-container {
+        padding: 15px;
+    }
+
+    .btn-action {
+        padding: 5px 10px;
+        font-size: 11px;
+        margin-bottom: 5px;
+    }
+
+    .pagination {
+        gap: 5px;
+    }
+
+    .pagination button,
+    .pagination .page-btn {
+        min-width: 35px;
+        height: 35px;
+        padding: 5px 8px;
+    }
 }
 </style>
 @endpush
 
 @section('content')
-<div class="wrapper">
-    <main class="content">
+<div class="page-container">
 
-        <!-- ================= LIST CABANG ================= -->
-        <div id="page-list">
-
-            <div class="summary">
-                <div class="summary-card">
-                    <h3>3</h3>
-                    <p>Total Cabang</p>
-                </div>
-                <div class="summary-card">
-                    <h3>21</h3>
-                    <p>Cabang Aktif</p>
-                </div>
-                <div class="summary-card">
-                    <h3>0</h3>
-                    <p>Cabang Non-Aktif</p>
-                </div>
-            </div>
-
-            <div class="filter-box">
-                <div class="filter-row">
-                    <select>
-                        <option value="">Pilih Kota</option>
-                        <option value="bandung">Bandung</option>
-                        <option value="jakarta">Jakarta</option>
-                        <option value="surabaya">Surabaya</option>
-                    </select>
-                    <select>
-                        <option value="">Pilih Nama Cabang</option>
-                        <option value="bandung-utara">Bandung Utara</option>
-                        <option value="bandung-selatan">Bandung Selatan</option>
-                    </select>
-                    <select>
-                        <option value="">Pilih Kode</option>
-                        <option value="BDG-01">BDG-01</option>
-                        <option value="BDG-02">BDG-02</option>
-                    </select>
-                    <select>
-                        <option value="">Pilih Status</option>
-                        <option value="aktif">Aktif</option>
-                        <option value="nonaktif">Non-Aktif</option>
-                    </select>
-                </div>
-                <div class="filter-action">
-                    <div class="search-box">
-                        <input type="text" placeholder="Cari cabang berdasarkan kota, nama, kode, atau status...">
-                        <button type="button" class="btn-filter">Filter</button>
-                    </div>
-                </div>
-            </div>
-
-            <button class="btn-add" onclick="showForm()">
+    <!-- ================= LIST PAGE ================= -->
+    <div id="list-page">
+        <!-- HEADER -->
+        <div class="page-header">
+            <h2>Master Data - Cabang Perusahaan</h2>
+            <a href="{{ route('admin.cabang.create') }}" class="btn-add">
                 <i class="fas fa-plus"></i> Tambah Cabang
-            </button>
+            </a>
+        </div>
 
-            <div class="table-box">
+        <!-- Display success/error messages -->
+        @if(session('success'))
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> {{ session('success') }}
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+            </div>
+        @endif
+
+        <!-- SUMMARY -->
+        <div class="summary">
+            <div class="summary-card">
+                <h3>{{ $totalBranches }}</h3>
+                <p>Total Cabang</p>
+            </div>
+            <div class="summary-card">
+                <h3>{{ $activeBranches }}</h3>
+                <p>Cabang Aktif</p>
+            </div>
+            <div class="summary-card">
+                <h3>{{ $inactiveBranches }}</h3>
+                <p>Cabang Non-Aktif</p>
+            </div>
+        </div>
+
+        <!-- FILTER -->
+        <form id="filterForm" method="GET" action="{{ route('admin.cabangperusahaan') }}" class="filter-box">
+            @csrf
+            <div class="filter-top">
+                <select name="kota" id="filterKota">
+                    <option value="">Pilih Kota</option>
+                    @foreach($cities as $city)
+                        <option value="{{ $city }}" {{ request('kota') == $city ? 'selected' : '' }}>{{ $city }}</option>
+                    @endforeach
+                </select>
+                <select name="nama" id="filterNama">
+                    <option value="">Pilih Nama Cabang</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->nama_cabang }}" {{ request('nama') == $branch->nama_cabang ? 'selected' : '' }}>
+                            {{ $branch->nama_cabang }}
+                        </option>
+                    @endforeach
+                </select>
+                <select name="kode" id="filterKode">
+                    <option value="">Pilih Kode</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->kode_cabang }}" {{ request('kode') == $branch->kode_cabang ? 'selected' : '' }}>
+                            {{ $branch->kode_cabang }}
+                        </option>
+                    @endforeach
+                </select>
+                <select name="status" id="filterStatus">
+                    <option value="">Pilih Status</option>
+                    <option value="aktif" {{ request('status') == 'aktif' ? 'selected' : '' }}>Aktif</option>
+                    <option value="nonaktif" {{ request('status') == 'nonaktif' ? 'selected' : '' }}>Non-Aktif</option>
+                </select>
+            </div>
+            <div class="filter-bottom">
+                <input type="text" name="search" id="searchInput"
+                       placeholder="Cari cabang berdasarkan kota, nama, kode, atau status..."
+                       value="{{ request('search') }}">
+                <button type="button" class="btn-filter" id="filterButton">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+            </div>
+        </form>
+
+        <!-- TABLE -->
+        <div class="table-wrapper">
+            <div class="table-actions">
+                <button class="btn-excel">
+                    <i class="fas fa-file-excel"></i> X | Excel
+                </button>
+                <button class="btn-pdf">
+                    <i class="fas fa-file-pdf"></i> V | PDF
+                </button>
+                <div class="pagination-info">
+                    Menampilkan {{ $branches->firstItem() ?: 0 }}-{{ $branches->lastItem() ?: 0 }} dari {{ $branches->total() }} data
+                </div>
+            </div>
+
+            @if($branches->count() > 0)
                 <table>
                     <thead>
                         <tr>
@@ -395,224 +642,195 @@ textarea {
                         </tr>
                     </thead>
                     <tbody>
+                        @foreach($branches as $branch)
                         <tr>
-                            <td>BDG-01</td>
-                            <td>Bandung Utara</td>
-                            <td>Bandung</td>
-                            <td>Jl. Soekarno Hatta No. 123</td>
-                            <td>(022) 1234-5678</td>
-                            <td>bandung@smartshuttle.com</td>
-                            <td>-6.917464,107.619125</td>
-                            <td>06:00 - 22:00</td>
-                            <td><span class="status active">Aktif</span></td>
+                            <td><strong>{{ $branch->kode_cabang }}</strong></td>
+                            <td>{{ $branch->nama_cabang }}</td>
+                            <td>{{ $branch->kota }}</td>
+                            <td title="{{ $branch->alamat }}">{{ Str::limit($branch->alamat, 50) }}</td>
+                            <td>{{ $branch->telepon }}</td>
+                            <td>{{ $branch->email }}</td>
+                            <td>{{ $branch->koordinat_gps ?? '-' }}</td>
+                            <td>{{ $branch->jam_operasional }}</td>
                             <td>
-                                <button class="btn-edit" onclick="showForm()">
+                                <span class="status-badge {{ $branch->status == 'aktif' ? 'status-active' : 'status-inactive' }}">
+                                    {{ $branch->status == 'aktif' ? 'Aktif' : 'Non Aktif' }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ route('admin.cabang.edit', $branch->id) }}" class="btn-action btn-edit" title="Edit">
                                     <i class="fas fa-edit"></i>
-                                </button>
+                                </a>
+                                <form action="{{ route('admin.cabang.destroy', $branch->id) }}" method="POST" style="display:inline;" onsubmit="return confirmDelete(event)">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-action btn-delete" title="Hapus">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
-                        <tr>
-                            <td>BDG-02</td>
-                            <td>Bandung Selatan</td>
-                            <td>Bandung</td>
-                            <td>Jl. Raya Kopo No. 456</td>
-                            <td>(022) 8765-4321</td>
-                            <td>bandung.selatan@smartshuttle.com</td>
-                            <td>-6.954824, 107.586945</td>
-                            <td>05:30 - 21:30</td>
-                            <td><span class="status active">Aktif</span></td>
-                            <td>
-                                <button class="btn-edit" onclick="showForm()">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>JKT-01</td>
-                            <td>Jakarta Pusat</td>
-                            <td>Jakarta</td>
-                            <td>Jl. Thamrin No. 10</td>
-                            <td>(021) 5555-1234</td>
-                            <td>jakarta@smartshuttle.com</td>
-                            <td>-6.186486, 106.822915</td>
-                            <td>05:00 - 23:00</td>
-                            <td><span class="status inactive">Non-Aktif</span></td>
-                            <td>
-                                <button class="btn-edit" onclick="showForm()">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </td>
-                        </tr>
+                        @endforeach
                     </tbody>
                 </table>
-            </div>
+
+                <!-- PAGINATION -->
+                @if($branches->hasPages())
+                    <div class="pagination">
+                        {{-- Previous Page Link --}}
+                        @if($branches->onFirstPage())
+                            <button disabled><i class="fas fa-chevron-left"></i></button>
+                        @else
+                            <form method="GET" action="{{ route('admin.cabangperusahaan') }}" style="display:inline;">
+                                @foreach(request()->except('page') as $name => $value)
+                                    <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                                @endforeach
+                                <input type="hidden" name="page" value="{{ $branches->currentPage() - 1 }}">
+                                <button type="submit"><i class="fas fa-chevron-left"></i></button>
+                            </form>
+                        @endif
+
+                        {{-- Pagination Elements --}}
+                        @php
+                            $currentPage = $branches->currentPage();
+                            $lastPage = $branches->lastPage();
+                            $startPage = max(1, $currentPage - 2);
+                            $endPage = min($lastPage, $currentPage + 2);
+                        @endphp
+
+                        @if($startPage > 1)
+                            <form method="GET" action="{{ route('admin.cabangperusahaan') }}" style="display:inline;">
+                                @foreach(request()->except('page') as $name => $value)
+                                    <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                                @endforeach
+                                <input type="hidden" name="page" value="1">
+                                <button type="submit" class="{{ 1 == $currentPage ? 'active' : '' }}">1</button>
+                            </form>
+                            @if($startPage > 2)
+                                <span>...</span>
+                            @endif
+                        @endif
+
+                        @for($i = $startPage; $i <= $endPage; $i++)
+                            <form method="GET" action="{{ route('admin.cabangperusahaan') }}" style="display:inline;">
+                                @foreach(request()->except('page') as $name => $value)
+                                    <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                                @endforeach
+                                <input type="hidden" name="page" value="{{ $i }}">
+                                <button type="submit" class="{{ $i == $currentPage ? 'active' : '' }}">{{ $i }}</button>
+                            </form>
+                        @endfor
+
+                        @if($endPage < $lastPage)
+                            @if($endPage < $lastPage - 1)
+                                <span>...</span>
+                            @endif
+                            <form method="GET" action="{{ route('admin.cabangperusahaan') }}" style="display:inline;">
+                                @foreach(request()->except('page') as $name => $value)
+                                    <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                                @endforeach
+                                <input type="hidden" name="page" value="{{ $lastPage }}">
+                                <button type="submit" class="{{ $lastPage == $currentPage ? 'active' : '' }}">{{ $lastPage }}</button>
+                            </form>
+                        @endif
+
+                        {{-- Next Page Link --}}
+                        @if($branches->hasMorePages())
+                            <form method="GET" action="{{ route('admin.cabangperusahaan') }}" style="display:inline;">
+                                @foreach(request()->except('page') as $name => $value)
+                                    <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                                @endforeach
+                                <input type="hidden" name="page" value="{{ $branches->currentPage() + 1 }}">
+                                <button type="submit"><i class="fas fa-chevron-right"></i></button>
+                            </form>
+                        @else
+                            <button disabled><i class="fas fa-chevron-right"></i></button>
+                        @endif
+                    </div>
+                @endif
+
+            @else
+                <div class="no-data">
+                    <i class="fas fa-inbox"></i>
+                    <h3>Tidak ada data cabang ditemukan</h3>
+                    <p>Silakan tambahkan cabang baru untuk memulai.</p>
+                </div>
+            @endif
         </div>
 
-        <!-- ================= FORM TAMBAH CABANG ================= -->
-        <div id="page-form" class="hidden">
-            <button class="btn-back" onclick="showList()">
-                <i class="fas fa-arrow-left"></i> Kembali ke Daftar Cabang
-            </button>
+    </div>
 
-            <div class="form-card">
-                <h3>Tambahkan Data Cabang</h3>
-
-                <form id="cabangForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="kodeCabang">Kode Cabang <span style="color: red">*</span></label>
-                            <input type="text" id="kodeCabang" placeholder="Contoh: BDG-01" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="namaCabang">Nama Cabang <span style="color: red">*</span></label>
-                            <input type="text" id="namaCabang" placeholder="Masukkan nama cabang" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="kota">Kota <span style="color: red">*</span></label>
-                            <input type="text" id="kota" placeholder="Masukkan nama kota" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="telepon">Telepon <span style="color: red">*</span></label>
-                            <input type="tel" id="telepon" placeholder="Masukkan nomor telepon" required>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="alamat">Alamat Lengkap <span style="color: red">*</span></label>
-                        <textarea id="alamat" rows="3" placeholder="Masukkan alamat lengkap cabang" required></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="email">Email <span style="color: red">*</span></label>
-                        <input type="email" id="email" placeholder="contoh: cabang@smartshuttle.com" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="koordinat">Koordinat GPS</label>
-                        <input type="text" id="koordinat" placeholder="Format: latitude,longitude (Contoh: -6.234494,106.989615)">
-                        <small style="color: #666; font-size: 12px;">*Opsional: Isi dengan koordinat GPS cabang</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Jam Operasional <span style="color: red">*</span></label>
-                        <div class="time-row">
-                            <div>
-                                <input type="time" id="jamBuka" required>
-                                <small style="color: #666; font-size: 12px;">Jam Buka</small>
-                            </div>
-                            <div class="time-separator">-</div>
-                            <div>
-                                <input type="time" id="jamTutup" required>
-                                <small style="color: #666; font-size: 12px;">Jam Tutup</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="status">Status Cabang <span style="color: red">*</span></label>
-                        <select id="status" required>
-                            <option value="">-- Pilih Status --</option>
-                            <option value="aktif">Aktif</option>
-                            <option value="nonaktif">Non Aktif</option>
-                        </select>
-                    </div>
-
-                    <div class="form-actions">
-                        <button class="btn-save" type="submit">
-                            <i class="fas fa-save"></i> Simpan Data
-                        </button>
-                        <button class="btn-reset" type="reset">
-                            <i class="fas fa-redo"></i> Reset Form
-                        </button>
-                        <button class="btn-cancel" type="button" onclick="showList()">
-                            <i class="fas fa-times"></i> Batal
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-    </main>
 </div>
 
 <script>
-function showForm() {
-    document.getElementById('page-list').classList.add('hidden');
-    document.getElementById('page-form').classList.remove('hidden');
-    // Reset form saat membuka
-    document.getElementById('cabangForm').reset();
-    // Scroll ke atas
-    window.scrollTo(0, 0);
-}
+// Delete confirmation with better UX
+function confirmDelete(event) {
+    event.preventDefault();
+    const form = event.target.closest('form');
 
-function showList() {
-    document.getElementById('page-form').classList.add('hidden');
-    document.getElementById('page-list').classList.remove('hidden');
-}
-
-// Form submission handler
-document.getElementById('cabangForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    // Validasi form
-    const kodeCabang = document.getElementById('kodeCabang').value;
-    const namaCabang = document.getElementById('namaCabang').value;
-    const kota = document.getElementById('kota').value;
-    const telepon = document.getElementById('telepon').value;
-    const alamat = document.getElementById('alamat').value;
-    const email = document.getElementById('email').value;
-    const jamBuka = document.getElementById('jamBuka').value;
-    const jamTutup = document.getElementById('jamTutup').value;
-    const status = document.getElementById('status').value;
-
-    if (!kodeCabang || !namaCabang || !kota || !telepon || !alamat || !email || !jamBuka || !jamTutup || !status) {
-        alert('Harap isi semua field yang wajib diisi!');
-        return;
-    }
-
-    // Validasi format email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        alert('Format email tidak valid!');
-        return;
-    }
-
-    // Validasi jam operasional
-    if (jamBuka >= jamTutup) {
-        alert('Jam buka harus lebih awal dari jam tutup!');
-        return;
-    }
-
-    // Simulasi penyimpanan data
-    alert('Data cabang berhasil disimpan!');
-    showList();
-});
-
-// Filter button handler
-document.querySelector('.btn-filter').addEventListener('click', function() {
-    const searchTerm = document.querySelector('.search-box input').value;
-    const kotaFilter = document.querySelector('.filter-row select:nth-child(1)').value;
-    const namaFilter = document.querySelector('.filter-row select:nth-child(2)').value;
-    const kodeFilter = document.querySelector('.filter-row select:nth-child(3)').value;
-    const statusFilter = document.querySelector('.filter-row select:nth-child(4)').value;
-
-    // Implementasi logika filter di sini
-    console.log('Filter diterapkan:', {
-        search: searchTerm,
-        kota: kotaFilter,
-        nama: namaFilter,
-        kode: kodeFilter,
-        status: statusFilter
+    Swal.fire({
+        title: 'Hapus Cabang?',
+        text: "Data cabang akan dihapus secara permanen!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            form.submit();
+        }
     });
+}
 
-    alert('Filter diterapkan!');
+// Filter functionality
+document.getElementById('filterButton').addEventListener('click', function() {
+    document.getElementById('filterForm').submit();
 });
 
-// Reset filter
-document.querySelector('.search-box input').addEventListener('keypress', function(e) {
+// Enter key in search input
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
-        document.querySelector('.btn-filter').click();
+        document.getElementById('filterForm').submit();
     }
 });
+
+// Reset filter form
+function resetFilter() {
+    document.getElementById('filterForm').reset();
+    document.getElementById('filterForm').submit();
+}
+
+// SweetAlert for notifications
+@if(session('success') || session('error'))
+document.addEventListener('DOMContentLoaded', function() {
+    @if(session('success'))
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: '{{ session('success') }}',
+        timer: 3000,
+        showConfirmButton: false
+    });
+    @endif
+
+    @if(session('error'))
+    Swal.fire({
+        icon: 'error',
+        title: 'Gagal!',
+        text: '{{ session('error') }}',
+        timer: 3000,
+        showConfirmButton: false
+    });
+    @endif
+});
+@endif
 </script>
+
+<!-- SweetAlert2 -->
+@if(session('success') || session('error'))
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@endif
+
 @endsection

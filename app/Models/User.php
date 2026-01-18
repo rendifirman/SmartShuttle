@@ -81,6 +81,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(MembershipPayment::class);
     }
 
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     // Helper methods untuk Google Auth
     public function isGoogleUser()
     {
@@ -257,12 +262,12 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getSafeAvatarUrl()
     {
         $url = $this->avatar_url;
-        
+
         // Jika URL tidak valid atau file tidak ditemukan, return default avatar
         if (!$url || !filter_var($url, FILTER_VALIDATE_URL)) {
             return asset('images/default-avatar.png');
         }
-        
+
         return $url;
     }
 

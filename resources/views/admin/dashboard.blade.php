@@ -296,6 +296,11 @@
             <input type="text" placeholder="Search">
             <span class="icon">🔍</span>
         </div>
+        @if(Auth::guard('admin')->user()->hasRole('admin_cabang'))
+        <div class="branch-info">
+            <strong>Cabang: {{ Auth::guard('admin')->user()->branch->nama_cabang ?? 'Tidak Ditentukan' }}</strong>
+        </div>
+        @endif
     </div>
 
     {{-- SUMMARY CARD --}}

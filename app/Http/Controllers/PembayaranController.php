@@ -167,7 +167,7 @@ class PembayaranController extends Controller
                 'waktu_kadaluarsa' => now()->addMinutes(30),
             ]);
 
-            // Create Paylabs payment request for default method
+            // Create Paylabs payment request for default method (QRIS)
             $method = MetodePembayaran::where('kode', 'qris')->first();
             if ($method && $method->is_paylabs) {
                 $paylabsResponse = $this->paylabsService->createPayment(
@@ -177,7 +177,16 @@ class PembayaranController extends Controller
                 );
 
                 if (!$paylabsResponse['success']) {
-                    throw new \Exception('Failed to create Paylabs payment: ' . $paylabsResponse['error']);
+                    Log::warning('Failed to create Paylabs QRIS payment, continuing with basic payment', [
+                        'error' => $paylabsResponse['error'],
+                        'payment_id' => $pembayaran->id
+                    ]);
+                    // Don't throw exception, allow payment to be created without Paylabs
+                } else {
+                    Log::info('Paylabs QRIS payment created successfully', [
+                        'payment_id' => $pembayaran->id,
+                        'transaction_id' => $paylabsResponse['transaction_id'] ?? null
+                    ]);
                 }
             }
 
@@ -221,6 +230,13 @@ class PembayaranController extends Controller
     public function pilihMetode(Request $request, $kode_booking)
     {
         if (!Auth::check()) {
+            // Check if this is an AJAX request
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Silakan login terlebih dahulu'
+                ], 401);
+            }
             return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
         }
 
@@ -230,7 +246,19 @@ class PembayaranController extends Controller
 
         $pemesanan = Pemesanan::where('kode_booking', $kode_booking)
             ->where('customer_id', Auth::id())
-            ->firstOrFail();
+            ->first();
+
+        if (!$pemesanan) {
+            // Check if this is an AJAX request
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pemesanan tidak ditemukan atau Anda tidak memiliki akses'
+                ], 404);
+            }
+            return redirect()->route('customer.riwayat')
+                ->with('error', 'Pemesanan tidak ditemukan atau Anda tidak memiliki akses');
+        }
 
         $pembayaran = Pembayaran::where('pemesanan_id', $pemesanan->id)
             ->whereIn('status', ['menunggu', 'diproses'])
@@ -242,7 +270,7 @@ class PembayaranController extends Controller
             // Update metode pembayaran
             $pembayaran->update([
                 'metode' => $request->metode,
-                'waktu_kadaluarsa' => now()->addMinutes(20),
+                'waktu_kadaluarsa' => now()->addMinutes(30), // Changed from 20 to 30 minutes to match timer
             ]);
 
             // Get payment method
@@ -263,12 +291,29 @@ class PembayaranController extends Controller
 
             DB::commit();
 
+            // Check if this is an AJAX request
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Metode pembayaran berhasil dipilih'
+                ]);
+            }
+
             return redirect()->back()->with('success', 'Metode pembayaran berhasil dipilih');
 
         } catch (\Exception $e) {
             DB::rollBack();
 
             Log::error('Pilih metode pembayaran error: ' . $e->getMessage());
+
+            // Check if this is an AJAX request
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal memilih metode pembayaran: ' . $e->getMessage()
+                ], 500);
+            }
+
             return redirect()->back()->with('error', 'Gagal memilih metode pembayaran: ' . $e->getMessage());
         }
     }
@@ -397,7 +442,7 @@ class PembayaranController extends Controller
             $signature = $request->input('signature');
             $data = $request->except('signature');
 
-            if (!$this->paylabsService->verifySignature($data, $signature)) {
+            if (!$this->paylabsService->verifySignatureV23($data, $signature, $request->header('X-TIMESTAMP', ''), '/payment/v2.3/callback')) {
                 Log::error('PAYLABS Webhook signature verification failed');
                 return response()->json(['success' => false, 'message' => 'Invalid signature'], 400);
             }

@@ -28,7 +28,14 @@ class Shuttle extends Model
     protected $casts = [
         'layout_kursi' => 'array',
         'kapasitas_kursi' => 'integer',
-        'total_kursi' => 'integer'
+        'total_kursi' => 'integer',
+        'tahun' => 'integer',
+        'nilai_asset' => 'decimal:2',
+        'kelengkapan' => 'array',
+        'tanggal_masuk' => 'date',
+        'masa_stnk' => 'date',
+        'masa_kir' => 'date',
+        'masa_asuransi' => 'date'
     ];
 
     // ================ RELASI BARU ================

@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Test User',
                 'password' => bcrypt('password'),
+                'email_verified_at' => now(),
             ]
         );
 
@@ -40,6 +41,7 @@ class DatabaseSeeder extends Seeder
             MetodePembayaranSeeder::class,
             JadwalSeeder::class,
             ArtikelSeeder::class,
+            RoleSeeder::class,
    // TERAKHIR! (butuh Rute & Shuttle)
         ]);
     }

@@ -8,10 +8,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class MProfilePerusahaan extends Model
 {
     use SoftDeletes;
-    
+
     protected $table = 'm_profile_perusahaan';
     protected $primaryKey = 'id_profile';
-    
+
     protected $fillable = [
         'nama_perusahaan',
         'nama_dagang',
@@ -51,32 +51,41 @@ class MProfilePerusahaan extends Model
         'link_kebijakan_refund',
         'link_kebijakan_privasi',
         'link_syarat_ketentuan',
+        'link_bantuan',
+        'link_faq',
         'status',
         'created_by',
         'updated_by'
     ];
-    
+
     protected $dates = ['tanggal_berdiri', 'deleted_at'];
-    
+
     protected $casts = [
         'tanggal_berdiri' => 'date'
     ];
-    
-    // Scope untuk data aktif
-    public function scopeActive($query)
-    {
-        return $query->where('status', 'active');
-    }
-    
-    // Accessor untuk logo URL
+
+    // Accessor untuk URL gambar
     public function getLogoUrlAttribute()
     {
-        return $this->logo_perusahaan ? asset('storage/' . $this->logo_perusahaan) : null;
+        if ($this->logo_perusahaan && Storage::exists('public/' . $this->logo_perusahaan)) {
+            return asset('storage/' . $this->logo_perusahaan);
+        }
+        return asset('images/default-logo.png');
     }
-    
-    // Accessor untuk background URL
+
     public function getBackgroundUrlAttribute()
     {
-        return $this->background_website ? asset('storage/' . $this->background_website) : null;
+        if ($this->background_website && Storage::exists('public/' . $this->background_website)) {
+            return asset('storage/' . $this->background_website);
+        }
+        return asset('images/default-background.jpg');
+    }
+
+    // Format tanggal berdiri
+    public function getTanggalBerdiriFormattedAttribute()
+    {
+        return $this->tanggal_berdiri
+            ? \Carbon\Carbon::parse($this->tanggal_berdiri)->translatedFormat('d F Y')
+            : null;
     }
 }

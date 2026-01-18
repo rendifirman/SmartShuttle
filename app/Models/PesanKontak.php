@@ -13,10 +13,20 @@ class PesanKontak extends Model
         'email_pengirim',
         'nomor_telepon',
         'pesan',
-        'status'
+        'status', // ← TAMBAHKAN KOMA DI SINI!
+        'kategori',
+        'subjek',
+        'dibaca_oleh',
+        'dibaca_pada',
+        'balasan',
+        'dibalas_pada',
+        'dibalas_oleh',
+        'prioritas'
     ];
     
     protected $casts = [
         'created_at' => 'datetime:d F Y H:i',
+        'dibaca_pada' => 'datetime',
+        'dibalas_pada' => 'datetime'
     ];
 }

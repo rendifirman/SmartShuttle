@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
         /* CSS Variables */
         :root {
@@ -4290,272 +4291,330 @@
             window.open(shareUrl, '_blank', 'width=600,height=400');
         };
 
-        /* ========== REVIEW MANAGEMENT ========== */
-        let allReviews = @json($reviews ?? []);
+/* ========== REVIEW MANAGEMENT ========== */
+let allReviews = []; // Awal kosong, akan diisi via AJAX
+let currentFilter = 0;
+let currentPage = 1;
+const reviewsPerPage = 4;
+let selectedRating = 0;
 
-        if (!allReviews || allReviews.length === 0) {
-            allReviews = [
-                {
-                    id: 1,
-                    avatar: 'https://randomuser.me/api/portraits/women/32.jpg',
-                    name: 'Luna Ayna',
-                    rating: 5,
-                    date: '2024-03-15',
-                    content: 'Servisnya bagus, drivernya sopan dan nyetirnya halus jadi bisa tidur selama perjalanan. Tracking lokasinya juga akurat. Bakal jadi langganan.'
-                },
-                {
-                    id: 2,
-                    avatar: 'https://randomuser.me/api/portraits/men/54.jpg',
-                    name: 'Rizky Pratama',
-                    rating: 4,
-                    date: '2024-03-14',
-                    content: 'Pertama kali coba SmartShuttle dan langsung puas. Mobilnya bersih, AC dingin, kursinya empuk. Berangkat juga sesuai jadwal. Recommended banget!'
-                }
-            ];
-        }
+const reviewsList = document.getElementById('reviews-list');
+const reviewPagination = document.getElementById('review-pagination');
+const filterButtons = document.querySelectorAll('.star-filter-btn');
+const starRatingInput = document.getElementById('star-rating');
+const ratingText = document.getElementById('rating-text');
+const reviewText = document.getElementById('review-text');
+const charCount = document.getElementById('char-count');
+const submitReviewBtn = document.getElementById('submit-review');
+const resetReviewBtn = document.getElementById('reset-review');
 
-        let currentFilter = 0;
-        let currentPage = 1;
-        const reviewsPerPage = 4;
-        let selectedRating = 0;
-
-        const reviewsList = document.getElementById('reviews-list');
-        const reviewPagination = document.getElementById('review-pagination');
-        const filterButtons = document.querySelectorAll('.star-filter-btn');
-        const starRatingInput = document.getElementById('star-rating');
-        const ratingText = document.getElementById('rating-text');
-        const reviewText = document.getElementById('review-text');
-        const charCount = document.getElementById('char-count');
-        const submitReviewBtn = document.getElementById('submit-review');
-        const resetReviewBtn = document.getElementById('reset-review');
-
-        initReviewSection();
-
-        function initReviewSection() {
-            filterButtons.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    filterButtons.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-
-                    currentFilter = parseInt(this.dataset.rating);
-                    currentPage = 1;
-
-                    loadReviews();
-                });
-            });
-
-            if (starRatingInput) {
-                const stars = starRatingInput.querySelectorAll('i');
-                stars.forEach(star => {
-                    star.addEventListener('click', function() {
-                        const rating = parseInt(this.dataset.rating);
-                        selectedRating = rating;
-
-                        stars.forEach((s, index) => {
-                            if (index < rating) {
-                                s.classList.add('active');
-                            } else {
-                                s.classList.remove('active');
-                            }
-                        });
-
-                        const ratingTexts = [
-                            'Pilih bintang',
-                            'Sangat Buruk',
-                            'Buruk',
-                            'Cukup',
-                            'Baik',
-                            'Sangat Baik'
-                        ];
-                        ratingText.textContent = ratingTexts[rating];
-                    });
-                });
-            }
-
-            if (reviewText) {
-                reviewText.addEventListener('input', function() {
-                    const length = this.value.length;
-                    charCount.textContent = `${length}/500 karakter`;
-
-                    if (length > 500) {
-                        charCount.classList.add('limit');
-                        this.value = this.value.substring(0, 500);
-                    } else {
-                        charCount.classList.remove('limit');
-                    }
-                });
-            }
-
-            if (submitReviewBtn) {
-                submitReviewBtn.addEventListener('click', submitReview);
-            }
-
-            if (resetReviewBtn) {
-                resetReviewBtn.addEventListener('click', resetReviewForm);
-            }
-
+// Fungsi untuk mengambil review dari server
+async function fetchReviewsFromServer() {
+    try {
+        showLoadingReviews();
+        
+        const response = await fetch('{{ route("api.reviews.get") }}');
+        const data = await response.json();
+        
+        if (data.success) {
+            allReviews = data.reviews;
+            currentPage = 1;
             loadReviews();
+        } else {
+            throw new Error(data.message);
         }
+    } catch (error) {
+        console.error('Error fetching reviews:', error);
+        showErrorReviews();
+    }
+}
 
-        function loadReviews() {
-            let filteredReviews = allReviews;
-            if (currentFilter > 0) {
-                filteredReviews = allReviews.filter(review => review.rating === currentFilter);
-            }
+// Fungsi untuk menampilkan loading
+function showLoadingReviews() {
+    if (reviewsList) {
+        reviewsList.innerHTML = `
+            <div class="loading-reviews">
+                <i class="fas fa-spinner fa-spin"></i> Memuat review...
+            </div>
+        `;
+    }
+}
 
-            const totalPages = Math.ceil(filteredReviews.length / reviewsPerPage);
-            const startIndex = (currentPage - 1) * reviewsPerPage;
-            const endIndex = startIndex + reviewsPerPage;
-            const pageReviews = filteredReviews.slice(startIndex, endIndex);
+// Fungsi untuk menampilkan error
+function showErrorReviews() {
+    if (reviewsList) {
+        reviewsList.innerHTML = `
+            <div class="no-reviews">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Gagal memuat review</h3>
+                <p>Silakan refresh halaman atau coba lagi nanti.</p>
+            </div>
+        `;
+    }
+}
 
-            renderReviews(pageReviews);
-            renderPagination(totalPages);
-        }
+// Fungsi untuk mengirim review baru
+async function submitReview() {
+    if (selectedRating === 0) {
+        alert('Silakan berikan rating terlebih dahulu!');
+        return;
+    }
 
-        function renderReviews(reviews) {
-            if (!reviewsList) return;
+    if (!reviewText.value.trim() || reviewText.value.trim().length < 10) {
+        alert('Silakan tulis review Anda minimal 10 karakter!');
+        reviewText.focus();
+        return;
+    }
 
-            if (reviews.length === 0) {
-                reviewsList.innerHTML = `
-                    <div class="no-reviews">
-                        <i class="fas fa-comment-slash"></i>
-                        <h3>Tidak ada review</h3>
-                        <p>Belum ada review untuk rating yang dipilih.</p>
-                    </div>
-                `;
-                return;
-            }
+    // Tampilkan loading di tombol submit
+    const originalText = submitReviewBtn.innerHTML;
+    submitReviewBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+    submitReviewBtn.disabled = true;
 
-            reviewsList.innerHTML = reviews.map(review => `
-                <div class="review-item">
-                    <div class="review-header">
-                        <div class="reviewer-info">
-                            <img src="${review.avatar}"
-                                 class="review-avatar"
-                                 alt="${review.name}"
-                                 onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(review.name)}&background=FF581E&color=fff'">
-                            <div class="reviewer-details">
-                                <div class="reviewer-name">${review.name}</div>
-                                <div class="review-date">${formatDate(review.date)}</div>
-                            </div>
-                        </div>
-                        <div class="review-stars">
-                            ${getStarIcons(review.rating)}
-                        </div>
-                    </div>
-                    <div class="review-content">
-                        ${review.content}
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function renderPagination(totalPages) {
-            if (!reviewPagination) return;
-
-            if (totalPages <= 1) {
-                reviewPagination.innerHTML = '';
-                return;
-            }
-
-            let paginationHTML = '';
-
-            paginationHTML += `
-                <button class="page-btn ${currentPage === 1 ? 'disabled' : ''}"
-                        onclick="goToPage(${currentPage - 1})"
-                        ${currentPage === 1 ? 'disabled' : ''}>
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-            `;
-
-            for (let i = 1; i <= totalPages; i++) {
-                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-                    paginationHTML += `
-                        <button class="page-btn ${i === currentPage ? 'active' : ''}"
-                                onclick="goToPage(${i})">
-                            ${i}
-                        </button>
-                    `;
-                } else if (i === 2 || i === totalPages - 1) {
-                    paginationHTML += `<span class="page-dots">...</span>`;
-                }
-            }
-
-            paginationHTML += `
-                <button class="page-btn ${currentPage === totalPages ? 'disabled' : ''}"
-                        onclick="goToPage(${currentPage + 1})"
-                        ${currentPage === totalPages ? 'disabled' : ''}>
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            `;
-
-            reviewPagination.innerHTML = paginationHTML;
-        }
-
-        function goToPage(page) {
-            currentPage = page;
-            loadReviews();
-            reviewsList.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-
-        function submitReview() {
-            if (selectedRating === 0) {
-                alert('Silakan berikan rating terlebih dahulu!');
-                return;
-            }
-
-            if (!reviewText.value.trim() || reviewText.value.trim().length < 10) {
-                alert('Silakan tulis review Anda minimal 10 karakter!');
-                reviewText.focus();
-                return;
-            }
-
-            const newReview = {
-                id: allReviews.length + 1,
-                avatar: 'https://ui-avatars.com/api/?name={{ $user["name"] ?? "Guest" }}&background=FF581E&color=fff',
-                name: '{{ $user["name"] ?? "Guest" }}',
+    try {
+        const response = await fetch('{{ route("api.reviews.store") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
                 rating: selectedRating,
-                date: new Date().toISOString().split('T')[0],
-                content: reviewText.value.trim()
-            };
+                review: reviewText.value.trim()
+            })
+        });
 
-            allReviews.unshift(newReview);
+        const data = await response.json();
+        
+        if (data.success) {
+            // Tambahkan review baru ke allReviews di posisi pertama
+            allReviews.unshift(data.review);
             resetReviewForm();
             currentPage = 1;
             loadReviews();
-            alert('Terima kasih atas review Anda! Review telah berhasil dikirim.');
+            alert(data.message);
+            
+            // Scroll ke review baru
+            reviewsList.scrollTop = 0;
+        } else {
+            alert(data.message || 'Gagal mengirim review.');
         }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat mengirim review.');
+    } finally {
+        submitReviewBtn.innerHTML = originalText;
+        submitReviewBtn.disabled = false;
+    }
+}
 
-        function resetReviewForm() {
-            if (starRatingInput) {
-                const stars = starRatingInput.querySelectorAll('i');
-                stars.forEach(star => star.classList.remove('active'));
-            }
+// Inisialisasi section review
+function initReviewSection() {
+    // Ambil review dari server saat pertama kali
+    fetchReviewsFromServer();
 
-            selectedRating = 0;
-            ratingText.textContent = 'Pilih bintang';
+    // Event listener untuk filter
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            filterButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
 
-            if (reviewText) {
-                reviewText.value = '';
-                charCount.textContent = '0/500 karakter';
+            currentFilter = parseInt(this.dataset.rating);
+            currentPage = 1;
+            loadReviews();
+        });
+    });
+
+    // Event listener untuk rating stars
+    if (starRatingInput) {
+        const stars = starRatingInput.querySelectorAll('i');
+        stars.forEach(star => {
+            star.addEventListener('click', function() {
+                const rating = parseInt(this.dataset.rating);
+                selectedRating = rating;
+
+                stars.forEach((s, index) => {
+                    if (index < rating) {
+                        s.classList.add('active');
+                    } else {
+                        s.classList.remove('active');
+                    }
+                });
+
+                const ratingTexts = [
+                    'Pilih bintang',
+                    'Sangat Buruk',
+                    'Buruk',
+                    'Cukup',
+                    'Baik',
+                    'Sangat Baik'
+                ];
+                ratingText.textContent = ratingTexts[rating];
+            });
+        });
+    }
+
+    // Event listener untuk textarea
+    if (reviewText) {
+        reviewText.addEventListener('input', function() {
+            const length = this.value.length;
+            charCount.textContent = `${length}/500 karakter`;
+
+            if (length > 500) {
+                charCount.classList.add('limit');
+                this.value = this.value.substring(0, 500);
+            } else {
                 charCount.classList.remove('limit');
             }
-        }
+        });
+    }
 
-        function formatDate(dateString) {
-            const options = { year: 'numeric', month: 'long', day: 'numeric' };
-            return new Date(dateString).toLocaleDateString('id-ID', options);
-        }
+    // Event listener untuk submit button
+    if (submitReviewBtn) {
+        submitReviewBtn.addEventListener('click', submitReview);
+    }
 
-        function getStarIcons(rating) {
-            let stars = '';
-            for (let i = 1; i <= 5; i++) {
-                stars += i <= rating ? '★' : '☆';
-            }
-            return stars;
-        }
+    // Event listener untuk reset button
+    if (resetReviewBtn) {
+        resetReviewBtn.addEventListener('click', resetReviewForm);
+    }
+}
 
-        window.goToPage = goToPage;
+// Fungsi untuk merender reviews
+function renderReviews(reviews) {
+    if (!reviewsList) return;
+
+    if (reviews.length === 0) {
+        reviewsList.innerHTML = `
+            <div class="no-reviews">
+                <i class="fas fa-comment-slash"></i>
+                <h3>Tidak ada review</h3>
+                <p>Belum ada review untuk rating yang dipilih.</p>
+            </div>
+        `;
+        return;
+    }
+
+    reviewsList.innerHTML = reviews.map(review => `
+        <div class="review-item">
+            <div class="review-header">
+                <div class="reviewer-info">
+                    <img src="${review.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(review.user_name) + '&background=FF581E&color=fff'}"
+                         class="review-avatar"
+                         alt="${review.user_name}"
+                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(review.user_name)}&background=FF581E&color=fff'">
+                    <div class="reviewer-details">
+                        <div class="reviewer-name">${review.user_name}</div>
+                        <div class="review-date">${review.date}</div>
+                    </div>
+                </div>
+                <div class="review-stars">
+                    ${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}
+                </div>
+            </div>
+            <div class="review-content">
+                ${review.content}
+            </div>
+        </div>
+    `).join('');
+}
+
+// Fungsi untuk memuat reviews dengan filter dan pagination
+function loadReviews() {
+    let filteredReviews = allReviews;
+    
+    // Apply rating filter
+    if (currentFilter > 0) {
+        filteredReviews = allReviews.filter(review => review.rating === currentFilter);
+    }
+    
+    // Apply pagination
+    const totalPages = Math.ceil(filteredReviews.length / reviewsPerPage);
+    const startIndex = (currentPage - 1) * reviewsPerPage;
+    const endIndex = startIndex + reviewsPerPage;
+    const pageReviews = filteredReviews.slice(startIndex, endIndex);
+    
+    renderReviews(pageReviews);
+    renderPagination(totalPages);
+}
+
+// Fungsi untuk merender pagination
+function renderPagination(totalPages) {
+    if (!reviewPagination) return;
+
+    if (totalPages <= 1) {
+        reviewPagination.innerHTML = '';
+        return;
+    }
+
+    let paginationHTML = '';
+
+    // Previous button
+    paginationHTML += `
+        <button class="page-btn ${currentPage === 1 ? 'disabled' : ''}"
+                onclick="goToPage(${currentPage - 1})"
+                ${currentPage === 1 ? 'disabled' : ''}>
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    `;
+
+    // Page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+            paginationHTML += `
+                <button class="page-btn ${i === currentPage ? 'active' : ''}"
+                        onclick="goToPage(${i})">
+                    ${i}
+                </button>
+            `;
+        } else if (i === 2 && currentPage > 3) {
+            paginationHTML += `<span class="page-dots">...</span>`;
+        } else if (i === totalPages - 1 && currentPage < totalPages - 2) {
+            paginationHTML += `<span class="page-dots">...</span>`;
+        }
+    }
+
+    // Next button
+    paginationHTML += `
+        <button class="page-btn ${currentPage === totalPages ? 'disabled' : ''}"
+                onclick="goToPage(${currentPage + 1})"
+                ${currentPage === totalPages ? 'disabled' : ''}>
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    `;
+
+    reviewPagination.innerHTML = paginationHTML;
+}
+
+// Fungsi untuk reset form review
+function resetReviewForm() {
+    if (starRatingInput) {
+        const stars = starRatingInput.querySelectorAll('i');
+        stars.forEach(star => star.classList.remove('active'));
+    }
+
+    selectedRating = 0;
+    ratingText.textContent = 'Pilih bintang';
+
+    if (reviewText) {
+        reviewText.value = '';
+        charCount.textContent = '0/500 karakter';
+        charCount.classList.remove('limit');
+    }
+}
+
+// Fungsi untuk pindah halaman
+function goToPage(page) {
+    currentPage = page;
+    loadReviews();
+    reviewsList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Inisialisasi
+initReviewSection();
+
+// Ekspor fungsi ke window
+window.goToPage = goToPage;
 
         /* ========== PROMO SLIDER ========== */
         const promoSlider = {
@@ -4775,38 +4834,120 @@
         }
 
         /* ========== SELECT2 INITIALIZATION ========== */
-        $(document).ready(function() {
-            if ($('#asal-paket').length) {
-                $('#asal-paket').select2({
-                    placeholder: "Pilih Kota Asal",
-                    allowClear: true,
-                    width: '100%',
-                    dropdownParent: $('#modal-kirim-paket')
-                });
-
-                $('#tujuan-paket').select2({
-                    placeholder: "Pilih Kota Tujuan",
-                    allowClear: true,
-                    width: '100%',
-                    dropdownParent: $('#modal-kirim-paket')
-                });
-            }
-
-            if ($('#departure-outlet').length) {
-                $('#departure-outlet').select2({
-                    placeholder: "Pilih Outlet Keberangkatan",
-                    allowClear: true,
-                    width: '100%'
-                });
-
-                $('#destination-outlet').select2({
-                    placeholder: "Pilih Outlet Tujuan",
-                    allowClear: true,
-                    width: '100%'
-                });
+      $(document).ready(function() {
+    // Cek status login user dari session Laravel
+    var isLoggedIn = {{ Auth::check() ? 'true' : 'false' }};
+    
+    $('#contactForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        // Cek apakah user sudah login
+        if (!isLoggedIn) {
+            showAlert('error', 'Anda harus login terlebih dahulu untuk mengirim pesan ke Customer Service');
+            
+            // Redirect ke halaman login setelah 3 detik
+            setTimeout(function() {
+                window.location.href = "{{ route('customer.login') }}";
+            }, 3000);
+            return false;
+        }
+        
+        var form = $(this);
+        var submitBtn = $('#submitBtn');
+        var originalBtnText = submitBtn.html();
+        
+        // Disable button and show loading
+        submitBtn.prop('disabled', true);
+        submitBtn.html('<i class="fas fa-spinner fa-spin"></i> Mengirim...');
+        
+        // Clear previous alerts
+        $('.alert').remove();
+        
+        // AJAX request
+        $.ajax({
+            url: form.attr('action'),
+            type: 'POST',
+            data: form.serialize(),
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    // Show success message
+                    showAlert('success', response.message);
+                    
+                    // Reset form
+                    form[0].reset();
+                    
+                    // Focus on first input
+                    form.find('input[name="nama"]').focus();
+                } else {
+                    // Show error message
+                    showAlert('error', response.message || 'Terjadi kesalahan');
+                    
+                    // Show validation errors if any
+                    if (response.errors) {
+                        $.each(response.errors, function(key, value) {
+                            var input = form.find('[name="' + key + '"]');
+                            input.addClass('error');
+                            input.after('<small class="error-message"><i class="fas fa-exclamation-circle"></i> ' + value[0] + '</small>');
+                        });
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                var message = 'Terjadi kesalahan sistem. Silakan coba lagi.';
+                
+                if (xhr.status === 419) { // CSRF token expired
+                    message = 'Sesi Anda telah habis. Silakan refresh halaman dan login kembali.';
+                    location.reload();
+                } else if (xhr.status === 401) { // Unauthorized
+                    message = 'Anda harus login terlebih dahulu untuk mengirim pesan.';
+                    setTimeout(function() {
+                        window.location.href = "{{ route('customer.login') }}";
+                    }, 2000);
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                    message = xhr.responseJSON.message;
+                }
+                
+                showAlert('error', message);
+            },
+            complete: function() {
+                // Re-enable button
+                submitBtn.prop('disabled', false);
+                submitBtn.html(originalBtnText);
             }
         });
-
+    });
+    
+    // Function to show alert
+    function showAlert(type, message) {
+        var alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+        var icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+        
+        var alertHtml = '<div class="alert ' + alertClass + ' animate__animated animate__fadeInDown">' +
+                        '<i class="fas ' + icon + '"></i> ' + message +
+                        '</div>';
+        
+        // Insert alert before form (di dalam contact-form-card)
+        $('#contactForm').before(alertHtml);
+        
+        // Auto remove alert after 5 seconds (kecuali untuk error login)
+        setTimeout(function() {
+            $('.alert').addClass('animate__fadeOutUp');
+            setTimeout(function() {
+                $('.alert').remove();
+            }, 500);
+        }, 5000);
+    }
+    
+    // Remove error class and message on input
+    $('#contactForm input, #contactForm textarea').on('input', function() {
+        $(this).removeClass('error');
+        $(this).next('.error-message').remove();
+    });
+});
         /* ========== SESSION MESSAGES ========== */
         const successMsg = @json(session('success'));
         const errorMsg = @json(session('error'));

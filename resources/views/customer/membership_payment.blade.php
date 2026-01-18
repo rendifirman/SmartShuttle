@@ -8,7 +8,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @extends('layouts.app-profile')
 
+    @section('title', 'Membership SmartShuttle')
+
+    @push('styles')
     <style>
         * {
             margin: 0;
@@ -19,162 +23,15 @@
 
         body {
             background: #f5f5f5;
-        }
-
-        .container {
-            display: flex;
             min-height: 100vh;
-        }
-
-        /* SIDEBAR */
-        .sidebar {
-            width: 300px;
-            background: #00274D;
-            color: #fff;
-            padding: 30px 0;
-            flex-shrink: 0;
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            color: #FF6B2C;
-            margin-bottom: 40px;
-            padding: 0 20px;
-            cursor: pointer;
-            transition: transform 0.3s, color 0.3s;
-        }
-
-        .logo:hover {
-            transform: scale(1.05);
-            color: #FF8E53;
-        }
-
-        .menu {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .menu li {
-            padding: 0;
-            margin: 5px 15px;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-
-        .menu a.menu-link {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 18px 30px;
-            color: inherit;
-            text-decoration: none;
-            font-size: 16px;
-            transition: background 0.3s;
-            width: 100%;
-        }
-
-        .menu a.menu-link:hover {
-            background: rgba(255, 107, 44, 0.1);
-        }
-
-        .menu li.active a.menu-link {
-            background: #FF6B2C;
-            border-radius: 5px;
-        }
-
-        .menu-icon {
-            width: 25px;
-            text-align: center;
-            font-size: 18px;
-        }
-
-        .sidebar-footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .logout-link {
-            color: #ff6b6b !important;
-        }
-
-        .logout-link:hover {
-            background: rgba(255, 107, 44, 0.1) !important;
-        }
-
-        .beranda-link {
-            color: #FF6B2C !important;
-        }
-
-        .beranda-link:hover {
-            background: rgba(255, 107, 44, 0.1) !important;
-        }
-
-        /* CONTENT AREA */
-        .content {
-            flex: 1;
-            padding: 30px;
-            position: relative;
-            margin-left: 300px;
-            width: calc(100% - 300px);
-            min-height: 100vh;
-        }
-
-        /* HEADER */
-        .top-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            background: #fff;
-            padding: 20px 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .header {
-            font-size: 28px;
-            font-weight: 700;
-            color: #00274D;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .header i {
-            color: #FF6B2C;
-            font-size: 24px;
-        }
-
-        .profile-icon {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, #FF6B2C, #FF8E53);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
-
-        .profile-icon:hover {
-            transform: scale(1.05);
         }
 
         /* PAYMENT STYLES */
-        .membership-container {
+        .membership-payment-container {
             width: 100%;
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 20px 0;
+            padding: 0;
             min-height: calc(100vh - 180px);
         }
 
@@ -449,366 +306,320 @@
         }
 
         /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-            }
-
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-                margin-left: 0;
-            }
-
-            .content {
-                margin-left: 0;
-                width: 100%;
-                padding: 20px;
+        @media (max-width: 992px) {
+            .membership-payment-container {
+                padding: 0 15px;
             }
 
             .card-box {
                 padding: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .card-box {
+                padding: 18px;
+            }
+
+            .section-title {
+                font-size: 18px;
+            }
+
+            .payment-option {
+                padding: 14px 16px;
+            }
+
+            .btn-pay {
+                padding: 14px;
+                font-size: 15px;
             }
         }
 
         @media (max-width: 576px) {
             .card-box {
-                padding: 20px;
+                padding: 16px;
+            }
+
+            .info-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+
+            .info-row .info-value {
+                align-self: flex-end;
+            }
+
+            .payment-option span {
+                font-size: 14px;
+            }
+
+            .btn-pay {
+                padding: 12px;
+                font-size: 14px;
             }
         }
     </style>
+    @endpush
 </head>
 <body>
+    @section('content')
+    <!-- MAIN CONTENT -->
+    <div class="membership-payment-container">
+        {{-- ================= KONFIRMASI MEMBERSHIP ================= --}}
+        <div class="card-box">
+            <div class="section-title">Konfirmasi Membership</div>
 
-<div class="container">
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-        <!-- LOGO YANG BISA DIKLIK UNTUK KE HALAMAN BERANDA -->
-        <div class="logo" onclick="location.href='{{ route('customer.beranda') }}'">
-            SMART SHUTTLE
-        </div>
-
-        <ul class="menu">
-            <li>
-                <a href="{{ route('customer.dashboardprofile') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-home"></i></span>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="{{ route('customer.profilcust') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-user-circle"></i></span>
-                    <span>Profil Saya</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="{{ route('customer.riwayat') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-history"></i></span>
-                    <span>Riwayat Pesanan</span>
-                </a>
-            </li>
-
-            <li class="active">
-                <a href="{{ route('customer.membership') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-crown"></i></span>
-                    <span>Membership</span>
-                </a>
-            </li>
-
-            <!-- TOMBOL BERANDA DI BAWAH LOGOUT -->
-            <li class="sidebar-footer">
-                <a href="{{ route('customer.beranda') }}" class="menu-link beranda-link">
-                    <span class="menu-icon"><i class="fas fa-arrow-left"></i></span>
-                    <span>Beranda</span>
-                </a>
-            </li>
-
-            <li class="sidebar-footer">
-                <form id="logout-form" action="{{ route('customer.logout') }}" method="POST" style="display: none;">
-                    @csrf
-                </form>
-                <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="menu-link logout-link">
-                    <span class="menu-icon"><i class="fas fa-sign-out-alt"></i></span>
-                    <span>Logout</span>
-                </a>
-            </li>
-        </ul>
-    </div>
-
-    <!-- CONTENT AREA -->
-    <div class="content">
-        <!-- HEADER -->
-        <div class="top-header">
-            <div class="header">
-                <i class="fas fa-credit-card"></i>
-                <span>Pembayaran Membership</span>
+            <div class="info-row">
+                <div class="info-label">Nama</div>
+                <div class="info-value" id="confirmName">{{ Auth::user()->name }}</div>
             </div>
 
-            <div class="profile-icon" title="Lihat Profil" onclick="location.href='{{ route('customer.profilcust') }}'">
-                <i class="fas fa-user"></i>
+            <div class="info-row">
+                <div class="info-label">Email</div>
+                <div class="info-value" id="confirmEmail">{{ Auth::user()->email }}</div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Kode Member</div>
+                <div class="badge-code">SS-MBS-{{ date('dmy') }}-{{ strtoupper(substr(md5(Auth::id()), 0, 4)) }}</div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Status</div>
+                <div class="info-value">
+                    Belum Aktif
+                    <span class="status-indicator status-inactive">Menunggu Pembayaran</span>
+                </div>
             </div>
         </div>
 
-        <!-- MAIN CONTENT -->
-        <div class="membership-container">
-            {{-- ================= KONFIRMASI MEMBERSHIP ================= --}}
-            <div class="card-box">
-                <div class="section-title">Konfirmasi Membership</div>
+        {{-- ================= RINGKASAN PEMBAYARAN ================= --}}
+        <div class="card-box">
+            <div class="section-title">Ringkasan Pembayaran</div>
 
-                <div class="info-row">
-                    <div class="info-label">Nama</div>
-                    <div class="info-value" id="confirmName">{{ Auth::user()->name }}</div>
-                </div>
-
-                <div class="info-row">
-                    <div class="info-label">Email</div>
-                    <div class="info-value" id="confirmEmail">{{ Auth::user()->email }}</div>
-                </div>
-
-                <div class="info-row">
-                    <div class="info-label">Kode Member</div>
-                    <div class="badge-code">SS-MBS-{{ date('dmy') }}-{{ strtoupper(substr(md5(Auth::id()), 0, 4)) }}</div>
-                </div>
-
-                <div class="info-row">
-                    <div class="info-label">Status</div>
-                    <div class="info-value">
-                        Belum Aktif
-                        <span class="status-indicator status-inactive">Menunggu Pembayaran</span>
-                    </div>
-                </div>
+            <div class="summary-row">
+                <span>Cetak Kartu Fisik</span>
+                <span>Rp 20.000</span>
             </div>
 
-            {{-- ================= RINGKASAN PEMBAYARAN ================= --}}
-            <div class="card-box">
-                <div class="section-title">Ringkasan Pembayaran</div>
-
-                <div class="summary-row">
-                    <span>Cetak Kartu Fisik</span>
-                    <span>Rp 20.000</span>
-                </div>
-
-                <div class="summary-row">
-                    <span>Biaya Admin</span>
-                    <span>Rp 0</span>
-                </div>
-
-                <div class="summary-row total">
-                    <span>Total Pembayaran</span>
-                    <span>Rp 20.000</span>
-                </div>
-
-                <div class="summary-row" style="font-size: 12px; color: #6b7280; margin-top: 8px;">
-                    <span>Masa aktif: 12 bulan</span>
-                    <span>Mulai: {{ date('d M Y') }}</span>
-                </div>
+            <div class="summary-row">
+                <span>Biaya Admin</span>
+                <span>Rp 0</span>
             </div>
 
-            {{-- ================= METODE PEMBAYARAN ================= --}}
-            <div class="card-box">
-                <div class="section-title">Metode Pembayaran</div>
+            <div class="summary-row total">
+                <span>Total Pembayaran</span>
+                <span>Rp 20.000</span>
+            </div>
 
-                <form action="{{ route('customer.membership.payment.submit') }}" method="POST" id="paymentForm">
-                    @csrf
-                    <input type="hidden" name="transaction_id" value="{{ $payment->transaction_id ?? '' }}">
+            <div class="summary-row" style="font-size: 12px; color: #6b7280; margin-top: 8px;">
+                <span>Masa aktif: 12 bulan</span>
+                <span>Mulai: {{ date('d M Y') }}</span>
+            </div>
+        </div>
 
-                    <label class="payment-option">
-                        <input type="radio" name="payment_method" value="qris" checked>
-                        <span>QRIS (Scan via aplikasi / outlet)</span>
-                    </label>
+        {{-- ================= METODE PEMBAYARAN ================= --}}
+        <div class="card-box">
+            <div class="section-title">Metode Pembayaran</div>
 
-                    <label class="payment-option">
-                        <input type="radio" name="payment_method" value="bca">
-                        <span>BCA Virtual Account</span>
-                    </label>
+            <form action="{{ route('customer.membership.payment.submit') }}" method="POST" id="paymentForm">
+                @csrf
+                <input type="hidden" name="transaction_id" value="{{ $payment->transaction_id ?? '' }}">
 
-                    <label class="payment-option">
-                        <input type="radio" name="payment_method" value="manual_transfer">
-                        <span>Manual Transfer Bank</span>
-                    </label>
+                <label class="payment-option">
+                    <input type="radio" name="payment_method" value="qris" checked>
+                    <span>QRIS (Scan via aplikasi / outlet)</span>
+                </label>
 
-                    <!-- QRIS Details (hidden by default) -->
-                    <div class="payment-details" id="qrisDetails">
-                        <div class="qris-code">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode('SS-MEMBERSHIP-' . ($payment->transaction_id ?? 'TEST') . '-Rp20000') }}" alt="QR Code">
-                            <p style="margin-top: 10px; font-size: 14px;">Scan QR Code di atas untuk pembayaran</p>
-                        </div>
-                        <p style="text-align: center; font-size: 13px; color: #666;">
-                            QR Code akan kadaluarsa dalam 24 jam
-                        </p>
+                <label class="payment-option">
+                    <input type="radio" name="payment_method" value="bca">
+                    <span>BCA Virtual Account</span>
+                </label>
+
+                <label class="payment-option">
+                    <input type="radio" name="payment_method" value="manual_transfer">
+                    <span>Manual Transfer Bank</span>
+                </label>
+
+                <!-- QRIS Details (hidden by default) -->
+                <div class="payment-details" id="qrisDetails">
+                    <div class="qris-code">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode('SS-MEMBERSHIP-' . ($payment->transaction_id ?? 'TEST') . '-Rp20000') }}" alt="QR Code">
+                        <p style="margin-top: 10px; font-size: 14px;">Scan QR Code di atas untuk pembayaran</p>
                     </div>
-
-                    <!-- BCA VA Details (hidden by default) -->
-                    <div class="payment-details" id="bcaDetails">
-                        <p style="margin-bottom: 10px;">Silakan transfer ke Virtual Account berikut:</p>
-                        <div class="va-number">
-                            1234567890123456
-                        </div>
-                        <p style="font-size: 13px; color: #666;">
-                            <strong>Bank:</strong> BCA<br>
-                            <strong>Atas Nama:</strong> SMART SHUTTLE<br>
-                            <strong>Jumlah:</strong> Rp 20.000<br>
-                            <strong>Masa berlaku:</strong> 24 jam
-                        </p>
-                    </div>
-
-                    <!-- Manual Transfer Details (hidden by default) -->
-                    <div class="payment-details" id="manualTransferDetails">
-                        <p style="margin-bottom: 10px;">Silakan transfer ke salah satu rekening berikut:</p>
-                        <div style="background: white; border-radius: 8px; padding: 15px; margin: 15px 0;">
-                            <p><strong>Bank BCA</strong><br>
-                            123-456-7890<br>
-                            PT. Smart Shuttle Indonesia</p>
-                        </div>
-                        <div style="background: white; border-radius: 8px; padding: 15px; margin: 15px 0;">
-                            <p><strong>Bank Mandiri</strong><br>
-                            098-765-4321<br>
-                            PT. Smart Shuttle Indonesia</p>
-                        </div>
-                        <p style="font-size: 13px; color: #666;">
-                            Setelah transfer, silakan konfirmasi dengan mengirim bukti transfer ke WhatsApp: 0858-1122-4321
-                        </p>
-                    </div>
-
-                    <!-- Error Message -->
-                    <div class="error-message" id="errorMessage">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <span id="errorText"></span>
-                    </div>
-
-                    <!-- Success Message -->
-                    <div class="success-message" id="successMessage">
-                        <i class="fas fa-check-circle"></i>
-                        Pembayaran berhasil! Membership Anda akan segera aktif.
-                    </div>
-
-                    <button type="submit" class="btn-pay" id="payButton">
-                        <span id="buttonText">Bayar & Aktifkan Membership</span>
-                    </button>
-                </form>
-
-                <div style="text-align: center; margin-top: 12px; font-size: 12px; color: #9ca3af;">
-                    Dengan melanjutkan, Anda menyetujui
-                    <a href="{{ route('customer.syarat.ketentuan.membership') }}" target="_blank" style="color: #FF6B2C; text-decoration: none;">Syarat dan Ketentuan Membership</a>
+                    <p style="text-align: center; font-size: 13px; color: #666;">
+                        QR Code akan kadaluarsa dalam 24 jam
+                    </p>
                 </div>
+
+                <!-- BCA VA Details (hidden by default) -->
+                <div class="payment-details" id="bcaDetails">
+                    <p style="margin-bottom: 10px;">Silakan transfer ke Virtual Account berikut:</p>
+                    <div class="va-number">
+                        1234567890123456
+                    </div>
+                    <p style="font-size: 13px; color: #666;">
+                        <strong>Bank:</strong> BCA<br>
+                        <strong>Atas Nama:</strong> SMART SHUTTLE<br>
+                        <strong>Jumlah:</strong> Rp 20.000<br>
+                        <strong>Masa berlaku:</strong> 24 jam
+                    </p>
+                </div>
+
+                <!-- Manual Transfer Details (hidden by default) -->
+                <div class="payment-details" id="manualTransferDetails">
+                    <p style="margin-bottom: 10px;">Silakan transfer ke salah satu rekening berikut:</p>
+                    <div style="background: white; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                        <p><strong>Bank BCA</strong><br>
+                        123-456-7890<br>
+                        PT. Smart Shuttle Indonesia</p>
+                    </div>
+                    <div style="background: white; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                        <p><strong>Bank Mandiri</strong><br>
+                        098-765-4321<br>
+                        PT. Smart Shuttle Indonesia</p>
+                    </div>
+                    <p style="font-size: 13px; color: #666;">
+                        Setelah transfer, silakan konfirmasi dengan mengirim bukti transfer ke WhatsApp: 0858-1122-4321
+                    </p>
+                </div>
+
+                <!-- Error Message -->
+                <div class="error-message" id="errorMessage">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="errorText"></span>
+                </div>
+
+                <!-- Success Message -->
+                <div class="success-message" id="successMessage">
+                    <i class="fas fa-check-circle"></i>
+                    Pembayaran berhasil! Membership Anda akan segera aktif.
+                </div>
+
+                <button type="submit" class="btn-pay" id="payButton">
+                    <span id="buttonText">Bayar & Aktifkan Membership</span>
+                </button>
+            </form>
+
+            <div style="text-align: center; margin-top: 12px; font-size: 12px; color: #9ca3af;">
+                Dengan melanjutkan, Anda menyetujui
+                <a href="{{ route('customer.syarat.ketentuan.membership') }}" target="_blank" style="color: #FF6B2C; text-decoration: none;">Syarat dan Ketentuan Membership</a>
             </div>
         </div>
     </div>
-</div>
+    @endsection
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Payment form submission
-        const paymentForm = document.getElementById('paymentForm');
-        const payButton = document.getElementById('payButton');
-        const errorMessage = document.getElementById('errorMessage');
-        const errorText = document.getElementById('errorText');
-        const successMessage = document.getElementById('successMessage');
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Payment form submission
+            const paymentForm = document.getElementById('paymentForm');
+            const payButton = document.getElementById('payButton');
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            const successMessage = document.getElementById('successMessage');
 
-        // Payment method details sections
-        const qrisDetails = document.getElementById('qrisDetails');
-        const bcaDetails = document.getElementById('bcaDetails');
-        const manualTransferDetails = document.getElementById('manualTransferDetails');
+            // Payment method details sections
+            const qrisDetails = document.getElementById('qrisDetails');
+            const bcaDetails = document.getElementById('bcaDetails');
+            const manualTransferDetails = document.getElementById('manualTransferDetails');
 
-        // Payment method selection
-        const paymentOptions = document.querySelectorAll('input[name="payment_method"]');
+            // Payment method selection
+            const paymentOptions = document.querySelectorAll('input[name="payment_method"]');
 
-        // Show/hide payment details based on selected method
-        function showPaymentDetails(method) {
-            // Hide all details first
-            qrisDetails.classList.remove('show');
-            bcaDetails.classList.remove('show');
-            manualTransferDetails.classList.remove('show');
+            // Show/hide payment details based on selected method
+            function showPaymentDetails(method) {
+                // Hide all details first
+                qrisDetails.classList.remove('show');
+                bcaDetails.classList.remove('show');
+                manualTransferDetails.classList.remove('show');
 
-            // Show selected method details
-            if (method === 'qris') {
-                qrisDetails.classList.add('show');
-            } else if (method === 'bca') {
-                bcaDetails.classList.add('show');
-            } else if (method === 'manual_transfer') {
-                manualTransferDetails.classList.add('show');
+                // Show selected method details
+                if (method === 'qris') {
+                    qrisDetails.classList.add('show');
+                } else if (method === 'bca') {
+                    bcaDetails.classList.add('show');
+                } else if (method === 'manual_transfer') {
+                    manualTransferDetails.classList.add('show');
+                }
             }
-        }
 
-        // Initialize with selected method
-        const initialMethod = document.querySelector('input[name="payment_method"]:checked');
-        if (initialMethod) {
-            showPaymentDetails(initialMethod.value);
-        }
+            // Initialize with selected method
+            const initialMethod = document.querySelector('input[name="payment_method"]:checked');
+            if (initialMethod) {
+                showPaymentDetails(initialMethod.value);
+            }
 
-        // Add change listeners to payment options
-        paymentOptions.forEach(option => {
-            option.addEventListener('change', function() {
-                showPaymentDetails(this.value);
+            // Add change listeners to payment options
+            paymentOptions.forEach(option => {
+                option.addEventListener('change', function() {
+                    showPaymentDetails(this.value);
+                });
             });
-        });
 
-        if (paymentForm) {
-            paymentForm.addEventListener('submit', function(e) {
-                // Hide previous messages
-                errorMessage.classList.remove('show');
-                successMessage.classList.remove('show');
+            if (paymentForm) {
+                paymentForm.addEventListener('submit', function(e) {
+                    // Hide previous messages
+                    errorMessage.classList.remove('show');
+                    successMessage.classList.remove('show');
 
-                // Validate payment method
-                const selectedMethod = document.querySelector('input[name="payment_method"]:checked');
-                if (!selectedMethod) {
-                    e.preventDefault();
-                    errorText.textContent = 'Pilih metode pembayaran terlebih dahulu!';
-                    errorMessage.classList.add('show');
-                    return;
-                }
-
-                // Validate transaction ID
-                const transactionId = document.querySelector('input[name="transaction_id"]');
-                if (!transactionId || !transactionId.value) {
-                    e.preventDefault();
-                    errorText.textContent = 'Data transaksi tidak valid! Silakan refresh halaman.';
-                    errorMessage.classList.add('show');
-                    return;
-                }
-
-                // Show loading state
-                const buttonText = document.getElementById('buttonText');
-                const originalText = buttonText.innerHTML;
-                buttonText.innerHTML = '<span class="loading"></span> Memproses Pembayaran...';
-                payButton.disabled = true;
-
-                // Show success message briefly
-                successMessage.classList.add('show');
-
-                // Form will submit normally - allow it to proceed
-                console.log('Form sedang dikirim dengan metode:', selectedMethod.value);
-
-                // In case form takes too long, re-enable button after 10 seconds
-                setTimeout(() => {
-                    if (payButton.disabled) {
-                        buttonText.innerHTML = originalText;
-                        payButton.disabled = false;
-                        successMessage.classList.remove('show');
-                        errorText.textContent = 'Proses pembayaran timeout. Silakan coba lagi.';
+                    // Validate payment method
+                    const selectedMethod = document.querySelector('input[name="payment_method"]:checked');
+                    if (!selectedMethod) {
+                        e.preventDefault();
+                        errorText.textContent = 'Pilih metode pembayaran terlebih dahulu!';
                         errorMessage.classList.add('show');
+                        return;
                     }
-                }, 10000);
-            });
-        }
 
-        // Check if there are any validation errors from server
-        @if($errors->any())
-            errorText.textContent = '{{ $errors->first() }}';
-            errorMessage.classList.add('show');
-        @endif
+                    // Validate transaction ID
+                    const transactionId = document.querySelector('input[name="transaction_id"]');
+                    if (!transactionId || !transactionId.value) {
+                        e.preventDefault();
+                        errorText.textContent = 'Data transaksi tidak valid! Silakan refresh halaman.';
+                        errorMessage.classList.add('show');
+                        return;
+                    }
 
-        // Check if there's a success message from server
-        @if(session('success'))
-            successMessage.classList.add('show');
-            setTimeout(() => {
-                successMessage.classList.remove('show');
-            }, 5000);
-        @endif
-    });
-</script>
+                    // Show loading state
+                    const buttonText = document.getElementById('buttonText');
+                    const originalText = buttonText.innerHTML;
+                    buttonText.innerHTML = '<span class="loading"></span> Memproses Pembayaran...';
+                    payButton.disabled = true;
+
+                    // Show success message briefly
+                    successMessage.classList.add('show');
+
+                    // Form will submit normally - allow it to proceed
+                    console.log('Form sedang dikirim dengan metode:', selectedMethod.value);
+
+                    // In case form takes too long, re-enable button after 10 seconds
+                    setTimeout(() => {
+                        if (payButton.disabled) {
+                            buttonText.innerHTML = originalText;
+                            payButton.disabled = false;
+                            successMessage.classList.remove('show');
+                            errorText.textContent = 'Proses pembayaran timeout. Silakan coba lagi.';
+                            errorMessage.classList.add('show');
+                        }
+                    }, 10000);
+                });
+            }
+
+            // Check if there are any validation errors from server
+            @if($errors->any())
+                errorText.textContent = '{{ $errors->first() }}';
+                errorMessage.classList.add('show');
+            @endif
+
+            // Check if there's a success message from server
+            @if(session('success'))
+                successMessage.classList.add('show');
+                setTimeout(() => {
+                    successMessage.classList.remove('show');
+                }, 5000);
+            @endif
+        });
+    </script>
 </body>
 </html>

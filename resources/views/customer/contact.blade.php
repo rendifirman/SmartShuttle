@@ -6,25 +6,31 @@
 <style>
     /* CSS Variables - Warna netral */
     :root {
-        --primary-color: #9f2800ff;
-        --footer-color: #00215E;
-        --secondary-color: #FF581E;
-        --accent-color: #e0704aff;
-        --whatsapp-green: #25D366;
-        --phone-blue: #3498DB;
+        --contact-primary: #9f2800ff;
+        --contact-secondary: #e0704aff;
+        --contact-accent: #FF581E;
         --text-dark: #2C3E50;
         --text-light: #666;
         --white: #ffffff;
         --light-gray: #f8f9fa;
-        --border-color: #eaeaea;
-        --card-bg: rgba(255, 255, 255, 0.92);
+        --whatsapp-green: #25D366;
+        --phone-blue: #3498DB;
+    }
+
+    /* FIX: Pastikan navbar tidak memiliki margin/padding extra */
+    .navbar-main-wrapper {
+        left: 0 !important;
+        right: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        transform: none !important;
     }
 
     /* Background dengan efek blur */
     .contact-page {
         font-family: 'Inter', sans-serif;
         position: relative;
-        min-height: 100vh;
+        min-height: calc(100vh - 80px);
         background:
             linear-gradient(
                 rgba(0, 0, 0, 0.4),
@@ -35,37 +41,40 @@
         background-position: center;
         background-attachment: fixed;
         background-repeat: no-repeat;
-        padding-top: 100px;
+        padding: 40px 0 80px;
         backdrop-filter: blur(5px);
+        margin-top: 0;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        animation: fadeInBackground 1s ease-out;
     }
 
-    /* Filter blur untuk background */
-    .contact-page::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: inherit;
-        backdrop-filter: blur(10px);
-        z-index: -1;
+    /* Container utama - PASTIKAN SAMA DENGAN NAVBAR */
+    .contact-container {
+        width: 100%;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 20px;
     }
 
-    /* Konten utama di atas blurred background */
+    /* Konten utama */
     .contact-section {
-        padding: 80px 0;
+        padding: 40px 0;
         position: relative;
         z-index: 1;
+        width: 100%;
     }
 
     .contact-header {
         text-align: center;
-        margin-bottom: 60px;
+        margin-bottom: 50px;
+        width: 100%;
     }
 
     .contact-title {
-        font-size: 52px;
+        font-size: 48px;
         font-weight: 900;
         color: var(--white);
         text-transform: uppercase;
@@ -76,7 +85,7 @@
 
     .contact-subtitle {
         color: var(--white);
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 500;
         max-width: 600px;
         margin: 0 auto;
@@ -91,14 +100,15 @@
         gap: 40px;
         max-width: 1200px;
         margin: 0 auto;
-        padding: 0 20px;
+        padding: 0 15px;
+        width: 100%;
     }
 
     /* Left Card */
     .contact-info-card {
         background: rgba(255, 255, 255, 0.92);
         border-radius: 16px;
-        padding: 50px;
+        padding: 40px;
         width: 370px;
         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
         border: 1px solid rgba(255, 255, 255, 0.4);
@@ -111,28 +121,26 @@
     .contact-info-card:hover {
         transform: translateY(-10px) scale(1.02);
         box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
-        border-color: rgba(127, 140, 141, 0.5);
     }
 
     .contact-info-card .contact-subtitle {
-        color: var(--primary-color);
-        margin-bottom: 40px;
-        margin-top: 20px;
+        color: var(--contact-primary);
+        margin-bottom: 30px;
+        margin-top: 10px;
         font-weight: 700;
         font-style: italic;
-        font-size: 24px;
+        font-size: 22px;
         text-align: left;
         text-shadow: none;
         opacity: 1;
     }
 
     .contact-item {
-        margin-bottom: 30px;
+        margin-bottom: 25px;
         display: flex;
         gap: 15px;
         align-items: flex-start;
-        border: 2px solid transparent;
-        padding: 20px;
+        padding: 15px;
         border-radius: 12px;
         background: rgba(248, 249, 250, 0.8);
         transition: all 0.3s ease;
@@ -140,43 +148,23 @@
         overflow: hidden;
     }
 
-    .contact-item::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(to right, transparent, var(--accent-color), transparent);
-        transform: translateX(-100%);
-        transition: transform 0.5s ease;
-    }
-
-    .contact-item:hover::before {
-        transform: translateX(100%);
-    }
-
     .contact-item:hover {
-        border-color: var(--accent-color);
+        background: rgba(255, 255, 255, 0.95);
         box-shadow: 0 8px 25px rgba(127, 140, 141, 0.2);
         transform: translateY(-5px);
-    }
-
-    .contact-item:last-child {
-        margin-bottom: 0;
     }
 
     .contact-item p {
         margin: 0;
         color: var(--text-dark);
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 600;
         line-height: 1.6;
     }
 
     .contact-icon {
-        color: var(--accent-color);
-        font-size: 24px;
+        color: var(--contact-secondary);
+        font-size: 22px;
         width: 30px;
         height: 30px;
         display: flex;
@@ -190,7 +178,7 @@
     }
 
     .contact-item:hover .contact-icon {
-        background: var(--accent-color);
+        background: var(--contact-secondary);
         color: white;
         transform: rotate(15deg) scale(1.1);
     }
@@ -199,30 +187,19 @@
         margin-top: 30px;
         padding-top: 20px;
         border-top: 2px dashed rgba(44, 62, 80, 0.1);
-        position: relative;
-    }
-
-    .jam-operasional::before {
-        content: '';
-        position: absolute;
-        top: -2px;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background: linear-gradient(to right, transparent, var(--accent-color), transparent);
     }
 
     .jam-operasional h4 {
         color: var(--text-dark);
         margin-bottom: 20px;
-        font-size: 18px;
+        font-size: 16px;
         display: flex;
         align-items: center;
         gap: 10px;
     }
 
     .jam-operasional h4 i {
-        color: var(--accent-color);
+        color: var(--contact-secondary);
         background: rgba(127, 140, 141, 0.1);
         padding: 8px;
         border-radius: 8px;
@@ -231,32 +208,27 @@
     .jam-item {
         display: flex;
         justify-content: space-between;
-        padding: 12px 0;
+        padding: 10px 0;
         border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         transition: all 0.3s ease;
     }
 
     .jam-item:hover {
         background: rgba(127, 140, 141, 0.05);
-        padding: 12px 15px;
+        padding: 10px 12px;
         border-radius: 8px;
-        transform: translateX(5px);
-    }
-
-    .jam-item:last-child {
-        border-bottom: none;
     }
 
     .jam-hari {
         color: var(--text-dark);
         font-weight: 600;
-        font-size: 14px;
+        font-size: 13px;
     }
 
     .jam-waktu {
-        color: var(--accent-color);
+        color: var(--contact-secondary);
         font-weight: 700;
-        font-size: 14px;
+        font-size: 13px;
         background: rgba(127, 140, 141, 0.1);
         padding: 4px 10px;
         border-radius: 20px;
@@ -269,7 +241,7 @@
         text-align: center;
         color: var(--text-dark);
         border-radius: 16px;
-        padding: 50px;
+        padding: 40px;
         width: 460px;
         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
         border: 1px solid rgba(255, 255, 255, 0.4);
@@ -280,16 +252,6 @@
         overflow: hidden;
     }
 
-    .contact-form-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 5px;
-        background: linear-gradient(to right, var(--primary-color), var(--accent-color));
-    }
-
     .contact-form-card:hover {
         transform: translateY(-10px) scale(1.02);
         box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
@@ -298,20 +260,19 @@
     .form-title {
         font-weight: 800;
         margin-bottom: 10px;
-        margin-top: 10px;
         font-style: italic;
-        font-size: 28px;
-        color: var(--primary-color);
+        font-size: 24px;
+        color: var(--contact-primary);
         text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-        background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+        background: linear-gradient(to right, var(--contact-primary), var(--contact-secondary));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
 
     .form-subtitle {
-        margin-bottom: 30px;
-        font-size: 15px;
+        margin-bottom: 25px;
+        font-size: 14px;
         color: var(--text-light);
         line-height: 1.6;
     }
@@ -322,13 +283,13 @@
 
     .form-input {
         width: 100%;
-        padding: 18px 1px;
+        padding: 15px;
         border: 2px solid rgba(44, 62, 80, 0.1);
         border-radius: 10px;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
         background: rgba(255, 255, 255, 0.9);
         color: var(--text-dark);
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 500;
         transition: all 0.3s ease;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
@@ -342,51 +303,44 @@
     .form-input:focus {
         outline: none;
         background: white;
-        border-color: var(--accent-color);
+        border-color: var(--contact-secondary);
         box-shadow: 0 6px 15px rgba(127, 140, 141, 0.2);
-        transform: translateY(-2px);
     }
 
     .form-textarea {
         width: 100%;
-        padding: 10px 1px;
+        padding: 15px;
         border: 2px solid rgba(44, 62, 80, 0.1);
         border-radius: 12px;
-        margin-bottom: 25px;
+        margin-bottom: 20px;
         resize: vertical;
-        min-height: 150px;
+        min-height: 120px;
         background: rgba(255, 255, 255, 0.9);
         color: var(--text-dark);
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 500;
         transition: all 0.3s ease;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     }
 
-    .form-textarea::placeholder {
-        color: rgba(44, 62, 80, 0.4);
-        font-weight: 400;
-    }
-
     .form-textarea:focus {
         outline: none;
         background: white;
-        border-color: var(--accent-color);
+        border-color: var(--contact-secondary);
         box-shadow: 0 6px 15px rgba(127, 140, 141, 0.2);
-        transform: translateY(-2px);
     }
 
     .submit-btn {
         width: 100%;
-        padding: 18px;
+        padding: 16px;
         border: none;
         font-weight: 700;
-        background: linear-gradient(135deg, var(--accent-color), var(--secondary-color));
+        background: linear-gradient(135deg, var(--contact-secondary), var(--contact-accent));
         color: white;
         border-radius: 12px;
         cursor: pointer;
         transition: all 0.3s ease;
-        font-size: 16px;
+        font-size: 15px;
         text-transform: uppercase;
         letter-spacing: 1.5px;
         position: relative;
@@ -394,25 +348,10 @@
         box-shadow: 0 6px 20px rgba(127, 140, 141, 0.3);
     }
 
-    .submit-btn::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: left 0.5s ease;
-    }
-
     .submit-btn:hover {
-        background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+        background: linear-gradient(135deg, var(--contact-accent), var(--contact-secondary));
         transform: translateY(-5px);
         box-shadow: 0 10px 25px rgba(127, 140, 141, 0.4);
-    }
-
-    .submit-btn:hover::before {
-        left: 100%;
     }
 
     .submit-btn:disabled {
@@ -422,12 +361,13 @@
     }
 
     .alert {
-        padding: 20px;
+        padding: 15px;
         border-radius: 12px;
-        margin-bottom: 25px;
+        margin-bottom: 20px;
         font-weight: 500;
         border-left: 5px solid;
         animation: slideIn 0.5s ease;
+        font-size: 14px;
     }
 
     @keyframes slideIn {
@@ -459,6 +399,21 @@
         border-left-color: #3498db;
     }
 
+    .error-message {
+        color: #e74c3c;
+        display: block;
+        margin-top: -10px;
+        margin-bottom: 10px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .form-input.error,
+    .form-textarea.error {
+        border-color: #e74c3c;
+        background-color: rgba(231, 76, 60, 0.05);
+    }
+
     /* Tombol Konfigurasi di Kartu Kontak */
     .config-button-container {
         position: absolute;
@@ -468,12 +423,12 @@
     }
 
     .btn-config-kontak {
-        background: linear-gradient(135deg, var(--primary-color), #34495E);
+        background: linear-gradient(135deg, var(--contact-primary), #34495E);
         color: white;
         border: none;
-        padding: 10px 18px;
+        padding: 8px 15px;
         border-radius: 10px;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
         cursor: pointer;
         display: flex;
@@ -485,7 +440,7 @@
     }
 
     .btn-config-kontak:hover {
-        background: linear-gradient(135deg, #34495E, var(--primary-color));
+        background: linear-gradient(135deg, #34495E, var(--contact-primary));
         transform: translateY(-3px);
         box-shadow: 0 8px 20px rgba(44, 62, 80, 0.4);
     }
@@ -581,25 +536,6 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .cs-button::before.tooltip-arrow {
-        content: '';
-        position: absolute;
-        bottom: calc(100% + 5px);
-        left: 50%;
-        transform: translateX(-50%);
-        border-width: 6px;
-        border-style: solid;
-        border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent;
-        opacity: 0;
-        transition: all 0.3s ease;
-        z-index: 10001;
-    }
-
-    .cs-button:hover::before.tooltip-arrow {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
-
     /* Animasi floating */
     @keyframes float {
         0%, 100% {
@@ -610,8 +546,99 @@
         }
     }
 
-    /* Responsive floating buttons */
+    /* Animation classes */
+    .animate__animated {
+        animation-duration: 0.5s;
+    }
+
+    .animate__fadeInDown {
+        animation-name: fadeInDown;
+    }
+
+    .animate__fadeOutUp {
+        animation-name: fadeOutUp;
+    }
+
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes fadeOutUp {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+    }
+
+    @keyframes fadeInBackground {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 1024px) {
+        .contact-content {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .contact-info-card, .contact-form-card {
+            width: 100%;
+            max-width: 550px;
+        }
+
+        .contact-title {
+            font-size: 38px;
+        }
+        
+        .contact-page {
+            min-height: calc(100vh - 80px);
+        }
+    }
+
     @media (max-width: 768px) {
+        .contact-title {
+            font-size: 32px;
+        }
+
+        .contact-subtitle {
+            font-size: 16px;
+            padding: 0 20px;
+        }
+
+        .contact-info-card, .contact-form-card {
+            padding: 30px;
+        }
+
+        .contact-info-card .contact-subtitle, .form-title {
+            font-size: 20px;
+        }
+
+        .contact-page {
+            padding: 20px 15px 60px;
+            background-attachment: scroll;
+        }
+        
+        .contact-container {
+            padding: 0 15px !important;
+        }
+
+        /* Responsive floating buttons */
         .floating-cs-container {
             bottom: 20px;
             right: 20px;
@@ -633,6 +660,44 @@
     }
 
     @media (max-width: 480px) {
+        .contact-title {
+            font-size: 26px;
+        }
+
+        .contact-subtitle {
+            font-size: 14px;
+        }
+
+        .contact-info-card, .contact-form-card {
+            padding: 20px;
+        }
+
+        .contact-info-card .contact-subtitle, .form-title {
+            font-size: 18px;
+        }
+
+        .contact-item {
+            padding: 12px;
+        }
+
+        .form-input, .form-textarea {
+            padding: 12px;
+            font-size: 14px;
+        }
+        
+        .contact-page {
+            padding: 20px 10px 50px;
+        }
+        
+        .contact-container {
+            padding: 0 10px !important;
+        }
+        
+        .contact-content {
+            padding: 0 10px;
+        }
+
+        /* Responsive floating buttons */
         .floating-cs-container {
             bottom: 15px;
             right: 15px;
@@ -653,117 +718,11 @@
             padding: 6px 10px;
         }
     }
-
-    /* Responsive Styles */
-    @media (max-width: 1024px) {
-        .contact-content {
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .contact-info-card, .contact-form-card {
-            width: 100%;
-            max-width: 550px;
-        }
-
-        .contact-title {
-            font-size: 42px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .contact-title {
-            font-size: 36px;
-        }
-
-        .contact-subtitle {
-            font-size: 18px;
-            padding: 0 20px;
-        }
-
-        .contact-info-card, .contact-form-card {
-            padding: 35px;
-        }
-
-        .contact-info-card .contact-subtitle, .form-title {
-            font-size: 22px;
-        }
-
-        .contact-page {
-            background-attachment: scroll;
-            backdrop-filter: blur(8px);
-        }
-
-        .config-button-container {
-            top: 15px;
-            right: 15px;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .contact-title {
-            font-size: 28px;
-        }
-
-        .contact-subtitle {
-            font-size: 16px;
-        }
-
-        .contact-info-card, .contact-form-card {
-            padding: 25px;
-        }
-
-        .contact-info-card .contact-subtitle, .form-title {
-            font-size: 20px;
-        }
-
-        .contact-item {
-            padding: 15px;
-        }
-
-        .form-input, .form-textarea {
-            padding: 15px;
-        }
-
-        .btn-config-kontak {
-            padding: 6px 12px;
-            font-size: 11px;
-        }
-
-        .config-button-container {
-            top: 10px;
-            right: 10px;
-        }
-
-        .contact-page {
-            backdrop-filter: blur(5px);
-        }
-    }
-
-    /* Animasi untuk background photo loading */
-    @keyframes fadeInBackground {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
-    }
-
-    .contact-page {
-        animation: fadeInBackground 1s ease-out;
-    }
-
-    /* Efek blur tambahan untuk konten */
-    .contact-info-card, .contact-form-card {
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-    }
 </style>
 @endpush
 
 @section('content')
-<div class="content-wrapper">
+<div class="contact-page">
     <!-- Floating Customer Service Buttons -->
     <div class="floating-cs-container">
         <!-- WhatsApp Button -->
@@ -799,7 +758,7 @@
         </a>
     </div>
 
-    <div class="contact-page" id="contactPage">
+    <div class="contact-container">
         <section class="contact-section" id="contactSection">
             <div class="contact-header">
                 <h1 class="contact-title">Hubungi Kami</h1>
@@ -819,30 +778,6 @@
                     @endif
 
                     <h6 class="contact-subtitle">Kami disini untuk membantu anda</h6>
-
-                    @if(session('success'))
-                        <div class="alert alert-success">
-                            <i class="fas fa-check-circle"></i> {{ session('success') }}
-                        </div>
-                    @endif
-
-                    @if(session('error'))
-                        <div class="alert alert-error">
-                            <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
-                        </div>
-                    @endif
-
-                    @if(session('info'))
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i> {{ session('info') }}
-                        </div>
-                    @endif
-
-                    @if($errors->any())
-                        <div class="alert alert-error">
-                            <i class="fas fa-exclamation-circle"></i> Mohon periksa kembali data yang Anda masukkan.
-                        </div>
-                    @endif
 
                     <div class="contact-item">
                         <span class="contact-icon"><i class="fas fa-envelope"></i></span>
@@ -882,13 +817,39 @@
                     <h5 class="form-title">Kenyamanan anda, prioritas kami</h5>
                     <p class="form-subtitle">Beri kami masukan agar {{ $masterKontak->nama_perusahaan ?? 'Smart Shuttle' }} terus jadi pilihan terbaik untuk perjalanan Anda.</p>
 
+                    {{-- ======= ALERT UNTUK FORM ======= --}}
+                    @if(session('success'))
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> {{ session('success') }}
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="alert alert-error">
+                            <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+                        </div>
+                    @endif
+
+                    @if(session('info'))
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> {{ session('info') }}
+                        </div>
+                    @endif
+
+                    @if($errors->any())
+                        <div class="alert alert-error">
+                            <i class="fas fa-exclamation-circle"></i> Mohon periksa kembali data yang Anda masukkan.
+                        </div>
+                    @endif
+
                     <form action="{{ route('customer.contact.submit') }}" method="POST" class="contact-form" id="contactForm">
                         @csrf
-
+                        <input type="hidden" name="ajax_submit" value="1">
+                        
                         <input type="text" name="nama" placeholder="Nama Lengkap" class="form-input"
                                value="{{ old('nama') }}" required />
                         @error('nama')
-                            <small style="color: #e74c3c; display: block; margin-top: -15px; margin-bottom: 15px; font-size: 13px; font-weight: 500;">
+                            <small class="error-message">
                                 <i class="fas fa-exclamation-circle"></i> {{ $message }}
                             </small>
                         @enderror
@@ -896,7 +857,7 @@
                         <input type="email" name="email" placeholder="Email" class="form-input"
                                value="{{ old('email') }}" required />
                         @error('email')
-                            <small style="color: #e74c3c; display: block; margin-top: -15px; margin-bottom: 15px; font-size: 13px; font-weight: 500;">
+                            <small class="error-message">
                                 <i class="fas fa-exclamation-circle"></i> {{ $message }}
                             </small>
                         @enderror
@@ -904,14 +865,14 @@
                         <input type="text" name="telepon" placeholder="Nomor Telepon" class="form-input"
                                value="{{ old('telepon') }}" />
                         @error('telepon')
-                            <small style="color: #e74c3c; display: block; margin-top: -15px; margin-bottom: 15px; font-size: 13px; font-weight: 500;">
+                            <small class="error-message">
                                 <i class="fas fa-exclamation-circle"></i> {{ $message }}
                             </small>
                         @enderror
 
                         <textarea name="pesan" placeholder="Pesan atau ulasan Anda" rows="4" class="form-textarea" required>{{ old('pesan') }}</textarea>
                         @error('pesan')
-                            <small style="color: #e74c3c; display: block; margin-top: -15px; margin-bottom: 15px; font-size: 13px; font-weight: 500;">
+                            <small class="error-message">
                                 <i class="fas fa-exclamation-circle"></i> {{ $message }}
                             </small>
                         @enderror
@@ -964,20 +925,17 @@
         }
 
         /* ---------- CHECK BACKGROUND PHOTO ---------- */
-        const contactPage = document.getElementById('contactPage');
+        const contactPage = document.querySelector('.contact-page');
         const bgImage = new Image();
-
-        // Ganti 'your-photo.jpg' dengan nama foto yang kamu berikan
         const photoUrl = "{{ asset('images/backgroundpeta.png') }}";
 
         bgImage.onload = function() {
             console.log('Background photo loaded successfully');
-            // Jika foto berhasil dimuat, background sudah diatur di CSS
         };
 
         bgImage.onerror = function() {
             console.log('Custom background photo not found');
-            // Jika foto tidak ditemukan, tetap gunakan efek blur dengan warna netral
+            // Jika foto tidak ditemukan, gunakan warna netral
             if (contactPage) {
                 contactPage.style.background = 'linear-gradient(135deg, rgba(44, 62, 80, 0.85), rgba(127, 140, 141, 0.8))';
             }
@@ -1004,19 +962,17 @@
             this.appendChild(tooltipArrow);
         });
 
-        /* ---------- ANIMASI UNTUK KARTU KONTAK ---------- */
-        const contactCards = document.querySelectorAll('.contact-info-card, .contact-form-card');
-        contactCards.forEach((card, index) => {
-            // Delay untuk animasi bertahap
-            card.style.animationDelay = `${index * 0.2}s`;
-        });
-
         /* ---------- VALIDASI REAL-TIME FORM ---------- */
         const formInputs = document.querySelectorAll('.form-input, .form-textarea');
         formInputs.forEach(input => {
             input.addEventListener('input', function() {
                 if (this.value.trim() !== '') {
                     this.style.borderColor = '#27ae60';
+                    this.classList.remove('error');
+                    const errorMessage = this.nextElementSibling;
+                    if (errorMessage && errorMessage.classList.contains('error-message')) {
+                        errorMessage.remove();
+                    }
                 } else {
                     this.style.borderColor = 'rgba(44, 62, 80, 0.1)';
                 }
@@ -1028,17 +984,98 @@
                 }
             });
         });
+    });
 
-        /* ---------- EFEK BLUR DINAMIS ---------- */
-        window.addEventListener('scroll', function() {
-            const scrollPosition = window.scrollY;
-            const contactSection = document.getElementById('contactSection');
-
-            if (contactSection) {
-                // Sesuaikan blur berdasarkan scroll
-                const blurIntensity = Math.min(10, 5 + (scrollPosition * 0.01));
-                contactPage.style.backdropFilter = `blur(${blurIntensity}px)`;
-            }
+    {{-- AJAX Form Submission --}}
+    $(document).ready(function() {
+        $('#contactForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            var form = $(this);
+            var submitBtn = $('#submitBtn');
+            var originalBtnText = submitBtn.html();
+            
+            // Disable button and show loading
+            submitBtn.prop('disabled', true);
+            submitBtn.html('<i class="fas fa-spinner fa-spin"></i> Mengirim...');
+            
+            // Clear previous alerts
+            $('.alert').remove();
+            
+            // Remove previous error messages
+            $('.error-message').remove();
+            $('.form-input, .form-textarea').removeClass('error');
+            
+            // AJAX request
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: form.serialize(),
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Show success message
+                        showAlert('success', response.message);
+                        
+                        // Reset form
+                        form[0].reset();
+                        
+                        // Focus on first input
+                        form.find('input[name="nama"]').focus();
+                    } else {
+                        // Show error message
+                        showAlert('error', response.message || 'Terjadi kesalahan');
+                        
+                        // Show validation errors if any
+                        if (response.errors) {
+                            $.each(response.errors, function(key, value) {
+                                var input = form.find('[name="' + key + '"]');
+                                input.addClass('error');
+                                input.after('<small class="error-message"><i class="fas fa-exclamation-circle"></i> ' + value[0] + '</small>');
+                            });
+                        }
+                    }
+                },
+                error: function(xhr) {
+                    var message = 'Terjadi kesalahan sistem. Silakan coba lagi.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        message = xhr.responseJSON.message;
+                    }
+                    showAlert('error', message);
+                },
+                complete: function() {
+                    // Re-enable button
+                    submitBtn.prop('disabled', false);
+                    submitBtn.html(originalBtnText);
+                }
+            });
+        });
+        
+        // Function to show alert
+        function showAlert(type, message) {
+            var alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+            var icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            
+            var alertHtml = '<div class="alert ' + alertClass + ' animate__animated animate__fadeInDown">' +
+                            '<i class="fas ' + icon + '"></i> ' + message +
+                            '</div>';
+            
+            // Insert alert before form
+            $('#contactForm').before(alertHtml);
+            
+            // Auto remove alert after 5 seconds
+            setTimeout(function() {
+                $('.alert').addClass('animate__fadeOutUp');
+                setTimeout(function() {
+                    $('.alert').remove();
+                }, 500);
+            }, 5000);
+        }
+        
+        // Remove error class and message on input
+        $('#contactForm input, #contactForm textarea').on('input', function() {
+            $(this).removeClass('error');
+            $(this).next('.error-message').remove();
         });
     });
 </script>

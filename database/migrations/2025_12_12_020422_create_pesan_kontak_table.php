@@ -15,6 +15,18 @@ return new class extends Migration
             $table->string('nomor_telepon')->nullable();
             $table->text('pesan');
             $table->enum('status', ['terkirim', 'dibaca', 'dibalas'])->default('terkirim');
+            
+            // ==== TAMBAHKAN FIELD BARU INI ====
+            $table->string('kategori')->nullable()->default('umum');
+            $table->string('subjek')->nullable();
+            $table->string('dibaca_oleh')->nullable();
+            $table->timestamp('dibaca_pada')->nullable();
+            $table->text('balasan')->nullable();
+            $table->timestamp('dibalas_pada')->nullable();
+            $table->string('dibalas_oleh')->nullable();
+            $table->enum('prioritas', ['rendah', 'sedang', 'tinggi'])->default('sedang');
+            // ==== END TAMBAHAN ====
+            
             $table->timestamps();
         });
     }

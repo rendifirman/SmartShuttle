@@ -10,7 +10,7 @@ class MLayananSeeder extends Seeder
 {
     public function run()
     {
-        // Jika menggunakan MySQL dan ada foreign key constraints, 
+        // Jika menggunakan MySQL dan ada foreign key constraints,
         // uncomment dua baris DB::statement() berikut sebelum truncate:
         //
         // DB::statement('SET FOREIGN_KEY_CHECKS=0;');

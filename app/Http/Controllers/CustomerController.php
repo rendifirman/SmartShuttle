@@ -228,21 +228,21 @@ class CustomerController extends Controller
 
         $profile = MProfilePerusahaan::where('status', 'active')->first();
 
-        // Ambil data review dari database yang sudah approved
-        $reviews = Review::with('user')
-            ->where('status', 'approved')
-            ->orderBy('created_at', 'desc')
-            ->limit(3)
-                ->get()
-            ->map(function($review) {
-                return [
-                    'name' => $review->user->name ?? 'User',
-                    'avatar' => $review->user?->avatar_url ?? null,
-                    'stars' => $review->rating,
-                    'text' => $review->review,
-                    'date' => $review->created_at->format('d M Y')
-                ];
-            });
+       // Ambil data review dari database yang sudah approved
+$reviews = Review::with('user')
+    ->where('status', 'approved')
+    ->orderBy('created_at', 'desc')
+    ->limit(3)
+    ->get()
+    ->map(function($review) {
+        return [
+            'name' => $review->user->name ?? 'User',
+            'avatar' => $review->user?->avatar_url ?? null,
+            'stars' => $review->rating,
+            'text' => $review->review,
+            'date' => $review->created_at->format('d M Y')
+        ];
+    });
 
         // Jika tidak ada review dari database, gunakan default
         if ($reviews->isEmpty()) {
@@ -410,6 +410,11 @@ class CustomerController extends Controller
      */
     public function login(Request $request)
     {
+        // Pastikan session sudah dimulai
+        if (!session()->isStarted()) {
+            session()->start();
+        }
+
         $validated = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
@@ -422,11 +427,34 @@ class CustomerController extends Controller
                 'password' => $validated['password'],
             ];
 
+            // Debug logging
+            \Log::info('Login attempt', ['email' => $validated['email']]);
+            $userCheck = User::where('email', $validated['email'])->first();
+            if ($userCheck) {
+                \Log::info('User found', [
+                    'user_id' => $userCheck->id,
+                    'status' => $userCheck->status,
+                    'email_verified_at' => $userCheck->email_verified_at,
+                    'password_hash_exists' => !empty($userCheck->password)
+                ]);
+            } else {
+                \Log::info('User not found for email: ' . $validated['email']);
+            }
+
             if (!Auth::attempt($credentials, $remember)) {
+                \Log::info('Auth attempt failed for email: ' . $validated['email']);
                 return back()->withErrors(['message' => 'Email atau password salah'])->withInput();
             }
 
-            $request->session()->regenerate();
+            \Log::info('Auth attempt successful', ['user_id' => Auth::id()]);
+
+            // Regenerate session to persist authentication immediately
+            try {
+                session()->regenerate();
+            } catch (\Exception $e) {
+                \Log::warning('Session regeneration failed after login', ['error' => $e->getMessage()]);
+            }
+
             $user = Auth::user();
 
             // Cek status user
@@ -451,9 +479,13 @@ class CustomerController extends Controller
                 Auth::logout();
                 Auth::guard('admin')->login($user);
                 return redirect()->route('admin.dashboard');
+            } else {
+                // Ensure user has customer role if not admin
+                if (!$user->hasRole('customer')) {
+                    $user->assignRole('customer');
+                }
+                return redirect()->route('customer.beranda');
             }
-
-            return redirect()->route('customer.beranda');
 
         } catch (\Exception $e) {
             return back()->withErrors(['message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()])
@@ -466,6 +498,11 @@ class CustomerController extends Controller
      */
     public function showRegister()
     {
+        // Pastikan session sudah dimulai
+        if (!session()->isStarted()) {
+            session()->start();
+        }
+
         if (session()->has('user')) {
             return redirect()->route('customer.beranda')->with('info', 'Anda sudah login!');
         }
@@ -484,6 +521,11 @@ class CustomerController extends Controller
      */
     public function register(Request $request)
     {
+        // Pastikan session sudah dimulai
+        if (!session()->isStarted()) {
+            session()->start();
+        }
+
         \Log::info('CustomerController::register - Starting', $request->all());
 
         try {
@@ -527,18 +569,31 @@ class CustomerController extends Controller
     public function logout(Request $request)
     {
         try {
+            // Log the user out
             Auth::logout();
-            $recaller = Auth::getRecallerName();
-            Cookie::queue(Cookie::forget($recaller));
 
-            session()->forget(['user', 'token']);
+            // Forget remember me cookie if exists
+            $recaller = Auth::getRecallerName();
+            if ($recaller) {
+                Cookie::queue(Cookie::forget($recaller));
+            }
+
+            // Clear all user-related session data
+            session()->forget(['user', 'token', 'applied_promo', 'loyalty_discount']);
+
+            // Invalidate the session completely
             $request->session()->invalidate();
+
+            // Regenerate CSRF token
             $request->session()->regenerateToken();
 
             return redirect()->route('customer.beranda');
 
         } catch (\Exception $e) {
-            session()->forget(['user', 'token']);
+            // Fallback: clear session data even if logout fails
+            session()->forget(['user', 'token', 'applied_promo', 'loyalty_discount']);
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
             return redirect()->route('customer.beranda');
         }
     }
@@ -1172,8 +1227,7 @@ class CustomerController extends Controller
 
             DB::commit();
 
-            return redirect('/customer/kursi?pemesanan_id=' . $pemesanan->id)
-                ->with('success', 'Pemesanan berhasil! Silakan pilih kursi untuk penumpang.');
+            return redirect('/customer/kursi?pemesanan_id=' . $pemesanan->id);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -2261,43 +2315,82 @@ class CustomerController extends Controller
         return view('customer.contact', compact('user', 'masterKontak'));
     }
 
-    /**
-     * Proses pengiriman pesan kontak
-     */
     public function submitContact(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'nama' => 'required|string|max:100',
-            'email' => 'required|email|max:100',
-            'telepon' => 'nullable|string|max:20',
-            'pesan' => 'required|string|min:10|max:1000',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput()
-                ->with('error', 'Mohon periksa kembali data yang Anda masukkan.');
+{
+    // Cek apakah user sudah login (untuk customer service pesan)
+    if (!Auth::check()) {
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda harus login terlebih dahulu untuk mengirim pesan ke Customer Service'
+            ], 401);
         }
 
-        try {
-            PesanKontak::create([
-                'nama_pengirim' => $request->nama,
-                'email_pengirim' => $request->email,
-                'nomor_telepon' => $request->telepon,
-                'pesan' => $request->pesan,
-                'status' => 'terkirim',
-            ]);
-
-            return redirect()->back()
-                ->with('success', 'Pesan Anda telah berhasil dikirim! Kami akan menghubungi Anda dalam waktu 1x24 jam.');
-
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan saat mengirim pesan. Silakan coba lagi nanti.')
-                ->withInput();
-        }
+        return redirect()->route('customer.login')
+            ->with('error', 'Anda harus login terlebih dahulu untuk mengirim pesan ke Customer Service');
     }
+
+    $validator = Validator::make($request->all(), [
+        'nama' => 'required|string|max:100',
+        'email' => 'required|email|max:100',
+        'telepon' => 'nullable|string|max:20',
+        'pesan' => 'required|string|min:10|max:1000',
+    ]);
+
+    if ($validator->fails()) {
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        return redirect()->back()
+            ->withErrors($validator)
+            ->withInput()
+            ->with('error', 'Mohon periksa kembali data yang Anda masukkan.');
+    }
+
+    try {
+        $dataPesan = [
+            'nama_pengirim' => $request->nama,
+            'email_pengirim' => $request->email,
+            'nomor_telepon' => $request->telepon,
+            'pesan' => $request->pesan,
+            'status' => 'terkirim',
+            'kategori' => $request->kategori ?? 'umum',
+            'subjek' => $request->subjek ?? null,
+            'prioritas' => 'sedang'
+        ];
+
+        PesanKontak::create($dataPesan);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Pesan Anda sudah terkirim ke Customer Service'
+            ]);
+        }
+
+        return redirect()->back()
+            ->with('success', 'Pesan Anda sudah terkirim ke Customer Service');
+
+    } catch (\Exception $e) {
+        \Log::error('Contact form error: ' . $e->getMessage());
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengirim pesan. Silakan coba lagi nanti.'
+            ], 500);
+        }
+
+        return redirect()->back()
+            ->with('error', 'Terjadi kesalahan saat mengirim pesan. Silakan coba lagi nanti.')
+            ->withInput();
+    }
+}
 
     /**
      * API: return policy content for AJAX modal
@@ -2465,54 +2558,190 @@ class CustomerController extends Controller
     }
 
     /**
-     * Store review dari customer
-     */
-    public function storeReview(Request $request)
-    {
-        try {
-            // Validasi input
-            $request->validate([
-                'rating' => 'required|integer|min:1|max:5',
-                'review' => 'required|string|min:10|max:500'
-            ]);
+ * Store review with strict auth validation
+ */
+public function storeReview(Request $request)
+{
+    try {
+        // Validasi input
+        $validated = $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'review' => 'required|string|min:10|max:500'
+        ]);
 
-            // Cek apakah user sudah login
-            if (!auth()->check()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Silakan login terlebih dahulu'
-                ], 401);
-            }
-
-            // Simpan review ke database
-            $review = Review::create([
-                'user_id' => auth()->id(),
-                'rating' => $request->rating,
-                'review' => $request->review,
-                'status' => 'pending' // review akan ditampilkan setelah disetujui admin
-            ]);
-
-            // Data untuk response
-            $reviewData = [
-                'user_name' => auth()->user()->name,
-                'rating' => $review->rating,
-                'review' => $review->review,
-                'created_at' => $review->created_at->format('Y-m-d H:i:s')
-            ];
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Review berhasil dikirim! Review Anda akan ditampilkan setelah disetujui oleh admin.',
-                'review' => $reviewData
-            ]);
-
-        } catch (\Exception $e) {
+        // Cek apakah user sudah login (backend validation)
+        if (!auth()->check()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Silakan login terlebih dahulu untuk memberikan review',
+                'requiresLogin' => true
+            ], 401);
         }
+
+        // Cek apakah user sudah memberikan review hari ini (optional)
+        $todayReview = Review::where('user_id', auth()->id())
+            ->whereDate('created_at', today())
+            ->first();
+
+        if ($todayReview) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda sudah memberikan review hari ini. Silakan coba lagi besok.'
+            ], 400);
+        }
+
+        // Simpan review ke database dengan status approved langsung
+        $review = Review::create([
+            'user_id' => auth()->id(),
+            'rating' => $validated['rating'],
+            'review' => $validated['review'],
+            'status' => 'approved'
+        ]);
+
+        // Load user data untuk response
+        $review->load('user');
+
+        // Data untuk response
+        $reviewData = [
+            'id' => $review->id,
+            'user_name' => $review->user->name,
+            'avatar' => $review->user?->avatar_url ?? null,
+            'rating' => $review->rating,
+            'content' => $review->review,
+            'date' => $review->created_at->format('d M Y')
+        ];
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Review berhasil dikirim!',
+            'review' => $reviewData
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validasi gagal',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+        ], 500);
     }
+}
+
+/**
+ * Get reviews for AJAX (baru)
+ */
+public function getReviews(Request $request)
+{
+    try {
+        $reviews = Review::with('user')
+            ->where('status', 'approved')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function($review) {
+                return [
+                    'id' => $review->id,
+                    'user_name' => $review->user->name ?? 'User',
+                    'avatar' => $review->user?->avatar_url ?? null,
+                    'rating' => $review->rating,
+                    'content' => $review->review,
+                    'date' => $review->created_at->format('d M Y')
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'reviews' => $reviews,
+            'total' => $reviews->count()
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memuat review: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Get review statistics (jumlah per rating)
+ */
+public function getReviewStats(Request $request)
+{
+    try {
+        // Hitung statistik dari database
+        $stats = [
+            5 => Review::where('status', 'approved')->where('rating', 5)->count(),
+            4 => Review::where('status', 'approved')->where('rating', 4)->count(),
+            3 => Review::where('status', 'approved')->where('rating', 3)->count(),
+            2 => Review::where('status', 'approved')->where('rating', 2)->count(),
+            1 => Review::where('status', 'approved')->where('rating', 1)->count(),
+        ];
+
+        $totalReviews = array_sum($stats);
+        $averageRating = Review::where('status', 'approved')->avg('rating') ?? 0;
+
+        return response()->json([
+            'success' => true,
+            'stats' => $stats,
+            'totalReviews' => $totalReviews,
+            'averageRating' => round($averageRating, 1),
+            'percentage5Star' => $totalReviews > 0 ? round(($stats[5] / $totalReviews) * 100) : 0
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil statistik review'
+        ], 500);
+    }
+}
+
+/**
+ * Get filtered reviews by rating
+ */
+public function getFilteredReviews(Request $request)
+{
+    try {
+        $rating = $request->input('rating', 0);
+
+        $query = Review::with('user')
+            ->where('status', 'approved');
+
+        if ($rating > 0) {
+            $query->where('rating', $rating);
+        }
+
+        $reviews = $query->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function($review) {
+                return [
+                    'id' => $review->id,
+                    'user_name' => $review->user->name ?? 'User',
+                    'avatar' => $review->user?->avatar_url ?? null,
+                    'rating' => $review->rating,
+                    'content' => $review->review,
+                    'date' => $review->created_at->format('d M Y')
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'reviews' => $reviews,
+            'total' => $reviews->count(),
+            'filteredRating' => $rating
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memuat review'
+        ], 500);
+    }
+}
 
     /**
      * Get all promos (AJAX)

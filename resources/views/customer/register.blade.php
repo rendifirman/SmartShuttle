@@ -66,14 +66,14 @@
       }
     }
 
-    /* Modal Styles - menggunakan warna yang diminta */
+    /* Modal Styles */
     .modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(18, 51, 82, 0.95); /* var(--primary-blue) */
+      background: rgba(18, 51, 82, 0.95);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -310,6 +310,88 @@
       50% { transform: translateX(-50%) translateY(-5px); }
     }
 
+    /* Password Container Styling - PERBAIKAN */
+    .password-container {
+      position: relative;
+    }
+
+    .password-container .relative {
+      position: relative;
+    }
+
+    /* Desktop password toggle */
+    .right-overlay .password-toggle {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 5px;
+      z-index: 10;
+      transition: color 0.2s;
+    }
+
+    .right-overlay .password-toggle:hover {
+      color: var(--primary-blue);
+    }
+
+    /* Input dengan padding untuk ikon mata */
+    .right-overlay .password-container input {
+      padding-right: 45px !important;
+    }
+
+    /* Mobile password toggle */
+    .mobile-form-container .password-toggle {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 5px;
+      z-index: 10;
+      transition: color 0.2s;
+    }
+
+    .mobile-form-container .password-toggle:hover {
+      color: var(--primary-blue);
+    }
+
+    /* Input mobile dengan padding untuk ikon mata */
+    .mobile-form-container .password-container input {
+      padding-right: 45px !important;
+    }
+
+    /* Password strength indicator */
+    .password-strength {
+      height: 4px;
+      border-radius: 2px;
+      margin-top: 5px;
+      transition: all 0.3s;
+    }
+
+    .strength-weak {
+      width: 25%;
+      background: #ef4444;
+    }
+    .strength-medium {
+      width: 50%;
+      background: #f59e0b;
+    }
+    .strength-strong {
+      width: 75%;
+      background: #10b981;
+    }
+    .strength-very-strong {
+      width: 100%;
+      background: #059669;
+    }
+
     /* Mobile container styling */
     @media (max-width: 768px) {
       .mobile-main-container {
@@ -427,47 +509,6 @@
         color: white !important;
         font-weight: 500;
         margin-bottom: 8px;
-      }
-
-      /* Password strength indicator */
-      .password-strength {
-        height: 4px;
-        border-radius: 2px;
-        margin-top: 5px;
-        transition: all 0.3s;
-      }
-
-      .strength-weak {
-        width: 25%;
-        background: #ef4444;
-      }
-      .strength-medium {
-        width: 50%;
-        background: #f59e0b;
-      }
-      .strength-strong {
-        width: 75%;
-        background: #10b981;
-      }
-      .strength-very-strong {
-        width: 100%;
-        background: #059669;
-      }
-
-      /* Show/Hide password toggle */
-      .password-toggle {
-        position: absolute;
-        right: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
-        border: none;
-        color: #6b7280;
-        cursor: pointer;
-      }
-
-      .password-container {
-        position: relative;
       }
     }
 
@@ -654,21 +695,23 @@
               </svg>
               Password
             </label>
-            <input
-              type="password"
-              name="password"
-              id="password"
-              class="w-full p-3 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 mobile-input pr-10"
-              placeholder="Buat password (minimal 8 karakter)"
-              required
-              minlength="8"
-            />
-            <button type="button" class="password-toggle" id="togglePassword">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeIcon">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-              </svg>
-            </button>
+            <div class="relative">
+              <input
+                type="password"
+                name="password"
+                id="password"
+                class="w-full p-3 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 mobile-input"
+                placeholder="Buat password (minimal 8 karakter)"
+                required
+                minlength="8"
+              />
+              <button type="button" class="password-toggle" id="togglePassword">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeIcon">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+              </button>
+            </div>
             <div class="password-strength" id="passwordStrength"></div>
             @error('password')
               <p class="text-red-300 text-xs mt-1">{{ $message }}</p>
@@ -683,20 +726,22 @@
               </svg>
               Konfirmasi Password
             </label>
-            <input
-              type="password"
-              name="password_confirmation"
-              id="confirmPassword"
-              class="w-full p-3 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 mobile-input pr-10"
-              placeholder="Konfirmasi password Anda"
-              required
-            />
-            <button type="button" class="password-toggle" id="toggleConfirmPassword">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeConfirmIcon">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-              </svg>
-            </button>
+            <div class="relative">
+              <input
+                type="password"
+                name="password_confirmation"
+                id="confirmPassword"
+                class="w-full p-3 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 mobile-input"
+                placeholder="Konfirmasi password Anda"
+                required
+              />
+              <button type="button" class="password-toggle" id="toggleConfirmPassword">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeConfirmIcon">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+              </button>
+            </div>
             <div class="text-xs mt-1 text-white/60" id="passwordMatch"></div>
           </div>
 
@@ -706,9 +751,9 @@
               <input type="checkbox" name="terms" class="rounded text-[#00C8FF] focus:ring-[#00C8FF] w-4 h-4 mt-1" required>
               <span class="ml-3 text-xs leading-tight">
                 Saya menyetujui
-                <a href="#" class="text-[#FF581E] hover:text-white font-medium transition-colors policy-link" data-policy="terms">Syarat & Ketentuan</a>
+                <a href="#" class="text-[#FF581E] hover:text-white font-medium transition-colors" id="terms-link">Syarat & Ketentuan</a>
                 dan
-                <a href="#" class="text-[#FF581E] hover:text-white font-medium transition-colors policy-link" data-policy="privacy">Kebijakan Privasi</a>
+                <a href="#" class="text-[#FF581E] hover:text-white font-medium transition-colors" id="privacy-link">Kebijakan Privasi</a>
               </span>
             </label>
             @error('terms')
@@ -916,21 +961,23 @@
                 </svg>
                 Password
               </label>
-              <input
-                type="password"
-                name="password"
-                id="password-desktop"
-                class="w-full p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300 bg-white/95 border border-white/30 text-base pr-10"
-                placeholder="Buat password (minimal 8 karakter)"
-                required
-                minlength="8"
-              />
-              <button type="button" class="password-toggle" id="togglePasswordDesktop">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeIconDesktop">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                </svg>
-              </button>
+              <div class="relative">
+                <input
+                  type="password"
+                  name="password"
+                  id="password-desktop"
+                  class="w-full p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300 bg-white/95 border border-white/30 text-base"
+                  placeholder="Buat password (minimal 8 karakter)"
+                  required
+                  minlength="8"
+                />
+                <button type="button" class="password-toggle" id="togglePasswordDesktop">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeIconDesktop">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                </button>
+              </div>
               <div class="password-strength" id="passwordStrengthDesktop"></div>
               @error('password')
                 <p class="text-red-300 text-sm mt-1">{{ $message }}</p>
@@ -945,20 +992,22 @@
                 </svg>
                 Konfirmasi Password
               </label>
-              <input
-                type="password"
-                name="password_confirmation"
-                id="confirmPassword-desktop"
-                class="w-full p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300 bg-white/95 border border-white/30 text-base pr-10"
-                placeholder="Konfirmasi password Anda"
-                required
-              />
-              <button type="button" class="password-toggle" id="toggleConfirmPasswordDesktop">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeConfirmIconDesktop">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                </svg>
-              </button>
+              <div class="relative">
+                <input
+                  type="password"
+                  name="password_confirmation"
+                  id="confirmPassword-desktop"
+                  class="w-full p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C8FF] text-gray-800 transition-all duration-300 bg-white/95 border border-white/30 text-base"
+                  placeholder="Konfirmasi password Anda"
+                  required
+                />
+                <button type="button" class="password-toggle" id="toggleConfirmPasswordDesktop">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeConfirmIconDesktop">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                </button>
+              </div>
               <div class="text-sm mt-1 text-white/60" id="passwordMatchDesktop"></div>
             </div>
 
@@ -968,9 +1017,9 @@
                 <input type="checkbox" name="terms" class="rounded text-[#00C8FF] focus:ring-[#00C8FF] w-5 h-5 mt-1" required>
                 <span class="ml-3 text-sm leading-tight">
                   Saya menyetujui
-                  <a href="#" class="text-[#FF581E] hover:text-white font-medium transition-colors policy-link" data-policy="terms">Syarat & Ketentuan</a>
+                  <a href="#" class="text-[#FF581E] hover:text-white font-medium transition-colors" id="terms-link-desktop">Syarat & Ketentuan</a>
                   dan
-                  <a href="#" class="text-[#FF581E] hover:text-white font-medium transition-colors policy-link" data-policy="privacy">Kebijakan Privasi</a>
+                  <a href="#" class="text-[#FF581E] hover:text-white font-medium transition-colors" id="privacy-link-desktop">Kebijakan Privasi</a>
                 </span>
               </label>
               @error('terms')
@@ -1042,6 +1091,8 @@
       // Function untuk menangani mobile dan desktop
       function initializeForm(isMobile = true) {
         const form = isMobile ? document.querySelector('.mobile-main-container form') : document.querySelector('.right-overlay form');
+        const termsLink = isMobile ? document.getElementById('terms-link') : document.getElementById('terms-link-desktop');
+        const privacyLink = isMobile ? document.getElementById('privacy-link') : document.getElementById('privacy-link-desktop');
         const passwordInput = isMobile ? document.getElementById('password') : document.getElementById('password-desktop');
         const confirmPasswordInput = isMobile ? document.getElementById('confirmPassword') : document.getElementById('confirmPassword-desktop');
         const passwordStrength = isMobile ? document.getElementById('passwordStrength') : document.getElementById('passwordStrengthDesktop');
@@ -1135,59 +1186,62 @@
         }
 
         // Form validation
-        if (form) {
-          form.addEventListener('submit', function(e) {
-            const password = passwordInput.value;
-            const confirmPassword = confirmPasswordInput.value;
+        form.addEventListener('submit', function(e) {
+          const password = passwordInput.value;
+          const confirmPassword = confirmPasswordInput.value;
 
-            if (!termsCheckbox.checked) {
-              e.preventDefault();
-              alert('Harap setujui Syarat & Ketentuan dan Kebijakan Privasi');
-              termsCheckbox.focus();
-              return;
-            }
+          if (!termsCheckbox.checked) {
+            e.preventDefault();
+            alert('Harap setujui Syarat & Ketentuan dan Kebijakan Privasi');
+            termsCheckbox.focus();
+            return;
+          }
 
-            if (password !== confirmPassword) {
-              e.preventDefault();
-              alert('Password dan konfirmasi password tidak cocok!');
-              confirmPasswordInput.focus();
-              return;
-            }
+          if (password !== confirmPassword) {
+            e.preventDefault();
+            alert('Password dan konfirmasi password tidak cocok!');
+            confirmPasswordInput.focus();
+            return;
+          }
 
-            if (password.length < 8) {
-              e.preventDefault();
-              alert('Password minimal harus 8 karakter!');
-              passwordInput.focus();
-              return;
-            }
+          if (password.length < 8) {
+            e.preventDefault();
+            alert('Password minimal harus 8 karakter!');
+            passwordInput.focus();
+            return;
+          }
 
-            // Disable button dan tampilkan loading state
-            submitButton.disabled = true;
-            submitButton.innerHTML = 'Memproses Pendaftaran...';
+          // Disable button dan tampilkan loading state
+          submitButton.disabled = true;
+          submitButton.innerHTML = 'Memproses Pendaftaran...';
+          if (isMobile) {
+            submitButton.classList.remove('active:scale-95');
+          } else {
             submitButton.classList.remove('hover:scale-[1.02]');
-          });
-        }
+          }
+        });
 
         // Event listeners for password strength and match
-        if (passwordInput) {
+        if (passwordInput && passwordStrength) {
           passwordInput.addEventListener('input', updatePasswordStrength);
           passwordInput.addEventListener('input', checkPasswordMatch);
         }
-
         if (confirmPasswordInput) {
           confirmPasswordInput.addEventListener('input', checkPasswordMatch);
         }
 
         // Event listeners for toggle password visibility
-        if (togglePassword) {
+        if (togglePassword && eyeIcon) {
           togglePassword.addEventListener('click', () => togglePasswordVisibility(passwordInput, eyeIcon));
         }
-        if (toggleConfirmPassword) {
+        if (toggleConfirmPassword && eyeConfirmIcon) {
           toggleConfirmPassword.addEventListener('click', () => togglePasswordVisibility(confirmPasswordInput, eyeConfirmIcon));
         }
 
         // Initialize password strength display
-        if (passwordInput) updatePasswordStrength();
+        if (passwordInput && passwordStrength) {
+          updatePasswordStrength();
+        }
       }
 
       // Initialize mobile form
@@ -1256,16 +1310,21 @@
         modalContent.scrollTop = 0;
       }
 
-      // Event listener untuk semua link Syarat & Ketentuan dan Kebijakan Privasi
-      document.querySelectorAll('.policy-link').forEach(link => {
+      // Event listener untuk link Syarat & Ketentuan
+      const termsLinks = document.querySelectorAll('#terms-link, #terms-link-desktop');
+      termsLinks.forEach(link => {
         link.addEventListener('click', function(e) {
           e.preventDefault();
-          const policyType = this.getAttribute('data-policy');
-          if (policyType === 'terms') {
-            openModal('terms', termsTitle, termsContent);
-          } else if (policyType === 'privacy') {
-            openModal('privacy', privacyTitle, privacyContent);
-          }
+          openModal('terms', termsTitle, termsContent);
+        });
+      });
+
+      // Event listener untuk link Kebijakan Privasi
+      const privacyLinks = document.querySelectorAll('#privacy-link, #privacy-link-desktop');
+      privacyLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          openModal('privacy', privacyTitle, privacyContent);
         });
       });
 
@@ -1280,32 +1339,24 @@
         termsModal.classList.remove('active');
         document.body.style.overflow = 'auto';
 
-        // Centang checkbox terms di semua form
-        document.querySelectorAll('input[name="terms"]').forEach(checkbox => {
+        // Centang checkbox terms untuk semua form
+        const allTermsCheckboxes = document.querySelectorAll('input[name="terms"]');
+        allTermsCheckboxes.forEach(checkbox => {
           checkbox.checked = true;
         });
 
-        // Smooth scroll to checkbox (untuk mobile dan desktop)
-        const mobileForm = document.querySelector('.mobile-main-container form');
-        const desktopForm = document.querySelector('.right-overlay form');
-        let targetCheckbox = null;
-
-        if (window.innerWidth < 768 && mobileForm) {
-          // Mobile view
-          targetCheckbox = mobileForm.querySelector('input[name="terms"]');
-        } else if (window.innerWidth >= 768 && desktopForm) {
-          // Desktop view
-          targetCheckbox = desktopForm.querySelector('input[name="terms"]');
-        }
-
-        if (targetCheckbox) {
-          targetCheckbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-          // Highlight briefly
-          targetCheckbox.parentElement.style.backgroundColor = 'rgba(255, 88, 30, 0.1)';
-          setTimeout(() => {
-            targetCheckbox.parentElement.style.backgroundColor = '';
-          }, 1000);
+        // Smooth scroll ke form aktif
+        const activeForm = document.querySelector('form');
+        if (activeForm) {
+          const checkbox = activeForm.querySelector('input[name="terms"]');
+          if (checkbox) {
+            checkbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Highlight briefly
+            checkbox.parentElement.style.backgroundColor = 'rgba(255, 88, 30, 0.1)';
+            setTimeout(() => {
+              checkbox.parentElement.style.backgroundColor = '';
+            }, 1000);
+          }
         }
       });
 
@@ -1325,23 +1376,12 @@
         }
       });
 
-      // Prevent zoom on input focus on mobile
-      const inputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"]');
-      inputs.forEach(input => {
-        input.addEventListener('focus', () => {
-          // Add a small timeout to ensure the focus event is processed
-          setTimeout(() => {
-            window.scrollTo(0, 0);
-            document.body.style.height = '100%';
-            document.body.style.overflow = 'hidden';
-          }, 100);
-        });
+      // HAPUS KODE YANG MENCEGAH SCROLL DI MOBILE
+      // Kode ini dihapus karena menyebabkan masalah:
+      // 1. Input focus tidak bisa di-scroll
+      // 2. Page stuck dan harus refresh
+      // 3. User tidak bisa scroll untuk melihat bagian lain form
 
-        input.addEventListener('blur', () => {
-          document.body.style.height = '';
-          document.body.style.overflow = '';
-        });
-      });
     });
   </script>
 </body>

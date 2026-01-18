@@ -11,26 +11,40 @@ class MetodePembayaranSeeder extends Seeder
     {
         $methods = [
             // Paylabs QRIS
-            [
-                'nama' => 'QRIS',
-                'kode' => 'qris',
-                'jenis' => 'qris',
-                'deskripsi' => 'QR Code Indonesia Standard',
-                'biaya_admin' => 0,
-                'estimasi_waktu' => 5,
-                'instruksi' => json_encode([
-                    'Scan QR Code dengan aplikasi e-wallet atau mobile banking',
-                    'DANA, OVO, GoPay, ShopeePay, LinkAja, dan bank-bank lain'
-                ]),
-                'aktif' => true,
-                'is_paylabs' => true,
-                'paylabs_channel_code' => 'QRIS',
-                'paylabs_channel_name' => 'QRIS',
-                'gambar' => 'qris.png',
-                'urutan' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+          [
+    'nama' => 'QRIS',
+    'kode' => 'qris',
+    'jenis' => 'qris',
+    'deskripsi' => 'QR Code Indonesia Standard',
+    'biaya_admin' => 0,
+    'estimasi_waktu' => 5,
+    'instruksi' => json_encode([
+        '1. Buka aplikasi mobile banking atau e-wallet (DANA, OVO, GoPay, dll)',
+        '2. Pilih menu "Scan QR" atau "QRIS"',
+        '3. Scan QR code yang tersedia',
+        '4. Konfirmasi pembayaran sesuai nominal yang tertera pada QR code',
+        '5. Pembayaran akan diproses secara otomatis'
+    ]),
+    'product_info' => json_encode([
+        [
+            'id' => 'TICKET001',
+            'name' => 'Smart Shuttle Ticket',
+            'price' => 0,
+            'type' => 'Ticket',
+            'url' => url('/'),
+            'quantity' => 1
+        ]
+    ]),
+    'fee_type' => 'BEN',
+    'aktif' => true,
+    'is_paylabs' => true,
+    'paylabs_channel_code' => 'QRIS',
+    'paylabs_channel_name' => 'QRIS',
+    'gambar' => 'qris.png',
+    'urutan' => 1,
+    'created_at' => now(),
+    'updated_at' => now(),
+],
 
             // Paylabs Virtual Account
             [
@@ -48,7 +62,7 @@ class MetodePembayaranSeeder extends Seeder
                 'aktif' => true,
                 'is_paylabs' => true,
                 'paylabs_channel_code' => 'VA_BCA',
-                'paylabs_channel_name' => 'BCA',
+                'paylabs_channel_name' => 'BCAVA',
                 'gambar' => 'bca.png',
                 'urutan' => 2,
                 'created_at' => now(),
@@ -69,7 +83,7 @@ class MetodePembayaranSeeder extends Seeder
                 'aktif' => true,
                 'is_paylabs' => true,
                 'paylabs_channel_code' => 'VA_MANDIRI',
-                'paylabs_channel_name' => 'MANDIRI',
+                'paylabs_channel_name' => 'MandiriVA',
                 'gambar' => 'mandiri.png',
                 'urutan' => 3,
                 'created_at' => now(),
@@ -111,7 +125,7 @@ class MetodePembayaranSeeder extends Seeder
                 'aktif' => true,
                 'is_paylabs' => true,
                 'paylabs_channel_code' => 'VA_BRI',
-                'paylabs_channel_name' => 'BRI',
+                'paylabs_channel_name' => 'BRIVA',
                 'gambar' => 'bri.png',
                 'urutan' => 5,
                 'created_at' => now(),

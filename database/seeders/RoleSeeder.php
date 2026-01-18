@@ -39,9 +39,16 @@ class RoleSeeder extends Seeder
         // Sample user untuk testing
         $users = [
             [
-                'name' => 'Admin Cabang',
-                'email' => 'cabang@smartshuttle.test',
-                'role' => 'admin_cabang'
+                'name' => 'Admin Cabang Jakarta',
+                'email' => 'jakarta@smartshuttle.test',
+                'role' => 'admin_cabang',
+                'branch_code' => 'JKT-01'
+            ],
+            [
+                'name' => 'Admin Cabang Bogor',
+                'email' => 'bogor@smartshuttle.test',
+                'role' => 'admin_cabang',
+                'branch_code' => 'BDG-01'
             ],
             [
                 'name' => 'Operator Example',
@@ -65,6 +72,15 @@ class RoleSeeder extends Seeder
             );
 
             $user->syncRoles([$data['role']]);
+
+            // Assign branch for branch admins
+            if (isset($data['branch_code']) && $data['role'] === 'admin_cabang') {
+                $branch = \App\Models\Branch::where('kode_cabang', $data['branch_code'])->first();
+                if ($branch) {
+                    $user->branch_id = $branch->id;
+                    $user->save();
+                }
+            }
         }
     }
 }

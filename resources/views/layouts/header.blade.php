@@ -1,366 +1,1330 @@
-<!-- Navbar dengan background mobil.jpeg dan panel putih -->
-<!-- Navbar dengan background mobil.jpeg dan panel putih -->
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
-<nav class="navbar" id="navbar">
-    <!-- Brand -->
-    <div class="nav-brand">
-        <img src="/images/smartshuttlelogo.png" alt="Smart Shuttle" style="height: 35px; width: auto;">
-    </div>
-
-    <!-- Menu -->
-    <div class="nav-menu">
-       <ul class="nav-links">
-    <li>
-        <a href="{{ route('customer.beranda') }}"
-           class="{{ request()->routeIs('customer.beranda') ? 'active' : '' }}">
-            Beranda
-        </a>
-    </li>
-
-    <li>
-        <a href="{{ route('customer.search') }}"
-           class="{{ request()->routeIs('customer.search') ? 'active' : '' }}">
-            Tiket
-        </a>
-    </li>
-
-    <li>
-        <a href="{{ route('customer.outlet') }}"
-           class="{{ request()->routeIs('customer.outlet') ? 'active' : '' }}">
-            Outlet
-        </a>
-    </li>
-
-    <li>
-        <a href="{{ route('customer.contact') }}"
-           class="{{ request()->routeIs('customer.contact') ? 'active' : '' }}">
-            Kontak
-        </a>
-    </li>
-</ul>
-
-    </div>
-
-    <!-- Auth -->
-   <div class="nav-auth">
-    @auth
-        <div class="profile-wrapper">
-            <button id="profile-dropdown" class="profile-btn" type="button" aria-expanded="false">
-                @php
-                    $avatarData = Auth::user()->getAvatarOrInitials();
-                @endphp
-                
-                @if($avatarData['has_avatar'])
-                    <span class="profile-avatar">
-                        <img src="{{ $avatarData['avatar_url'] }}" 
-                             alt="avatar"
-                             onerror="this.onerror=null; this.style.display='none'; this.parentNode.innerHTML='{{ Auth::user()->initials }}';">
-                    </span>
-                @else
-                    <span class="profile-avatar">
-                        {{ Auth::user()->initials }}
-                    </span>
-                @endif
-                
-                <span class="profile-name">
-                    {{ strlen(Auth::user()->name ?? '') > 12
-                        ? substr(Auth::user()->name, 0, 12).'...'
-                        : (Auth::user()->name ?? 'User')
-                    }}
-                </span>
-            </button>
-
-            <div id="dropdown-menu" class="dropdown-menu">
-
-
-                <a href="{{ route('customer.dashboardprofile') }}"
-                   style="display:block; padding:8px 12px; color:#00215E; text-decoration:none; border-radius:5px; margin-bottom:5px;">
-                    Profil
-                </a>
-
-                <form action="{{ route('customer.logout') }}" method="POST" style="margin:0;">
-                    @csrf
-                    <button type="submit"
-                        style="display:block; width:100%; text-align:left; padding:8px 12px;
-                        background:none; border:none; color:#00215E; cursor:pointer; border-radius:5px;">
-                        Logout
-                    </button>
-                </form>
-            </div>
-        </div>
-    @else
-        <a href="{{ route('customer.login') }}" class="btn-login">Login</a>
-    @endauth
-</div>
-
-</nav>
-
+<!-- resources/views/layouts/header.blade.php -->
 <style>
-.navbar {
-    background-image: url('/images/bgHeader.jpeg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    padding: 15px 5%;
-    min-height: 70px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    
+    /* CSS Variables untuk Header */
+    :root {
+        --header-primary: #123352;
+        --header-secondary: #FF581E;
+        --header-secondary-light: #FF8E53;
+    }
 
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+    /* ========== NAVBAR UTAMA ========== */
+    .custom-navbar {
+        background: transparent;
+        padding: 15px 5%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000 !important;
+        transition: all 0.4s ease;
+        min-height: 70px;
+        transform: translateY(0);
+        box-shadow: none;
+        width: 100%;
+        max-width: 100vw;
+        transform: translateZ(0);
+        will-change: transform;
+    }
 
-    transition: all 0.3s ease;
-}
+    .custom-navbar.scrolled {
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
 
-/* Panel putih memanjang */
-.navbar::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 5%;
-    right: 5%;
-    height: 50px;
-    background: white;
-    border-radius: 25px;
-    transform: translateY(-50%);
-    z-index: 0;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.nav-brand,
-.nav-menu,
-.nav-auth {
-    position: relative;
-    z-index: 1;
-}
-
-.nav-brand {
-    flex: 1;
-    font-size: 1.5rem;
-    font-weight: bold;
-}
-
-.nav-menu {
-    flex: 2;
-    display: flex;
-    justify-content: center;
-}
-
-.nav-links {
-    display: flex;
-    gap: 40px;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-
-.nav-links a {
-    text-decoration: none;
-    color: var(--primary-color);
-    font-weight: 500;
-    font-size: 1.1rem;
-    position: relative;
-    transition: color 0.3s;
-}
-
-.nav-links a:hover,
-.nav-links a.active {
-    color: var(--secondary-color);
-}
-
-.nav-links a::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: -5px;
-    width: 0;
-    height: 2px;
-    background-color: var(--secondary-color);
-    transition: width 0.3s;
-}
-
-.nav-links a:hover::after,
-.nav-links a.active::after {
-    width: 100%;
-}
-
-.nav-auth {
-    flex: 1;
-    display: flex;
-    justify-content: flex-end;
-}
-
-.btn-login {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 8px 20px;
-    border-radius: 20px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.btn-login:hover {
-    background-color: var(--secondary-color);
-    transform: translateY(-2px);
-}
-
-.navbar.scrolled {
-    padding: 10px 5%;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-/* Fallback jika gambar tidak ditemukan */
-.navbar.fallback-bg {
-    background: linear-gradient(135deg, #00215E 0%, #FF581E 100%);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .navbar {
-        flex-direction: column;
-        gap: 15px;
-        padding: 15px;
+    .nav-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        max-width: 1200px;
         position: relative;
     }
 
-    .navbar::before {
-        display: none;
+    /* Panel Oval untuk Navbar */
+    .nav-panel {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 50px;
+        padding: 8px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        overflow: visible !important;
     }
 
-    .nav-brand,
-    .nav-menu,
-    .nav-auth {
-        width: 100%;
+    .nav-brand img {
+        height: 30px;
+        width: auto;
+        max-width: 100%;
+    }
+
+    /* MOBILE MENU TOGGLE - HAMBURGER MENU */
+    .mobile-menu-toggle {
+        display: none;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--header-primary);
+        cursor: pointer;
+        width: 44px;
+        height: 44px;
+        align-items: center;
         justify-content: center;
+        border-radius: 8px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1001;
+        position: relative;
+        flex-shrink: 0;
+        margin-right: 10px;
+    }
+
+    .mobile-menu-toggle:hover {
+        background-color: rgba(18, 51, 82, 0.1);
+    }
+
+    .mobile-menu-toggle.active i {
+        transform: rotate(90deg);
+        transition: transform 0.3s ease;
+    }
+
+    .mobile-menu-toggle i {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .mobile-menu-toggle.active .fa-bars {
+        opacity: 0;
+        transform: rotate(90deg);
+    }
+
+    .mobile-menu-toggle.active .fa-times {
+        opacity: 1;
+        transform: rotate(0deg);
+    }
+
+    .mobile-menu-toggle .fa-times {
+        opacity: 0;
+        position: absolute;
+        transform: rotate(-90deg);
+    }
+
+    .mobile-sidebar {
+    padding-top: 70px;
+}
+
+
+
+    /* NAV MENU DESKTOP */
+    .nav-menu {
+        display: flex;
+        justify-content: center;
+        flex: 1;
     }
 
     .nav-links {
-        flex-direction: column;
-        gap: 10px;
+        display: flex;
+        gap: 15px;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .nav-links a {
+        text-decoration: none;
+        color: var(--header-primary);
+        font-weight: 500;
+        font-size: 0.85rem;
+        transition: color 0.3s;
+        position: relative;
+        white-space: nowrap;
+        padding: 5px 8px;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    .nav-links a:hover {
+        color: var(--header-secondary);
+    }
+
+    .nav-links a.active {
+        color: var(--header-secondary);
+    }
+
+    .nav-links a::after {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 2px;
+        bottom: -2px;
+        left: 0;
+        background-color: var(--header-secondary);
+        transition: width 0.3s;
+    }
+
+    .nav-links a:hover::after,
+    .nav-links a.active::after {
+        width: 100%;
+    }
+
+    .nav-auth {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        flex-shrink: 0;
+        margin-left: 10px;
+    }
+
+    .btn-login {
+        background-color: var(--header-primary);
+        color: white;
+        border: none;
+        padding: 8px 18px;
+        border-radius: 20px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        white-space: nowrap;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.85rem;
+    }
+
+    .btn-login:hover {
+        background-color: var(--header-secondary);
+        transform: translateY(-2px);
+        text-decoration: none;
+        color: white;
+    }
+
+    /* ========== PROFILE DROPDOWN ========== */
+    .profile-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .profile-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: transparent;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        font-family: 'Roboto', sans-serif;
+        min-height: 44px;
+        flex-shrink: 0;
+    }
+
+    .profile-btn:hover,
+    .profile-btn:focus {
+        outline: none;
+        background: rgba(0, 33, 94, 0.05);
+    }
+
+    .profile-btn.active {
+        background: rgba(18, 51, 82, 0.1);
+    }
+
+    .profile-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, var(--header-secondary), var(--header-secondary-light));
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        flex-shrink: 0;
+        font-size: 14px;
+        text-transform: uppercase;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+    .profile-name {
+        font-size: 12px;
+        color: var(--header-primary);
+        font-weight: 600;
+        max-width: 110px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    /* DROPDOWN MENU - DESKTOP */
+    .dropdown-menu {
+        display: none;
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        min-width: 180px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        padding: 8px 0;
+        border: 1px solid #e2e8f0;
+        animation: fadeIn 0.2s ease-out;
+        font-family: 'Roboto', sans-serif;
+        overflow: hidden;
+        z-index: 1003 !important;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .dropdown-menu a {
+        display: flex;
+        align-items: center;
+        padding: 10px 16px;
+        color: var(--header-primary);
+        text-decoration: none;
+        transition: all 0.2s;
+        font-size: 14px;
+        font-weight: 500;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    .dropdown-menu a i {
+        margin-right: 10px;
+        width: 16px;
         text-align: center;
     }
-}
-/* Profile icon + small name */
-.profile-wrapper {
-    position: relative;
-    display: inline-block;
-}
 
-.profile-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: transparent;
-    border: none;
-    padding: 6px 8px;
-    border-radius: 999px;
-    cursor: pointer;
-}
+    .dropdown-menu a:hover {
+        background-color: rgba(255, 88, 30, 0.08);
+        color: var(--header-secondary);
+    }
 
-.profile-btn:focus {
-    outline: none;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-}
+    .dropdown-menu form {
+        margin: 0;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 4px;
+    }
 
-.profile-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    color: #fff;
-    background: linear-gradient(135deg, var(--secondary-color), #ff7b4d);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-    flex-shrink: 0;
-    font-size: 16px;
-    text-transform: uppercase;
-}
+    .dropdown-menu button[type="submit"] {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        text-align: left;
+        padding: 10px 16px;
+        background: none;
+        border: none;
+        color: #ef4444;
+        cursor: pointer;
+        font-family: 'Roboto', sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
 
-.profile-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-}
+    .dropdown-menu button[type="submit"] i {
+        margin-right: 10px;
+        width: 16px;
+        text-align: center;
+    }
 
-.profile-name {
-    font-size: 12px;
-    color: var(--primary-color);
-    font-weight: 600;
-    max-width: 110px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+    .dropdown-menu button[type="submit"]:hover {
+        background-color: rgba(239, 68, 68, 0.08);
+        color: #dc2626;
+    }
 
-/* Posisi dropdown */
-.profile-wrapper #dropdown-menu {
-    top: calc(100% + 8px);
-    right: 0;
-}
-/* ---------- DROPDOWN MENU ---------- */
-.dropdown-menu {
-    display: none;
-    position: absolute;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    padding: 10px;
-    z-index: 1000;
-    min-width: 170px;
-    top: calc(100% + 8px);
-    right: 0;
-}
+    .dropdown-menu.show {
+        display: block !important;
+    }
 
-.dropdown-menu.show {
-    display: block;
-}
+    /* ===== MOBILE SIDEBAR ===== */
+    .mobile-sidebar-overlay,
+    .mobile-sidebar {
+        display: none;
+    }
 
+    /* ==================== RESPONSIVE STYLES ==================== */
+    @media (max-width: 768px) {
+        /* NAVBAR MOBILE */
+        .custom-navbar {
+            padding: 12px 4%;
+            min-height: 60px;
+            width: 100vw;
+            max-width: 100vw;
+            z-index: 1000;
+            background: white !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
+        }
+        
+        .custom-navbar.scrolled {
+            background: white !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
+        }
+
+        .nav-container {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 100%;
+            padding: 0;
+        }
+
+        .nav-panel {
+            position: relative;
+            padding: 8px 15px;
+            border-radius: 25px;
+            flex-wrap: nowrap;
+            overflow: visible !important;
+            width: 100%;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            min-height: 56px;
+            justify-content: space-between;
+        }
+
+        /* HAMBURGER MENU TOGGLE - DI KIRI */
+        .mobile-menu-toggle {
+            display: flex;
+            order: 1;
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            font-size: 1.375rem;
+            margin-right: 5px;
+        }
+
+        /* LOGO - TENGAH */
+        .nav-brand {
+            order: 2;
+            flex-shrink: 0;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .nav-brand img {
+            height: 28px;
+        }
+
+        /* SEMBUNYIKAN NAV MENU DI MOBILE */
+        .nav-menu {
+            display: none !important;
+        }
+
+        /* PROFILE BUTTON - DI KANAN */
+        .nav-auth {
+            order: 3;
+            flex-shrink: 0;
+            margin-left: 0;
+        }
+
+        .profile-wrapper {
+            position: relative;
+        }
+
+        .profile-btn {
+            padding: 4px 8px;
+            min-height: 40px;
+            border-radius: 20px;
+        }
+
+        .profile-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 13px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-name {
+            display: none !important; /* Sembunyikan nama di mobile */
+        }
+
+        /* DROPDOWN MENU MOBILE - MUNCUL DI BAWAH PROFILE BUTTON */
+        .dropdown-menu {
+            position: fixed !important;
+            top: 70px !important; /* Posisi tepat di bawah navbar */
+            right: 20px !important;
+            left: auto !important;
+            bottom: auto !important;
+            min-width: 180px;
+            max-width: calc(100vw - 40px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border: 1px solid #e5e7eb;
+            animation: slideDownMobile 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transform-origin: top right;
+            border-radius: 14px;
+            z-index: 1001 !important;
+            display: none;
+        }
+
+        .dropdown-menu::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            right: 15px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            transform: rotate(45deg);
+            border-left: 1px solid #e5e7eb;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        @keyframes slideDownMobile {
+            from { 
+                opacity: 0; 
+                transform: translateY(-10px) scale(0.95); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
+
+        .dropdown-menu.show {
+            display: block !important;
+        }
+
+        .dropdown-menu a,
+        .dropdown-menu button[type="submit"] {
+            padding: 12px 16px;
+            font-size: 14px;
+            min-height: 46px;
+        }
+
+        .dropdown-menu a:hover,
+        .dropdown-menu button[type="submit"]:hover {
+            background-color: rgba(255, 88, 30, 0.1);
+        }
+
+        /* Tombol login di mobile */
+        .btn-login {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* TAMPILKAN SIDEBAR COMPONENTS DI MOBILE */
+        .mobile-sidebar-overlay {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 998;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            backdrop-filter: blur(3px);
+        }
+
+        .mobile-sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .mobile-sidebar {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
+            background: var(--header-primary);
+            color: white;
+            z-index: 999;
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mobile-sidebar.active {
+            transform: translateX(280px);
+        }
+
+        .mobile-sidebar-header {
+            padding: 25px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .mobile-sidebar-logo {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--header-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mobile-sidebar-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 4px;
+            transition: all 0.3s;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+
+        .mobile-sidebar-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--header-secondary);
+        }
+
+        .mobile-sidebar-content {
+            flex: 1;
+            padding: 20px 0;
+        }
+
+        .mobile-nav-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .mobile-nav-menu li {
+            padding: 0;
+            margin: 6px 15px;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .mobile-nav-menu li:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .mobile-nav-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px 20px;
+            color: rgba(255, 255, 255, 0.85);
+            text-decoration: none;
+            font-size: 14.5px;
+            font-weight: 500;
+            transition: all 0.3s;
+            width: 100%;
+            border-left: 3px solid transparent;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .mobile-nav-menu a:hover {
+            color: white;
+            border-left-color: rgba(255, 88, 30, 0.5);
+        }
+
+        .mobile-nav-menu li.active {
+            background: linear-gradient(90deg, rgba(255, 88, 30, 0.15), rgba(255, 88, 30, 0.05));
+        }
+
+        .mobile-nav-menu li.active a {
+            background: var(--header-secondary) !important;
+            color: white !important;
+            border-radius: 12px;
+            border-left-color: var(--header-secondary);
+            box-shadow: 0 4px 12px rgba(255, 88, 30, 0.25);
+            font-weight: 600;
+        }
+
+        .mobile-nav-icon {
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .mobile-sidebar-bottom {
+            margin-top: auto;
+            padding: 20px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .mobile-profile-section {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin: 0 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .mobile-profile-section:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .mobile-profile-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, var(--header-secondary), var(--header-secondary-light));
+            box-shadow: 0 4px 12px rgba(255, 88, 30, 0.3);
+            flex-shrink: 0;
+            font-size: 20px;
+            text-transform: uppercase;
+        }
+
+        .mobile-profile-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .mobile-profile-name {
+            font-weight: 600;
+            color: white;
+            font-size: 14px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mobile-profile-email {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .custom-navbar {
+            padding: 10px 3%;
+        }
+
+        .nav-panel {
+            padding: 6px 12px;
+            border-radius: 20px;
+            min-height: 52px;
+        }
+
+        .nav-brand img {
+            height: 26px;
+        }
+
+        .mobile-sidebar {
+            width: 260px;
+            left: -260px;
+        }
+
+        .mobile-sidebar.active {
+            transform: translateX(260px);
+        }
+
+        .mobile-sidebar-header {
+            padding: 20px 15px;
+        }
+
+        .mobile-sidebar-logo {
+            font-size: 20px;
+        }
+
+        .mobile-nav-menu a {
+            padding: 14px 18px;
+            font-size: 14px;
+        }
+
+        .mobile-profile-avatar {
+            width: 45px;
+            height: 45px;
+            font-size: 18px;
+        }
+
+        .mobile-profile-name {
+            font-size: 13px;
+        }
+
+        .mobile-profile-email {
+            font-size: 11px;
+        }
+
+        .mobile-menu-toggle {
+            width: 36px;
+            height: 36px;
+            font-size: 1.25rem;
+        }
+        
+        .dropdown-menu {
+            top: 65px !important;
+            right: 15px !important;
+            min-width: 160px;
+        }
+        
+        .profile-btn {
+            padding: 4px 6px;
+        }
+        
+        .profile-avatar {
+            width: 30px;
+            height: 30px;
+            font-size: 12px;
+        }
+        
+        .dropdown-menu a,
+        .dropdown-menu button[type="submit"] {
+            padding: 10px 14px;
+            min-height: 44px;
+            font-size: 13px;
+        }
+    }
+
+    /* Scrollbar Styling untuk Sidebar */
+    .mobile-sidebar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .mobile-sidebar::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+    }
+
+    .mobile-sidebar::-webkit-scrollbar-thumb {
+        background: rgba(255, 88, 30, 0.4);
+        border-radius: 8px;
+    }
+
+    .mobile-sidebar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 88, 30, 0.6);
+    }
 </style>
 
-  <script>
-document.addEventListener('DOMContentLoaded', () => {
+<!-- Custom Navbar -->
+<nav class="custom-navbar" id="navbar">
+    <div class="nav-container">
+        <div class="nav-panel">
+            <!-- HAMBURGER MENU TOGGLE (Hanya tampil di mobile) -->
+            <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle menu">
+                <i class="fas fa-bars"></i>
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="nav-brand">
+                <img src="{{ asset('/images/smartshuttlelogo.png') }}" alt="Smart Shuttle">
+            </div>
+            
+            <!-- NAV MENU (Tampil di desktop, disembunyikan di mobile) -->
+            <div class="nav-menu" id="nav-menu">
+                <ul class="nav-links">
+                    @php
+                        $currentRoute = Route::currentRouteName();
+                        $currentPath = request()->path();
+                    @endphp
+                    
+                    <li><a href="/customer/beranda" 
+                           class="{{ $currentRoute == 'customer.beranda' || $currentPath == 'customer/beranda' ? 'active' : '' }}">
+                           Beranda
+                       </a>
+                    </li>
+                    
+                    <li><a href="{{ route('customer.search') }}" 
+                           class="{{ $currentRoute == 'customer.search' || str_contains($currentPath, 'search') ? 'active' : '' }}">
+                           Cari Tiket
+                       </a>
+                    </li>
+                    
+                    <li><a href="{{ route('customer.outlet') }}" 
+                           class="{{ $currentRoute == 'customer.outlet' || str_contains($currentPath, 'outlet') ? 'active' : '' }}">
+                           Outlet
+                       </a>
+                    </li>
+                    
+                    <li><a href="{{ route('customer.smartsend') }}" 
+                           class="{{ $currentRoute == 'customer.smartsend' || str_contains($currentPath, 'smartsend') ? 'active' : '' }}">
+                           Kirim Paket
+                       </a>
+                    </li>
+                    
+                    <li><a href="#" onclick="alert('Fitur Sewa Armada akan segera hadir!'); return false;" 
+                           class="{{ $currentRoute == 'customer.sewa-armada' ? 'active' : '' }}">
+                           Sewa Armada
+                       </a>
+                    </li>
+                    
+                    <li><a href="{{ route('customer.contact') }}" 
+                           class="{{ $currentRoute == 'customer.contact' || str_contains($currentPath, 'contact') ? 'active' : '' }}">
+                           Kontak
+                       </a>
+                    </li>
+                    
+                    <li><a href="{{ route('customer.cek-reservasi') }}" 
+                           class="{{ $currentRoute == 'customer.cek-reservasi' || str_contains($currentPath, 'cek-reservasi') ? 'active' : '' }}">
+                           Cek Reservasi
+                       </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="nav-auth">
+                @if(session()->has('user') && isset(session('user')['id']))
+                    <div class="profile-wrapper">
+                        <button id="profile-dropdown" class="profile-btn" type="button" aria-expanded="false">
+                            @if(!empty(session('user')['avatar']))
+                                <span class="profile-avatar">
+                                    <img src="{{ session('user')['avatar'] }}" alt="avatar">
+                                </span>
+                            @else
+                                <span class="profile-avatar">{{ strtoupper(substr(session('user')['name'] ?? 'U', 0, 1)) }}</span>
+                            @endif
+                            <span class="profile-name">{{ strlen(session('user')['name'] ?? '') > 12 ? substr(session('user')['name'], 0, 12).'...' : (session('user')['name'] ?? 'User') }}</span>
+                            <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
+                        </button>
+                        <div id="dropdown-menu" class="dropdown-menu">
+                            <a href="{{ route('customer.dashboardprofile') }}">
+                                <i class="fas fa-user-circle"></i>
+                                Profil
+                            </a>
+                            <a href="{{ route('customer.riwayat') }}">
+                                <i class="fas fa-history"></i>
+                                Riwayat
+                            </a>
+                            <form action="{{ route('customer.logout') }}" method="POST">
+                                @csrf
+                                <button type="submit">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    Logout
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                @else
+                    <a href="{{ route('customer.login') }}" class="btn-login" id="login-btn">
+                        <i class="fas fa-sign-in-alt" style="margin-right: 6px;"></i>
+                        Login
+                    </a>
+                @endif
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- MOBILE SIDEBAR OVERLAY (Hanya tampil di mobile) -->
+<div class="mobile-sidebar-overlay" id="mobile-sidebar-overlay"></div>
+
+<!-- MOBILE SIDEBAR (Hanya tampil di mobile) -->
+<div class="mobile-sidebar" id="mobile-sidebar">
+    <div class="mobile-sidebar-header">
+        <div class="mobile-sidebar-logo">
+            <i class="fas fa-bus"></i>
+            <span>SMART SHUTTLE</span>
+        </div>
+    </div>
+
+    <div class="mobile-sidebar-content">
+        @if(session()->has('user') && isset(session('user')['id']))
+            <div class="mobile-profile-section" onclick="location.href='{{ route('customer.dashboardprofile') }}'">
+                @if(!empty(session('user')['avatar']))
+                    <div class="mobile-profile-avatar">
+                        <img src="{{ session('user')['avatar'] }}" alt="avatar">
+                    </div>
+                @else
+                    <div class="mobile-profile-avatar">
+                        {{ strtoupper(substr(session('user')['name'] ?? 'U', 0, 1)) }}
+                    </div>
+                @endif
+                <div class="mobile-profile-info">
+                    <div class="mobile-profile-name">{{ session('user')['name'] ?? 'User' }}</div>
+                    <div class="mobile-profile-email">{{ session('user')['email'] ?? '' }}</div>
+                </div>
+            </div>
+        @endif
+
+        <ul class="mobile-nav-menu">
+            @php
+                $currentRoute = Route::currentRouteName();
+                $currentPath = request()->path();
+            @endphp
+            
+            <li class="{{ $currentRoute == 'customer.beranda' || $currentPath == 'customer/beranda' ? 'active' : '' }}">
+                <a href="/customer/beranda">
+                    <span class="mobile-nav-icon"><i class="fas fa-home"></i></span>
+                    <span>Beranda</span>
+                </a>
+            </li>
+            
+            <li class="{{ $currentRoute == 'customer.search' || str_contains($currentPath, 'search') ? 'active' : '' }}">
+                <a href="{{ route('customer.search') }}">
+                    <span class="mobile-nav-icon"><i class="fas fa-search"></i></span>
+                    <span>Cari Tiket</span>
+                </a>
+            </li>
+            
+            <li class="{{ $currentRoute == 'customer.outlet' || str_contains($currentPath, 'outlet') ? 'active' : '' }}">
+                <a href="{{ route('customer.outlet') }}">
+                    <span class="mobile-nav-icon"><i class="fas fa-store"></i></span>
+                    <span>Outlet</span>
+                </a>
+            </li>
+            
+            <li class="{{ $currentRoute == 'customer.smartsend' || str_contains($currentPath, 'smartsend') ? 'active' : '' }}">
+                <a href="{{ route('customer.smartsend') }}">
+                    <span class="mobile-nav-icon"><i class="fas fa-box"></i></span>
+                    <span>Kirim Paket</span>
+                </a>
+            </li>
+            
+            <li>
+                <a href="#" onclick="alert('Fitur Sewa Armada akan segera hadir!'); return false;">
+                    <span class="mobile-nav-icon"><i class="fas fa-car"></i></span>
+                    <span>Sewa Armada</span>
+                </a>
+            </li>
+            
+            <li class="{{ $currentRoute == 'customer.contact' || str_contains($currentPath, 'contact') ? 'active' : '' }}">
+                <a href="{{ route('customer.contact') }}">
+                    <span class="mobile-nav-icon"><i class="fas fa-phone"></i></span>
+                    <span>Kontak</span>
+                </a>
+            </li>
+            
+            <li class="{{ $currentRoute == 'customer.cek-reservasi' || str_contains($currentPath, 'cek-reservasi') ? 'active' : '' }}">
+                <a href="{{ route('customer.cek-reservasi') }}">
+                    <span class="mobile-nav-icon"><i class="fas fa-ticket-alt"></i></span>
+                    <span>Cek Reservasi</span>
+                </a>
+            </li>
+
+            <!-- Menu tambahan jika user sudah login -->
+            @if(session()->has('user') && isset(session('user')['id']))
+                <li class="{{ $currentRoute == 'customer.dashboardprofile' ? 'active' : '' }}">
+                    <a href="{{ route('customer.dashboardprofile') }}">
+                        <span class="mobile-nav-icon"><i class="fas fa-user-circle"></i></span>
+                        <span>Profil</span>
+                    </a>
+                </li>
+                
+                <li class="{{ $currentRoute == 'customer.riwayat' ? 'active' : '' }}">
+                    <a href="{{ route('customer.riwayat') }}">
+                        <span class="mobile-nav-icon"><i class="fas fa-history"></i></span>
+                        <span>Riwayat</span>
+                    </a>
+                </li>
+            @endif
+        </ul>
+    </div>
+
+    <div class="mobile-sidebar-bottom">
+        <ul class="mobile-nav-menu">
+            @if(session()->has('user') && isset(session('user')['id']))
+                <li>
+                    <form action="{{ route('customer.logout') }}" method="POST" style="display: none;" id="logout-form-mobile">
+                        @csrf
+                    </form>
+                    <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form-mobile').submit();" style="color: #EF4444;">
+                        <span class="mobile-nav-icon"><i class="fas fa-sign-out-alt"></i></span>
+                        <span>Keluar</span>
+                    </a>
+                </li>
+            @else
+                <li>
+                    <a href="{{ route('customer.login') }}">
+                        <span class="mobile-nav-icon"><i class="fas fa-sign-in-alt"></i></span>
+                        <span>Login</span>
+                    </a>
+                </li>
+            @endif
+        </ul>
+    </div>
+</div>
+
+<script>
+// NAVBAR GLOBAL SCRIPT
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Navbar script loaded - Mobile Profile di Kanan dengan Toggle');
+    
+    // Elements
     const navbar = document.getElementById('navbar');
-
-    // ✅ Fallback Background
-    const bgImage = new Image();
-    bgImage.src = '/images/bgHeader.jpeg';
-    bgImage.onerror = () => navbar.classList.add('fallback-bg');
-
-    // ✅ Sticky Effect
-    window.addEventListener('scroll', () => {
-        navbar.classList.toggle('scrolled', window.scrollY > 50);
-    });
-
-    /* ✅ DROPDOWN PROFILE */
     const dropdownButton = document.getElementById('profile-dropdown');
     const dropdownMenu = document.getElementById('dropdown-menu');
+    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+    const mobileSidebar = document.getElementById('mobile-sidebar');
+    const mobileSidebarClose = document.getElementById('mobile-sidebar-close');
+    const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
+    
+    const isMobile = window.innerWidth <= 768;
+    
+    /* ========== NAVBAR SCROLL ========== */
+    if (navbar) {
+        // Force white background on mobile
+        if (isMobile) {
+            navbar.style.background = 'white';
+            navbar.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)';
+        }
+        
+        window.addEventListener('scroll', function () {
+            if (!isMobile) {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            }
+        }, { passive: true });
+        
+        if (!isMobile && window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        }
+    }
 
+    /* ========== PROFILE DROPDOWN TOGGLE (KLIK BUKA, KLIK LAGI TUTUP) ========== */
     if (dropdownButton && dropdownMenu) {
+        dropdownButton.setAttribute('aria-haspopup', 'true');
+        dropdownButton.setAttribute('aria-expanded', 'false');
+        
+        // Function to close dropdown
+        function closeDropdown() {
+            dropdownMenu.classList.remove('show');
+            dropdownButton.classList.remove('active');
+            dropdownButton.setAttribute('aria-expanded', 'false');
+            document.body.style.overflow = ''; // Reset scroll
+        }
+        
+        // Function to open dropdown
+        function openDropdown() {
+            // Close sidebar if open on mobile
+            if (isMobile && mobileSidebar && mobileSidebar.classList.contains('active')) {
+                closeMobileSidebar();
+            }
+            
+            dropdownMenu.classList.add('show');
+            dropdownButton.classList.add('active');
+            dropdownButton.setAttribute('aria-expanded', 'true');
+            
+            // Prevent body scroll on mobile when dropdown is open
+            if (isMobile) {
+                document.body.style.overflow = 'hidden';
+            }
+        }
+        
+        // Toggle dropdown on click (klik bua, klik lagi tutup)
         dropdownButton.addEventListener('click', function (e) {
             e.stopPropagation();
-            dropdownMenu.classList.toggle('show');
+            e.preventDefault();
+            
+            // Cek apakah dropdown sedang terbuka
+            if (dropdownMenu.classList.contains('show')) {
+                // Jika terbuka, tutup
+                closeDropdown();
+            } else {
+                // Jika tertutup, buka
+                openDropdown();
+            }
         });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+            if (dropdownMenu && dropdownMenu.classList.contains('show')) {
+                const isClickInside = dropdownMenu.contains(e.target) || 
+                                     dropdownButton.contains(e.target);
+                
+                if (!isClickInside) {
+                    closeDropdown();
+                }
+            }
+        });
+        
+        // Close with Escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && dropdownMenu && dropdownMenu.classList.contains('show')) {
+                closeDropdown();
+            }
+        });
+        
+        // Close when clicking links inside dropdown
+        dropdownMenu.addEventListener('click', function (e) {
+            if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') {
+                // Small delay to allow click to register
+                setTimeout(() => {
+                    closeDropdown();
+                }, 100);
+            }
+        });
+    }
+    
+    /* ========== MOBILE SIDEBAR FUNCTIONS ========== */
+    function toggleMobileSidebar() {
+        if (mobileSidebar) {
+            const isOpen = mobileSidebar.classList.contains('active');
+            
+            if (isOpen) {
+                // Jika sedang terbuka, tutup
+                closeMobileSidebar();
+            } else {
+                // Jika sedang tertutup, buka
+                openMobileSidebar();
+            }
+        }
+    }
 
-        document.addEventListener('click', function () {
-            dropdownMenu.classList.remove('show');
+    function openMobileSidebar() {
+        if (mobileSidebar) {
+            // Close dropdown if open
+            if (dropdownMenu && dropdownMenu.classList.contains('show')) {
+                closeDropdown();
+            }
+            
+            mobileSidebar.classList.add('active');
+            mobileSidebarOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            if (mobileMenuToggle) {
+                mobileMenuToggle.classList.add('active');
+    
+            }
+        }
+    }
+
+    function closeMobileSidebar() {
+        if (mobileSidebar) {
+            mobileSidebar.classList.remove('active');
+            mobileSidebarOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+            if (mobileMenuToggle) {
+                mobileMenuToggle.classList.remove('active');
+          
+            }
+        }
+    }
+    
+    /* ========== EVENT LISTENERS ========== */
+    // Open/close mobile sidebar dengan toggle
+    if (mobileMenuToggle && mobileSidebar) {
+        mobileMenuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            toggleMobileSidebar();
         });
     }
 
-    /* ✅ ALERT SESSION */
-    const successMsg = @json(session('success'));
-    const errorMsg = @json(session('error'));
+    // Close mobile sidebar dengan tombol close
+    if (mobileSidebarClose) {
+        mobileSidebarClose.addEventListener('click', function(e) {
+            e.stopPropagation();
+            closeMobileSidebar();
+        });
+    }
 
-    if (successMsg) alert(successMsg);
-    if (errorMsg) alert(errorMsg);
+    // Close on overlay click
+    if (mobileSidebarOverlay) {
+        mobileSidebarOverlay.addEventListener('click', function(e) {
+            // Jika dropdown profile sedang terbuka, jangan tutup sidebar
+            if (dropdownMenu && dropdownMenu.classList.contains('show')) {
+                e.stopPropagation();
+                return;
+            }
+            closeMobileSidebar();
+        });
+    }
+    
+    // Close sidebar when clicking links (except alerts)
+    if (mobileSidebar) {
+        const mobileNavLinks = mobileSidebar.querySelectorAll('a');
+        mobileNavLinks.forEach(link => {
+            const onclickAttr = link.getAttribute('onclick');
+            if (!onclickAttr || 
+                (!onclickAttr.includes('alert') && !onclickAttr.includes('submit'))) {
+                link.addEventListener('click', function(e) {
+                    if (this.href && this.target !== '_blank') {
+                        setTimeout(closeMobileSidebar, 300);
+                    }
+                });
+            }
+        });
+    }
+    
+    // Close all on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if (mobileSidebar && mobileSidebar.classList.contains('active')) {
+                closeMobileSidebar();
+            }
+            
+            if (dropdownMenu && dropdownMenu.classList.contains('show')) {
+                closeDropdown();
+            }
+        }
+    });
+    
+    /* ========== WINDOW RESIZE HANDLER ========== */
+    function handleResize() {
+        const nowMobile = window.innerWidth <= 768;
+        
+        // Force white background on mobile
+        if (navbar) {
+            if (nowMobile) {
+                navbar.style.background = 'white';
+                navbar.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)';
+                navbar.classList.remove('scrolled');
+            } else {
+                navbar.style.background = '';
+                navbar.style.boxShadow = '';
+            }
+        }
+        
+        // Close mobile sidebar when resizing to desktop
+        if (!nowMobile && mobileSidebar && mobileSidebar.classList.contains('active')) {
+            closeMobileSidebar();
+        }
+        
+        // Always close dropdown on resize (safer)
+        if (dropdownMenu && dropdownMenu.classList.contains('show')) {
+            closeDropdown();
+        }
+    }
+    
+    window.addEventListener('resize', handleResize);
+    
+    // Initial setup for mobile
+    if (isMobile && navbar) {
+        navbar.style.background = 'white';
+        navbar.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)';
+    }
 });
 </script>

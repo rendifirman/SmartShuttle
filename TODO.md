@@ -1,16 +1,24 @@
-# Admin Login Fix - TODO
+# TODO - Outlet CRUD Implementation
 
 ## Completed Tasks
-- [x] Added missing admin dashboard route to routes/web.php
-- [x] Modified CustomerController login method to use admin guard for admin users
-- [x] Verified routes are properly registered
-- [x] Checked for syntax errors
+- [x] Update outletperusahaan.blade.php routes to use admin.outletperusahaan.*
+- [x] Add CRUD routes for outletperusahaan in routes/web.php
+- [x] Add CRUD methods in AdminController.php (createOutlet, storeOutlet, editOutlet, updateOutlet, destroyOutlet, showOutlet)
+- [x] Create outletperusahaan-create.blade.php view
+- [x] Create outletperusahaan-edit.blade.php view
+- [x] Create outletperusahaan-detail.blade.php view
 
-## Summary of Changes
-1. **Added admin dashboard route**: Added `Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');` to the admin routes group in routes/web.php
-2. **Fixed authentication guard**: Modified the login logic in CustomerController to log out from web guard and log in with admin guard when user has admin roles
+## Remaining Tasks
+- [ ] Test the CRUD functionality manually
+- [ ] Ensure proper validation and error handling
+- [ ] Verify that all routes are working correctly
+- [ ] Check that the forms submit correctly
+- [ ] Test file uploads if implemented
+- [ ] Verify responsive design on different screen sizes
 
-## Testing Required
-- Test admin login with admin@smartshuttle.test / admin123
-- Verify admin is redirected to admin/dashboard.blade.php
-- Verify customer login still works normally
+## Notes
+- The implementation includes full CRUD operations for outlets
+- Forms include validation for required fields
+- Views are responsive and follow the existing design patterns
+- SweetAlert is used for user notifications
+- Facilities are handled as checkboxes and stored as comma-separated values

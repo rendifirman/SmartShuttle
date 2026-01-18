@@ -10,8 +10,9 @@ use App\Http\Controllers\API\BranchController;
 use App\Http\Controllers\API\OutletController;
 use App\Http\Controllers\API\LayananController;
 use App\Http\Controllers\API\ScheduleController;
-use App\Http\Controllers\API\PemesananController; // TAMBAHKAN INI
+use App\Http\Controllers\API\PemesananController;
 use App\Http\Controllers\API\PasswordResetController;
+use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\KursiController;
 
 /*
@@ -27,6 +28,17 @@ use App\Http\Controllers\KursiController;
 
 // ==================== PUBLIC ROUTES ====================
 
+// PAYMENT ROUTES - PUBLIC (no auth required)
+Route::prefix('payment')->group(function () {
+    // Callback endpoints (must be public for Paylabs)
+    Route::post('/callback', [PaymentController::class, 'callback'])
+        ->withoutMiddleware(['auth:sanctum'])
+        ->name('api.payment.callback');
+    Route::post('/callback-v23', [PaymentController::class, 'callbackV23'])
+        ->withoutMiddleware(['auth:sanctum'])
+        ->name('api.payment.callback_v23');
+});
+
 // AUTHENTICATION
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -34,9 +46,6 @@ Route::post('/login', [AuthController::class, 'login']);
 // PASSWORD RESET
 Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
 Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
-
-// Paylabs public callback (expects POST from Paylabs)
-Route::post('/pembayaran/callback', [\App\Http\Controllers\PembayaranController::class, 'webhook']);
 
 // PUBLIC BRANCH APIs
 Route::prefix('branches')->group(function () {
@@ -79,19 +88,44 @@ Route::prefix('schedules')->group(function () {
 });
 
 // PUBLIC KURSI APIs
-Route::middleware('api')->group(function () {
-    Route::post('/validasi-kursi', [KursiController::class, 'validasiKursiAPI']);
-    Route::get('/kursi-tersedia/{jadwalId}', [KursiController::class, 'getKursiTersediaAPI']);
-    Route::post('/kursi-validate', [KursiController::class, 'validateSeatsAPI']);
-});
 Route::get('/kursi-tersedia/{jadwalId}', [KursiController::class, 'getKursiTersediaAPI'])
     ->name('api.kursi.tersedia');
 
 Route::post('/validasi-kursi', [KursiController::class, 'validasiKursiAPI'])
     ->name('api.kursi.validasi');
 
+Route::post('/kursi-validate', [KursiController::class, 'validateSeatsAPI']);
+
 // PUBLIC PROMO APIs (UNTUK VALIDASI)
 Route::post('/promo/validate', [PemesananController::class, 'validatePromoAPI']);
+
+// TEST ROUTES
+Route::get('/test-db', function() {
+    try {
+        \DB::connection()->getPdo();
+        $dbName = \DB::connection()->getDatabaseName();
+
+        $tableExists = \Schema::hasTable('metode_pembayaran');
+        $count = \DB::table('metode_pembayaran')->count();
+        $first = \DB::table('metode_pembayaran')->first();
+
+        return response()->json([
+            'success' => true,
+            'database' => $dbName,
+            'table_exists' => $tableExists,
+            'count' => $count,
+            'first_record' => $first,
+            'columns' => array_keys((array)$first)
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+});
 
 // ==================== PROTECTED ROUTES (MEMBUTUHKAN AUTH) ====================
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -101,38 +135,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/sessions', [AuthController::class, 'getSessions']);
     Route::delete('/sessions/{tokenId}', [AuthController::class, 'revokeSession']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
-// PAYMENT APIs
-Route::prefix('payment')->group(function () {
-    // Create payment
-    Route::post('/create', [\App\Http\Controllers\API\PaymentController::class, 'createPayment']);
 
-    // Get payment status
-    Route::get('/status/{kodePembayaran}', [\App\Http\Controllers\API\PaymentController::class, 'getPaymentStatus']);
-
-    // Get payment methods
-    Route::get('/methods', [\App\Http\Controllers\API\PaymentController::class, 'getPaymentMethods']);
-
-    // Simulate payment (for demo)
-    Route::post('/simulate', [\App\Http\Controllers\API\PaymentController::class, 'simulatePayment']);
-
-    // Get QR code
-    Route::get('/qr-code/{kodePembayaran}', [\App\Http\Controllers\API\PaymentController::class, 'getQRCode']);
-
-    // Paylabs callback (public)
-    Route::post('/callback', [\App\Http\Controllers\API\PaymentController::class, 'callback'])
-        ->name('api.payment.callback');
-});
-
-// Tambahkan juga di web.php untuk web routes
-Route::post('/payment/{kodePembayaran}/simulate/{status?}', [\App\Http\Controllers\PembayaranController::class, 'simulasiPembayaran'])
-    ->name('api.customer.pembayaran.simulasi')
-    ->where('status', 'success|failed|expired');
-
-Route::get('/payment/qr-code/{kodePembayaran}', [\App\Http\Controllers\PembayaranController::class, 'generateQRCode'])
-    ->name('api.customer.pembayaran.qrcode');
-
-Route::post('/payment/webhook', [\App\Http\Controllers\PembayaranController::class, 'webhook'])
-    ->name('api.customer.pembayaran.webhook');
     // PROFILE
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
@@ -140,15 +143,31 @@ Route::post('/payment/webhook', [\App\Http\Controllers\PembayaranController::cla
 
     // PEMESANAN APIs
     Route::prefix('pemesanan')->group(function () {
-        Route::get('/', [PemesananController::class, 'index']); // Daftar pemesanan
-        Route::post('/', [PemesananController::class, 'store']); // Buat pemesanan baru
-        Route::get('/riwayat', [PemesananController::class, 'riwayat']); // Riwayat pemesanan
-        Route::get('/{kode_booking}', [PemesananController::class, 'show']); // Detail pemesanan
-        Route::put('/{kode_booking}/cancel', [PemesananController::class, 'cancel']); // Batalkan pemesanan
-        Route::post('/{kode_booking}/pilih-kursi', [PemesananController::class, 'pilihKursi']); // Pilih kursi
-        Route::post('/{kode_booking}/bayar', [PemesananController::class, 'bayar']); // Proses pembayaran
-        Route::get('/{kode_booking}/eticket', [PemesananController::class, 'eTicket']); // E-Ticket
+        Route::get('/', [PemesananController::class, 'index']);
+        Route::post('/', [PemesananController::class, 'store']);
+        Route::get('/riwayat', [PemesananController::class, 'riwayat']);
+        Route::get('/{kode_booking}', [PemesananController::class, 'show']);
+        Route::put('/{kode_booking}/cancel', [PemesananController::class, 'cancel']);
+        Route::post('/{kode_booking}/pilih-kursi', [PemesananController::class, 'pilihKursi']);
+        Route::post('/{kode_booking}/bayar', [PemesananController::class, 'bayar']);
+        Route::get('/{kode_booking}/eticket', [PemesananController::class, 'eTicket']);
     });
+
+    // PAYMENT ROUTES (Protected)
+    Route::prefix('payment')->group(function () {
+        // Test connection (protected for debugging)
+        Route::get('/test-connection', [PaymentController::class, 'testConnection'])->name('api.payment.test');
+
+        // Payment management routes
+        Route::post('/create', [PaymentController::class, 'createPayment'])->name('api.payment.create');
+        Route::get('/status/{kodePembayaran}', [PaymentController::class, 'getPaymentStatus'])->name('api.payment.status');
+        Route::get('/qr/{kodePembayaran}', [PaymentController::class, 'getQRCode'])->name('api.payment.qr');
+        Route::get('/qrcode/{kodePembayaran}', [PaymentController::class, 'getQRCode'])->name('api.payment.qrcode');
+        Route::get('/methods', [PaymentController::class, 'getPaymentMethods'])->name('api.payment.methods');
+    });
+
+    // PAYMENT SIMULATE (Hanya untuk yang login)
+    Route::post('/payment/simulate', [PaymentController::class, 'simulatePayment']);
 
     // EMAIL VERIFICATION
     Route::post('/email/verification-notification', function (Request $request) {
@@ -158,7 +177,6 @@ Route::post('/payment/webhook', [\App\Http\Controllers\PembayaranController::cla
             return response()->json(['message' => 'Email sudah terverifikasi']);
         }
 
-        // Untuk testing, langsung verifikasi
         $user->markEmailAsVerified();
 
         return response()->json(['message' => 'Email berhasil diverifikasi']);
@@ -216,37 +234,8 @@ Route::middleware(['auth:sanctum', 'admin.role'])->group(function () {
     Route::post('/users/remove-role', [RoleController::class, 'removeRole']);
     Route::get('/users/{userId}/roles', [RoleController::class, 'getUserRoles']);
 });
-Route::get('/test-db', function() {
-    try {
-        // Test 1: Cek koneksi
-        \DB::connection()->getPdo();
-        $dbName = \DB::connection()->getDatabaseName();
 
-        // Test 2: Cek tabel
-        $tableExists = \Schema::hasTable('metode_pembayaran');
-
-        // Test 3: Query sederhana
-        $count = \DB::table('metode_pembayaran')->count();
-        $first = \DB::table('metode_pembayaran')->first();
-
-        return response()->json([
-            'success' => true,
-            'database' => $dbName,
-            'table_exists' => $tableExists,
-            'count' => $count,
-            'first_record' => $first,
-            'columns' => array_keys((array)$first)
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ], 500);
-    }
-});
-// Testing Paylabs Integration - Untuk developer internal
+// ==================== DEV/TESTING ROUTES ====================
 Route::prefix('dev')->group(function () {
     // Test connection to Paylabs (public for testing)
     Route::get('/paylabs/test-connection', function () {
@@ -313,30 +302,13 @@ Route::prefix('dev')->group(function () {
 
         return $paymentController->callback($request);
     });
-    // Tambahkan di routes/api.php
-Route::prefix('payment')->group(function () {
-    // Create payment
-    Route::post('/create', [\App\Http\Controllers\API\PaymentController::class, 'createPayment']);
 
-    // Get payment status
-    Route::get('/status/{kodePembayaran}', [\App\Http\Controllers\API\PaymentController::class, 'getPaymentStatus']);
+    // DEV: QRIS v2.3 endpoints for Postman testing (server-side signing)
+    Route::post('/paylabs/qris/create', [PaymentController::class, 'devPaylabsQrisCreate']);
+    Route::post('/paylabs/qris/query', [PaymentController::class, 'devPaylabsQrisQuery']);
+    Route::post('/paylabs/qris/cancel', [PaymentController::class, 'devPaylabsQrisCancel']);
 
-    // Get payment methods
-    Route::get('/methods', [\App\Http\Controllers\API\PaymentController::class, 'getPaymentMethods']);
-
-    // Paylabs callback (public)
-    Route::post('/callback', [\App\Http\Controllers\API\PaymentController::class, 'callback'])
-        ->name('api.dev.payment.callback');
-
-    // Test Paylabs connection
-    Route::get('/test-connection', [\App\Http\Controllers\API\PaymentController::class, 'testConnection'])
-        ->name('api.payment.test');
-
-    // Simulate payment (for demo)
-    Route::post('/simulate', [\App\Http\Controllers\API\PaymentController::class, 'simulatePayment'])
-        ->middleware('auth:sanctum');
-
-    // Get QR code
-    Route::get('/qr-code/{kodePembayaran}', [\App\Http\Controllers\API\PaymentController::class, 'getQRCode']);
-});
+    // DEV: VA v2.3 endpoints for Postman testing (server-side signing)
+    Route::post('/paylabs/va/create', [PaymentController::class, 'devPaylabsVaCreate']);
+    Route::post('/paylabs/va/query', [PaymentController::class, 'devPaylabsVaQuery']);
 });

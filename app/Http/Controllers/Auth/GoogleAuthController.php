@@ -137,8 +137,7 @@ class GoogleAuthController extends Controller
             ]);
 
             // Redirect ke beranda (langsung masuk)
-            return redirect()->route('customer.beranda')
-                ->with('success', 'Login dengan Google berhasil! Selamat datang di Smart Shuttle.');
+            return redirect()->route('customer.beranda');
 
         } catch (\Exception $e) {
             \Log::error('Google OAuth Error: ' . $e->getMessage(), [

@@ -8,7 +8,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @extends('layouts.app-profile')
 
+    @section('title', 'Membership SmartShuttle')
+
+    @push('styles')
     <style>
         * {
             margin: 0;
@@ -19,157 +23,17 @@
 
         body {
             background: #f5f5f5;
-        }
-
-        .container {
-            display: flex;
             min-height: 100vh;
-        }
-
-        /* SIDEBAR */
-        .sidebar {
-            width: 300px;
-            background: #00274D;
-            color: #fff;
-            padding: 30px 0;
-            flex-shrink: 0;
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            color: #FF6B2C;
-            margin-bottom: 40px;
-            padding: 0 20px;
-            cursor: pointer;
-            transition: transform 0.3s, color 0.3s;
-        }
-
-        .logo:hover {
-            transform: scale(1.05);
-            color: #FF8E53;
-        }
-
-        .menu {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .menu li {
-            padding: 0;
-            margin: 5px 15px;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-
-        .menu a.menu-link {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 18px 30px;
-            color: inherit;
-            text-decoration: none;
-            font-size: 16px;
-            transition: background 0.3s;
-            width: 100%;
-        }
-
-        .menu a.menu-link:hover {
-            background: rgba(255, 107, 44, 0.1);
-        }
-
-        .menu li.active a.menu-link {
-            background: #FF6B2C;
-            border-radius: 5px;
-        }
-
-        .menu-icon {
-            width: 25px;
-            text-align: center;
-            font-size: 18px;
-        }
-
-        .sidebar-footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .logout-link {
-            color: #ff6b6b !important;
-        }
-
-        .logout-link:hover {
-            background: rgba(255, 107, 44, 0.1) !important;
-        }
-
-        .beranda-link {
-            color: #FF6B2C !important;
-        }
-
-        .beranda-link:hover {
-            background: rgba(255, 107, 44, 0.1) !important;
-        }
-
-        /* CONTENT AREA */
-        .content {
-            flex: 1;
-            padding: 30px;
-            position: relative;
-            margin-left: 300px;
-            width: calc(100% - 300px);
-            min-height: 100vh;
-        }
-
-        /* HEADER */
-        .top-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            background: #fff;
-            padding: 20px 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .header {
-            font-size: 28px;
-            font-weight: 700;
-            color: #00274D;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .header i {
-            color: #FF6B2C;
-            font-size: 24px;
-        }
-
-        .profile-icon {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, #FF6B2C, #FF8E53);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
-
-        .profile-icon:hover {
-            transform: scale(1.05);
         }
 
         /* PAGE 2: REGISTRATION FORM STYLES */
+        .membership-wrapper {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
         .hero-banner {
             background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
             padding: 40px;
@@ -463,26 +327,13 @@
             .membership-content {
                 grid-template-columns: 1fr;
             }
+
+            .hero-banner {
+                padding: 30px;
+            }
         }
 
         @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-            }
-
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-                margin-left: 0;
-            }
-
-            .content {
-                margin-left: 0;
-                width: 100%;
-                padding: 20px;
-            }
-
             .hero-banner,
             .feature-cards,
             .form-card,
@@ -493,351 +344,293 @@
             .feature-cards {
                 grid-template-columns: 1fr;
             }
+
+            .hero-banner h2 {
+                font-size: 24px;
+            }
         }
 
         @media (max-width: 576px) {
             .hero-banner,
             .form-card,
             .keuntungan-box {
-                padding: 20px;
+                padding: 15px;
+            }
+
+            .hero-banner h2 {
+                font-size: 22px;
+            }
+
+            .btn-membership {
+                padding: 12px;
+                font-size: 14px;
             }
         }
     </style>
+    @endpush
 </head>
 <body>
+    @section('content')
+    <!-- MAIN CONTENT -->
+    <div class="membership-wrapper">
+        <!-- PAGE 2: REGISTRATION FORM -->
+        <div id="page-registration-form">
 
-<div class="container">
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-        <!-- LOGO YANG BISA DIKLIK UNTUK KE HALAMAN BERANDA -->
-        <div class="logo" onclick="location.href='{{ route('customer.beranda') }}'">
-            SMART SHUTTLE
-        </div>
-
-        <ul class="menu">
-            <li>
-                <a href="{{ route('customer.dashboardprofile') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-home"></i></span>
-                    <span>Dashboard</span>
+            <div class="hero-banner">
+                <a href="{{ route('customer.membership') }}" class="btn-back">
+                    <i class="fas fa-arrow-left"></i> Kembali
                 </a>
-            </li>
-
-            <li>
-                <a href="{{ route('customer.profilcust') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-user-circle"></i></span>
-                    <span>Profil Saya</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="{{ route('customer.riwayat') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-history"></i></span>
-                    <span>Riwayat Pesanan</span>
-                </a>
-            </li>
-
-            <li class="active">
-                <a href="{{ route('customer.membership') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-crown"></i></span>
-                    <span>Membership</span>
-                </a>
-            </li>
-
-            <!-- TOMBOL BERANDA DI BAWAH LOGOUT -->
-            <li class="sidebar-footer">
-                <a href="{{ route('customer.beranda') }}" class="menu-link beranda-link">
-                    <span class="menu-icon"><i class="fas fa-arrow-left"></i></span>
-                    <span>Beranda</span>
-                </a>
-            </li>
-
-            <li class="sidebar-footer">
-                <form id="logout-form" action="{{ route('customer.logout') }}" method="POST" style="display: none;">
-                    @csrf
-                </form>
-                <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="menu-link logout-link">
-                    <span class="menu-icon"><i class="fas fa-sign-out-alt"></i></span>
-                    <span>Logout</span>
-                </a>
-            </li>
-        </ul>
-    </div>
-
-    <!-- CONTENT AREA -->
-    <div class="content">
-        <!-- HEADER -->
-        <div class="top-header">
-            <div class="header">
-                <i class="fas fa-crown"></i>
-                <span>Daftar Membership</span>
+                <h2>Membership Smart Shuttle</h2>
+                <p>Dapatkan poin, diskon, dan kemudahan booking setiap perjalanan</p>
             </div>
 
-            <div class="profile-icon" title="Lihat Profil" onclick="location.href='{{ route('customer.profilcust') }}'">
-                <i class="fas fa-user"></i>
+            <div class="feature-cards">
+                <div class="feature-card">
+                    <h5>Kode Member & QR</h5>
+                    <p>Gunakan kode member atau QR untuk booking online maupun di loket.</p>
+                </div>
+                <div class="feature-card">
+                    <h5>Poin & Level</h5>
+                    <p>Kumpulkan poin dan naik level dari Bronze hingga Platinum.</p>
+                </div>
+                <div class="feature-card">
+                    <h5>Diskon Member</h5>
+                    <p>Gunakan Loyalty Point untuk potongan harga perjalanan.</p>
+                </div>
             </div>
-        </div>
 
-        <!-- MAIN CONTENT -->
-        <div class="membership-wrapper">
-            <!-- PAGE 2: REGISTRATION FORM -->
-            <div id="page-registration-form">
+            <div class="membership-content">
+                <div class="form-card">
+                    <h4>Form Pendaftaran Membership</h4>
+                    <p>Isi data berikut untuk menjadi member Smart Shuttle</p>
 
-                <div class="hero-banner">
-                    <a href="{{ route('customer.membership') }}" class="btn-back">
-                        <i class="fas fa-arrow-left"></i> Kembali
-                    </a>
-                    <h2>Membership Smart Shuttle</h2>
-                    <p>Dapatkan poin, diskon, dan kemudahan booking setiap perjalanan</p>
+                    @if($errors->any())
+                    <div class="error-message" style="margin-bottom: 20px;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>Terjadi kesalahan dalam pengisian form. Silakan periksa kembali.</span>
+                    </div>
+                    @endif
+
+                    <form method="POST" action="{{ route('customer.membership.form.submit') }}" class="membership-form" id="membershipForm">
+                        @csrf
+                        <div class="form-row">
+                            <label class="form-label">
+                                Nama Lengkap <span class="required">*</span>
+                            </label>
+                            <input type="text" name="name" class="form-input" id="formName"
+                                   placeholder="Masukkan nama lengkap"
+                                   value="{{ Auth::user()->name }}"
+                                   readonly>
+                        </div>
+
+                        <div class="form-row">
+                            <label class="form-label">
+                                Email <span class="required">*</span>
+                            </label>
+                            <input type="email" name="email" class="form-input" id="formEmail"
+                                   placeholder="contoh@email.com"
+                                   value="{{ Auth::user()->email }}"
+                                   readonly>
+                            <small class="form-hint">Email untuk login dan notifikasi</small>
+                        </div>
+
+                        <div class="form-row">
+                            <label class="form-label">
+                                No. Telepon <span class="required">*</span>
+                            </label>
+                            <input type="tel" id="phone" name="phone" class="form-input"
+                                   placeholder="08xxxxxxxx" required
+                                   value="{{ old('phone', Auth::user()->phone ?? '') }}">
+                            <small class="form-hint">Contoh: 081234567890 (10-12 digit)</small>
+                            @error('phone')
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
+                        <div class="form-row">
+                            <label class="form-label">
+                                Tanggal Lahir <span class="required">*</span>
+                            </label>
+                            <input type="date" id="birthdate" name="birthdate" class="form-input"
+                                   value="{{ old('birthdate', Auth::user()->tanggal_lahir ?? '') }}" required>
+                            <small class="form-hint">Minimal usia 17 tahun</small>
+                            @error('birthdate')
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
+                        <div class="form-row">
+                            <label class="form-label">
+                                Jenis Kelamin <span class="required">*</span>
+                            </label>
+                            <select name="gender" class="form-select" id="gender" required>
+                                <option value="" disabled {{ !old('gender') && !Auth::user()->jenis_kelamin ? 'selected' : '' }}>Pilih jenis kelamin</option>
+                                <option value="L" {{ (old('gender') == 'L' || Auth::user()->jenis_kelamin == 'L') ? 'selected' : '' }}>Laki-laki</option>
+                                <option value="P" {{ (old('gender') == 'P' || Auth::user()->jenis_kelamin == 'P') ? 'selected' : '' }}>Perempuan</option>
+                            </select>
+                            @error('gender')
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
+                        <div class="form-row">
+                            <label class="form-label" style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="agree_terms" value="1" id="agree_terms" {{ old('agree_terms') ? 'checked' : '' }} required>
+                                <span>Saya menyetujui <a href="{{ route('customer.syarat.ketentuan') }}" target="_blank" style="color: #ff5a1f; text-decoration: underline;">Syarat & Ketentuan</a> dan <a href="{{ route('customer.kebijakan.privasi') }}" target="_blank" style="color: #ff5a1f; text-decoration: underline;">Kebijakan Privasi</a> membership Smart Shuttle <span class="required">*</span></span>
+                            </label>
+                            @error('agree_terms')
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
+                        <button type="submit" class="btn-membership" id="submitButton">
+                            <span id="buttonText">
+                                <i class="fas fa-check-circle"></i> Daftar Membership & Lanjutkan Pembayaran
+                            </span>
+                            <span id="buttonLoading" style="display: none;">
+                                <span class="spinner"></span> Memproses...
+                            </span>
+                        </button>
+                    </form>
                 </div>
 
-                <div class="feature-cards">
-                    <div class="feature-card">
-                        <h5>Kode Member & QR</h5>
-                        <p>Gunakan kode member atau QR untuk booking online maupun di loket.</p>
-                    </div>
-                    <div class="feature-card">
-                        <h5>Poin & Level</h5>
-                        <p>Kumpulkan poin dan naik level dari Bronze hingga Platinum.</p>
-                    </div>
-                    <div class="feature-card">
-                        <h5>Diskon Member</h5>
-                        <p>Gunakan Loyalty Point untuk potongan harga perjalanan.</p>
-                    </div>
-                </div>
+                <div class="keuntungan-box">
+                    <h4>Keuntungan Membership</h4>
+                    <ul>
+                        <li>Dapat Point setiap transaksi</li>
+                        <li>Diskon khusus member</li>
+                        <li>Booking lebih cepat (online / loket)</li>
+                        <li>Naik level otomatis</li>
+                        <li>Notifikasi promo eksklusif</li>
+                        <li>Prioritas customer service</li>
+                    </ul>
 
-                <div class="membership-content">
-                    <div class="form-card">
-                        <h4>Form Pendaftaran Membership</h4>
-                        <p>Isi data berikut untuk menjadi member Smart Shuttle</p>
-
-                        @if($errors->any())
-                        <div class="error-message" style="margin-bottom: 20px;">
-                            <i class="fas fa-exclamation-circle"></i>
-                            <span>Terjadi kesalahan dalam pengisian form. Silakan periksa kembali.</span>
-                        </div>
-                        @endif
-
-                        <form method="POST" action="{{ route('customer.membership.form.submit') }}" class="membership-form" id="membershipForm">
-                            @csrf
-                            <div class="form-row">
-                                <label class="form-label">
-                                    Nama Lengkap <span class="required">*</span>
-                                </label>
-                                <input type="text" name="name" class="form-input" id="formName"
-                                       placeholder="Masukkan nama lengkap"
-                                       value="{{ Auth::user()->name }}"
-                                       readonly>
-                            </div>
-
-                            <div class="form-row">
-                                <label class="form-label">
-                                    Email <span class="required">*</span>
-                                </label>
-                                <input type="email" name="email" class="form-input" id="formEmail"
-                                       placeholder="contoh@email.com"
-                                       value="{{ Auth::user()->email }}"
-                                       readonly>
-                                <small class="form-hint">Email untuk login dan notifikasi</small>
-                            </div>
-
-                            <div class="form-row">
-                                <label class="form-label">
-                                    No. Telepon <span class="required">*</span>
-                                </label>
-                                <input type="tel" id="phone" name="phone" class="form-input"
-                                       placeholder="08xxxxxxxx" required
-                                       value="{{ old('phone', Auth::user()->phone ?? '') }}">
-                                <small class="form-hint">Contoh: 081234567890 (10-12 digit)</small>
-                                @error('phone')
-                                    <div class="error-message">
-                                        <i class="fas fa-exclamation-circle"></i>
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-
-                            <div class="form-row">
-                                <label class="form-label">
-                                    Tanggal Lahir <span class="required">*</span>
-                                </label>
-                                <input type="date" id="birthdate" name="birthdate" class="form-input"
-                                       value="{{ old('birthdate', Auth::user()->tanggal_lahir ?? '') }}" required>
-                                <small class="form-hint">Minimal usia 17 tahun</small>
-                                @error('birthdate')
-                                    <div class="error-message">
-                                        <i class="fas fa-exclamation-circle"></i>
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-
-                            <div class="form-row">
-                                <label class="form-label">
-                                    Jenis Kelamin <span class="required">*</span>
-                                </label>
-                                <select name="gender" class="form-select" id="gender" required>
-                                    <option value="" disabled {{ !old('gender') && !Auth::user()->jenis_kelamin ? 'selected' : '' }}>Pilih jenis kelamin</option>
-                                    <option value="L" {{ (old('gender') == 'L' || Auth::user()->jenis_kelamin == 'L') ? 'selected' : '' }}>Laki-laki</option>
-                                    <option value="P" {{ (old('gender') == 'P' || Auth::user()->jenis_kelamin == 'P') ? 'selected' : '' }}>Perempuan</option>
-                                </select>
-                                @error('gender')
-                                    <div class="error-message">
-                                        <i class="fas fa-exclamation-circle"></i>
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-
-                            <div class="form-row">
-                                <label class="form-label" style="display: flex; align-items: center; gap: 8px;">
-                                    <input type="checkbox" name="agree_terms" value="1" id="agree_terms" {{ old('agree_terms') ? 'checked' : '' }} required>
-                                    <span>Saya menyetujui <a href="{{ route('customer.syarat.ketentuan') }}" target="_blank" style="color: #ff5a1f; text-decoration: underline;">Syarat & Ketentuan</a> dan <a href="{{ route('customer.kebijakan.privasi') }}" target="_blank" style="color: #ff5a1f; text-decoration: underline;">Kebijakan Privasi</a> membership Smart Shuttle <span class="required">*</span></span>
-                                </label>
-                                @error('agree_terms')
-                                    <div class="error-message">
-                                        <i class="fas fa-exclamation-circle"></i>
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-
-                            <button type="submit" class="btn-membership" id="submitButton">
-                                <span id="buttonText">
-                                    <i class="fas fa-check-circle"></i> Daftar Membership & Lanjutkan Pembayaran
-                                </span>
-                                <span id="buttonLoading" style="display: none;">
-                                    <span class="spinner"></span> Memproses...
-                                </span>
-                            </button>
-                        </form>
-                    </div>
-
-                    <div class="keuntungan-box">
-                        <h4>Keuntungan Membership</h4>
-                        <ul>
-                            <li>Dapat Point setiap transaksi</li>
-                            <li>Diskon khusus member</li>
-                            <li>Booking lebih cepat (online / loket)</li>
-                            <li>Naik level otomatis</li>
-                            <li>Notifikasi promo eksklusif</li>
-                            <li>Prioritas customer service</li>
-                        </ul>
-
-                        <div class="cost-card">
-                            <p>💳 Biaya cetak kartu fisik:</p>
-                            <h3>Rp 20.000</h3>
-                            <p style="font-size: 11px; color: #9ca3af; margin-top: 5px;">Masa aktif 12 bulan</p>
-                        </div>
+                    <div class="cost-card">
+                        <p>💳 Biaya cetak kartu fisik:</p>
+                        <h3>Rp 20.000</h3>
+                        <p style="font-size: 11px; color: #9ca3af; margin-top: 5px;">Masa aktif 12 bulan</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+    @endsection
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('membershipForm');
-        const submitButton = document.getElementById('submitButton');
-        const buttonText = document.getElementById('buttonText');
-        const buttonLoading = document.getElementById('buttonLoading');
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('membershipForm');
+            const submitButton = document.getElementById('submitButton');
+            const buttonText = document.getElementById('buttonText');
+            const buttonLoading = document.getElementById('buttonLoading');
 
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                // Validasi form sebelum submit
-                const phone = document.getElementById('phone').value;
-                const birthdate = document.getElementById('birthdate').value;
-                const gender = document.getElementById('gender').value;
-                const agreeTerms = document.getElementById('agree_terms').checked;
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    // Validasi form sebelum submit
+                    const phone = document.getElementById('phone').value;
+                    const birthdate = document.getElementById('birthdate').value;
+                    const gender = document.getElementById('gender').value;
+                    const agreeTerms = document.getElementById('agree_terms').checked;
 
-                // Validasi phone (10-12 digit angka)
-                const phoneRegex = /^[0-9]{10,12}$/;
-                if (!phone || !phoneRegex.test(phone)) {
-                    e.preventDefault();
-                    alert('Nomor telepon harus 10-12 digit angka (contoh: 081234567890)');
-                    document.getElementById('phone').focus();
-                    return;
-                }
+                    // Validasi phone (10-12 digit angka)
+                    const phoneRegex = /^[0-9]{10,12}$/;
+                    if (!phone || !phoneRegex.test(phone)) {
+                        e.preventDefault();
+                        alert('Nomor telepon harus 10-12 digit angka (contoh: 081234567890)');
+                        document.getElementById('phone').focus();
+                        return;
+                    }
 
-                // Validasi birthdate (minimal 17 tahun)
-                if (!birthdate) {
-                    e.preventDefault();
-                    alert('Tanggal lahir harus diisi');
-                    document.getElementById('birthdate').focus();
-                    return;
-                }
+                    // Validasi birthdate (minimal 17 tahun)
+                    if (!birthdate) {
+                        e.preventDefault();
+                        alert('Tanggal lahir harus diisi');
+                        document.getElementById('birthdate').focus();
+                        return;
+                    }
 
-                const birthDate = new Date(birthdate);
-                const today = new Date();
-                let age = today.getFullYear() - birthDate.getFullYear();
-                const monthDiff = today.getMonth() - birthDate.getMonth();
+                    const birthDate = new Date(birthdate);
+                    const today = new Date();
+                    let age = today.getFullYear() - birthDate.getFullYear();
+                    const monthDiff = today.getMonth() - birthDate.getMonth();
 
-                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                    age--;
-                }
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                        age--;
+                    }
 
-                if (age < 17) {
-                    e.preventDefault();
-                    alert('Anda harus berusia minimal 17 tahun untuk mendaftar membership.');
-                    document.getElementById('birthdate').focus();
-                    return;
-                }
+                    if (age < 17) {
+                        e.preventDefault();
+                        alert('Anda harus berusia minimal 17 tahun untuk mendaftar membership.');
+                        document.getElementById('birthdate').focus();
+                        return;
+                    }
 
-                // Validasi gender
-                if (!gender) {
-                    e.preventDefault();
-                    alert('Jenis kelamin harus dipilih');
-                    document.getElementById('gender').focus();
-                    return;
-                }
+                    // Validasi gender
+                    if (!gender) {
+                        e.preventDefault();
+                        alert('Jenis kelamin harus dipilih');
+                        document.getElementById('gender').focus();
+                        return;
+                    }
 
-                // Validasi agree terms
-                if (!agreeTerms) {
-                    e.preventDefault();
-                    alert('Anda harus menyetujui Syarat & Ketentuan dan Kebijakan Privasi');
-                    document.getElementById('agree_terms').focus();
-                    return;
-                }
+                    // Validasi agree terms
+                    if (!agreeTerms) {
+                        e.preventDefault();
+                        alert('Anda harus menyetujui Syarat & Ketentuan dan Kebijakan Privasi');
+                        document.getElementById('agree_terms').focus();
+                        return;
+                    }
 
-                // Show loading state
-                buttonText.style.display = 'none';
-                buttonLoading.style.display = 'flex';
-                submitButton.disabled = true;
+                    // Show loading state
+                    buttonText.style.display = 'none';
+                    buttonLoading.style.display = 'flex';
+                    submitButton.disabled = true;
 
-                // Form akan submit secara normal
-                console.log('Form sedang diproses...');
-            });
-        }
-
-        // Format phone number input
-        const phoneInput = document.getElementById('phone');
-        if (phoneInput) {
-            phoneInput.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length > 12) value = value.substring(0, 12);
-                e.target.value = value;
-            });
-        }
-
-        // Set max date for birthdate (minimal 17 tahun dari sekarang)
-        const birthdateInput = document.getElementById('birthdate');
-        if (birthdateInput) {
-            const today = new Date();
-            const maxDate = new Date(today.getFullYear() - 17, today.getMonth(), today.getDate());
-            const maxDateString = maxDate.toISOString().split('T')[0];
-            birthdateInput.max = maxDateString;
-
-            // Set default value jika user sudah punya data
-            if (!birthdateInput.value && Auth::user()->tanggal_lahir) {
-                birthdateInput.value = "{{ Auth::user()->tanggal_lahir }}";
+                    // Form akan submit secara normal
+                    console.log('Form sedang diproses...');
+                });
             }
-        }
-    });
 
-    // Tambahkan variabel Auth user untuk JavaScript (jika perlu)
-    const Auth = {
-        user: @json(Auth::user())
-    };
-</script>
+            // Format phone number input
+            const phoneInput = document.getElementById('phone');
+            if (phoneInput) {
+                phoneInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 12) value = value.substring(0, 12);
+                    e.target.value = value;
+                });
+            }
+
+            // Set max date for birthdate (minimal 17 tahun dari sekarang)
+            const birthdateInput = document.getElementById('birthdate');
+            if (birthdateInput) {
+                const today = new Date();
+                const maxDate = new Date(today.getFullYear() - 17, today.getMonth(), today.getDate());
+                const maxDateString = maxDate.toISOString().split('T')[0];
+                birthdateInput.max = maxDateString;
+
+                // Set default value jika user sudah punya data
+                if (!birthdateInput.value && Auth::user() && Auth::user().tanggal_lahir) {
+                    birthdateInput.value = "{{ Auth::user()->tanggal_lahir ?? '' }}";
+                }
+            }
+        });
+
+        // Tambahkan variabel Auth user untuk JavaScript (jika perlu)
+        const Auth = {
+            user: @json(Auth::user())
+        };
+    </script>
 </body>
 </html>

@@ -3,26 +3,50 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\MetodePembayaran;
 use App\Models\Pembayaran;
 use App\Models\Pemesanan;
+use App\Models\Transaksi;
 use App\Services\PaylabsService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class PaymentController extends Controller
 {
-    protected $paylabsService;
+    protected PaylabsService $paylabsService;
 
     public function __construct(PaylabsService $paylabsService)
     {
         $this->paylabsService = $paylabsService;
     }
 
+    public function getNotifyUrlFromEnv()
+    {
+        return env('PAYLABS_NOTIFY_URL');
+    }
+
     /**
-     * Create payment request
+     * List active payment methods.
+     */
+    public function getPaymentMethods()
+    {
+        $methods = MetodePembayaran::aktif()->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $methods,
+        ]);
+    }
+
+    /**
+     * Create payment for a booking.
+     * Expected body: { kode_booking, payment_method }
      */
     public function createPayment(Request $request)
     {
@@ -32,395 +56,480 @@ class PaymentController extends Controller
 
         try {
             $validator = Validator::make($request->all(), [
-                'kode_booking' => 'required|exists:pemesanan,kode_booking',
+                'kode_booking' => 'required|string',
                 'payment_method' => 'required|string',
             ]);
 
             if ($validator->fails()) {
+                DB::rollBack();
                 return response()->json([
                     'success' => false,
-                    'message' => 'Validation error',
-                    'errors' => $validator->errors()
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
-            Log::info('Validation passed');
-
-            // Get pemesanan
             $pemesanan = Pemesanan::where('kode_booking', $request->kode_booking)->first();
-
             if (!$pemesanan) {
-                throw new \Exception('Pemesanan not found');
-            }
-
-            Log::info('Pemesanan found', ['id' => $pemesanan->id, 'kode' => $pemesanan->kode_booking]);
-
-            // Check if user is authorized
-            if (Auth::check() && $pemesanan->customer_id != Auth::id()) {
+                DB::rollBack();
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized access to this booking'
+                    'message' => 'Pemesanan not found',
+                ], 404);
+            }
+
+            // Check if user is authenticated
+            if (!Auth::check()) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentication required',
+                ], 401);
+            }
+
+            // Check if user owns this booking
+            if ($pemesanan->customer_id && (int) $pemesanan->customer_id !== (int) Auth::id()) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to create payment for this booking',
                 ], 403);
             }
 
-            // Check if payment already exists
-            $existingPayment = Pembayaran::where('pemesanan_id', $pemesanan->id)
-                ->whereIn('status', ['menunggu', 'diproses'])
+            $method = MetodePembayaran::where('kode', $request->payment_method)
+                ->where('aktif', true)
                 ->first();
 
-            if ($existingPayment) {
+            if (!$method) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment method not found',
+                ], 404);
+            }
+
+            $existingPayment = Pembayaran::where('pemesanan_id', $pemesanan->id)
+                ->whereIn('status', ['menunggu', 'diproses'])
+                ->orderByDesc('id')
+                ->first();
+
+            if ($existingPayment && $existingPayment->waktu_kadaluarsa && now()->lt($existingPayment->waktu_kadaluarsa)) {
                 $pembayaran = $existingPayment;
-                Log::info('Using existing payment', ['kode_pembayaran' => $pembayaran->kode_pembayaran]);
             } else {
-                // Create new payment
+                $expiryMinutes = (int) config('paylabs.payment.expiry_minutes', 30);
+
                 $pembayaran = Pembayaran::create([
                     'pemesanan_id' => $pemesanan->id,
-                    'kode_pembayaran' => 'PAY' . date('Ymd') . strtoupper(Str::random(6)),
+                    'kode_pembayaran' => 'PAY-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6)),
                     'jumlah' => $pemesanan->total_bayar,
-                    'metode' => $request->payment_method,
+                    'metode' => $method->kode,
                     'status' => 'menunggu',
-                    'waktu_kadaluarsa' => now()->addMinutes(30),
+                    'nama_bank' => $method->jenis ?? null,
+                    'instruksi_pembayaran' => is_string($method->instruksi) ? $method->instruksi : json_encode($method->instruksi),
+                    'waktu_kadaluarsa' => now()->addMinutes($expiryMinutes),
                 ]);
-                Log::info('New payment created', ['kode_pembayaran' => $pembayaran->kode_pembayaran]);
             }
-
-            // Get payment method details
-            $method = \App\Models\MetodePembayaran::where('kode', $request->payment_method)->first();
-
-            if (!$method) {
-                throw new \Exception('Payment method not found: ' . $request->payment_method);
-            }
-
-            Log::info('Payment method found', [
-                'method' => $method->nama,
-                'is_paylabs' => $method->is_paylabs,
-                'channel_code' => $method->paylabs_channel_code
-            ]);
 
             $paylabsResponse = null;
 
-            // If method uses Paylabs, call Paylabs API
-            if ($method && $method->is_paylabs) {
-                Log::info('Calling Paylabs API for payment creation');
-
+            if ($method->is_paylabs) {
                 $paylabsResponse = $this->paylabsService->createPayment(
                     $pembayaran,
                     $method->paylabs_channel_code,
                     $method->paylabs_channel_name
                 );
 
-                if (!$paylabsResponse['success']) {
-                    throw new \Exception('Paylabs error: ' . $paylabsResponse['error']);
+                if (!($paylabsResponse['success'] ?? false)) {
+                    throw new \Exception('Paylabs error: ' . ($paylabsResponse['error'] ?? 'Unknown error'));
                 }
-
-                Log::info('Paylabs payment created successfully', [
-                    'transaction_id' => $paylabsResponse['transaction_id']
-                ]);
-            } else {
-                // For non-Paylabs methods (fallback)
-                Log::info('Using non-Paylabs method, creating simple response');
-
-                $paylabsResponse = [
-                    'success' => true,
-                    'transaction_id' => 'LOCAL' . time(),
-                    'payment_data' => [
-                        'transaction_id' => 'LOCAL' . time(),
-                        'amount' => (int) $pembayaran->jumlah,
-                        'status' => 'PENDING',
-                        'expired_time' => $pembayaran->waktu_kadaluarsa->toDateTimeString(),
-                        'qr_code' => $method->kode === 'qris' ?
-                            'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' .
-                            urlencode('SMARTSHUTTLE|' . $pembayaran->kode_pembayaran . '|' . $pembayaran->jumlah) : null
-                    ]
-                ];
             }
 
             DB::commit();
-
-            Log::info('=== PAYLABS CREATE PAYMENT SUCCESS ===');
 
             return response()->json([
                 'success' => true,
                 'message' => 'Payment request created successfully',
                 'data' => [
-                    'payment' => [
-                        'id' => $pembayaran->id,
-                        'kode_pembayaran' => $pembayaran->kode_pembayaran,
-                        'jumlah' => $pembayaran->jumlah,
-                        'metode' => $pembayaran->metode,
-                        'status' => $pembayaran->status,
-                        'waktu_kadaluarsa' => $pembayaran->waktu_kadaluarsa,
-                        'pemesanan_id' => $pembayaran->pemesanan_id,
-                        'paylabs_transaction_id' => $pembayaran->paylabs_transaction_id,
-                        'qr_code' => $pembayaran->qr_code,
-                        'no_virtual_account' => $pembayaran->no_virtual_account,
-                        'nama_bank' => $pembayaran->nama_bank,
-                        'checkout_url' => $pembayaran->checkout_url ?? null,
-                    ],
-                    'paylabs_response' => $paylabsResponse
-                ]
+                    'payment' => $pembayaran->fresh(),
+                    'paylabs_response' => $paylabsResponse,
+                ],
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
             Log::error('PAYLABS CREATE PAYMENT ERROR: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'request' => $request->all()
+                'request' => $request->all(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create payment: ' . $e->getMessage(),
-                'debug' => env('APP_DEBUG') ? [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ] : null
             ], 500);
         }
     }
 
     /**
-     * Get payment status
+     * Get payment status (local + optionally query Paylabs).
      */
     public function getPaymentStatus($kodePembayaran)
     {
         try {
-            Log::info('PAYLABS: Getting payment status for: ' . $kodePembayaran);
-
             $pembayaran = Pembayaran::where('kode_pembayaran', $kodePembayaran)->first();
-
             if (!$pembayaran) {
-                Log::warning('Payment not found: ' . $kodePembayaran);
                 return response()->json([
                     'success' => false,
-                    'message' => 'Payment not found'
+                    'message' => 'Payment not found',
                 ], 404);
             }
 
-            Log::info('Payment found', [
-                'id' => $pembayaran->id,
-                'status' => $pembayaran->status,
-                'paylabs_status' => $pembayaran->paylabs_status,
-                'paylabs_transaction_id' => $pembayaran->paylabs_transaction_id
-            ]);
-
             $statusData = [
-                'status' => $pembayaran->status,
-                'transactionId' => $pembayaran->paylabs_transaction_id,
-                'amount' => (int) $pembayaran->jumlah,
-                'paylabs_status' => $pembayaran->paylabs_status
+                'local_status' => $pembayaran->status,
+                'paylabs_status' => $pembayaran->paylabs_status,
+                'merchantTradeNo' => $pembayaran->kode_pembayaran,
+                'platformTradeNo' => $pembayaran->platform_trade_no,
+                'amount' => (float) $pembayaran->jumlah,
             ];
 
-            // If there's a Paylabs transaction ID, check status from Paylabs
-            if ($pembayaran->paylabs_transaction_id && $pembayaran->paylabs_status !== 'PAID') {
-                $paylabsStatus = $this->paylabsService->checkStatus($pembayaran->paylabs_transaction_id);
-
-                if ($paylabsStatus['success']) {
-                    $statusData['paylabs_status'] = $paylabsStatus['status'];
-                    $statusData['payment_time'] = $paylabsStatus['paymentTime'];
-
-                    // Update local status if changed
-                    if ($paylabsStatus['status'] !== $pembayaran->paylabs_status) {
-                        $localStatus = $this->mapPaylabsStatusToLocal($paylabsStatus['status']);
-
-                        $pembayaran->update([
-                            'paylabs_status' => $paylabsStatus['status'],
-                            'status' => $localStatus,
-                            'waktu_pembayaran' => $paylabsStatus['status'] === 'PAID' ? now() : null
-                        ]);
-
-                        if ($paylabsStatus['status'] === 'PAID') {
-                            $this->updatePemesananAfterPayment($pembayaran);
-                        }
-                    }
-                }
+            // Query Paylabs if we have identifiers and not PAID
+            if ($pembayaran->platform_trade_no && $pembayaran->paylabs_status !== 'PAID') {
+                $paylabsStatus = $this->paylabsService->checkStatus($pembayaran->kode_pembayaran, $pembayaran->platform_trade_no);
+                $statusData['paylabs_query'] = $paylabsStatus;
             }
 
-            // Calculate expiry time
             $isExpired = false;
             $remainingTime = 0;
-
             if ($pembayaran->waktu_kadaluarsa) {
-                $now = now();
-                $expiry = \Carbon\Carbon::parse($pembayaran->waktu_kadaluarsa);
-                $isExpired = $expiry < $now;
-                $remainingTime = max(0, $now->diffInSeconds($expiry, false));
+                $remainingTime = max(0, now()->diffInSeconds($pembayaran->waktu_kadaluarsa, false));
+                $isExpired = $remainingTime <= 0;
             }
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'payment' => [
-                        'id' => $pembayaran->id,
-                        'kode_pembayaran' => $pembayaran->kode_pembayaran,
-                        'jumlah' => $pembayaran->jumlah,
-                        'metode' => $pembayaran->metode,
-                        'status' => $pembayaran->status,
-                        'paylabs_status' => $pembayaran->paylabs_status,
-                        'waktu_kadaluarsa' => $pembayaran->waktu_kadaluarsa,
-                        'waktu_pembayaran' => $pembayaran->waktu_pembayaran,
-                        'created_at' => $pembayaran->created_at,
-                        'updated_at' => $pembayaran->updated_at,
-                        'qr_code' => $pembayaran->qr_code,
-                        'no_virtual_account' => $pembayaran->no_virtual_account,
-                        'nama_bank' => $pembayaran->nama_bank,
-                        'checkout_url' => $pembayaran->checkout_url ?? null,
-                    ],
+                    'payment' => $pembayaran,
                     'status' => $statusData,
                     'is_expired' => $isExpired,
                     'remaining_time' => $remainingTime,
-                    'is_paid' => $pembayaran->status === 'berhasil'
-                ]
+                ],
             ]);
-
         } catch (\Exception $e) {
             Log::error('PAYLABS Get payment status error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'kodePembayaran' => $kodePembayaran
+                'kodePembayaran' => $kodePembayaran,
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get payment status: ' . $e->getMessage(),
-                'debug' => env('APP_DEBUG') ? $e->getMessage() : null
             ], 500);
         }
     }
 
     /**
-     * Payment callback (webhook) from Paylabs
+     * Get QR image/url for a payment.
+     */
+    public function getQRCode($kodePembayaran)
+    {
+        $pembayaran = Pembayaran::where('kode_pembayaran', $kodePembayaran)->first();
+        if (!$pembayaran) {
+            return response()->json(['success' => false, 'message' => 'Payment not found'], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'qr_code' => $pembayaran->qr_code,
+                'qris_url' => $pembayaran->qris_url,
+            ],
+        ]);
+    }
+
+    /**
+     * Legacy callback endpoint (deprecated).
      */
     public function callback(Request $request)
     {
-        Log::info('=== PAYLABS CALLBACK RECEIVED ===', $request->all());
+        Log::info('PAYLABS legacy callback received (deprecated)', $request->all());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Deprecated callback endpoint. Use /api/payment/callback-v23 for Paylabs v2.3.',
+        ], 410);
+    }
+
+    /**
+     * Paylabs QRIS v2.3 callback.
+     */
+    public function callbackV23(Request $request)
+    {
+        Log::info('=== PAYLABS v2.3 CALLBACK RECEIVED ===', $request->all());
 
         DB::beginTransaction();
 
         try {
-            // Verify signature
-            $signature = $request->input('signature');
-            $data = $request->except('signature');
+            $timestamp = $request->header('X-TIMESTAMP');
+            $signature = $request->header('X-SIGNATURE');
 
-            if (!$this->paylabsService->verifySignature($data, $signature)) {
-                Log::error('PAYLABS Callback signature verification failed', $request->all());
-                return response()->json(['success' => false, 'message' => 'Invalid signature'], 400);
+            $endpointPath = $request->getPathInfo();
+            $rawBody = $request->getContent();
+
+            if (!$this->paylabsService->verifySignatureV23($rawBody, $signature, $timestamp, $endpointPath)) {
+                Log::error('PAYLABS v2.3 Callback signature verification failed', [
+                    'headers' => $request->headers->all(),
+                    'body' => $request->all(),
+                ]);
+
+                return response()->json([
+                    'errCode' => '99',
+                    'errCodeDes' => 'Invalid signature',
+                ], 400);
             }
 
             $validator = Validator::make($request->all(), [
+                'errCode' => 'required|string',
                 'merchantId' => 'required|string',
-                'transactionId' => 'required|string',
+                'platformTradeNo' => 'required|string',
                 'merchantTradeNo' => 'required|string',
                 'amount' => 'required|numeric',
-                'currency' => 'required|string',
-                'paymentChannel' => 'required|string',
                 'status' => 'required|string',
-                'signature' => 'required|string'
             ]);
 
             if ($validator->fails()) {
-                Log::error('PAYLABS Callback validation failed', $validator->errors()->toArray());
-                return response()->json(['success' => false, 'message' => 'Invalid callback data'], 400);
+                return response()->json([
+                    'errCode' => '99',
+                    'errCodeDes' => 'Invalid data',
+                ], 400);
             }
 
-            // Find payment
             $pembayaran = Pembayaran::where('kode_pembayaran', $request->merchantTradeNo)
-                ->orWhere('paylabs_transaction_id', $request->transactionId)
+                ->orWhere('platform_trade_no', $request->platformTradeNo)
                 ->first();
 
             if (!$pembayaran) {
-                Log::error('Payment not found for callback', ['merchantTradeNo' => $request->merchantTradeNo]);
-                throw new \Exception('Payment not found');
+                return response()->json([
+                    'errCode' => '99',
+                    'errCodeDes' => 'Payment not found',
+                ], 404);
             }
 
-            Log::info('Payment found for callback', [
-                'payment_id' => $pembayaran->id,
-                'status' => $request->status
-            ]);
-
-            // Update payment status
-            $localStatus = $this->mapPaylabsStatusToLocal($request->status);
+            $paylabsStatus = $this->mapQRISStatusToPaylabs($request->status);
+            $localStatus = $this->mapPaylabsStatusToLocal($paylabsStatus);
 
             $updateData = [
-                'paylabs_status' => $request->status,
+                'paylabs_status' => $paylabsStatus,
                 'status' => $localStatus,
                 'paylabs_response' => json_encode($request->all()),
+                'paylabs_raw_response' => json_encode($request->all()),
                 'updated_at' => now(),
             ];
 
-            if ($request->status === 'PAID') {
+            foreach (['successTime' => 'success_time', 'expiredTime' => 'expired_time', 'rrn' => 'rrn', 'tid' => 'tid', 'payer' => 'payer_name', 'phoneNumber' => 'payer_phone', 'issuerId' => 'issuer_id'] as $from => $to) {
+                if ($request->has($from)) {
+                    $updateData[$to] = $request->input($from);
+                }
+            }
+
+            if ($paylabsStatus === 'PAID' && $localStatus === 'berhasil') {
                 $updateData['waktu_pembayaran'] = now();
+                $this->updatePemesananAfterPayment($pembayaran);
             }
 
             $pembayaran->update($updateData);
 
-            // Update pemesanan if payment successful
-            if ($request->status === 'PAID') {
-                $this->updatePemesananAfterPayment($pembayaran);
-            }
-
             DB::commit();
 
-            Log::info('PAYLABS Callback processed successfully', [
-                'transactionId' => $request->transactionId,
-                'status' => $request->status
+            return response()->json([
+                'errCode' => '0',
+                'errCodeDes' => 'Success',
             ]);
-
-            return response()->json(['success' => true]);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
-            Log::error('PAYLABS Callback processing error: ' . $e->getMessage(), [
-                'transactionId' => $request->input('transactionId', 'unknown'),
-                'request' => $request->all()
+            Log::error('PAYLABS v2.3 Callback processing error: ' . $e->getMessage(), [
+                'request' => $request->all(),
             ]);
 
             return response()->json([
-                'success' => false,
-                'message' => 'Callback processing failed: ' . $e->getMessage()
+                'errCode' => '99',
+                'errCodeDes' => 'Callback processing failed: ' . $e->getMessage(),
             ], 500);
         }
     }
 
     /**
-     * Update pemesanan after successful payment
+     * Test Paylabs connection.
      */
-    private function updatePemesananAfterPayment($pembayaran)
+    public function testConnection()
     {
-        $pembayaran->pemesanan->update([
-            'status' => 'dibayar',
-            'tanggal_pembayaran' => now()->toDateString(),
-            'waktu_pembayaran' => now(),
-            'metode_pembayaran' => $pembayaran->metode
-        ]);
+        try {
+            $result = $this->paylabsService->testConnection();
 
-        // Create transaction record
-        \App\Models\Transaksi::create([
-            'pembayaran_id' => $pembayaran->id,
-            'pemesanan_id' => $pembayaran->pemesanan_id,
-            'kode_transaksi' => 'TRX' . date('Ymd') . strtoupper(Str::random(6)),
-            'jumlah' => $pembayaran->jumlah,
-            'biaya_admin' => 0,
-            'total' => $pembayaran->jumlah,
-            'waktu_transaksi' => now()
-        ]);
-
-        // Add loyalty points if user exists
-        if ($pembayaran->pemesanan->customer) {
-            $this->addLoyaltyPoints($pembayaran->pemesanan->customer);
+            return response()->json([
+                'success' => (bool) ($result['success'] ?? false),
+                'message' => ($result['success'] ?? false) ? 'Paylabs connection successful' : 'Paylabs connection failed',
+                'data' => $result,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Test connection failed: ' . $e->getMessage(),
+            ], 500);
         }
-
-        Log::info('Pemesanan updated after payment', [
-            'pemesanan_id' => $pembayaran->pemesanan_id,
-            'status' => 'dibayar'
-        ]);
     }
 
     /**
-     * Map Paylabs status to local status
+     * Protected route: simulate payment success.
      */
-    private function mapPaylabsStatusToLocal($paylabsStatus)
+    public function simulatePayment(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'kode_pembayaran' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $pembayaran = Pembayaran::where('kode_pembayaran', $request->kode_pembayaran)->first();
+        if (!$pembayaran) {
+            return response()->json(['success' => false, 'message' => 'Payment not found'], 404);
+        }
+
+        $pembayaran->update([
+            'status' => 'berhasil',
+            'paylabs_status' => 'PAID',
+            'waktu_pembayaran' => now(),
+        ]);
+
+        $this->updatePemesananAfterPayment($pembayaran);
+
+        return response()->json(['success' => true, 'data' => $pembayaran->fresh()]);
+    }
+
+    /**
+     * DEV: Generate QRIS directly to Paylabs (v2.3) for Postman testing.
+     */
+    public function devPaylabsQrisCreate(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'amount' => 'required|numeric|min:1',
+            'productName' => 'required|string|max:100',
+            'merchantTradeNo' => 'nullable|string|max:32',
+            'notifyUrl' => 'nullable|url|max:200',
+            'feeType' => 'nullable|in:BEN,OUR',
+            'productInfo' => 'nullable|array',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid request',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $result = $this->paylabsService->qrisCreateV23($request->all());
+            return response()->json($result, $result['success'] ? 200 : 502);
+        } catch (\Exception $e) {
+            Log::error('DEV PAYLABS QRIS CREATE error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * DEV: Query QRIS order status (v2.3).
+     */
+    public function devPaylabsQrisQuery(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'merchantTradeNo' => 'required_without:rrn|string|max:32',
+            'rrn' => 'required_without:merchantTradeNo|string|max:32',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid request',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $result = $this->paylabsService->qrisQueryV23($request->all());
+            return response()->json($result, $result['success'] ? 200 : 502);
+        } catch (\Exception $e) {
+            Log::error('DEV PAYLABS QRIS QUERY error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * DEV: Cancel QRIS order (v2.3).
+     */
+    public function devPaylabsQrisCancel(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'merchantTradeNo' => 'required|string|max:32',
+            'platformTradeNo' => 'required|string|max:32',
+            'qrCode' => 'nullable|string|max:300',
+            'productName' => 'nullable|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid request',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $result = $this->paylabsService->qrisCancelV23($request->all());
+            return response()->json($result, $result['success'] ? 200 : 502);
+        } catch (\Exception $e) {
+            Log::error('DEV PAYLABS QRIS CANCEL error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    private function updatePemesananAfterPayment(Pembayaran $pembayaran): void
+    {
+        $pemesanan = $pembayaran->pemesanan;
+        if ($pemesanan) {
+            $pemesanan->update([
+                'status' => 'dibayar',
+                'tanggal_pembayaran' => now()->toDateString(),
+                'waktu_pembayaran' => now(),
+                'metode_pembayaran' => $pembayaran->metode,
+                'status_pembayaran' => 'paid',
+            ]);
+        }
+
+        if (!Transaksi::where('pembayaran_id', $pembayaran->id)->exists()) {
+            Transaksi::create([
+                'pembayaran_id' => $pembayaran->id,
+                'pemesanan_id' => $pembayaran->pemesanan_id,
+                'kode_transaksi' => Transaksi::generateKodeTransaksi(),
+                'jumlah' => $pembayaran->jumlah,
+                'biaya_admin' => 0,
+                'total' => $pembayaran->jumlah,
+                'waktu_transaksi' => now(),
+            ]);
+        }
+    }
+
+    private function mapPaylabsStatusToLocal(string $paylabsStatus): string
     {
         $mapping = [
             'PENDING' => 'menunggu',
@@ -429,87 +538,84 @@ class PaymentController extends Controller
             'EXPIRED' => 'kadaluarsa',
             'FAILED' => 'gagal',
             'CANCELLED' => 'dibatalkan',
-            'REFUNDED' => 'dikembalikan'
         ];
 
         return $mapping[$paylabsStatus] ?? 'menunggu';
     }
 
-    /**
-     * Add loyalty points
-     */
-    private function addLoyaltyPoints($user)
+    private function mapQRISStatusToPaylabs(string $qrisStatus): string
     {
-        try {
-            $user->member_point += 100;
+        $mapping = [
+            '01' => 'PENDING',
+            '02' => 'PAID',
+            '09' => 'FAILED',
+            '06' => 'CANCELLED',
+        ];
 
-            // Add loyalty points based on membership level
-            $loyaltyPoints = $this->calculateLoyaltyPoints($user->membership_level);
-            $user->loyalty_point += $loyaltyPoints;
-
-            // Update membership level if needed
-            $newLevel = $this->updateMembershipLevel($user);
-            $user->membership_level = $newLevel;
-
-            $user->save();
-
-            Log::info('Loyalty points added', [
-                'user_id' => $user->id,
-                'points_added' => 100,
-                'loyalty_points_added' => $loyaltyPoints,
-                'new_level' => $newLevel
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Failed to add loyalty points: ' . $e->getMessage());
-        }
+        return $mapping[$qrisStatus] ?? $qrisStatus;
     }
-
     /**
-     * Calculate loyalty points
+     * DEV: Generate Virtual Account directly to Paylabs (v2.3) for Postman testing.
      */
-    private function calculateLoyaltyPoints($level)
+    public function devPaylabsVaCreate(Request $request)
     {
-        switch ($level) {
-            case 'Bronze': return 50;
-            case 'Silver': return 60;
-            case 'Gold': return 80;
-            case 'Platinum': return 100;
-            default: return 50;
-        }
-    }
+        $validator = Validator::make($request->all(), [
+            'amount' => 'required|numeric|min:1',
+            'paymentType' => 'required|string|in:BCAVA,MandiriVA,BNIVA,BRIVA,PermataVA,CIMBVA,DanamonVA,MaybankVA,BTNVA,SinarmasVA,BJBVA,BTPNVA,OCBCVA',
+            'payer' => 'required|string|max:60',
+            'productName' => 'required|string|max:100',
+            'merchantTradeNo' => 'nullable|string|max:32',
+            'notifyUrl' => 'nullable|url|max:200',
+            'feeType' => 'nullable|in:BEN,OUR',
+            'productInfo' => 'nullable|array',
+        ]);
 
-    /**
-     * Update membership level
-     */
-    private function updateMembershipLevel($user)
-    {
-        $points = $user->member_point;
-
-        if ($points >= 4500) return 'Platinum';
-        if ($points >= 2500) return 'Gold';
-        if ($points >= 1000) return 'Silver';
-        return 'Bronze';
-    }
-
-    /**
-     * Test Paylabs connection
-     */
-    public function testConnection()
-    {
-        try {
-            $result = $this->paylabsService->testConnection();
-
-            return response()->json([
-                'success' => $result['success'],
-                'message' => $result['success'] ? 'Paylabs connection successful' : 'Paylabs connection failed',
-                'data' => $result
-            ]);
-
-        } catch (\Exception $e) {
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Test connection failed: ' . $e->getMessage()
+                'message' => 'Invalid request',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $result = $this->paylabsService->vaCreateV23($request->all());
+            return response()->json($result, $result['success'] ? 200 : 502);
+        } catch (\Exception $e) {
+            Log::error('DEV PAYLABS VA CREATE error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * DEV: Query Virtual Account order status (v2.3).
+     */
+    public function devPaylabsVaQuery(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'merchantTradeNo' => 'required_without:platformTradeNo|string|max:32',
+            'platformTradeNo' => 'required_without:merchantTradeNo|string|max:32',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid request',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $result = $this->paylabsService->vaQueryV23($request->all());
+            return response()->json($result, $result['success'] ? 200 : 502);
+        } catch (\Exception $e) {
+            Log::error('DEV PAYLABS VA QUERY error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

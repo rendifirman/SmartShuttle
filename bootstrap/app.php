@@ -1,10 +1,8 @@
 <?php
 
 use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Configuration\Middleware;
-use Spatie\Permission\Middlewares\RoleMiddleware;
 use Illuminate\Foundation\Configuration\Exceptions;
-use Spatie\Permission\Middlewares\PermissionMiddleware;
+use Illuminate\Foundation\Configuration\Middleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,18 +11,16 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->api(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        ]);
-
+    ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'admin.role' => \App\Http\Middleware\CheckAdminRole::class,
+            'branch.access' => \App\Http\Middleware\CheckBranchAccess::class,
             'auth.customer' => \App\Http\Middleware\CheckCustomerSession::class,
-            'guest.customer' => \App\Http\Middleware\RedirectIfAuthenticatedCustomer::class, // PERBAIKAN DI SINI
+            'guest.customer' => \App\Http\Middleware\RedirectIfAuthenticatedCustomer::class,
+            'guest.driver' => \App\Http\Middleware\RedirectIfAuthenticatedDriver::class,
+            'ensure.session' => \App\Http\Middleware\EnsureSessionStarted::class,
         ]);
-        //
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
+    ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();

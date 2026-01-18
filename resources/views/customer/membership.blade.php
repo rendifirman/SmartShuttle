@@ -8,7 +8,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @extends('layouts.app-profile')
 
+    @section('title', 'Membership SmartShuttle')
+
+    @push('styles')
     <style>
         * {
             margin: 0;
@@ -19,157 +23,17 @@
 
         body {
             background: #f5f5f5;
-        }
-
-        .container {
-            display: flex;
             min-height: 100vh;
-        }
-
-        /* SIDEBAR */
-        .sidebar {
-            width: 300px;
-            background: #00274D;
-            color: #fff;
-            padding: 30px 0;
-            flex-shrink: 0;
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            color: #FF6B2C;
-            margin-bottom: 40px;
-            padding: 0 20px;
-            cursor: pointer;
-            transition: transform 0.3s, color 0.3s;
-        }
-
-        .logo:hover {
-            transform: scale(1.05);
-            color: #FF8E53;
-        }
-
-        .menu {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .menu li {
-            padding: 0;
-            margin: 5px 15px;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-
-        .menu a.menu-link {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 18px 30px;
-            color: inherit;
-            text-decoration: none;
-            font-size: 16px;
-            transition: background 0.3s;
-            width: 100%;
-        }
-
-        .menu a.menu-link:hover {
-            background: rgba(255, 107, 44, 0.1);
-        }
-
-        .menu li.active a.menu-link {
-            background: #FF6B2C;
-            border-radius: 5px;
-        }
-
-        .menu-icon {
-            width: 25px;
-            text-align: center;
-            font-size: 18px;
-        }
-
-        .sidebar-footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .logout-link {
-            color: #ff6b6b !important;
-        }
-
-        .logout-link:hover {
-            background: rgba(255, 107, 44, 0.1) !important;
-        }
-
-        .beranda-link {
-            color: #FF6B2C !important;
-        }
-
-        .beranda-link:hover {
-            background: rgba(255, 107, 44, 0.1) !important;
-        }
-
-        /* CONTENT AREA */
-        .content {
-            flex: 1;
-            padding: 30px;
-            position: relative;
-            margin-left: 300px;
-            width: calc(100% - 300px);
-            min-height: 100vh;
-        }
-
-        /* HEADER */
-        .top-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            background: #fff;
-            padding: 20px 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .header {
-            font-size: 28px;
-            font-weight: 700;
-            color: #00274D;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .header i {
-            color: #FF6B2C;
-            font-size: 24px;
-        }
-
-        .profile-icon {
-            width: 50px;
-            height: 50px;
-            background: #00274D;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
-
-        .profile-icon:hover {
-            transform: scale(1.05);
         }
 
         /* MEMBERSHIP AKTIF STYLES */
+        .membership-active-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0;
+        }
+
         .level-up-notification {
             background: linear-gradient(135deg, #28a745, #20c997);
             color: white;
@@ -698,6 +562,10 @@
 
         /* Responsive */
         @media (max-width: 1200px) {
+            .membership-active-container {
+                padding: 0 15px;
+            }
+
             .welcome-profile-card {
                 gap: 20px;
             }
@@ -755,21 +623,8 @@
         }
 
         @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-            }
-
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-                margin-left: 0;
-            }
-
-            .content {
-                margin-left: 0;
-                width: 100%;
-                padding: 20px;
+            .membership-active-container {
+                padding: 0 10px;
             }
 
             .tier-header {
@@ -855,318 +710,246 @@
             }
         }
     </style>
+    @endpush
 </head>
 <body>
-
-<div class="container">
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-        <!-- LOGO YANG BISA DIKLIK UNTUK KE HALAMAN BERANDA -->
-        <div class="logo" onclick="location.href='{{ route('customer.beranda') }}'">
-            SMART SHUTTLE
-        </div>
-
-        <ul class="menu">
-            <li>
-                <a href="{{ route('customer.dashboardprofile') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-home"></i></span>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="{{ route('customer.profilcust') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-user-circle"></i></span>
-                    <span>Profil Saya</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="{{ route('customer.riwayat') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-history"></i></span>
-                    <span>Riwayat Pesanan</span>
-                </a>
-            </li>
-
-            <li class="active">
-                <a href="{{ route('customer.membership') }}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-crown"></i></span>
-                    <span>Membership</span>
-                </a>
-            </li>
-
-            <!-- TOMBOL BERANDA DI BAWAH LOGOUT -->
-            <li class="sidebar-footer">
-                <a href="{{ route('customer.beranda') }}" class="menu-link beranda-link">
-                    <span class="menu-icon"><i class="fas fa-arrow-left"></i></span>
-                    <span>Beranda</span>
-                </a>
-            </li>
-
-            <li class="sidebar-footer">
-                <form id="logout-form" action="{{ route('customer.logout') }}" method="POST" style="display: none;">
-                    @csrf
-                </form>
-                <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="menu-link logout-link">
-                    <span class="menu-icon"><i class="fas fa-sign-out-alt"></i></span>
-                    <span>Logout</span>
-                </a>
-            </li>
-        </ul>
-    </div>
-
-    <!-- CONTENT AREA -->
-    <div class="content">
-        <!-- HEADER -->
-        <div class="top-header">
-            <div class="header">
-                <i class="fas fa-crown"></i>
-                <span>Membership Aktif</span>
+@section('content')
+<!-- MAIN CONTENT -->
+<div class="membership-active-container">
+    <!-- PAGE 4: MEMBERSHIP AKTIF -->
+    <div id="page-membership-active">
+        <!-- Level Up Notification -->
+        @if(session('level_up'))
+        <div class="level-up-notification" id="levelUpNotification">
+            <div>
+                <i class="fas fa-trophy"></i>
+                <strong id="levelUpMessage">{{ session('level_up_message') ?? 'Selamat! Anda sekarang menjadi Member Bronze!' }}</strong>
             </div>
-
-            <div class="profile-icon" title="Lihat Profil" onclick="location.href='{{ route('customer.profilcust') }}'">
-                <i class="fas fa-user"></i>
+            <div>
+                <i class="fas fa-party-horn"></i>
             </div>
         </div>
+        @endif
 
-        <!-- MAIN CONTENT -->
-        <div class="membership-wrapper">
-            <!-- PAGE 4: MEMBERSHIP AKTIF -->
-            <div id="page-membership-active">
-                <!-- Level Up Notification -->
-                @if(session('level_up'))
-                <div class="level-up-notification" id="levelUpNotification">
-                    <div>
-                        <i class="fas fa-trophy"></i>
-                        <strong id="levelUpMessage">{{ session('level_up_message') ?? 'Selamat! Anda sekarang menjadi Member Bronze!' }}</strong>
+        <!-- KOMBINASI WELCOME DAN PROFILE CARD -->
+        <div class="welcome-profile-card">
+            <div class="profile-left">
+                <div class="profile-image" id="profileImage">
+                    @php
+                        // Function untuk mendapatkan inisial dari nama
+                        function getInitials($name) {
+                            $words = explode(' ', $name);
+                            $initials = '';
+
+                            foreach ($words as $word) {
+                                if (!empty($word)) {
+                                    $initials .= strtoupper(substr($word, 0, 1));
+                                }
+                            }
+
+                            // Jika hanya 1 kata, ambil 2 karakter pertama
+                            if (strlen($initials) == 1) {
+                                $initials = strtoupper(substr($name, 0, 2));
+                            } else {
+                                // Ambil maksimal 2 huruf inisial
+                                $initials = substr($initials, 0, 2);
+                            }
+
+                            return $initials;
+                        }
+                    @endphp
+                    {{ getInitials(Auth::user()->name) }}
+                </div>
+
+                <div class="profile-content">
+                    <h3 id="welcomeTitle">Hello, {{ Auth::user()->name }}</h3>
+                    <p id="welcomeMessage">Selamat datang di program membership Smart Shuttle!</p>
+
+                    <div class="level-badge {{ strtolower($membership->level ?? 'bronze') }}" id="levelBadge">
+                        {{ $membership->level ?? 'Bronze' }} Member
                     </div>
+                </div>
+            </div>
+
+            <!-- POINT BOXES DI SEBELAH KANAN - HORIZONTAL SEJAJAR -->
+            <div class="points-right-container">
+                <div class="point-box-right">
+                    <div class="number" id="currentPoints">{{ $membership->points ?? 0 }}</div>
+                    <div class="label">Point Member</div>
+                    <div class="level-status" id="levelStatus">
+                        @php
+                            $nextLevelPoints = 0;
+                            $currentLevel = strtolower($membership->level ?? 'bronze');
+                            if($currentLevel == 'bronze') $nextLevelPoints = 1000;
+                            elseif($currentLevel == 'silver') $nextLevelPoints = 2500;
+                            elseif($currentLevel == 'gold') $nextLevelPoints = 4500;
+                            else $nextLevelPoints = 6000;
+
+                            $pointsNeeded = $nextLevelPoints - ($membership->points ?? 0);
+                        @endphp
+                        @if($pointsNeeded <= 0 && $currentLevel != 'platinum')
+                            🎉 Siap naik ke {{ ucfirst($nextLevel ?? 'Silver') }}!
+                        @elseif($currentLevel == 'platinum' && ($membership->points ?? 0) >= 6000)
+                            🏆 Level tertinggi tercapai!
+                        @else
+                            Butuh {{ $pointsNeeded }} PM untuk {{ ucfirst($nextLevel ?? 'Silver') }}
+                        @endif
+                    </div>
+                </div>
+
+                <div class="point-box-right">
+                    <div class="number" id="loyaltyPoints">{{ $membership->loyalty_points ?? 0 }}</div>
+                    <div class="label">Loyalty Point</div>
+                </div>
+            </div>
+
+            <div class="welcome-icon">
+                <i class="fas fa-crown"></i>
+            </div>
+        </div>
+
+        <!-- PROGRESS BAR OVAL PANJANG -->
+        <div class="progress-info-card">
+            <h6><i class="fas fa-chart-line"></i> Progress Level Membership</h6>
+
+            <div class="progress-oval-container">
+                <div class="progress-oval">
+                    @php
+                        $progressPercentage = 0;
+                        if(isset($membership)) {
+                            $currentPoints = $membership->points ?? 0;
+                            if($membership->level == 'Bronze') {
+                                $progressPercentage = ($currentPoints / 1000) * 100;
+                            } elseif($membership->level == 'Silver') {
+                                $progressPercentage = (($currentPoints - 1000) / 1500) * 100;
+                            } elseif($membership->level == 'Gold') {
+                                $progressPercentage = (($currentPoints - 2500) / 2000) * 100;
+                            } elseif($membership->level == 'Platinum') {
+                                $progressPercentage = (($currentPoints - 4500) / 1500) * 100;
+                            }
+                            $progressPercentage = min(100, max(0, $progressPercentage));
+                        }
+                    @endphp
+                    <div class="progress-oval-fill" id="progressOvalFill" style="width: {{ $progressPercentage }}%;"></div>
+                </div>
+                <div class="progress-oval-labels">
+                    @php
+                        $currentMin = 0;
+                        $currentMax = 1000;
+                        if($membership->level == 'Silver') {
+                            $currentMin = 1000;
+                            $currentMax = 2500;
+                        } elseif($membership->level == 'Gold') {
+                            $currentMin = 2500;
+                            $currentMax = 4500;
+                        } elseif($membership->level == 'Platinum') {
+                            $currentMin = 4500;
+                            $currentMax = 6000;
+                        }
+                    @endphp
+                    <div class="progress-label" id="currentLevelLabel">{{ $membership->level ?? 'Bronze' }}<br>{{ $currentMin }} PM</div>
+                    <div class="progress-label" id="nextLevelLabel">{{ $nextLevel ?? 'Silver' }}<br>{{ $currentMax }} PM</div>
+                </div>
+            </div>
+
+            <div class="progress-stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="progressPercentage">{{ number_format($progressPercentage, 1) }}%</div>
+                    <div class="stat-label">Progress</div>
+                </div>
+                <div class="stat-item">
+                    @php
+                        $pointsNeeded = max(0, $currentMax - ($membership->points ?? 0));
+                    @endphp
+                    <div class="stat-number" id="pointsNeededStat">{{ $pointsNeeded }}</div>
+                    <div class="stat-label">PM Dibutuhkan</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="currentPointsStat">{{ $membership->points ?? 0 }}</div>
+                    <div class="stat-label">PM Saat Ini</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TINGKAT MEMBERSHIP -->
+        <div class="info-card">
+            <h6><i class="fas fa-trophy"></i> Tingkat Membership</h6>
+
+            @php
+                $tiers = [
+                    'bronze' => ['min' => 0, 'max' => 1000, 'reward' => '+50 LP'],
+                    'silver' => ['min' => 1000, 'max' => 2500, 'reward' => '+60 LP'],
+                    'gold' => ['min' => 2500, 'max' => 4500, 'reward' => '+80 LP'],
+                    'platinum' => ['min' => 4500, 'max' => 6000, 'reward' => '+100 LP'],
+                ];
+                $currentLevel = strtolower($membership->level ?? 'bronze');
+            @endphp
+
+            @foreach($tiers as $tierName => $tierData)
+            <div class="membership-tier {{ $tierName }}-tier {{ $currentLevel == $tierName ? 'current-tier' : '' }}" id="{{ $tierName }}Tier">
+                <div class="tier-header">
                     <div>
-                        <i class="fas fa-party-horn"></i>
+                        <div class="tier-name">{{ ucfirst($tierName) }}</div>
+                        <div class="tier-points">({{ $tierData['min'] }}–{{ $tierData['max'] }} PM)</div>
+                    </div>
+                    <div class="tier-reward">{{ $tierData['reward'] }} / pembelian</div>
+                </div>
+                <p class="tier-description">Reward: {{ $tierData['reward'] }} / pembelian</p>
+                @if($currentLevel == $tierName || ($membership->points ?? 0) >= $tierData['min'])
+                <div class="tier-progress active" id="{{ $tierName }}ProgressContainer">
+                    @php
+                        $tierProgress = 0;
+                        if(($membership->points ?? 0) >= $tierData['min']) {
+                            if(($membership->points ?? 0) >= $tierData['max']) {
+                                $tierProgress = 100;
+                            } else {
+                                $tierProgress = ((($membership->points ?? 0) - $tierData['min']) / ($tierData['max'] - $tierData['min'])) * 100;
+                            }
+                        }
+                    @endphp
+                    <div class="progress">
+                        <div class="progress-bar" id="{{ $tierName }}ProgressBar" style="width: {{ $tierProgress }}%"></div>
+                    </div>
+                    <div class="tier-progress-text" id="{{ $tierName }}ProgressText">
+                        @if(($membership->points ?? 0) >= $tierData['min'])
+                            {{ ($membership->points ?? 0) - $tierData['min'] }}/{{ $tierData['max'] - $tierData['min'] }} PM ({{ number_format($tierProgress, 1) }}%)
+                        @else
+                            0/{{ $tierData['max'] - $tierData['min'] }} PM (0%)
+                        @endif
                     </div>
                 </div>
                 @endif
-
-                <!-- KOMBINASI WELCOME DAN PROFILE CARD -->
-                <div class="welcome-profile-card">
-                    <div class="profile-left">
-                        <div class="profile-image" id="profileImage">
-                            @php
-                                // Function untuk mendapatkan inisial dari nama
-                                function getInitials($name) {
-                                    $words = explode(' ', $name);
-                                    $initials = '';
-
-                                    foreach ($words as $word) {
-                                        if (!empty($word)) {
-                                            $initials .= strtoupper(substr($word, 0, 1));
-                                        }
-                                    }
-
-                                    // Jika hanya 1 kata, ambil 2 karakter pertama
-                                    if (strlen($initials) == 1) {
-                                        $initials = strtoupper(substr($name, 0, 2));
-                                    } else {
-                                        // Ambil maksimal 2 huruf inisial
-                                        $initials = substr($initials, 0, 2);
-                                    }
-
-                                    return $initials;
-                                }
-                            @endphp
-                            {{ getInitials(Auth::user()->name) }}
-                        </div>
-
-                        <div class="profile-content">
-                            <h3 id="welcomeTitle">Hello, {{ Auth::user()->name }}</h3>
-                            <p id="welcomeMessage">Selamat datang di program membership Smart Shuttle!</p>
-
-                            <div class="level-badge {{ strtolower($membership->level ?? 'bronze') }}" id="levelBadge">
-                                {{ $membership->level ?? 'Bronze' }} Member
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- POINT BOXES DI SEBELAH KANAN - HORIZONTAL SEJAJAR -->
-                    <div class="points-right-container">
-                        <div class="point-box-right">
-                            <div class="number" id="currentPoints">{{ $membership->points ?? 0 }}</div>
-                            <div class="label">Point Member</div>
-                            <div class="level-status" id="levelStatus">
-                                @php
-                                    $nextLevelPoints = 0;
-                                    $currentLevel = strtolower($membership->level ?? 'bronze');
-                                    if($currentLevel == 'bronze') $nextLevelPoints = 1000;
-                                    elseif($currentLevel == 'silver') $nextLevelPoints = 2500;
-                                    elseif($currentLevel == 'gold') $nextLevelPoints = 4500;
-                                    else $nextLevelPoints = 6000;
-
-                                    $pointsNeeded = $nextLevelPoints - ($membership->points ?? 0);
-                                @endphp
-                                @if($pointsNeeded <= 0 && $currentLevel != 'platinum')
-                                    🎉 Siap naik ke {{ ucfirst($nextLevel ?? 'Silver') }}!
-                                @elseif($currentLevel == 'platinum' && ($membership->points ?? 0) >= 6000)
-                                    🏆 Level tertinggi tercapai!
-                                @else
-                                    Butuh {{ $pointsNeeded }} PM untuk {{ ucfirst($nextLevel ?? 'Silver') }}
-                                @endif
-                            </div>
-                        </div>
-
-                        <div class="point-box-right">
-                            <div class="number" id="loyaltyPoints">{{ $membership->loyalty_points ?? 0 }}</div>
-                            <div class="label">Loyalty Point</div>
-                        </div>
-                    </div>
-
-                    <div class="welcome-icon">
-                        <i class="fas fa-crown"></i>
-                    </div>
-                </div>
-
-                <!-- PROGRESS BAR OVAL PANJANG -->
-                <div class="progress-info-card">
-                    <h6><i class="fas fa-chart-line"></i> Progress Level Membership</h6>
-
-                    <div class="progress-oval-container">
-                        <div class="progress-oval">
-                            @php
-                                $progressPercentage = 0;
-                                if(isset($membership)) {
-                                    $currentPoints = $membership->points ?? 0;
-                                    if($membership->level == 'Bronze') {
-                                        $progressPercentage = ($currentPoints / 1000) * 100;
-                                    } elseif($membership->level == 'Silver') {
-                                        $progressPercentage = (($currentPoints - 1000) / 1500) * 100;
-                                    } elseif($membership->level == 'Gold') {
-                                        $progressPercentage = (($currentPoints - 2500) / 2000) * 100;
-                                    } elseif($membership->level == 'Platinum') {
-                                        $progressPercentage = (($currentPoints - 4500) / 1500) * 100;
-                                    }
-                                    $progressPercentage = min(100, max(0, $progressPercentage));
-                                }
-                            @endphp
-                            <div class="progress-oval-fill" id="progressOvalFill" style="width: {{ $progressPercentage }}%;"></div>
-                        </div>
-                        <div class="progress-oval-labels">
-                            @php
-                                $currentMin = 0;
-                                $currentMax = 1000;
-                                if($membership->level == 'Silver') {
-                                    $currentMin = 1000;
-                                    $currentMax = 2500;
-                                } elseif($membership->level == 'Gold') {
-                                    $currentMin = 2500;
-                                    $currentMax = 4500;
-                                } elseif($membership->level == 'Platinum') {
-                                    $currentMin = 4500;
-                                    $currentMax = 6000;
-                                }
-                            @endphp
-                            <div class="progress-label" id="currentLevelLabel">{{ $membership->level ?? 'Bronze' }}<br>{{ $currentMin }} PM</div>
-                            <div class="progress-label" id="nextLevelLabel">{{ $nextLevel ?? 'Silver' }}<br>{{ $currentMax }} PM</div>
-                        </div>
-                    </div>
-
-                    <div class="progress-stats">
-                        <div class="stat-item">
-                            <div class="stat-number" id="progressPercentage">{{ number_format($progressPercentage, 1) }}%</div>
-                            <div class="stat-label">Progress</div>
-                        </div>
-                        <div class="stat-item">
-                            @php
-                                $pointsNeeded = max(0, $currentMax - ($membership->points ?? 0));
-                            @endphp
-                            <div class="stat-number" id="pointsNeededStat">{{ $pointsNeeded }}</div>
-                            <div class="stat-label">PM Dibutuhkan</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number" id="currentPointsStat">{{ $membership->points ?? 0 }}</div>
-                            <div class="stat-label">PM Saat Ini</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TINGKAT MEMBERSHIP -->
-                <div class="info-card">
-                    <h6><i class="fas fa-trophy"></i> Tingkat Membership</h6>
-
-                    @php
-                        $tiers = [
-                            'bronze' => ['min' => 0, 'max' => 1000, 'reward' => '+50 LP'],
-                            'silver' => ['min' => 1000, 'max' => 2500, 'reward' => '+60 LP'],
-                            'gold' => ['min' => 2500, 'max' => 4500, 'reward' => '+80 LP'],
-                            'platinum' => ['min' => 4500, 'max' => 6000, 'reward' => '+100 LP'],
-                        ];
-                        $currentLevel = strtolower($membership->level ?? 'bronze');
-                    @endphp
-
-                    @foreach($tiers as $tierName => $tierData)
-                    <div class="membership-tier {{ $tierName }}-tier {{ $currentLevel == $tierName ? 'current-tier' : '' }}" id="{{ $tierName }}Tier">
-                        <div class="tier-header">
-                            <div>
-                                <div class="tier-name">{{ ucfirst($tierName) }}</div>
-                                <div class="tier-points">({{ $tierData['min'] }}–{{ $tierData['max'] }} PM)</div>
-                            </div>
-                            <div class="tier-reward">{{ $tierData['reward'] }} / pembelian</div>
-                        </div>
-                        <p class="tier-description">Reward: {{ $tierData['reward'] }} / pembelian</p>
-                        @if($currentLevel == $tierName || ($membership->points ?? 0) >= $tierData['min'])
-                        <div class="tier-progress active" id="{{ $tierName }}ProgressContainer">
-                            @php
-                                $tierProgress = 0;
-                                if(($membership->points ?? 0) >= $tierData['min']) {
-                                    if(($membership->points ?? 0) >= $tierData['max']) {
-                                        $tierProgress = 100;
-                                    } else {
-                                        $tierProgress = ((($membership->points ?? 0) - $tierData['min']) / ($tierData['max'] - $tierData['min'])) * 100;
-                                    }
-                                }
-                            @endphp
-                            <div class="progress">
-                                <div class="progress-bar" id="{{ $tierName }}ProgressBar" style="width: {{ $tierProgress }}%"></div>
-                            </div>
-                            <div class="tier-progress-text" id="{{ $tierName }}ProgressText">
-                                @if(($membership->points ?? 0) >= $tierData['min'])
-                                    {{ ($membership->points ?? 0) - $tierData['min'] }}/{{ $tierData['max'] - $tierData['min'] }} PM ({{ number_format($tierProgress, 1) }}%)
-                                @else
-                                    0/{{ $tierData['max'] - $tierData['min'] }} PM (0%)
-                                @endif
-                            </div>
-                        </div>
-                        @endif
-                    </div>
-                    @endforeach
-                </div>
-
-                <!-- CARA KERJA POIN -->
-                <div class="info-card">
-                    <h6><i class="fas fa-cogs"></i> Cara Kerja Poin</h6>
-
-                    <p style="font-size: 15px; margin-bottom: 15px; line-height: 1.6;">
-                        <strong>Point Member (PM)</strong> digunakan untuk naik level dan bertambah <strong>+100</strong> setiap pembelian.
-                    </p>
-                    <p style="font-size: 15px; margin-bottom: 15px; line-height: 1.6;">
-                        <strong>Loyalti Point (LP)</strong> dapat digunakan untuk potongan harga:
-                    </p>
-
-                    <ul class="benefit-list">
-                        <li>50 LoyaltiPoint = 5% Diskon</li>
-                        <li>100 LoyaltiPoint = 10% Diskon</li>
-                        <li>150 LoyaltiPoint = 15% Diskon</li>
-                        <li>Point Member (PM) tidak dapat digunakan untuk diskon, hanya untuk naik level membership</li>
-                        <li>LoyaltiPoint (LP) tidak dapat dikombinasikan dengan promo lainnya</li>
-                    </ul>
-                </div>
-
-                <!-- Footer -->
-                <div class="footer">
-                    <p>&copy; {{ date('Y') }} SMART SHUTTLE. Semua hak dilindungi.</p>
-                </div>
             </div>
+            @endforeach
+        </div>
+
+        <!-- CARA KERJA POIN -->
+        <div class="info-card">
+            <h6><i class="fas fa-cogs"></i> Cara Kerja Poin</h6>
+
+            <p style="font-size: 15px; margin-bottom: 15px; line-height: 1.6;">
+                <strong>Point Member (PM)</strong> digunakan untuk naik level dan bertambah <strong>+100</strong> setiap pembelian.
+            </p>
+            <p style="font-size: 15px; margin-bottom: 15px; line-height: 1.6;">
+                <strong>Loyalti Point (LP)</strong> dapat digunakan untuk potongan harga:
+            </p>
+
+            <ul class="benefit-list">
+                <li>50 LoyaltiPoint = 5% Diskon</li>
+                <li>100 LoyaltiPoint = 10% Diskon</li>
+                <li>150 LoyaltiPoint = 15% Diskon</li>
+                <li>Point Member (PM) tidak dapat digunakan untuk diskon, hanya untuk naik level membership</li>
+                <li>LoyaltiPoint (LP) tidak dapat dikombinasikan dengan promo lainnya</li>
+            </ul>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>&copy; {{ date('Y') }} SMART SHUTTLE. Semua hak dilindungi.</p>
         </div>
     </div>
 </div>
-
+@endsection
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Membership Active Page Loaded');

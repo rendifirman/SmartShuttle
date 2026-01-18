@@ -4,6 +4,62 @@
 
 @push('styles')
 <style>
+
+/* ========== FIX NAVBAR OVERLAP - REVISI JARAK ========== */
+/* Reset posisi untuk mengatasi navbar fixed */
+html {
+    scroll-padding-top: 70px; /* Kurangi dari 80px */
+}
+
+body {
+    padding-top: 60px !important; /* Kurangi dari 80px */
+    position: relative;
+}
+
+/* Pastikan container utama offset dari navbar */
+.container-fluid {
+    margin-top: 0;
+    padding-top: 0; /* Ubah dari 20px ke 0 */
+}
+
+/* Atur main layout */
+.main-content {
+    margin-top: 0;
+    position: relative;
+    z-index: 1;
+}
+
+/* Fix untuk left panel sticky */
+.left-panel {
+    position: sticky;
+    top: 60px; /* Kurangi dari 80px */
+    height: calc(100vh - 60px); /* Sesuaikan dengan top */
+    z-index: 10;
+    overflow-y: auto;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    html {
+        scroll-padding-top: 60px;
+    }
+
+    body {
+        padding-top: 50px !important; /* Lebih kecil untuk tablet */
+    }
+
+    .left-panel {
+        position: static;
+        height: auto;
+        top: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding-top: 45px !important; /* Lebih kecil untuk mobile */
+    }
+}
     :root {
     --primary-color: #123352;
     --secondary-color: #FF581E;
@@ -1395,7 +1451,7 @@ input[type="number"]::placeholder,
         color: #343a40;
     }
 
-    /* Seat Legend */
+    /* Seat Legend - DIUBAH: HAPUS PREMIUM DAN TENGAH */
     .seat-legend {
         display: flex;
         flex-wrap: wrap;
@@ -2938,19 +2994,11 @@ input[type="number"]::placeholder,
                 @endif
             </div>
 
-            <!-- Seat Legend -->
+            <!-- Seat Legend - DIUBAH: HANYA REGULER DAN TERJUAL -->
             <div class="seat-legend">
                 <div class="legend-item">
                     <div class="legend-box seat-regular"></div>
                     <span class="legend-text">Reguler</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-box seat-premium-legend"></div>
-                    <span class="legend-text">Premium</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-box seat-middle-legend"></div>
-                    <span class="legend-text">Tengah</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-box seat-sold"></div>
@@ -3695,5 +3743,75 @@ window.toggleRouteDetails = function(jadwalId) {
         details.style.display = 'block';
     }
 };
+// Fix jarak navbar - TEMPATKAN DI AWAL DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Applying optimized navbar spacing fix...');
+
+    // Fungsi untuk mengatur jarak yang tepat
+    function setNavbarSpacing() {
+        const navbar = document.querySelector('.custom-navbar');
+        if (!navbar) return;
+
+        const navbarHeight = navbar.offsetHeight;
+        console.log('Navbar detected, height:', navbarHeight);
+
+        // Sesuaikan berdasarkan tinggi navbar yang sebenarnya
+        if (navbarHeight > 60) {
+            // Jika navbar tinggi (biasanya di desktop)
+            const optimalPadding = Math.min(navbarHeight, 65); // Maksimal 65px
+
+            // Atur body padding
+            document.body.style.paddingTop = optimalPadding + 'px';
+
+            // Atur scroll padding
+            document.documentElement.style.scrollPaddingTop = optimalPadding + 'px';
+
+            // Atur left panel jika di desktop
+            const leftPanel = document.querySelector('.left-panel');
+            if (leftPanel && window.innerWidth > 992) {
+                leftPanel.style.top = optimalPadding + 'px';
+                leftPanel.style.height = `calc(100vh - ${optimalPadding}px)`;
+            }
+
+            // Atur container margin (opsional, untuk lebih rapi)
+            const container = document.querySelector('.container-fluid');
+            if (container) {
+                container.style.marginTop = '0';
+                container.style.paddingTop = '0';
+            }
+
+            console.log('Optimal padding set to:', optimalPadding + 'px');
+        } else {
+            // Default untuk navbar normal
+            document.body.style.paddingTop = '60px';
+            document.documentElement.style.scrollPaddingTop = '60px';
+        }
+    }
+
+    // Jalankan saat halaman dimuat
+    setTimeout(setNavbarSpacing, 100);
+
+    // Jalankan saat resize dengan debounce
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(setNavbarSpacing, 150);
+    });
+
+    // Jalankan setelah gambar dimuat (jika ada gambar di navbar)
+    window.addEventListener('load', setNavbarSpacing);
+
+    // Alternatif: Jika masih ada masalah, coba gunakan margin pada main-content
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        const computedStyle = window.getComputedStyle(document.body);
+        const currentPadding = parseInt(computedStyle.paddingTop);
+
+        if (currentPadding > 60) {
+            // Kompensasi dengan mengurangi margin
+            mainContent.style.marginTop = '-10px';
+        }
+    }
+});
 </script>
 @endpush

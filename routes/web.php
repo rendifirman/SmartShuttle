@@ -14,6 +14,10 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Customer\CekReservasiController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ArtikelController;
+use App\Http\Controllers\Admin\ProfilePerusahaanController;
+use App\Http\Controllers\API\PaymentController;
+use App\Http\Controllers\DriverController;
+use App\Http\Controllers\PaylabsTestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,8 +33,14 @@ Route::get('/customer/beranda', [CustomerController::class, 'beranda']);
 Route::get('/bantuan', [CustomerController::class, 'bantuan'])->name('customer.bantuan');
 Route::get('/syarat-ketentuan', [CustomerController::class, 'syaratKetentuan'])->name('customer.syarat.ketentuan');
 Route::get('/kebijakan-privasi', [CustomerController::class, 'kebijakanPrivasi'])->name('customer.kebijakan.privasi');
-Route::get('/kontak', [CustomerController::class, 'contact'])->name('customer.contact');
-Route::post('/kontak', [CustomerController::class, 'submitContact'])->name('customer.contact.submit');
+// Boleh diakses tamu (guest) - GET
+Route::get('/kontak', [CustomerController::class, 'contact'])
+    ->name('customer.contact');
+
+// Hanya boleh diakses user yang sudah login - POST
+Route::post('/kontak', [CustomerController::class, 'submitContact'])
+    ->name('customer.contact.submit')
+    ->middleware('auth.customer');
 Route::get('/syarat-ketentuan-membership', [CustomerController::class, 'syaratKetentuanMembership'])->name('customer.syarat.ketentuan.membership');
 
 // Halaman outlet - bisa diakses tamu
@@ -62,7 +72,7 @@ Route::get('/customer/cek-reservasi/hasil/{kode}', [CekReservasiController::clas
     ->name('customer.cek-reservasi.hasil');
 
 // ★★★ AUTH ROUTES - HANYA UNTUK TAMU ★★★
-Route::middleware(['guest.customer'])->group(function () {
+Route::middleware(['ensure.session', 'guest.customer'])->group(function () {
     // Login/Register tradisional
     Route::get('/customer/login', [CustomerController::class, 'showLogin'])->name('customer.login');
     Route::post('/customer/login', [CustomerController::class, 'login'])->name('customer.login.post');
@@ -158,6 +168,7 @@ Route::middleware(['auth.customer'])->group(function () {
     Route::get('/customer/pembayaran/simulasi/{kodePembayaran}/{status?}', [PembayaranController::class, 'simulasiPembayaran'])->name('customer.pembayaran.simulasi');
     Route::get('/customer/pembayaran/cek-status/{kodePembayaran}', [PembayaranController::class, 'cekStatus'])->name('customer.pembayaran.cek_status');
     Route::get('/customer/pembayaran/qr-code/{kodePembayaran}', [PembayaranController::class, 'generateQRCode'])->name('customer.pembayaran.qrcode');
+    Route::get('/customer/pembayaran/status/{kodePembayaran}', [PembayaranController::class, 'cekStatus'])->name('customer.pembayaran.status');
 
     // ★★★ RIWAYAT ★★★
     Route::get('/customer/riwayat', [CustomerController::class, 'showRiwayat'])->name('customer.riwayat');
@@ -189,6 +200,14 @@ Route::prefix('api')->group(function () {
     Route::post('/validasi-kursi', [KursiController::class, 'validasiKursiAPI'])
         ->name('api.kursi.validasi');
 
+    // Review routes
+    Route::get('/reviews', [CustomerController::class, 'getReviews'])->name('api.reviews.get');
+    Route::post('/reviews', [CustomerController::class, 'storeReview'])->name('api.reviews.store');
+    Route::get('/reviews', [CustomerController::class, 'getReviews'])->name('api.reviews.get');
+    Route::get('/reviews/filter', [CustomerController::class, 'getFilteredReviews'])->name('api.reviews.filter');
+    Route::get('/reviews/stats', [CustomerController::class, 'getReviewStats'])->name('api.reviews.stats');
+    Route::post('/reviews', [CustomerController::class, 'storeReview'])->name('api.reviews.store');
+
     // Promo API
     Route::post('/customer/pesan/validasi-promo', [CustomerController::class, 'validatePromo'])->name('customer.pesan.validasi_promo');
 
@@ -203,6 +222,12 @@ Route::prefix('api')->group(function () {
     Route::get('/policy/{type}', [CustomerController::class, 'getPolicy'])->name('api.policy.get');
 });
 
+// ★★★ ADMIN AUTH ROUTES ★★★
+Route::middleware(['ensure.session', 'guest:admin'])->prefix('admin')->group(function () {
+    Route::get('/login', [AdminController::class, 'showLogin'])->name('admin.login');
+    Route::post('/login', [AdminController::class, 'login'])->name('admin.login.post');
+});
+
 // ★★★ ADMIN ROUTES ★★★
 Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
@@ -210,14 +235,41 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
         ->name('admin.kursi.peta');
 
     // Master Data Routes
-    Route::get('/profileperusahaan', [AdminController::class, 'profilePerusahaan'])->name('admin.profileperusahaan');
     Route::get('/pusat', [AdminController::class, 'pusat'])->name('admin.pusat');
     Route::get('/cabangperusahaan', [AdminController::class, 'cabangPerusahaan'])->name('admin.cabangperusahaan');
-    Route::get('/armada', [AdminController::class, 'armada'])->name('admin.armada');
+    Route::get('/outletperusahaan', [AdminController::class, 'outletPerusahaan'])->name('admin.outletperusahaan');
+    Route::get('/outletperusahaan/create', [AdminController::class, 'createOutlet'])->name('admin.outletperusahaan.create');
+    Route::post('/outletperusahaan', [AdminController::class, 'storeOutlet'])->name('admin.outletperusahaan.store');
+    Route::get('/outletperusahaan/{id}', [AdminController::class, 'showOutlet'])->name('admin.outletperusahaan.show');
+    Route::get('/outletperusahaan/{id}/edit', [AdminController::class, 'editOutlet'])->name('admin.outletperusahaan.edit');
+    Route::put('/outletperusahaan/{id}', [AdminController::class, 'updateOutlet'])->name('admin.outletperusahaan.update');
+    Route::delete('/outletperusahaan/{id}', [AdminController::class, 'destroyOutlet'])->name('admin.outletperusahaan.destroy');
+    Route::get('/promo', [AdminController::class, 'promo'])->name('admin.promo');
+    Route::get('/artikel', [AdminController::class, 'artikel'])->name('admin.artikel');
+    Route::get('/kontak', [AdminController::class, 'kontak'])->name('admin.kontak');
+    Route::prefix('rute')->group(function () {
+        Route::get('/', [AdminController::class, 'rute'])->name('admin.rute');
+        Route::get('/create', [AdminController::class, 'createRute'])->name('admin.rute.create');
+        Route::post('/', [AdminController::class, 'storeRute'])->name('admin.rute.store');
+        Route::get('/{id}/edit', [AdminController::class, 'editRute'])->name('admin.rute.edit');
+        Route::put('/{id}', [AdminController::class, 'updateRute'])->name('admin.rute.update');
+        Route::delete('/{id}', [AdminController::class, 'destroyRute'])->name('admin.rute.destroy');
+        Route::get('/{id}', [AdminController::class, 'showRute'])->name('admin.rute.show');
+    });
+    // Armada CRUD Routes
+    Route::prefix('armada')->group(function () {
+        Route::get('/', [AdminController::class, 'armada'])->name('admin.armada');
+        Route::get('/create', [AdminController::class, 'createShuttle'])->name('admin.armada.create');
+        Route::post('/', [AdminController::class, 'storeShuttle'])->name('admin.armada.store');
+        Route::get('/{id}/edit', [AdminController::class, 'editShuttle'])->name('admin.armada.edit');
+        Route::put('/{id}', [AdminController::class, 'updateShuttle'])->name('admin.armada.update');
+        Route::delete('/{id}', [AdminController::class, 'destroyShuttle'])->name('admin.armada.destroy');
+        Route::get('/{id}', [AdminController::class, 'showShuttle'])->name('admin.armada.show');
+    });
+
     Route::get('/driver', [AdminController::class, 'driver'])->name('admin.driver');
     Route::get('/pegawai', [AdminController::class, 'pegawai'])->name('admin.pegawai');
     Route::get('/rute', [AdminController::class, 'rute'])->name('admin.rute');
-
     // Transaksi Routes
     Route::get('/tiket-perjalanan', [AdminController::class, 'tiketPerjalanan'])->name('admin.tiket-perjalanan');
     Route::get('/tiket-armada', [AdminController::class, 'tiketArmada'])->name('admin.tiket-armada');
@@ -236,9 +288,126 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     // Pengaturan Routes
     Route::get('/user', [AdminController::class, 'user'])->name('admin.user');
     Route::get('/menu', [AdminController::class, 'menu'])->name('admin.menu');
+
+    // Logout Route
+    Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
 });
 
-// ★★★ ROUTE DEBUG (UNTUK TESTING) ★★★
+// ★★★ DRIVER AUTH ROUTES ★★★
+Route::middleware(['ensure.session', 'guest:driver'])->prefix('driver')->group(function () {
+    Route::get('/login', [DriverController::class, 'showLogin'])->name('driver.login');
+    Route::post('/login', [DriverController::class, 'login'])->name('driver.login.post');
+});
+
+// ★★★ DRIVER ROUTES ★★★
+Route::middleware(['auth:driver'])->prefix('driver')->group(function () {
+    Route::get('/dashboard', [DriverController::class, 'dashboard'])->name('driver.dashboard');
+    Route::post('/logout', [DriverController::class, 'logout'])->name('driver.logout');
+});
+
+// ★★★ PAYLABS TEST ROUTES (UNTUK DEVELOPMENT) ★★★
+Route::prefix('paylabs-test')->group(function () {
+    // Test connection
+    Route::get('/connection', function () {
+        $service = new \App\Services\PaylabsService();
+        return response()->json($service->testConnection());
+    })->name('paylabs.test.connection');
+
+    // Quick test
+    Route::get('/quick', function () {
+        $service = new \App\Services\PaylabsService();
+        return response()->json($service->quickTest());
+    })->name('paylabs.test.quick');
+
+    // Real API test - authentic Paylabs integration test
+    Route::get('/real-api/{method?}', function ($method = 'QRIS') {
+        $service = new \App\Services\PaylabsService();
+
+        // Map method to channel codes
+        $methodMap = [
+            'qris' => ['method' => 'QRIS', 'channel_code' => 'QRIS', 'channel_name' => 'QRIS'],
+            'bca_va' => ['method' => 'VA_BCA', 'channel_code' => 'VA_BCA', 'channel_name' => 'BCA Virtual Account'],
+            'mandiri_va' => ['method' => 'VA_MANDIRI', 'channel_code' => 'VA_MANDIRI', 'channel_name' => 'Mandiri Virtual Account'],
+            'bni_va' => ['method' => 'VA_BNI', 'channel_code' => 'VA_BNI', 'channel_name' => 'BNI Virtual Account'],
+            'bri_va' => ['method' => 'VA_BRI', 'channel_code' => 'VA_BRI', 'channel_name' => 'BRI Virtual Account'],
+        ];
+
+        $config = $methodMap[$method] ?? $methodMap['qris'];
+
+        return response()->json($service->realApiTest(
+            $config['method'],
+            $config['channel_code'],
+            $config['channel_name']
+        ));
+    })->name('paylabs.test.real_api');
+
+    // Test create payment for different methods
+    Route::get('/create/{method}', function ($method) {
+        // Daftar channel code yang valid
+        $channels = [
+            'qris' => 'QRIS',
+            'bca_va' => 'VA_BCA',
+            'mandiri_va' => 'VA_MANDIRI',
+            'bni_va' => 'VA_BNI',
+            'bri_va' => 'VA_BRI',
+            'dana' => 'EW_DANA',
+            'gopay' => 'EW_GOPAY',
+            'ovo' => 'EW_OVO',
+            'shopeepay' => 'EW_SHOPEEPAY',
+        ];
+
+        if (!array_key_exists($method, $channels)) {
+            return response()->json(['error' => 'Method not supported'], 400);
+        }
+
+        $channelCode = $channels[$method];
+        $channelName = $method;
+
+        // Buat pembayaran dummy
+        $pembayaran = new \App\Models\Pembayaran();
+        $pembayaran->id = rand(1, 1000);
+        $pembayaran->kode_pembayaran = 'TEST' . time();
+        $pembayaran->jumlah = 100000;
+        $pembayaran->waktu_kadaluarsa = now()->addMinutes(30);
+        $pembayaran->pemesanan = (object) [
+            'kode_booking' => 'BOOKTEST',
+            'jumlah_penumpang' => 1,
+            'nama_pemesan' => 'Test User',
+            'email_pemesan' => 'test@example.com',
+            'telepon_pemesan' => '08123456789',
+            'jadwal' => (object) [
+                'rutes' => collect([
+                    (object) ['kota_asal' => 'Jakarta', 'kota_tujuan' => 'Bandung']
+                ])
+            ]
+        ];
+
+        $service = new \App\Services\PaylabsService();
+        $result = $service->createPayment($pembayaran, $channelCode, $channelName);
+        return response()->json($result);
+    })->name('paylabs.test.create');
+
+    // Test page
+    Route::get('/', function () {
+        return view('paylabs-test.index');
+    })->name('paylabs.test.index');
+
+    // Test callback simulation page
+    Route::get('/callback-simulate', function () {
+        return view('paylabs-test.callback');
+    })->name('paylabs.test.callback-simulate');
+
+    // Process callback simulation
+    Route::post('/callback-simulate', function (Request $request) {
+        // Simulasikan callback dari Paylabs
+        $paymentController = new \App\Http\Controllers\API\PaymentController(
+            new \App\Services\PaylabsService()
+        );
+        return $paymentController->callback($request);
+    });
+});
+
+// ★★★ PAYLABS DEBUG ROUTES ★★★
 Route::get('/debug/e-ticket/{kode_booking}', function($kode_booking) {
     \Log::info('Debug e-ticket access', [
         'kode_booking' => $kode_booking,
@@ -273,33 +442,30 @@ Route::get('/paylabs/signature-test', function () {
 
         // Sample payload to sign
         $payload = [
-            'requestType' => 'createPayment',
+            'requestId' => 'TEST' . time(),
             'merchantId' => config('paylabs.mid'),
             'merchantTradeNo' => 'TEST' . time(),
-            'amount' => 1000,
-            'currency' => 'IDR',
+            'amount' => '100000.00',
+            'paymentType' => 'QRIS',
         ];
 
-        // Build the string to sign (same logic as in PaylabsService::generateSignature)
-        ksort($payload);
-        $stringToSign = '';
-        foreach ($payload as $key => $value) {
-            if ($value !== null && $value !== '') {
-                $stringToSign .= $key . '=' . $value . '&';
-            }
-        }
-        $stringToSign = rtrim($stringToSign, '&');
-
         $service = new \App\Services\PaylabsService();
-        $signatureBase64 = $service->generateSignature($payload);
-        $signatureRaw = base64_decode($signatureBase64);
+
+        // Generate timestamp
+        $timestamp = \Carbon\Carbon::now()->format('Y-m-d\TH:i:s.vP');
+
+        // Generate signature
+        $signature = $service->generateSignatureV23($payload, $timestamp, '/payment/v2.3/qris/create');
+        $signatureRaw = base64_decode($signature);
         $signatureLong = bin2hex($signatureRaw);
 
         return response()->json([
             'success' => true,
-            'signed_payload' => $stringToSign,
-            'signature_base64' => $signatureBase64,
+            'payload' => $payload,
+            'timestamp' => $timestamp,
+            'signature_base64' => $signature,
             'signature_raw_hex' => $signatureLong,
+            'signature_length' => strlen($signature),
         ]);
     } catch (\Exception $e) {
         \Log::error('Paylabs signature test error', [
@@ -310,17 +476,60 @@ Route::get('/paylabs/signature-test', function () {
         return response()->json([
             'success' => false,
             'error' => $e->getMessage(),
+            'trace' => env('APP_DEBUG') ? $e->getTraceAsString() : null,
         ], 500);
     }
 })->name('paylabs.signature_test');
 
 // Test route: create payment (sends POST to Paylabs)
-Route::get('/paylabs/create-payment-test', function () {
+Route::get('/paylabs/create-payment-test/{method?}', function ($method = 'qris') {
     try {
         $service = new \App\Services\PaylabsService();
-        $result = $service->createPaymentTest();
 
-        return response()->json($result);
+        // Buat pembayaran dummy
+        $pembayaran = new \App\Models\Pembayaran();
+        $pembayaran->id = rand(1000, 9999);
+        $pembayaran->kode_pembayaran = 'TEST' . time();
+        $pembayaran->jumlah = 100000;
+        $pembayaran->waktu_kadaluarsa = now()->addMinutes(30);
+        $pembayaran->pemesanan = (object) [
+            'kode_booking' => 'BOOKTEST',
+            'jumlah_penumpang' => 1,
+            'nama_pemesan' => 'Test User',
+            'email_pemesan' => 'test@example.com',
+            'telepon_pemesan' => '08123456789',
+            'jadwal' => (object) [
+                'rutes' => collect([
+                    (object) ['kota_asal' => 'Jakarta', 'kota_tujuan' => 'Bandung']
+                ])
+            ]
+        ];
+
+        // Map method ke channel code
+        $channelMap = [
+            'qris' => ['code' => 'QRIS', 'name' => 'QRIS'],
+            'bca_va' => ['code' => 'VA_BCA', 'name' => 'BCA'],
+            'mandiri_va' => ['code' => 'VA_MANDIRI', 'name' => 'MANDIRI'],
+            'bni_va' => ['code' => 'VA_BNI', 'name' => 'BNI'],
+            'bri_va' => ['code' => 'VA_BRI', 'name' => 'BRI'],
+            'dana' => ['code' => 'EW_DANA', 'name' => 'DANA'],
+            'gopay' => ['code' => 'EW_GOPAY', 'name' => 'GOPAY'],
+            'ovo' => ['code' => 'EW_OVO', 'name' => 'OVO'],
+        ];
+
+        $channel = $channelMap[$method] ?? $channelMap['qris'];
+
+        $result = $service->createPayment($pembayaran, $channel['code'], $channel['name']);
+
+        return response()->json([
+            'success' => $result['success'] ?? false,
+            'method' => $method,
+            'channel_code' => $channel['code'],
+            'result' => $result,
+            'environment' => config('paylabs.environment', 'sandbox'),
+            'testing_mode' => config('paylabs.testing.enabled', false)
+        ]);
+
     } catch (\Exception $e) {
         \Log::error('Paylabs create-payment-test error', [
             'error' => $e->getMessage(),
@@ -330,6 +539,7 @@ Route::get('/paylabs/create-payment-test', function () {
         return response()->json([
             'success' => false,
             'error' => $e->getMessage(),
+            'trace' => env('APP_DEBUG') ? $e->getTraceAsString() : null,
         ], 500);
     }
 })->name('paylabs.create_payment_test');
@@ -342,10 +552,76 @@ Route::get('/customer/artikel', [ArtikelController::class, 'index'])->name('cust
 Route::get('/customer/artikel/{slug}', [ArtikelController::class, 'show'])->name('customer.artikel.detail');
 Route::get('/customer/artikel/kategori/{kategori}', [ArtikelController::class, 'kategori'])->name('customer.artikel.kategori');
 
+// ★★★ PAYMENT WEBHOOK ROUTES ★★★
+Route::prefix('payment')->group(function () {
+    // Webhook callback dari Paylabs (public access)
+    Route::post('/callback', [PembayaranController::class, 'webhook'])
+        ->name('payment.callback');
+
+    // API callback (alternatif)
+    Route::post('/api-callback', [PaymentController::class, 'callback'])
+        ->name('payment.api_callback');
+});
+
+// ★★★ ROUTE UNTUK TESTING VIEW ★★★
+Route::get('/test-payment-view/{kodePembayaran}', function($kodePembayaran) {
+    // Buat data dummy untuk testing view
+    $pembayaran = new \App\Models\Pembayaran();
+    $pembayaran->id = 1;
+    $pembayaran->kode_pembayaran = $kodePembayaran;
+    $pembayaran->jumlah = 100000;
+    $pembayaran->metode = 'qris';
+    $pembayaran->status = 'menunggu';
+    $pembayaran->waktu_kadaluarsa = now()->addMinutes(30);
+    $pembayaran->qr_code = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=SMARTSHUTTLE-' . $kodePembayaran;
+    $pembayaran->qris_url = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=SMARTSHUTTLE-' . $kodePembayaran;
+    $pembayaran->nmid = 'ID123456789012345';
+    $pembayaran->platform_trade_no = 'PLT' . time();
+
+    return view('customer.test-payment', [
+        'pembayaran' => $pembayaran,
+        'total' => 100000,
+        'sisa_waktu_detik' => 1800,
+        'pemesanan' => (object) [
+            'kode_booking' => 'BOOKTEST123',
+            'jumlah_penumpang' => 2,
+            'nama_pemesan' => 'Test User',
+            'email_pemesan' => 'test@example.com',
+            'telepon_pemesan' => '08123456789',
+            'jadwal' => (object) [
+                'shuttle' => (object) ['nama_shuttle' => 'Shuttle Premium', 'plat_nomor' => 'B 1234 CD'],
+                'rutes' => collect([
+                    (object) ['kota_asal' => 'Jakarta'],
+                    (object) ['kota_tujuan' => 'Bandung']
+                ]),
+                'tanggal_keberangkatan' => now()->addDays(1),
+                'waktu_keberangkatan' => '08:00:00'
+            ]
+        ],
+        'metodePembayaran' => collect([
+            (object) ['kode' => 'qris', 'nama' => 'QRIS', 'biaya_admin' => 0],
+            (object) ['kode' => 'bca_va', 'nama' => 'BCA Virtual Account', 'biaya_admin' => 4000],
+            (object) ['kode' => 'mandiri_va', 'nama' => 'Mandiri Virtual Account', 'biaya_admin' => 4000],
+        ]),
+        'penumpang' => collect([
+            (object) ['nama_lengkap' => 'John Doe', 'nik' => '1234567890123456', 'nomor_kursi' => 'A1'],
+            (object) ['nama_lengkap' => 'Jane Doe', 'nik' => '6543210987654321', 'nomor_kursi' => 'A2'],
+        ]),
+        'from' => 'Jakarta',
+        'to' => 'Bandung',
+        'date' => now()->addDays(1)->format('Y-m-d'),
+        'time' => '08:00',
+        'customer_name' => 'Test User',
+        'customer_phone' => '08123456789',
+        'customer_email' => 'test@example.com',
+    ]);
+})->name('test.payment.view');
+
 // ★★★ ROUTE FALLBACK ★★★
 Route::fallback(function () {
     return redirect()->route('customer.beranda');
 });
+
 // Route untuk kursi (separate namespace to avoid name collision)
 Route::prefix('kursi')->name('kursi.')->group(function () {
     Route::get('/', [KursiController::class, 'index'])->name('index');
@@ -367,4 +643,36 @@ Route::prefix('api/promo')->group(function () {
         ->name('api.promo.eligible');
     Route::post('/validate', [CustomerController::class, 'validatePromo'])
         ->name('api.promo.validate');
+});
+
+// Route untuk Profile Perusahaan Admin
+Route::prefix('admin')->middleware(['auth:admin'])->group(function () {
+    Route::get('/profile-perusahaan', [ProfilePerusahaanController::class, 'index'])->name('admin.profileperusahaan');
+    Route::post('/profile-perusahaan/update', [ProfilePerusahaanController::class, 'update'])->name('admin.profileperusahaan.update');
+    Route::post('/profile-perusahaan/layanan/{id}/update', [ProfilePerusahaanController::class, 'updateLayanan'])->name('admin.profileperusahaan.layanan.update');
+    Route::post('/profile-perusahaan/layanan/create', [ProfilePerusahaanController::class, 'createLayanan'])->name('admin.profileperusahaan.layanan.create');
+    Route::delete('/profile-perusahaan/layanan/{id}/delete', [ProfilePerusahaanController::class, 'deleteLayanan'])->name('admin.profileperusahaan.layanan.delete');
+});
+
+// Branch Management Routes
+Route::prefix('admin')->middleware(['auth:admin'])->group(function () {
+    // List branches with filters
+    Route::get('/cabangperusahaan', [AdminController::class, 'cabangPerusahaan'])
+        ->name('admin.cabangperusahaan');
+
+    // Branch CRUD
+    Route::prefix('cabang')->group(function () {
+        Route::get('/create', [AdminController::class, 'createBranch'])
+            ->name('admin.cabang.create');
+        Route::post('/', [AdminController::class, 'storeBranch'])
+            ->name('admin.cabang.store');
+        Route::get('/{id}/edit', [AdminController::class, 'editBranch'])
+            ->name('admin.cabang.edit');
+        Route::put('/{id}', [AdminController::class, 'updateBranch'])
+            ->name('admin.cabang.update');
+        Route::delete('/{id}', [AdminController::class, 'destroyBranch'])
+            ->name('admin.cabang.destroy');
+        Route::get('/{id}', [AdminController::class, 'getBranch'])
+            ->name('admin.cabang.get');
+    });
 });

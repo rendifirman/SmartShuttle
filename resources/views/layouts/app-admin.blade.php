@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'SMART SHUTTLE - Admin Pusat')</title>
+    <title>@yield('title', 'SMART SHUTTLE - Admin')</title>
+
+    <!-- CSRF Token -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -183,6 +186,35 @@
             color: rgba(255, 255, 255, 0.7);
         }
 
+        /* Logout Button */
+        .logout-button {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            margin: 15px 25px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 16px;
+            color: white;
+            transition: all 0.3s ease;
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            text-decoration: none;
+        }
+
+        .logout-button:hover {
+            background: rgba(220, 53, 69, 0.3);
+            border-color: rgba(220, 53, 69, 0.5);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.2);
+        }
+
+        .logout-button i {
+            width: 20px;
+            text-align: center;
+        }
+
         /* ======== CONTENT ======== */
         .content {
             margin-left: 280px;
@@ -302,6 +334,91 @@
             display: block;
         }
 
+        /* Logout Confirmation Modal */
+        .logout-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logout-modal.show {
+            display: flex;
+        }
+
+        .logout-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .logout-modal-icon {
+            font-size: 48px;
+            color: #dc3545;
+            margin-bottom: 20px;
+        }
+
+        .logout-modal-title {
+            font-size: 22px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .logout-modal-text {
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .logout-modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .logout-modal-btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+
+        .logout-modal-btn.cancel {
+            background: #6c757d;
+            color: white;
+        }
+
+        .logout-modal-btn.cancel:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        .logout-modal-btn.confirm {
+            background: #dc3545;
+            color: white;
+        }
+
+        .logout-modal-btn.confirm:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        }
+
         /* Responsif */
         @media (max-width: 992px) {
             .sidebar {
@@ -321,6 +438,10 @@
 
             .mobile-header {
                 display: flex;
+            }
+
+            .logout-button {
+                margin: 15px 15px 25px;
             }
         }
 
@@ -362,6 +483,20 @@
                 width: 100%;
                 justify-content: center;
             }
+
+            .logout-modal-content {
+                padding: 20px;
+                width: 95%;
+            }
+
+            .logout-modal-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .logout-modal-btn {
+                width: 100%;
+            }
         }
     </style>
 
@@ -369,13 +504,28 @@
 </head>
 <body>
 
+<!-- Logout Confirmation Modal -->
+<div class="logout-modal" id="logoutModal">
+    <div class="logout-modal-content">
+        <div class="logout-modal-icon">
+            <i class="fas fa-sign-out-alt"></i>
+        </div>
+        <h3 class="logout-modal-title">Konfirmasi Logout</h3>
+        <p class="logout-modal-text">Apakah Anda yakin ingin keluar dari sistem?</p>
+        <div class="logout-modal-buttons">
+            <button class="logout-modal-btn cancel" id="cancelLogoutBtn">Batal</button>
+            <button class="logout-modal-btn confirm" id="confirmLogoutBtn">Ya, Logout</button>
+        </div>
+    </div>
+</div>
+
 <!-- Mobile Header -->
 <div class="mobile-header" id="mobileHeader">
     <div class="mobile-header-content">
         <button class="mobile-hamburger" id="mobileHamburgerBtn">
             <i class="fas fa-bars"></i>
         </button>
-        <span class="mobile-logo">SMART SHUTTLE ADMIN</span>
+        <span class="mobile-logo">SMART SHUTTLE {{ Auth::guard('admin')->user()->hasRole('admin_pusat') ? 'ADMIN PUSAT' : 'ADMIN CABANG' }}</span>
         <div style="width: 40px;"></div>
     </div>
 </div>
@@ -387,7 +537,7 @@
 <div class="sidebar" id="sidebar">
     <!-- Header Sidebar -->
     <div class="sidebar-header">
-        <div class="sidebar-title">SMART SHUTTLE<br><span>ADMIN PUSAT</span></div>
+        <div class="sidebar-title">SMART SHUTTLE<br><span>{{ Auth::guard('admin')->user()->hasRole('admin_pusat') ? 'ADMIN PUSAT' : 'ADMIN CABANG' }}</span></div>
     </div>
 
     <!-- Navigation -->
@@ -415,15 +565,29 @@
                 <i class="fas fa-building submenu-icon"></i>
                 <span>Profile Perusahaan</span>
             </a>
-
-            <a href="{{ route('admin.pusat') }}" class="submenu-item" id="pusat-link">
-                <i class="fas fa-city submenu-icon"></i>
-                <span>Pusat</span>
-            </a>
             <a href="{{ route('admin.cabangperusahaan') }}" class="submenu-item" id="cabang-link">
                 <i class="fas fa-code-branch submenu-icon"></i>
                 <span>Cabang</span>
             </a>
+
+            <!-- MENU BARU YANG DITAMBAHKAN -->
+            <a href="{{ route('admin.outletperusahaan') }}" class="submenu-item" id="outlet-link">
+                <i class="fas fa-store submenu-icon"></i>
+                <span>Outlet</span>
+            </a>
+            <a href="{{ route('admin.promo') }}" class="submenu-item" id="promo-link">
+                <i class="fas fa-tag submenu-icon"></i>
+                <span>Promo</span>
+            </a>
+            <a href="{{ route('admin.kontak') }}" class="submenu-item" id="kontak-link">
+                <i class="fas fa-address-book submenu-icon"></i>
+                <span>Kontak</span>
+            </a>
+            <a href="{{ route('admin.artikel') }}" class="submenu-item" id="artikel-link">
+                <i class="fas fa-newspaper submenu-icon"></i>
+                <span>Artikel</span>
+            </a>
+
             <a href="{{ route('admin.armada') }}" class="submenu-item" id="armada-link">
                 <i class="fas fa-bus submenu-icon"></i>
                 <span>Armada</span>
@@ -540,11 +704,17 @@
                 <i class="fas fa-user"></i>
             </div>
             <div class="user-info">
-                <h4>Admin Pusat</h4>
-                <p>Super Administrator</p>
+                <h4>{{ Auth::guard('admin')->user()->name }}</h4>
+                <p>{{ Auth::guard('admin')->user()->hasRole('admin_pusat') ? 'Admin Pusat' : 'Admin Cabang' }}</p>
             </div>
         </div>
     </div>
+
+    <!-- Logout Button -->
+    <a href="#" class="logout-button" id="logoutBtn">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Logout</span>
+    </a>
 </div>
 
 <!-- MAIN CONTENT -->
@@ -557,7 +727,7 @@
         </h1>
         <div class="user-info-top">
             <i class="fas fa-user-circle"></i>
-            <span>Admin Pusat</span>
+            <span>{{ Auth::guard('admin')->user()->hasRole('admin_pusat') ? 'Admin Pusat' : 'Admin Cabang' }}</span>
         </div>
     </div>
 
@@ -571,6 +741,10 @@
         'profileperusahaan': { title: 'Profile Perusahaan', icon: 'fas fa-building' },
         'pusat': { title: 'Master Data - Pusat', icon: 'fas fa-city' },
         'cabangperusahaan': { title: 'Master Data - Cabang', icon: 'fas fa-code-branch' },
+        'outlet': { title: 'Master Data - Outlet', icon: 'fas fa-store' },
+        'promo': { title: 'Master Data - Promo', icon: 'fas fa-tag' },
+        'kontak': { title: 'Master Data - Kontak', icon: 'fas fa-address-book' },
+        'artikel': { title: 'Master Data - Artikel', icon: 'fas fa-newspaper' },
         'armada': { title: 'Master Data - Armada', icon: 'fas fa-bus' },
         'driver': { title: 'Master Data - Driver', icon: 'fas fa-user-tie' },
         'pegawai': { title: 'Master Data - Pegawai', icon: 'fas fa-users' },
@@ -652,7 +826,7 @@
         }
 
         // Master Data (dengan Profile Perusahaan)
-        else if (currentPath.includes('profileperusahaan')) {
+        else if (currentPath.includes('profile-perusahaan')) {
             // Buka submenu master data
             const masterDataSubmenu = document.getElementById('master-data-submenu');
             const masterDataArrow = document.getElementById('master-data-toggle').querySelector('.menu-arrow');
@@ -682,6 +856,46 @@
 
             document.getElementById('cabang-link').classList.add('active');
             updatePageTitle('cabangperusahaan');
+        }
+        else if (currentPath.includes('outlet')) {
+            // Buka submenu master data
+            const masterDataSubmenu = document.getElementById('master-data-submenu');
+            const masterDataArrow = document.getElementById('master-data-toggle').querySelector('.menu-arrow');
+            masterDataSubmenu.classList.add('open');
+            masterDataArrow.classList.add('rotated');
+
+            document.getElementById('outlet-link').classList.add('active');
+            updatePageTitle('outlet');
+        }
+        else if (currentPath.includes('promo')) {
+            // Buka submenu master data
+            const masterDataSubmenu = document.getElementById('master-data-submenu');
+            const masterDataArrow = document.getElementById('master-data-toggle').querySelector('.menu-arrow');
+            masterDataSubmenu.classList.add('open');
+            masterDataArrow.classList.add('rotated');
+
+            document.getElementById('promo-link').classList.add('active');
+            updatePageTitle('promo');
+        }
+        else if (currentPath.includes('kontak')) {
+            // Buka submenu master data
+            const masterDataSubmenu = document.getElementById('master-data-submenu');
+            const masterDataArrow = document.getElementById('master-data-toggle').querySelector('.menu-arrow');
+            masterDataSubmenu.classList.add('open');
+            masterDataArrow.classList.add('rotated');
+
+            document.getElementById('kontak-link').classList.add('active');
+            updatePageTitle('kontak');
+        }
+        else if (currentPath.includes('artikel')) {
+            // Buka submenu master data
+            const masterDataSubmenu = document.getElementById('master-data-submenu');
+            const masterDataArrow = document.getElementById('master-data-toggle').querySelector('.menu-arrow');
+            masterDataSubmenu.classList.add('open');
+            masterDataArrow.classList.add('rotated');
+
+            document.getElementById('artikel-link').classList.add('active');
+            updatePageTitle('artikel');
         }
         else if (currentPath.includes('armada')) {
             // Buka submenu master data
@@ -860,6 +1074,35 @@
         hamburgerIcon.classList.add('fa-bars');
     }
 
+    // Fungsi untuk menampilkan modal logout
+    function showLogoutModal() {
+        const logoutModal = document.getElementById('logoutModal');
+        logoutModal.classList.add('show');
+        document.body.style.overflow = 'hidden'; // Prevent scrolling
+    }
+
+    // Fungsi untuk menyembunyikan modal logout
+    function hideLogoutModal() {
+        const logoutModal = document.getElementById('logoutModal');
+        logoutModal.classList.remove('show');
+        document.body.style.overflow = ''; // Restore scrolling
+    }
+
+    // Fungsi untuk logout
+    function logout() {
+        // Di sini Anda bisa menambahkan logika logout yang sesuai
+        // Contoh: Menggunakan Laravel's built-in logout
+
+
+        // Untuk saat ini, kita hanya akan menunjukkan pesan
+        alert('Logout berhasil! Mengarahkan ke halaman login...');
+
+        // Simulasi redirect ke halaman login setelah 1 detik
+        setTimeout(() => {
+            window.location.href = '/customer/login'; // Ganti dengan route login Anda
+        }, 1000);
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         setActiveMenu();
 
@@ -885,6 +1128,44 @@
             toggleNestedSubmenu('tiket-toggle', 'tiket-submenu');
         });
 
+        // Logout functionality
+        const logoutBtn = document.getElementById('logoutBtn');
+        const logoutModal = document.getElementById('logoutModal');
+        const cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
+        const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
+
+        // Show logout confirmation modal
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            showLogoutModal();
+        });
+
+        // Cancel logout
+        cancelLogoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            hideLogoutModal();
+        });
+
+        // Confirm logout
+        confirmLogoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            logout();
+        });
+
+        // Close modal when clicking outside
+        logoutModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideLogoutModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && logoutModal.classList.contains('show')) {
+                hideLogoutModal();
+            }
+        });
+
         // Mobile functionality
         const mobileHamburgerBtn = document.getElementById('mobileHamburgerBtn');
         const overlay = document.getElementById('overlay');
@@ -903,6 +1184,13 @@
                     }
                 }
             });
+        });
+
+        // Juga tutup sidebar saat klik logout button di mobile
+        logoutBtn.addEventListener('click', function() {
+            if (window.innerWidth <= 992) {
+                closeSidebar();
+            }
         });
 
         // Responsive behavior
