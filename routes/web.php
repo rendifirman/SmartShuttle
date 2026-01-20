@@ -335,9 +335,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     Route::get('/driver', [AdminController::class, 'driver'])->name('admin.driver');
     Route::get('/pegawai', [AdminController::class, 'pegawai'])->name('admin.pegawai');
 
-    // Transaksi Routes
-    Route::get('/tiket-perjalanan', [AdminController::class, 'tiketPerjalanan'])->name('admin.tiket-perjalanan');
-    Route::get('/tiket-armada', [AdminController::class, 'tiketArmada'])->name('admin.tiket-armada');
+    // ★★★ TRANSAKSI ROUTES (DIPERBARUI) ★★★
+    Route::get('/smartsend-transaksi', [AdminController::class, 'smartsendTransaksi'])->name('admin.smartsend-transaksi');
+    Route::get('/perjalanan', [AdminController::class, 'perjalanan'])->name('admin.perjalanan');
+    Route::get('/armada-transaksi', [AdminController::class, 'armadaTransaksi'])->name('admin.armada-transaksi');
 
     // SmartSend Routes
     Route::get('/smartsend-tiket', [AdminController::class, 'smartsendTiket'])->name('admin.smartsend-tiket');

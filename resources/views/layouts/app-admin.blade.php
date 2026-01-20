@@ -616,24 +616,18 @@
         </div>
 
         <div class="submenu" id="transaksi-submenu">
-            <div class="submenu-item" id="tiket-toggle">
-                <div class="menu-left">
-                    <i class="fas fa-ticket-alt submenu-icon"></i>
-                    <span>Tiket</span>
-                </div>
-                <i class="fas fa-chevron-right submenu-arrow"></i>
-            </div>
-
-            <div class="submenu nested-submenu" id="tiket-submenu">
-                <a href="{{ route('admin.tiket-perjalanan') }}" class="submenu-item" id="tiket-perjalanan-link">
-                    <i class="fas fa-route submenu-icon"></i>
-                    <span>Perjalanan</span>
-                </a>
-                <a href="{{ route('admin.tiket-armada') }}" class="submenu-item" id="tiket-armada-link">
-                    <i class="fas fa-bus submenu-icon"></i>
-                    <span>Armada</span>
-                </a>
-            </div>
+            <a href="{{ route('admin.smartsend-transaksi') }}" class="submenu-item" id="smartsend-transaksi-link">
+                <i class="fas fa-shopping-cart submenu-icon"></i>
+                <span>Smartsend</span>
+            </a>
+            <a href="{{ route('admin.perjalanan') }}" class="submenu-item" id="perjalanan-link">
+                <i class="fas fa-route submenu-icon"></i>
+                <span>Perjalanan</span>
+            </a>
+            <a href="{{ route('admin.armada-transaksi') }}" class="submenu-item" id="armada-transaksi-link">
+                <i class="fas fa-bus submenu-icon"></i>
+                <span>Armada</span>
+            </a>
         </div>
 
         <!-- SmartSend (with submenu) -->
@@ -749,8 +743,9 @@
         'driver': { title: 'Master Data - Driver', icon: 'fas fa-user-tie' },
         'pegawai': { title: 'Master Data - Pegawai', icon: 'fas fa-users' },
         'rute': { title: 'Master Data - Rute', icon: 'fas fa-route' },
-        'tiket-perjalanan': { title: 'Transaksi Tiket - Perjalanan', icon: 'fas fa-route' },
-        'tiket-armada': { title: 'Transaksi Tiket - Armada', icon: 'fas fa-bus' },
+        'smartsend-transaksi': { title: 'Transaksi - SmartSend', icon: 'fas fa-shopping-cart' },
+        'perjalanan': { title: 'Transaksi - Perjalanan', icon: 'fas fa-route' },
+        'armada-transaksi': { title: 'Transaksi - Armada', icon: 'fas fa-bus' },
         'smartsend-tiket': { title: 'SmartSend - Tiket', icon: 'fas fa-ticket-alt' },
         'smartsend-perjalanan': { title: 'SmartSend - Perjalanan', icon: 'fas fa-route' },
         'smartsend-armada': { title: 'SmartSend - Armada', icon: 'fas fa-bus' },
@@ -897,7 +892,7 @@
             document.getElementById('artikel-link').classList.add('active');
             updatePageTitle('artikel');
         }
-        else if (currentPath.includes('armada')) {
+        else if (currentPath.includes('armada') && !currentPath.includes('armada-transaksi')) {
             // Buka submenu master data
             const masterDataSubmenu = document.getElementById('master-data-submenu');
             const masterDataArrow = document.getElementById('master-data-toggle').querySelector('.menu-arrow');
@@ -938,38 +933,40 @@
             updatePageTitle('rute');
         }
 
-        // Transaksi
-        else if (currentPath.includes('tiket-perjalanan')) {
+        // Transaksi - Smartsend (termasuk tiket-perjalanan untuk backward compatibility)
+        else if (currentPath.includes('smartsend-transaksi')) {
             // Buka submenu transaksi
             const transaksiSubmenu = document.getElementById('transaksi-submenu');
             const transaksiArrow = document.getElementById('transaksi-toggle').querySelector('.menu-arrow');
             transaksiSubmenu.classList.add('open');
             transaksiArrow.classList.add('rotated');
 
-            // Buka nested submenu tiket
-            const tiketSubmenu = document.getElementById('tiket-submenu');
-            const tiketArrow = document.getElementById('tiket-toggle').querySelector('.submenu-arrow');
-            tiketSubmenu.classList.add('open');
-            tiketArrow.classList.add('rotated');
-
-            document.getElementById('tiket-perjalanan-link').classList.add('active');
-            updatePageTitle('tiket-perjalanan');
+            document.getElementById('smartsend-transaksi-link').classList.add('active'); // ID diubah
+            updatePageTitle('smartsend-transaksi'); // Key diubah
         }
-        else if (currentPath.includes('tiket-armada')) {
+        // Transaksi - Perjalanan
+        else if (currentPath.includes('perjalanan') && 
+                !currentPath.includes('tiket-perjalanan') && 
+                !currentPath.includes('smartsend-perjalanan')) {
             // Buka submenu transaksi
             const transaksiSubmenu = document.getElementById('transaksi-submenu');
             const transaksiArrow = document.getElementById('transaksi-toggle').querySelector('.menu-arrow');
             transaksiSubmenu.classList.add('open');
             transaksiArrow.classList.add('rotated');
 
-            // Buka nested submenu tiket
-            const tiketSubmenu = document.getElementById('tiket-submenu');
-            const tiketArrow = document.getElementById('tiket-toggle').querySelector('.submenu-arrow');
-            tiketSubmenu.classList.add('open');
-            tiketArrow.classList.add('rotated');
+            document.getElementById('perjalanan-link').classList.add('active');
+            updatePageTitle('perjalanan');
+        }
+        // Transaksi - Armada (termasuk tiket-armada untuk backward compatibility)
+        else if (currentPath.includes('armada-transaksi') || currentPath.includes('tiket-armada')) {
+            // Buka submenu transaksi
+            const transaksiSubmenu = document.getElementById('transaksi-submenu');
+            const transaksiArrow = document.getElementById('transaksi-toggle').querySelector('.menu-arrow');
+            transaksiSubmenu.classList.add('open');
+            transaksiArrow.classList.add('rotated');
 
-            document.getElementById('tiket-armada-link').classList.add('active');
-            updatePageTitle('tiket-armada');
+            document.getElementById('armada-transaksi-link').classList.add('active');
+            updatePageTitle('armada-transaksi');
         }
 
         // SmartSend
