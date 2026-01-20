@@ -94,6 +94,25 @@ class PemesananController extends Controller
         DB::beginTransaction();
 
         try {
+            // Ensure user is authenticated
+            $user = $request->user();
+            if (!$user) {
+                Log::warning('API Pemesanan Store: No authenticated user found', [
+                    'headers' => $request->headers->all(),
+                    'bearer_token' => $request->bearerToken(),
+                    'has_authorization' => $request->hasHeader('Authorization')
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentication required'
+                ], 401);
+            }
+
+            Log::info('API Pemesanan Store: User authenticated', [
+                'user_id' => $user->id,
+                'user_email' => $user->email
+            ]);
+
             // Ambil data jadwal
             $jadwal = Jadwal::findOrFail($request->jadwal_id);
 
@@ -141,7 +160,7 @@ class PemesananController extends Controller
             // Buat pemesanan
             $pemesanan = Pemesanan::create([
                 'kode_booking' => $kodeBooking,
-                'customer_id' => $request->user()->id,
+                'customer_id' => $user->id,
                 'jadwal_id' => $jadwal->id,
                 'jumlah_penumpang' => $request->jumlah_penumpang,
                 'harga_total' => $hargaTotal,
@@ -156,6 +175,7 @@ class PemesananController extends Controller
                 'status' => 'menunggu_pembayaran',
                 'waktu_kadaluarsa' => now()->addHours(24),
                 'kode_promo' => $kodePromo,
+                'created_by' => $user->id,
             ]);
 
             // Simpan detail penumpang
@@ -262,6 +282,94 @@ class PemesananController extends Controller
     }
 
     /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, $kode_booking)
+    {
+        Log::info('API Pemesanan Update Request:', [
+            'kode_booking' => $kode_booking,
+            'data' => $request->all()
+        ]);
+
+        $validator = Validator::make($request->all(), [
+            'nama_pemesan' => 'sometimes|required|string|max:100',
+            'telepon_pemesan' => 'sometimes|required|string|max:20',
+            'email_pemesan' => 'sometimes|required|email|max:100',
+            'catatan' => 'nullable|string|max:500',
+            'outlet_asal_id' => 'nullable|exists:outlets,id',
+            'outlet_tujuan_id' => 'nullable|exists:outlets,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $user = $request->user();
+
+            $pemesanan = Pemesanan::where('kode_booking', $kode_booking)
+                ->where('customer_id', $user->id)
+                ->first();
+
+            if (!$pemesanan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pemesanan tidak ditemukan'
+                ], 404);
+            }
+
+            // Hanya bisa update jika status masih menunggu pembayaran atau menunggu konfirmasi
+            if (!in_array($pemesanan->status, ['menunggu_pembayaran', 'menunggu_konfirmasi'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pemesanan tidak dapat diupdate karena sudah diproses.'
+                ], 400);
+            }
+
+            // Update data pemesanan
+            $updateData = $request->only([
+                'nama_pemesan',
+                'telepon_pemesan',
+                'email_pemesan',
+                'catatan',
+                'outlet_asal_id',
+                'outlet_tujuan_id'
+            ]);
+
+            $updateData['updated_by'] = $user->id;
+
+            $pemesanan->update($updateData);
+
+            DB::commit();
+
+            // Load relasi untuk response
+            $pemesanan->load(['jadwal', 'detailPenumpang']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pemesanan berhasil diperbarui.',
+                'data' => $pemesanan
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('API Pemesanan Update Error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Cancel the specified resource.
      */
     public function cancel(Request $request, $kode_booking)
@@ -322,6 +430,59 @@ class PemesananController extends Controller
             DB::rollBack();
 
             Log::error('API Pemesanan Cancel Error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage (soft delete).
+     */
+    public function destroy(Request $request, $kode_booking)
+    {
+        DB::beginTransaction();
+
+        try {
+            $user = $request->user();
+
+            $pemesanan = Pemesanan::where('kode_booking', $kode_booking)
+                ->where('customer_id', $user->id)
+                ->first();
+
+            if (!$pemesanan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pemesanan tidak ditemukan'
+                ], 404);
+            }
+
+            // Hanya bisa dihapus jika status masih menunggu pembayaran atau dibatalkan
+            if (!in_array($pemesanan->status, ['menunggu_pembayaran', 'dibatalkan'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pemesanan tidak dapat dihapus karena sudah diproses.'
+                ], 400);
+            }
+
+            // Soft delete dengan mengisi deleted_by
+            $pemesanan->deleted_by = $user->id;
+            $pemesanan->save();
+            $pemesanan->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pemesanan berhasil dihapus.'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('API Pemesanan Destroy Error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,

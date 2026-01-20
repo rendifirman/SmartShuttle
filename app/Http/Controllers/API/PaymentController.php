@@ -558,38 +558,69 @@ class PaymentController extends Controller
      * DEV: Generate Virtual Account directly to Paylabs (v2.3) for Postman testing.
      */
     public function devPaylabsVaCreate(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'amount' => 'required|numeric|min:1',
-            'paymentType' => 'required|string|in:BCAVA,MandiriVA,BNIVA,BRIVA,PermataVA,CIMBVA,DanamonVA,MaybankVA,BTNVA,SinarmasVA,BJBVA,BTPNVA,OCBCVA',
-            'payer' => 'required|string|max:60',
-            'productName' => 'required|string|max:100',
-            'merchantTradeNo' => 'nullable|string|max:32',
-            'notifyUrl' => 'nullable|url|max:200',
-            'feeType' => 'nullable|in:BEN,OUR',
-            'productInfo' => 'nullable|array',
+{
+    try {
+        // Validate minimal required fields - update to match your database
+        $validated = $request->validate([
+            'requestId' => 'sometimes|string',
+            'merchantId' => 'sometimes|string',
+            'paymentType' => 'required|string',
+            'amount' => 'required|numeric|min:1000',
+            'merchantTradeNo' => 'required|string|unique:pembayaran,kode_pembayaran',
+            'payer' => 'sometimes|string',
+            'productName' => 'sometimes|string',
+            'productInfo' => 'sometimes|array',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid request',
-                'errors' => $validator->errors(),
-            ], 422);
+        // Set default values if not provided
+        $payload = array_merge([
+            'requestId' => $validated['requestId'] ?? ('DEV-VA-' . time() . '-' . Str::random(6)),
+            'merchantId' => config('paylabs.mid', '010529'),
+            'storeId' => config('paylabs.store_id', ''),
+            'notifyUrl' => config('paylabs.callback_url'),
+            'feeType' => 'BEN',
+            'productName' => $request->input('productName', 'Smart Shuttle Ticket'),
+            'productInfo' => $request->input('productInfo', [[
+                'id' => 'DEV001',
+                'name' => 'Development Test Product',
+                'price' => $validated['amount'],
+                'type' => 'Test',
+                'quantity' => 1
+            ]]),
+            'payer' => $validated['payer'] ?? 'Dev Test User',
+        ], $validated);
+
+        // Remove empty storeId
+        if (empty($payload['storeId'])) {
+            unset($payload['storeId']);
         }
 
-        try {
-            $result = $this->paylabsService->vaCreateV23($request->all());
-            return response()->json($result, $result['success'] ? 200 : 502);
-        } catch (\Exception $e) {
-            Log::error('DEV PAYLABS VA CREATE error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
-        }
+        Log::info('DEV VA Create Request:', $payload);
+
+        $paylabsService = new PaylabsService();
+        $result = $paylabsService->vaCreateV23($payload);
+
+        return response()->json($result);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation error',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('DEV VA Create Error:', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to create VA payment',
+            'error' => $e->getMessage()
+        ], 500);
     }
-
+}
     /**
      * DEV: Query Virtual Account order status (v2.3).
      */

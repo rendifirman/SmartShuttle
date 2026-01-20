@@ -77,4 +77,30 @@ class Jadwal extends Model
                     ->where('kursi_tersedia', '>', 0)
                     ->whereDate('tanggal_keberangkatan', '>=', now());
     }
+
+    // ================ AUDIT RELATIONSHIPS ================
+
+    /**
+     * User who created this schedule
+     */
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * User who last updated this schedule
+     */
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /**
+     * User who deleted this schedule
+     */
+    public function deleter()
+    {
+        return $this->belongsTo(User::class, 'deleted_by');
+    }
 }

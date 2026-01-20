@@ -525,7 +525,7 @@
         <button class="mobile-hamburger" id="mobileHamburgerBtn">
             <i class="fas fa-bars"></i>
         </button>
-        <span class="mobile-logo">SMART SHUTTLE {{ Auth::guard('admin')->user()->hasRole('admin_pusat') ? 'ADMIN PUSAT' : 'ADMIN CABANG' }}</span>
+        <span class="mobile-logo">SMART SHUTTLE {{ Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasRole('admin_pusat') ? 'ADMIN PUSAT' : 'ADMIN CABANG' }}</span>
         <div style="width: 40px;"></div>
     </div>
 </div>
@@ -537,7 +537,7 @@
 <div class="sidebar" id="sidebar">
     <!-- Header Sidebar -->
     <div class="sidebar-header">
-        <div class="sidebar-title">SMART SHUTTLE<br><span>{{ Auth::guard('admin')->user()->hasRole('admin_pusat') ? 'ADMIN PUSAT' : 'ADMIN CABANG' }}</span></div>
+        <div class="sidebar-title">SMART SHUTTLE<br><span>{{ Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasRole('admin_pusat') ? 'ADMIN PUSAT' : 'ADMIN CABANG' }}</span></div>
     </div>
 
     <!-- Navigation -->
@@ -579,11 +579,11 @@
                 <i class="fas fa-tag submenu-icon"></i>
                 <span>Promo</span>
             </a>
-            <a href="{{ route('admin.kontak') }}" class="submenu-item" id="kontak-link">
+            <a href="{{ route('admin.kontakperusahaan') }}" class="submenu-item" id="kontak-link">
                 <i class="fas fa-address-book submenu-icon"></i>
                 <span>Kontak</span>
             </a>
-            <a href="{{ route('admin.artikel') }}" class="submenu-item" id="artikel-link">
+            <a href="{{ route('admin.artikel.index') }}" class="submenu-item" id="artikel-link">
                 <i class="fas fa-newspaper submenu-icon"></i>
                 <span>Artikel</span>
             </a>
@@ -704,8 +704,8 @@
                 <i class="fas fa-user"></i>
             </div>
             <div class="user-info">
-                <h4>{{ Auth::guard('admin')->user()->name }}</h4>
-                <p>{{ Auth::guard('admin')->user()->hasRole('admin_pusat') ? 'Admin Pusat' : 'Admin Cabang' }}</p>
+                <h4>{{ Auth::guard('admin')->user() ? Auth::guard('admin')->user()->name : 'User' }}</h4>
+                <p>{{ Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasRole('admin_pusat') ? 'Admin Pusat' : 'Admin Cabang' }}</p>
             </div>
         </div>
     </div>
@@ -727,7 +727,7 @@
         </h1>
         <div class="user-info-top">
             <i class="fas fa-user-circle"></i>
-            <span>{{ Auth::guard('admin')->user()->hasRole('admin_pusat') ? 'Admin Pusat' : 'Admin Cabang' }}</span>
+            <span>{{ Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasRole('admin_pusat') ? 'Admin Pusat' : 'Admin Cabang' }}</span>
         </div>
     </div>
 

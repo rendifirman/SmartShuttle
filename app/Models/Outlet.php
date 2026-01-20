@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class Outlet extends Model
@@ -26,10 +28,38 @@ class Outlet extends Model
         'tersedia_atm',
         'tersedia_wifi',
         'zona_pelayanan',
-        'status'
+        'status',
+        'created_by',
+        'updated_by',
+        'deleted_by'
     ];
 
     protected $table = 'outlets';
+
+    // Boot method untuk auto-fill audit fields
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (Auth::check()) {
+                $model->created_by = Auth::id();
+            }
+        });
+
+        static::updating(function ($model) {
+            if (Auth::check()) {
+                $model->updated_by = Auth::id();
+            }
+        });
+
+        static::deleting(function ($model) {
+            if (Auth::check()) {
+                $model->deleted_by = Auth::id();
+                $model->save();
+            }
+        });
+    }
 
     // Relasi ke branch
     public function branch()
@@ -51,7 +81,7 @@ class Outlet extends Model
         }
 
         // Cek jika sudah URL lengkap (http/https)
-        if (str_starts_with($this->foto_outlet, 'http://') || 
+        if (str_starts_with($this->foto_outlet, 'http://') ||
             str_starts_with($this->foto_outlet, 'https://')) {
             return $this->foto_outlet;
         }

@@ -156,6 +156,7 @@ class PemesananController extends Controller
                 'status' => 'menunggu_pembayaran',
                 'waktu_kadaluarsa' => now()->addHours(24),
                 'kode_promo' => $kodePromo,
+                'created_by' => $request->user()->id,
             ]);
 
             // Simpan detail penumpang

@@ -327,8 +327,33 @@
         @if($articles->count() > 0)
             <div class="articles-grid">
                 @foreach($articles as $article)
+                    <!-- Tentukan foto untuk setiap artikel -->
+                    @php
+                        // Tentukan foto berdasarkan ID artikel
+                        $fotoArtikel = [
+                            1 => 'AR1.png',
+                            2 => 'AR2.png',
+                            3 => 'AR3.png',
+                            4 => 'AR2.png',
+                            5 => 'AR2.png',
+                            6 => 'AR3.png',
+                        ];
+
+                        if (isset($fotoArtikel[$article->id])) {
+                            $fotoUrl = asset('images/' . $fotoArtikel[$article->id]);
+                        } else {
+                            $availableFoto = ['AR1.png', 'AR2.png', 'AR3.png'];
+                            $modIndex = ($article->id - 1) % count($availableFoto);
+                            $fotoUrl = asset('images/' . $availableFoto[$modIndex]);
+                        }
+
+                        // Format tanggal
+                        $tanggalFormat = \Carbon\Carbon::parse($article->tanggal_publikasi)
+                            ->translatedFormat('d F Y');
+                    @endphp
+
                     <div class="article-card">
-                        <img src="{{ $article->gambar_url }}" alt="{{ $article->judul }}" class="article-image">
+                        <img src="{{ $fotoUrl }}" alt="{{ $article->judul }}" class="article-image">
                         <div class="article-content">
                             <span class="article-category">{{ $article->kategori }}</span>
                             <h3 class="article-title">{{ $article->judul }}</h3>
@@ -336,7 +361,7 @@
                             <div class="article-meta">
                                 <div class="article-date">
                                     <i class="far fa-calendar-alt"></i>
-                                    {{ $article->tanggal_format }}
+                                    {{ $tanggalFormat }}
                                 </div>
                                 <a href="{{ route('customer.artikel.detail', $article->slug) }}" class="article-read-more">
                                     Baca Selengkapnya →
@@ -397,6 +422,16 @@
         document.querySelector('.search-box input').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 this.closest('form').submit();
+            }
+        });
+
+        // Auto focus search input
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.querySelector('.search-box input');
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('search')) {
+                searchInput.focus();
+                searchInput.select();
             }
         });
     </script>

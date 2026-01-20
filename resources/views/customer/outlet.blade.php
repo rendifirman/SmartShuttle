@@ -1,3 +1,36 @@
+@php
+    use Illuminate\Support\Str;
+
+    // Fungsi helper untuk gambar outlet (HANYA SEKALI di luar loop)
+    function getOutletImage($outlet) {
+        if (!empty($outlet->foto_outlet)) {
+            // Jika sudah URL lengkap
+            if (Str::startsWith($outlet->foto_outlet, ['http://', 'https://'])) {
+                return $outlet->foto_outlet;
+            }
+
+            // Cek apakah file ada di public/images/outlets/
+            $filename = basename($outlet->foto_outlet);
+            $publicPath = 'images/outlets/' . $filename;
+
+            if (file_exists(public_path($publicPath))) {
+                return asset($publicPath);
+            }
+
+            // Coba langsung path yang ada
+            if (file_exists(public_path($outlet->foto_outlet))) {
+                return asset($outlet->foto_outlet);
+            }
+        }
+
+        return asset('images/placeholder-outlet.jpg');
+    }
+
+    // Set default values jika variabel tidak ada
+    $totalOutlets = $totalOutlets ?? $outlets->count();
+    $hasMore = $hasMore ?? false;
+@endphp
+
 @extends('layouts.app')
 
 @section('title', 'Lokasi Outlet SmartShuttle')
@@ -15,7 +48,7 @@
         cursor: pointer;
         font-weight: 500;
         font-size: 14px;
-        min-width: 120px; /* Lebar minimal untuk tombol */
+        min-width: 120px;
     }
 
     .btn-secondary:hover {
@@ -46,16 +79,14 @@
         border-color: #FF581E;
     }
 
-    /* Outlet Page Styles dengan Background Foto */
+    /* Outlet Page Styles dengan Background PETA */
     .outlet-page {
         background:
             linear-gradient(
-                to bottom,
-                rgba(255, 255, 255, 0.95) 0%,
-                rgba(255, 255, 255, 0.85) 50%,
-                rgba(255, 255, 255, 0.95) 100%
+                rgba(255, 255, 255, 0.7),
+                rgba(255, 255, 255, 0.7)
             ),
-            url('{{ asset("images/indonesia.jpeg") }}');
+            url('{{ asset("images/backgroundpeta.png") }}');
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
@@ -63,18 +94,6 @@
         padding-top: 80px;
         min-height: 100vh;
         position: relative;
-    }
-
-    /* Fallback jika foto tidak ada */
-    .outlet-page.no-bg {
-        background:
-            linear-gradient(
-                to bottom,
-                rgba(255, 255, 255, 0.95) 0%,
-                rgba(255, 255, 255, 0.85) 50%,
-                rgba(255, 255, 255, 0.95) 100%
-            );
-        background-attachment: fixed;
     }
 
     .outlet-container {
@@ -92,7 +111,7 @@
         text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.8);
     }
 
-    /* FILTER SECTION - DIRAPIKAN */
+    /* FILTER SECTION */
     .filter-section {
         background: rgba(255, 255, 255, 0.95);
         padding: 30px;
@@ -130,10 +149,10 @@
         box-shadow: 0 0 0 2px rgba(255, 88, 30, 0.2);
     }
 
-    /* LAYOUT FILTER YANG SEIMBANG - Filter item lebih panjang, button lebih pendek */
+    /* LAYOUT FILTER */
     .filter-grid {
         display: grid;
-        grid-template-columns: 2fr 2fr 1fr; /* Kolom pertama dan kedua lebih panjang, kolom ketiga lebih pendek */
+        grid-template-columns: 2fr 2fr 1fr;
         gap: 70px;
         align-items: end;
     }
@@ -159,12 +178,12 @@
         margin-bottom: 2px;
         align-items: flex-end;
         height: 100%;
-        justify-content: flex-end; /* Tombol di sebelah kanan */
+        justify-content: flex-end;
     }
 
     .filter-button .btn-secondary {
         height: 65px;
-        width: auto; /* Lebar otomatis berdasarkan konten */
+        width: auto;
         padding: 12px 20px;
         display: flex;
         align-items: center;
@@ -182,7 +201,7 @@
         margin: 0 auto;
     }
 
-    /* Outlet Card - DIRAPIKAN */
+    /* Outlet Card */
     .outlet-card {
         display: block;
         text-decoration: none;
@@ -208,7 +227,7 @@
         border-color: rgba(255, 88, 30, 0.3);
     }
 
-    /* Card Header (Nama Outlet di ATAS) */
+    /* Card Header */
     .card-header {
         background: linear-gradient(135deg, #0C2D48 0%, #1A4A6E 100%);
         color: white;
@@ -263,7 +282,7 @@
         transform: scale(1.05);
     }
 
-    /* Card Body yang DIRAPIKAN */
+    /* Card Body */
     .card-body {
         padding: 24px;
         flex: 1;
@@ -273,7 +292,7 @@
         background: #fff;
     }
 
-    /* Grid untuk informasi outlet - LAYOUT RAPI */
+    /* Grid untuk informasi outlet */
     .info-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -414,7 +433,7 @@
         font-size: 12px;
     }
 
-    /* ============ POPUP LAYOUT: FOTO DI ATAS, INFO DI BAWAH ============ */
+    /* ============ POPUP LAYOUT ============ */
     .popup-overlay {
         position: fixed;
         top: 0;
@@ -663,6 +682,125 @@
         text-decoration: underline;
     }
 
+    /* ============ LOAD MORE STYLES ============ */
+    /* Tombol Load More */
+    .load-more-container {
+        text-align: center;
+        margin-top: 40px;
+        padding: 20px 0;
+    }
+
+    .btn-load-more {
+        background: linear-gradient(135deg, #0C2D48 0%, #1A4A6E 100%);
+        color: white;
+        border: none;
+        padding: 14px 32px;
+        border-radius: 30px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 4px 15px rgba(12, 45, 72, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-load-more:hover {
+        background: linear-gradient(135deg, #FF581E 0%, #FF7A4A 100%);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(255, 88, 30, 0.3);
+    }
+
+    .btn-load-more:disabled {
+        background: linear-gradient(135deg, #cccccc 0%, #999999 100%);
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .btn-load-more .spinner {
+        display: none;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top: 2px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .btn-load-more.loading .spinner {
+        display: inline-block;
+    }
+
+    .btn-load-more.loading .text {
+        display: none;
+    }
+
+    /* Info counter */
+    .outlet-info {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #0C2D48;
+        font-size: 14px;
+        font-weight: 500;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 10px 20px;
+        border-radius: 20px;
+        display: inline-block;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .outlet-info .count {
+        font-weight: 700;
+        color: #FF581E;
+    }
+
+    .all-loaded-message {
+        text-align: center;
+        padding: 30px;
+        color: #0C2D48;
+        font-weight: 500;
+        background: linear-gradient(135deg, rgba(12, 45, 72, 0.05) 0%, rgba(26, 74, 110, 0.05) 100%);
+        border-radius: 12px;
+        margin-top: 20px;
+        border: 2px dashed rgba(12, 45, 72, 0.2);
+    }
+
+    .all-loaded-message i {
+        font-size: 24px;
+        color: #FF581E;
+        margin-bottom: 10px;
+    }
+
+    /* Smooth animation for new cards */
+    .outlet-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 24px;
+        margin: 0 auto;
+    }
+
+    .outlet-card {
+        animation: fadeInUp 0.5s ease forwards;
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    @keyframes fadeInUp {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     /* Animasi */
     @keyframes fadeIn {
         from { opacity: 0; }
@@ -702,13 +840,13 @@
         }
 
         .filter-grid {
-            grid-template-columns: 1fr; /* Di mobile jadi 1 kolom */
+            grid-template-columns: 1fr;
             gap: 15px;
         }
 
         .filter-button .btn-secondary {
             height: 44px;
-            width: 100%; /* Di mobile tombol full width */
+            width: 100%;
             justify-content: center;
         }
 
@@ -786,16 +924,27 @@
         .outlet-page {
             background-attachment: scroll;
         }
+
+        /* Load More Responsive */
+        .btn-load-more {
+            padding: 12px 24px;
+            font-size: 14px;
+        }
+
+        .outlet-info {
+            font-size: 12px;
+            padding: 8px 16px;
+        }
     }
 
     @media (min-width: 769px) and (max-width: 1024px) {
         .filter-grid {
-            grid-template-columns: 2fr 2fr 1fr; /* Tetap 2:2:1 di tablet */
+            grid-template-columns: 2fr 2fr 1fr;
             gap: 15px;
         }
 
         .filter-button .btn-secondary {
-            padding: 12px 15px; /* Sedikit lebih kecil di tablet */
+            padding: 12px 15px;
             font-size: 13px;
         }
     }
@@ -846,12 +995,12 @@
     <div class="outlet-container">
         <h1 class="outlet-title">LOKASI OUTLET SMARTSHUTTLE</h1>
 
-        <!-- FILTER SECTION - DIRAPIKAN -->
+        <!-- FILTER SECTION -->
         <div class="filter-section">
             <h4>Filter Outlet</h4>
             <form method="GET" action="{{ route('customer.outlet.filter') }}" id="filterForm">
                 <div class="filter-grid">
-                    <!-- Filter Kota dengan Input Datalist - LEBAR PANJANG -->
+                    <!-- Filter Kota dengan Input Datalist -->
                     <div class="filter-item">
                         <label for="kotaInput">Filter berdasarkan Kota:</label>
                         <input type="text"
@@ -869,7 +1018,7 @@
                         </datalist>
                     </div>
 
-                    <!-- Filter Cabang dengan Input Datalist - LEBAR PANJANG -->
+                    <!-- Filter Cabang dengan Input Datalist -->
                     <div class="filter-item">
                         <label for="branchInput">Filter berdasarkan Cabang:</label>
                         <input type="text"
@@ -889,7 +1038,7 @@
                         </datalist>
                     </div>
 
-                    <!-- Tombol Reset Filter - LEBAR PENDEK -->
+                    <!-- Tombol Reset Filter -->
                     <div class="filter-button">
                         <button type="button" class="btn btn-secondary" onclick="resetFilter()">
                             <i class="fas fa-redo"></i> Reset
@@ -899,20 +1048,29 @@
             </form>
         </div>
 
-        <!-- Grid Outlet -->
-        <div class="outlet-grid">
+        <!-- Outlet Counter -->
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div class="outlet-info">
+                <i class="fas fa-store"></i>
+                Menampilkan <span class="count" id="currentCount">{{ $outlets->count() }}</span> dari
+                <span class="count" id="totalCount">{{ $totalOutlets }}</span> outlet
+            </div>
+        </div>
+
+        <!-- Grid Outlet (Initial 6 items) -->
+        <div class="outlet-grid" id="outletGrid">
             @foreach($outlets as $outlet)
+                @php
+                    // Hanya panggil fungsi, tidak deklarasikan ulang
+                    $gambar = getOutletImage($outlet);
+                @endphp
+
                 <div class="outlet-card" data-city="{{ $outlet->branch ? $outlet->branch->kota : '' }}">
                     <div class="outlet-card-inner">
                         <div class="card-header">
                             {{ $outlet->nama_outlet }}
                         </div>
                         <div class="card-image">
-                            @php
-                                $gambar = $outlet->foto_url ??
-                                         (isset($outlet->foto_outlet) ? asset($outlet->foto_outlet) :
-                                         asset('images/placeholder-outlet.jpg'));
-                            @endphp
                             <img src="{{ $gambar }}"
                                  alt="{{ $outlet->nama_outlet }}"
                                  class="outlet-img"
@@ -987,6 +1145,25 @@
             @endforeach
         </div>
 
+        <!-- Load More Button -->
+        @if($hasMore)
+            <div class="load-more-container">
+                <button class="btn-load-more" id="loadMoreBtn">
+                    <div class="spinner"></div>
+                    <span class="text">
+                        <i class="fas fa-chevron-down"></i>
+                        Lihat Selengkapnya
+                    </span>
+                </button>
+            </div>
+        @elseif($outlets->isNotEmpty())
+            <div class="all-loaded-message">
+                <i class="fas fa-check-circle"></i>
+                <h4>Semua outlet telah ditampilkan</h4>
+                <p>Total {{ $totalOutlets }} outlet tersedia</p>
+            </div>
+        @endif
+
         <!-- Jika tidak ada outlet -->
         @if($outlets->isEmpty())
         <div class="empty-state">
@@ -1008,41 +1185,12 @@
 @endsection
 
 @php
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
-
-// Fungsi untuk mendapatkan gambar
-function getOutletImage($outlet) {
-    if (!empty($outlet->foto_outlet)) {
-        if (Str::startsWith($outlet->foto_outlet, ['http://', 'https://'])) {
-            return $outlet->foto_outlet;
-        }
-
-        if (Storage::exists($outlet->foto_outlet)) {
-            return Storage::url($outlet->foto_outlet);
-        }
-
-        $publicPath = 'images/' . ltrim($outlet->foto_outlet, '/');
-        if (file_exists(public_path($publicPath))) {
-            return asset($publicPath);
-        }
-
-        if (file_exists(public_path($outlet->foto_outlet))) {
-            return asset($outlet->foto_outlet);
-        }
-    }
-
-    return asset('images/placeholder-outlet.jpg');
-}
-
+// Fungsi untuk data JavaScript
 $outletsArray = $outlets->map(function($o) {
     // fasilitas → array
     $fasilitas = $o->fasilitas
         ? array_map('trim', explode(',', $o->fasilitas))
         : [];
-
-    // gambar → cek url atau pakai placeholder
-    $gambar = getOutletImage($o);
 
     // Buat array fasilitas tambahan dari boolean fields
     $fasilitasTambahan = [];
@@ -1072,7 +1220,7 @@ $outletsArray = $outlets->map(function($o) {
         'tipe_outlet' => $o->tipe_outlet,
         'zona_pelayanan' => $o->zona_pelayanan,
         'kapasitas_parkir' => $o->kapasitas_parkir,
-        'gambar' => $gambar,
+        'gambar' => getOutletImage($o),
         'foto_url' => $o->foto_url ?? null,
     ];
 })->values();
@@ -1081,6 +1229,157 @@ $outletsArray = $outlets->map(function($o) {
 @push('scripts')
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 <script>
+    // Variabel global untuk tracking
+    let currentOffset = {{ $outlets->count() }};
+    let isLoading = false;
+    let allLoaded = {{ !$hasMore ? 'true' : 'false' }};
+    let totalOutlets = {{ $totalOutlets }};
+
+    // Update fungsi loadMoreOutlets() di Blade dengan debugging
+function loadMoreOutlets() {
+    if (isLoading || allLoaded) return;
+
+    const btn = document.getElementById('loadMoreBtn');
+    const grid = document.getElementById('outletGrid');
+
+    // Set loading state
+    isLoading = true;
+    btn.classList.add('loading');
+
+    // Get filter values
+    const kota = document.getElementById('kotaInput')?.value || '';
+    const branchId = document.getElementById('branchIdInput')?.value || '';
+
+    // Debug URL
+    const url = '{{ route("customer.outlet.loadMore") }}';
+    console.log('AJAX URL:', url);
+    console.log('Request data:', { offset: currentOffset, kota, branch_id: branchId });
+
+    // Buat form data
+    const formData = new FormData();
+    formData.append('offset', currentOffset);
+    formData.append('kota', kota);
+    formData.append('branch_id', branchId);
+    formData.append('_token', '{{ csrf_token() }}');
+
+    // AJAX request - gunakan FormData bukan JSON
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: formData
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+
+        if (data.success) {
+            // Append new outlet cards
+            if (data.html) {
+                grid.insertAdjacentHTML('beforeend', data.html);
+
+                // Animate new cards
+                const newCards = grid.querySelectorAll('.outlet-card');
+                newCards.forEach((card, index) => {
+                    if (index >= currentOffset) {
+                        card.style.animationDelay = (index * 0.1) + 's';
+                        card.style.animationName = 'fadeInUp';
+                        card.style.animationDuration = '0.5s';
+                        card.style.animationFillMode = 'forwards';
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(20px)';
+                    }
+                });
+            }
+
+            // Update counters
+            currentOffset += data.count;
+            document.getElementById('currentCount').textContent = currentOffset;
+            document.getElementById('totalCount').textContent = data.total;
+
+            // Update button state
+            if (data.allLoaded) {
+                allLoaded = true;
+                btn.style.display = 'none';
+
+                // Show all loaded message
+                const loadMoreContainer = document.querySelector('.load-more-container');
+                if (loadMoreContainer) {
+                    const message = document.createElement('div');
+                    message.className = 'all-loaded-message';
+                    message.innerHTML = `
+                        <i class="fas fa-check-circle"></i>
+                        <h4>Semua outlet telah ditampilkan</h4>
+                        <p>Total ${data.total} outlet tersedia</p>
+                    `;
+                    loadMoreContainer.appendChild(message);
+                }
+            }
+
+            // Re-initialize popup handlers for new cards
+            initPopupHandlers();
+
+            // Update outletsData untuk popup
+            updateOutletsData();
+
+        } else {
+            console.error('Server error:', data.message);
+            alert('Gagal memuat outlet: ' + (data.message || 'Error tidak diketahui'));
+        }
+    })
+    .catch(error => {
+        console.error('Error loading more outlets:', error);
+        alert('Terjadi kesalahan saat memuat outlet. Silakan coba lagi atau refresh halaman.');
+    })
+    .finally(() => {
+        isLoading = false;
+        btn.classList.remove('loading');
+    });
+}
+
+// Fungsi untuk update outletsData dari server (opsional)
+function updateOutletsData() {
+    // Jika perlu update data untuk popup, bisa ditambahkan di sini
+    console.log('Update outlets data setelah load more');
+}
+
+// Tambahkan di bagian inisialisasi
+document.addEventListener('DOMContentLoaded', function() {
+    // Inisialisasi popup handlers
+    initPopupHandlers();
+
+    // Pastikan tombol load more ada
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', loadMoreOutlets);
+    }
+
+    // Initialize popup handlers
+    function initPopupHandlers() {
+        // Button detail click handlers
+        document.querySelectorAll('.btn-detail').forEach(btn => {
+            if (!btn.hasAttribute('data-handler-initialized')) {
+                btn.setAttribute('data-handler-initialized', 'true');
+                btn.addEventListener('click', function() {
+                    const outletId = this.getAttribute('onclick')?.match(/\d+/)?.[0];
+                    if (outletId) {
+                        showOutletPopup(outletId);
+                    }
+                });
+            }
+        });
+    }
+
     // Fungsi untuk submit form filter
     function submitFilterForm() {
         document.getElementById('filterForm').submit();
@@ -1088,72 +1387,48 @@ $outletsArray = $outlets->map(function($o) {
 
     // Fungsi untuk reset filter
     function resetFilter() {
-        // Reset input values
         document.getElementById('kotaInput').value = '';
         document.getElementById('branchInput').value = '';
         document.getElementById('branchIdInput').value = '';
-
-        // Submit form
         document.getElementById('filterForm').submit();
     }
 
     // Handle branch selection from datalist
-    document.addEventListener('DOMContentLoaded', function() {
-        const branchInput = document.getElementById('branchInput');
-        const branchIdInput = document.getElementById('branchIdInput');
-        const branchOptions = document.getElementById('branchOptions');
+    const branchInput = document.getElementById('branchInput');
+    const branchIdInput = document.getElementById('branchIdInput');
+    const branchOptions = document.getElementById('branchOptions');
 
+    if (branchInput) {
         branchInput.addEventListener('input', function() {
-            // Cari branch yang sesuai dengan input
             const inputValue = this.value.toLowerCase();
             let foundBranchId = null;
 
-            // Loop melalui semua option di datalist
             Array.from(branchOptions.options).forEach(option => {
                 if (option.value.toLowerCase() === inputValue) {
                     foundBranchId = option.getAttribute('data-id');
                 }
             });
 
-            // Set hidden input untuk branch_id
             branchIdInput.value = foundBranchId || '';
-
-            // Jika tidak ada yang cocok, clear hidden input
-            if (!foundBranchId) {
-                // Optional: submit form untuk mencari cabang berdasarkan nama
-                setTimeout(() => {
-                    branchIdInput.value = '';
-                }, 100);
-            }
         });
 
-        // Tambahkan event listener untuk enter key
         branchInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 submitFilterForm();
             }
         });
+    }
 
-        const kotaInput = document.getElementById('kotaInput');
+    const kotaInput = document.getElementById('kotaInput');
+    if (kotaInput) {
         kotaInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 submitFilterForm();
             }
         });
-
-        // Auto-submit ketika memilih dari datalist (untuk browser yang support)
-        branchInput.addEventListener('change', function() {
-            setTimeout(submitFilterForm, 100);
-        });
-
-        if (kotaInput) {
-            kotaInput.addEventListener('change', function() {
-                setTimeout(submitFilterForm, 100);
-            });
-        }
-    });
+    }
 
     // Data outlets diambil dari server (Blade -> JS)
     const outletsData = @json($outletsArray);
@@ -1368,7 +1643,6 @@ $outletsArray = $outlets->map(function($o) {
     document.addEventListener('click', function(event) {
         const popupOverlay = document.getElementById('popupOverlay');
         if (!popupOverlay) return;
-        // jika klik tepat pada overlay (bukan isi)
         if (event.target === popupOverlay) {
             hideOutletPopup();
         }
@@ -1379,18 +1653,28 @@ $outletsArray = $outlets->map(function($o) {
         if (event.key === 'Escape') hideOutletPopup();
     });
 
-    // Cek apakah background image berhasil dimuat
+    // Preload background image
     document.addEventListener('DOMContentLoaded', function() {
         const outletPage = document.getElementById('outletPage');
         const bgImage = new Image();
+        const imageUrl = "{{ asset('images/peta.png') }}";
 
-        const localImageUrl = "{{ asset('images/indonesia.jpeg') }}";
-
-        bgImage.onerror = function() {
-            outletPage.classList.add('no-bg');
+        bgImage.onload = function() {
+            outletPage.style.backgroundImage = `linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)), url('${imageUrl}')`;
         };
 
-        bgImage.src = localImageUrl;
+        bgImage.onerror = function() {
+            const fallbackUrl = "{{ asset('images/indonesia.jpeg') }}";
+            const fallbackImage = new Image();
+
+            fallbackImage.onload = function() {
+                outletPage.style.backgroundImage = `linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)), url('${fallbackUrl}')`;
+            };
+
+            fallbackImage.src = fallbackUrl;
+        };
+
+        bgImage.src = imageUrl;
     });
 </script>
 @endpush

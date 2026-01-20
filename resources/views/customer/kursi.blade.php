@@ -15,6 +15,7 @@
         margin: 0 auto;
         padding: 20px;
         padding-bottom: 120px;
+        padding-top:120px;
     }
 
     .tiket-layout {
@@ -530,6 +531,25 @@
         overflow-y: auto;
     }
 
+    /* Custom Scrollbar untuk route details */
+    .route-details-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .route-details-content::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .route-details-content::-webkit-scrollbar-thumb {
+        background: #FF581E;
+        border-radius: 10px;
+    }
+
+    .route-details-content::-webkit-scrollbar-thumb:hover {
+        background: #E54E1A;
+    }
+
     .route-detail-item {
         margin-bottom: 20px;
         padding-bottom: 20px;
@@ -661,67 +681,6 @@
     }
 
     .seat-box.sold::after {
-        transform: translate(-50%, -50%) rotate(-45deg);
-    }
-
-    /* Apply cross mark to actual seat elements */
-    .seat.sold {
-        background: #D9D9D9 !important;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .seat.sold::before,
-    .seat.sold::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 80%;
-        height: 3px;
-        background: #ff4444;
-        opacity: 1 !important;
-        z-index: 2;
-    }
-
-    .seat.sold::before {
-        transform: translate(-50%, -50%) rotate(45deg);
-    }
-
-    .seat.sold::after {
-        transform: translate(-50%, -50%) rotate(-45deg);
-    }
-
-    /* Cross mark styling for sold seats */
-    .seat-cross-mark {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 80%;
-        height: 80%;
-        pointer-events: none;
-        opacity: 1 !important;
-        z-index: 2;
-    }
-
-    .cross-line {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 120%;
-        height: 4px;
-        background: #ff0000;
-        transform-origin: center;
-        opacity: 1 !important;
-        box-shadow: 0 0 2px rgba(255, 0, 0, 0.5);
-    }
-
-    .cross-line-1 {
-        transform: translate(-50%, -50%) rotate(45deg);
-    }
-
-    .cross-line-2 {
         transform: translate(-50%, -50%) rotate(-45deg);
     }
 
@@ -902,8 +861,8 @@
         color: #999 !important;
         cursor: not-allowed !important;
         border: 2px solid #c0c0c0 !important;
-        opacity: 0.9;
-        filter: grayscale(50%);
+        opacity: 0.8;
+        filter: grayscale(80%);
         position: relative;
         pointer-events: none;
     }
@@ -935,7 +894,9 @@
     }
 
     .seat.sold .seat-status-icon {
-        display: none !important;
+        color: #ff4444 !important;
+        opacity: 1 !important;
+        z-index: 1;
     }
 
     .seat.sold .seat-premium-badge,
@@ -1157,6 +1118,7 @@
         .tiket-container {
             padding: 16px;
             padding-bottom: 100px;
+            padding-top: 100px;
         }
 
         .card-content {
@@ -1200,6 +1162,7 @@
         .tiket-container {
             padding: 12px;
             padding-bottom: 80px;
+            padding-top: 100px;
         }
 
         .card-title {
@@ -1746,17 +1709,7 @@
                                         @endif
 
                                         <!-- Icon status -->
-                                        @if($seatClass === 'sold')
-                                            <!-- Cross mark for sold seats -->
-                                            <div class="seat-cross-mark">
-                                                <div class="cross-line cross-line-1"></div>
-                                                <div class="cross-line cross-line-2"></div>
-                                            </div>
-                                        @elseif($seatClass === 'selected')
-                                            <i class="fas {{ $seatIcon }} seat-status-icon"></i>
-                                        @else
-                                            <i class="fas {{ $seatIcon }} seat-status-icon"></i>
-                                        @endif
+                                        <i class="fas {{ $seatIcon }} seat-status-icon"></i>
                                     </div>
                                 @endforeach
                             @else
@@ -1819,7 +1772,7 @@
                                 <i class="fas fa-arrow-left"></i> Kembali
                             </button>
                             <button type="submit" class="payment-btn" id="payment-btn" disabled>
-                                <i class="fas fa-lock"></i> Lanjutkan ke Detail Pesanan
+                                 Lanjutkan ke Detail Pesanan
                             </button>
                         </div>
                     </form>
@@ -1945,21 +1898,30 @@ document.addEventListener('DOMContentLoaded', function() {
         paymentBtn.disabled = selectedSeats.length !== maxSeats;
     }
 
-    // Fungsi untuk toggle route details
-    function toggleRouteDetails() {
+    // Fungsi untuk toggle route details - VERSI DIPERBAIKI
+    window.toggleRouteDetails = function() {
         const dropdown = document.getElementById('route-details-dropdown');
         const button = document.querySelector('.btn-route-toggle');
 
         if (dropdown.classList.contains('show')) {
+            // Sembunyikan dropdown
             dropdown.classList.remove('show');
             button.classList.remove('active');
             button.innerHTML = '<i class="fas fa-chevron-down"></i> Lihat Rute Detail';
         } else {
+            // Tampilkan dropdown
             dropdown.classList.add('show');
             button.classList.add('active');
             button.innerHTML = '<i class="fas fa-chevron-up"></i> Sembunyikan Rute Detail';
+
+            // Optional: Scroll ke dropdown untuk mobile
+            if (window.innerWidth < 768) {
+                setTimeout(() => {
+                    dropdown.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 300);
+            }
         }
-    }
+    };
 
     // Inisialisasi
     updateSelectedSeatsDisplay();
@@ -1967,7 +1929,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updatePaymentButton();
 });
 
-// Fungsi untuk menampilkan alert baru - DIUBAH: Hapus dengan benar
+// Fungsi untuk menampilkan alert baru
 function showAlert(type, title, message) {
     // Remove existing alerts
     const existingContainer = document.querySelector('.global-alert-container');
@@ -2028,7 +1990,7 @@ function showAlert(type, title, message) {
         });
     }
 
-    // Auto-hide setelah 5 detik - DIUBAH: Gunakan timeout yang benar
+    // Auto-hide setelah 5 detik
     setTimeout(() => {
         if (alert && alert.parentElement) {
             alert.classList.add('fade-out');
@@ -2041,7 +2003,7 @@ function showAlert(type, title, message) {
     }, 5000);
 }
 
-// Auto-hide untuk alert dari session - DIUBAH: Perbaikan removal
+// Auto-hide untuk alert dari session
 document.addEventListener('DOMContentLoaded', function() {
     const alertContainers = document.querySelectorAll('.global-alert-container');
 

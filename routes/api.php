@@ -164,10 +164,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/qr/{kodePembayaran}', [PaymentController::class, 'getQRCode'])->name('api.payment.qr');
         Route::get('/qrcode/{kodePembayaran}', [PaymentController::class, 'getQRCode'])->name('api.payment.qrcode');
         Route::get('/methods', [PaymentController::class, 'getPaymentMethods'])->name('api.payment.methods');
-    });
 
-    // PAYMENT SIMULATE (Hanya untuk yang login)
-    Route::post('/payment/simulate', [PaymentController::class, 'simulatePayment']);
+        // Payment simulation (protected)
+        Route::post('/simulate', [PaymentController::class, 'simulatePayment']);
+    });
 
     // EMAIL VERIFICATION
     Route::post('/email/verification-notification', function (Request $request) {
@@ -287,6 +287,45 @@ Route::prefix('dev')->group(function () {
             return response()->json([
                 'success' => false,
                 'message' => 'Signature generation failed: ' . $e->getMessage()
+            ], 500);
+        }
+    });
+
+    // Debug signature for Postman testing - BARU
+    Route::post('/paylabs/debug-signature', function (Request $request) {
+        try {
+            $paylabsService = new \App\Services\PaylabsService();
+
+            $requestData = $request->all();
+            $endpointPath = $request->input('endpoint_path', '/payment/v2.3/va/create');
+
+            $result = $paylabsService->debugSignatureForPostman($requestData, $endpointPath);
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    });
+
+    // Test VA Connection - BARU
+    Route::get('/paylabs/test-va-connection', function () {
+        try {
+            $paylabsService = new \App\Services\PaylabsService();
+
+            $result = $paylabsService->testVAConnection();
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ], 500);
         }
     });

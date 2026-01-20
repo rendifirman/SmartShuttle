@@ -27,7 +27,33 @@ class MembershipPayment extends Model
         'jumlah_transfer',
         'catatan',
         'waktu_kadaluarsa',
-        'paid_at'
+        'paid_at',
+        // Paylabs fields
+        'paylabs_request_id',
+        'paylabs_transaction_id',
+        'paylabs_response',
+        'paylabs_raw_response',
+        'qr_code',
+        'qris_url',
+        'no_virtual_account',
+        'platform_trade_no',
+        'nmid',
+        'tid',
+        'rrn',
+        'payer_name',
+        'payer_phone',
+        'issuer_id',
+        'trans_fee_rate',
+        'trans_fee_amount',
+        'total_trans_fee',
+        'vat_fee',
+        'account_no',
+        'create_time',
+        'expired_time',
+        'success_time',
+        'checkout_url',
+        'deeplink',
+        'fee_type'
     ];
 
     protected $casts = [
@@ -37,7 +63,16 @@ class MembershipPayment extends Model
         'jumlah_transfer' => 'decimal:2',
         'waktu_kadaluarsa' => 'datetime',
         'paid_at' => 'datetime',
-        'tanggal_transfer' => 'date'
+        'tanggal_transfer' => 'date',
+        // Paylabs fields
+        'paylabs_response' => 'array',
+        'paylabs_raw_response' => 'array',
+        'create_time' => 'datetime',
+        'expired_time' => 'datetime',
+        'trans_fee_rate' => 'decimal:2',
+        'trans_fee_amount' => 'decimal:2',
+        'total_trans_fee' => 'decimal:2',
+        'vat_fee' => 'decimal:2'
     ];
 
     // Relasi ke User

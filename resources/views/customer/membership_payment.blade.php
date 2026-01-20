@@ -427,16 +427,37 @@
                 @csrf
                 <input type="hidden" name="transaction_id" value="{{ $payment->transaction_id ?? '' }}">
 
+                <!-- QRIS Option -->
                 <label class="payment-option">
                     <input type="radio" name="payment_method" value="qris" checked>
                     <span>QRIS (Scan via aplikasi / outlet)</span>
                 </label>
 
+                <!-- BCA VA Option -->
                 <label class="payment-option">
-                    <input type="radio" name="payment_method" value="bca">
+                    <input type="radio" name="payment_method" value="bca_va">
                     <span>BCA Virtual Account</span>
                 </label>
 
+                <!-- Mandiri VA Option -->
+                <label class="payment-option">
+                    <input type="radio" name="payment_method" value="mandiri_va">
+                    <span>Mandiri Virtual Account</span>
+                </label>
+
+                <!-- BNI VA Option -->
+                <label class="payment-option">
+                    <input type="radio" name="payment_method" value="bni_va">
+                    <span>BNI Virtual Account</span>
+                </label>
+
+                <!-- BRI VA Option -->
+                <label class="payment-option">
+                    <input type="radio" name="payment_method" value="bri_va">
+                    <span>BRI Virtual Account</span>
+                </label>
+
+                <!-- Manual Transfer Option -->
                 <label class="payment-option">
                     <input type="radio" name="payment_method" value="manual_transfer">
                     <span>Manual Transfer Bank</span>
@@ -445,7 +466,13 @@
                 <!-- QRIS Details (hidden by default) -->
                 <div class="payment-details" id="qrisDetails">
                     <div class="qris-code">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode('SS-MEMBERSHIP-' . ($payment->transaction_id ?? 'TEST') . '-Rp20000') }}" alt="QR Code">
+                        @if($payment && $payment->qr_code)
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode($payment->qr_code) }}" alt="QR Code">
+                        @elseif($payment && $payment->qris_url)
+                            <img src="{{ $payment->qris_url }}" alt="QR Code">
+                        @else
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode('SS-MEMBERSHIP-' . ($payment->transaction_id ?? 'TEST') . '-Rp20000') }}" alt="QR Code">
+                        @endif
                         <p style="margin-top: 10px; font-size: 14px;">Scan QR Code di atas untuk pembayaran</p>
                     </div>
                     <p style="text-align: center; font-size: 13px; color: #666;">
@@ -457,12 +484,54 @@
                 <div class="payment-details" id="bcaDetails">
                     <p style="margin-bottom: 10px;">Silakan transfer ke Virtual Account berikut:</p>
                     <div class="va-number">
-                        1234567890123456
+                        {{ $payment->no_virtual_account ?? '8888123456789012' }}
                     </div>
                     <p style="font-size: 13px; color: #666;">
                         <strong>Bank:</strong> BCA<br>
                         <strong>Atas Nama:</strong> SMART SHUTTLE<br>
-                        <strong>Jumlah:</strong> Rp 20.000<br>
+                        <strong>Jumlah:</strong> Rp {{ number_format($payment->total_amount ?? 20000, 0, ',', '.') }}<br>
+                        <strong>Masa berlaku:</strong> 24 jam
+                    </p>
+                </div>
+
+                <!-- Mandiri VA Details (hidden by default) -->
+                <div class="payment-details" id="mandiriDetails">
+                    <p style="margin-bottom: 10px;">Silakan transfer ke Virtual Account berikut:</p>
+                    <div class="va-number">
+                        {{ $payment->no_virtual_account ?? '8888123456789012' }}
+                    </div>
+                    <p style="font-size: 13px; color: #666;">
+                        <strong>Bank:</strong> Mandiri<br>
+                        <strong>Atas Nama:</strong> SMART SHUTTLE<br>
+                        <strong>Jumlah:</strong> Rp {{ number_format($payment->total_amount ?? 20000, 0, ',', '.') }}<br>
+                        <strong>Masa berlaku:</strong> 24 jam
+                    </p>
+                </div>
+
+                <!-- BNI VA Details (hidden by default) -->
+                <div class="payment-details" id="bniDetails">
+                    <p style="margin-bottom: 10px;">Silakan transfer ke Virtual Account berikut:</p>
+                    <div class="va-number">
+                        {{ $payment->no_virtual_account ?? '8888123456789012' }}
+                    </div>
+                    <p style="font-size: 13px; color: #666;">
+                        <strong>Bank:</strong> BNI<br>
+                        <strong>Atas Nama:</strong> SMART SHUTTLE<br>
+                        <strong>Jumlah:</strong> Rp {{ number_format($payment->total_amount ?? 20000, 0, ',', '.') }}<br>
+                        <strong>Masa berlaku:</strong> 24 jam
+                    </p>
+                </div>
+
+                <!-- BRI VA Details (hidden by default) -->
+                <div class="payment-details" id="briDetails">
+                    <p style="margin-bottom: 10px;">Silakan transfer ke Virtual Account berikut:</p>
+                    <div class="va-number">
+                        {{ $payment->no_virtual_account ?? '8888123456789012' }}
+                    </div>
+                    <p style="font-size: 13px; color: #666;">
+                        <strong>Bank:</strong> BRI<br>
+                        <strong>Atas Nama:</strong> SMART SHUTTLE<br>
+                        <strong>Jumlah:</strong> Rp {{ number_format($payment->total_amount ?? 20000, 0, ',', '.') }}<br>
                         <strong>Masa berlaku:</strong> 24 jam
                     </p>
                 </div>
@@ -522,6 +591,9 @@
             // Payment method details sections
             const qrisDetails = document.getElementById('qrisDetails');
             const bcaDetails = document.getElementById('bcaDetails');
+            const mandiriDetails = document.getElementById('mandiriDetails');
+            const bniDetails = document.getElementById('bniDetails');
+            const briDetails = document.getElementById('briDetails');
             const manualTransferDetails = document.getElementById('manualTransferDetails');
 
             // Payment method selection
@@ -532,13 +604,22 @@
                 // Hide all details first
                 qrisDetails.classList.remove('show');
                 bcaDetails.classList.remove('show');
+                mandiriDetails.classList.remove('show');
+                bniDetails.classList.remove('show');
+                briDetails.classList.remove('show');
                 manualTransferDetails.classList.remove('show');
 
                 // Show selected method details
                 if (method === 'qris') {
                     qrisDetails.classList.add('show');
-                } else if (method === 'bca') {
+                } else if (method === 'bca_va') {
                     bcaDetails.classList.add('show');
+                } else if (method === 'mandiri_va') {
+                    mandiriDetails.classList.add('show');
+                } else if (method === 'bni_va') {
+                    bniDetails.classList.add('show');
+                } else if (method === 'bri_va') {
+                    briDetails.classList.add('show');
                 } else if (method === 'manual_transfer') {
                     manualTransferDetails.classList.add('show');
                 }

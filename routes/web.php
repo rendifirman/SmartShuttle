@@ -18,12 +18,47 @@ use App\Http\Controllers\Admin\ProfilePerusahaanController;
 use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\PaylabsTestController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\VerifyEmailController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 */
+
+// ★★★ AUTH ROUTES ★★★
+Route::post('/register', [RegisteredUserController::class, 'store'])
+    ->middleware('guest')
+    ->name('register');
+
+Route::post('/login', [AuthenticatedSessionController::class, 'store'])
+    ->middleware('guest')
+    ->name('login');
+
+Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
+    ->middleware('guest')
+    ->name('password.email');
+
+Route::post('/reset-password', [NewPasswordController::class, 'store'])
+    ->middleware('guest')
+    ->name('password.store');
+
+Route::get('/verify-email/{id}/{hash}', VerifyEmailController::class)
+    ->middleware(['auth', 'signed', 'throttle:6,1'])
+    ->name('verification.verify');
+
+Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+    ->middleware(['auth', 'throttle:6,1'])
+    ->name('verification.send');
+
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('logout');
 
 // ★★★ ROUTE UTAMA DAN TAMU ★★★
 Route::get('/', [CustomerController::class, 'beranda'])->name('customer.beranda');
@@ -46,6 +81,8 @@ Route::get('/syarat-ketentuan-membership', [CustomerController::class, 'syaratKe
 // Halaman outlet - bisa diakses tamu
 Route::get('/customer/outlet', [CustomerController::class, 'outlet'])->name('customer.outlet');
 Route::get('/customer/outlet/filter', [CustomerController::class, 'outlet'])->name('customer.outlet.filter');
+Route::post('/customer/outlet/loadMore', [CustomerController::class, 'loadMoreOutlets'])
+    ->name('customer.outlet.loadMore');
 Route::get('/outlet', [CustomerController::class, 'outlet']);
 
 // Halaman SmartSend - bisa diakses tamu
@@ -203,10 +240,8 @@ Route::prefix('api')->group(function () {
     // Review routes
     Route::get('/reviews', [CustomerController::class, 'getReviews'])->name('api.reviews.get');
     Route::post('/reviews', [CustomerController::class, 'storeReview'])->name('api.reviews.store');
-    Route::get('/reviews', [CustomerController::class, 'getReviews'])->name('api.reviews.get');
     Route::get('/reviews/filter', [CustomerController::class, 'getFilteredReviews'])->name('api.reviews.filter');
     Route::get('/reviews/stats', [CustomerController::class, 'getReviewStats'])->name('api.reviews.stats');
-    Route::post('/reviews', [CustomerController::class, 'storeReview'])->name('api.reviews.store');
 
     // Promo API
     Route::post('/customer/pesan/validasi-promo', [CustomerController::class, 'validatePromo'])->name('customer.pesan.validasi_promo');
@@ -220,6 +255,19 @@ Route::prefix('api')->group(function () {
 
     // Policy content API (terms / privacy) for AJAX modals
     Route::get('/policy/{type}', [CustomerController::class, 'getPolicy'])->name('api.policy.get');
+
+    // Promo routes
+    Route::prefix('promo')->group(function () {
+        Route::post('/eligible', [CustomerController::class, 'getEligiblePromos'])
+            ->name('api.promo.eligible');
+        Route::post('/validate', [CustomerController::class, 'validatePromo'])
+            ->name('api.promo.validate');
+    });
+
+    // Kursi validation API
+    Route::post('/validasi-kursi', [KursiController::class, 'validasiKursiAPI']);
+    Route::get('/kursi-tersedia/{jadwalId}', [KursiController::class, 'getKursiTersediaAPI']);
+    Route::post('/kursi-validate', [KursiController::class, 'validateSeatsAPI']);
 });
 
 // ★★★ ADMIN AUTH ROUTES ★★★
@@ -245,8 +293,24 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     Route::put('/outletperusahaan/{id}', [AdminController::class, 'updateOutlet'])->name('admin.outletperusahaan.update');
     Route::delete('/outletperusahaan/{id}', [AdminController::class, 'destroyOutlet'])->name('admin.outletperusahaan.destroy');
     Route::get('/promo', [AdminController::class, 'promo'])->name('admin.promo');
-    Route::get('/artikel', [AdminController::class, 'artikel'])->name('admin.artikel');
+    Route::get('/promo/create', [AdminController::class, 'createPromo'])->name('admin.promo.create');
+    Route::post('/promo', [AdminController::class, 'storePromo'])->name('admin.promo.store');
+    Route::get('/promo/{id}', [AdminController::class, 'showPromo'])->name('admin.promo.show');
+    Route::get('/promo/{id}/edit', [AdminController::class, 'editPromo'])->name('admin.promo.edit');
+    Route::put('/promo/{id}', [AdminController::class, 'updatePromo'])->name('admin.promo.update');
+    Route::delete('/promo/{id}', [AdminController::class, 'destroyPromo'])->name('admin.promo.destroy');
+    Route::get('/artikel', [AdminController::class, 'artikel'])->name('admin.artikel.index');
+    Route::get('/artikel/create', [AdminController::class, 'createArtikel'])->name('admin.artikel.create');
+    Route::post('/artikel', [AdminController::class, 'storeArtikel'])->name('admin.artikel.store');
+    Route::get('/artikel/{id}/edit', [AdminController::class, 'editArtikel'])->name('admin.artikel.edit');
+    Route::put('/artikel/{id}', [AdminController::class, 'updateArtikel'])->name('admin.artikel.update');
+    Route::delete('/artikel/{id}', [AdminController::class, 'destroyArtikel'])->name('admin.artikel.destroy');
+    Route::get('/artikel/{id}', [AdminController::class, 'showArtikel'])->name('admin.artikel.show');
     Route::get('/kontak', [AdminController::class, 'kontak'])->name('admin.kontak');
+    Route::get('/kontakperusahaan', [AdminController::class, 'kontakPerusahaan'])->name('admin.kontakperusahaan');
+    Route::put('/kontakperusahaan/{id}', [AdminController::class, 'updateKontakPerusahaan'])->name('admin.kontak.update');
+
+    // Rute CRUD
     Route::prefix('rute')->group(function () {
         Route::get('/', [AdminController::class, 'rute'])->name('admin.rute');
         Route::get('/create', [AdminController::class, 'createRute'])->name('admin.rute.create');
@@ -256,6 +320,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
         Route::delete('/{id}', [AdminController::class, 'destroyRute'])->name('admin.rute.destroy');
         Route::get('/{id}', [AdminController::class, 'showRute'])->name('admin.rute.show');
     });
+
     // Armada CRUD Routes
     Route::prefix('armada')->group(function () {
         Route::get('/', [AdminController::class, 'armada'])->name('admin.armada');
@@ -269,7 +334,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
 
     Route::get('/driver', [AdminController::class, 'driver'])->name('admin.driver');
     Route::get('/pegawai', [AdminController::class, 'pegawai'])->name('admin.pegawai');
-    Route::get('/rute', [AdminController::class, 'rute'])->name('admin.rute');
+
     // Transaksi Routes
     Route::get('/tiket-perjalanan', [AdminController::class, 'tiketPerjalanan'])->name('admin.tiket-perjalanan');
     Route::get('/tiket-armada', [AdminController::class, 'tiketArmada'])->name('admin.tiket-armada');
@@ -289,6 +354,29 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     Route::get('/user', [AdminController::class, 'user'])->name('admin.user');
     Route::get('/menu', [AdminController::class, 'menu'])->name('admin.menu');
 
+    // Profile Perusahaan Admin
+    Route::get('/profile-perusahaan', [ProfilePerusahaanController::class, 'index'])->name('admin.profileperusahaan');
+    Route::post('/profile-perusahaan/update', [ProfilePerusahaanController::class, 'update'])->name('admin.profileperusahaan.update');
+    Route::post('/profile-perusahaan/layanan/{id}/update', [ProfilePerusahaanController::class, 'updateLayanan'])->name('admin.profileperusahaan.layanan.update');
+    Route::post('/profile-perusahaan/layanan/create', [ProfilePerusahaanController::class, 'createLayanan'])->name('admin.profileperusahaan.layanan.create');
+    Route::delete('/profile-perusahaan/layanan/{id}/delete', [ProfilePerusahaanController::class, 'deleteLayanan'])->name('admin.profileperusahaan.layanan.delete');
+
+    // Branch Management Routes
+    Route::prefix('cabang')->group(function () {
+        Route::get('/create', [AdminController::class, 'createBranch'])
+            ->name('admin.cabang.create');
+        Route::post('/', [AdminController::class, 'storeBranch'])
+            ->name('admin.cabang.store');
+        Route::get('/{id}/edit', [AdminController::class, 'editBranch'])
+            ->name('admin.cabang.edit');
+        Route::put('/{id}', [AdminController::class, 'updateBranch'])
+            ->name('admin.cabang.update');
+        Route::delete('/{id}', [AdminController::class, 'destroyBranch'])
+            ->name('admin.cabang.destroy');
+        Route::get('/{id}', [AdminController::class, 'getBranch'])
+            ->name('admin.cabang.get');
+    });
+
     // Logout Route
     Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
 });
@@ -300,9 +388,18 @@ Route::middleware(['ensure.session', 'guest:driver'])->prefix('driver')->group(f
 });
 
 // ★★★ DRIVER ROUTES ★★★
-Route::middleware(['auth:driver'])->prefix('driver')->group(function () {
+Route::middleware(['auth'])->prefix('driver')->group(function () {
     Route::get('/dashboard', [DriverController::class, 'dashboard'])->name('driver.dashboard');
     Route::post('/logout', [DriverController::class, 'logout'])->name('driver.logout');
+
+    // Additional driver routes
+    Route::get('/jadwal', [DriverController::class, 'jadwal'])->name('driver.jadwal');
+    Route::get('/laporan', [DriverController::class, 'laporan'])->name('driver.laporan');
+    Route::get('/perjalanan', [DriverController::class, 'perjalanan'])->name('driver.perjalanan');
+    Route::get('/profile', [DriverController::class, 'profile'])->name('driver.profile');
+    Route::get('/profile/edit', [DriverController::class, 'profileEdit'])->name('driver.profile.edit');
+    Route::get('/pengaturan', [DriverController::class, 'pengaturan'])->name('driver.pengaturan');
+    Route::get('/bantuan', [DriverController::class, 'bantuan'])->name('driver.bantuan');
 });
 
 // ★★★ PAYLABS TEST ROUTES (UNTUK DEVELOPMENT) ★★★
@@ -405,6 +502,17 @@ Route::prefix('paylabs-test')->group(function () {
         );
         return $paymentController->callback($request);
     });
+});
+Route::middleware(['auth:driver'])->prefix('driver')->group(function () {
+    Route::get('/dashboard', [DriverController::class, 'dashboard'])->name('driver.dashboard');
+    Route::post('/logout', [DriverController::class, 'logout'])->name('driver.logout');
+
+    // Additional driver routes
+    Route::get('/jadwal', [DriverController::class, 'jadwal'])->name('driver.jadwal');
+    Route::get('/laporan', [DriverController::class, 'laporan'])->name('driver.laporan');
+    Route::get('/perjalanan', [DriverController::class, 'perjalanan'])->name('driver.perjalanan');
+    Route::get('/profile', [DriverController::class, 'profile'])->name('driver.profile');
+    Route::get('/profile/edit', [DriverController::class, 'profileEdit'])->name('driver.profile.edit');
 });
 
 // ★★★ PAYLABS DEBUG ROUTES ★★★
@@ -617,11 +725,6 @@ Route::get('/test-payment-view/{kodePembayaran}', function($kodePembayaran) {
     ]);
 })->name('test.payment.view');
 
-// ★★★ ROUTE FALLBACK ★★★
-Route::fallback(function () {
-    return redirect()->route('customer.beranda');
-});
-
 // Route untuk kursi (separate namespace to avoid name collision)
 Route::prefix('kursi')->name('kursi.')->group(function () {
     Route::get('/', [KursiController::class, 'index'])->name('index');
@@ -630,49 +733,7 @@ Route::prefix('kursi')->name('kursi.')->group(function () {
     Route::post('/batalkan/{pemesananId}', [KursiController::class, 'batalkanKursi'])->name('batalkan');
 });
 
-// API Routes untuk validasi kursi
-Route::prefix('api')->group(function () {
-    Route::post('/validasi-kursi', [KursiController::class, 'validasiKursiAPI']);
-    Route::get('/kursi-tersedia/{jadwalId}', [KursiController::class, 'getKursiTersediaAPI']);
-    Route::post('/kursi-validate', [KursiController::class, 'validateSeatsAPI']);
-});
-
-// Promo routes
-Route::prefix('api/promo')->group(function () {
-    Route::post('/eligible', [CustomerController::class, 'getEligiblePromos'])
-        ->name('api.promo.eligible');
-    Route::post('/validate', [CustomerController::class, 'validatePromo'])
-        ->name('api.promo.validate');
-});
-
-// Route untuk Profile Perusahaan Admin
-Route::prefix('admin')->middleware(['auth:admin'])->group(function () {
-    Route::get('/profile-perusahaan', [ProfilePerusahaanController::class, 'index'])->name('admin.profileperusahaan');
-    Route::post('/profile-perusahaan/update', [ProfilePerusahaanController::class, 'update'])->name('admin.profileperusahaan.update');
-    Route::post('/profile-perusahaan/layanan/{id}/update', [ProfilePerusahaanController::class, 'updateLayanan'])->name('admin.profileperusahaan.layanan.update');
-    Route::post('/profile-perusahaan/layanan/create', [ProfilePerusahaanController::class, 'createLayanan'])->name('admin.profileperusahaan.layanan.create');
-    Route::delete('/profile-perusahaan/layanan/{id}/delete', [ProfilePerusahaanController::class, 'deleteLayanan'])->name('admin.profileperusahaan.layanan.delete');
-});
-
-// Branch Management Routes
-Route::prefix('admin')->middleware(['auth:admin'])->group(function () {
-    // List branches with filters
-    Route::get('/cabangperusahaan', [AdminController::class, 'cabangPerusahaan'])
-        ->name('admin.cabangperusahaan');
-
-    // Branch CRUD
-    Route::prefix('cabang')->group(function () {
-        Route::get('/create', [AdminController::class, 'createBranch'])
-            ->name('admin.cabang.create');
-        Route::post('/', [AdminController::class, 'storeBranch'])
-            ->name('admin.cabang.store');
-        Route::get('/{id}/edit', [AdminController::class, 'editBranch'])
-            ->name('admin.cabang.edit');
-        Route::put('/{id}', [AdminController::class, 'updateBranch'])
-            ->name('admin.cabang.update');
-        Route::delete('/{id}', [AdminController::class, 'destroyBranch'])
-            ->name('admin.cabang.destroy');
-        Route::get('/{id}', [AdminController::class, 'getBranch'])
-            ->name('admin.cabang.get');
-    });
+// ★★★ ROUTE FALLBACK ★★★
+Route::fallback(function () {
+    return redirect()->route('customer.beranda');
 });

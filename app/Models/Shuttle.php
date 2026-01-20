@@ -303,4 +303,30 @@ public function getLayoutWithStatus($jadwalId = null)
 
         return null;
     }
+
+    // ================ AUDIT RELATIONSHIPS ================
+
+    /**
+     * User who created this shuttle
+     */
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * User who last updated this shuttle
+     */
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /**
+     * User who deleted this shuttle
+     */
+    public function deleter()
+    {
+        return $this->belongsTo(User::class, 'deleted_by');
+    }
 }

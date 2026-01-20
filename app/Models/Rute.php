@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Rute extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'rutes';
 
@@ -21,7 +22,10 @@ class Rute extends Model
         'jarak',
         'harga_dasar',
         'rute_pemberhentian',
-        'status'
+        'status',
+        'created_by',
+        'updated_by',
+        'deleted_by'
     ];
 
     protected $appends = ['formatted_harga'];
@@ -89,5 +93,23 @@ class Rute extends Model
               ->orWhere('kota_asal', 'like', '%' . $search . '%')
               ->orWhere('kota_tujuan', 'like', '%' . $search . '%');
         });
+    }
+
+    // Relasi ke user yang membuat
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    // Relasi ke user yang update
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    // Relasi ke user yang delete
+    public function deleter()
+    {
+        return $this->belongsTo(User::class, 'deleted_by');
     }
 }

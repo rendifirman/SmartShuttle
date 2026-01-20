@@ -38,6 +38,7 @@ use Carbon\Carbon;
 use App\Models\Review;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
+use App\Services\PaylabsService;
 
 // Helper function untuk mendapatkan inisial nama
 if (!function_exists('getInitials')) {
@@ -67,6 +68,13 @@ if (!function_exists('getInitials')) {
 
 class CustomerController extends Controller
 {
+    protected $paylabsService;
+
+    public function __construct(PaylabsService $paylabsService)
+    {
+        $this->paylabsService = $paylabsService;
+    }
+
     /**
      * Helper: Dapatkan data user
      */
@@ -377,7 +385,10 @@ $reviews = Review::with('user')
             $query->where('branch_id', $request->branch_id);
         }
 
-        $outlets = $query->orderBy('nama_outlet')->get();
+        // Pagination untuk initial load (6 items)
+        $outlets = $query->orderBy('nama_outlet')->limit(6)->get();
+        $totalOutlets = $query->count();
+        $hasMore = $totalOutlets > 6;
 
         $branches = Branch::where('status', 'aktif')
             ->orderBy('kota')
@@ -390,9 +401,179 @@ $reviews = Review::with('user')
             ->pluck('kota')
             ->toArray();
 
-        return view('customer.outlet', compact('user', 'outlets', 'branches', 'kotaList'));
+        return view('customer.outlet', compact('user', 'outlets', 'branches', 'kotaList', 'totalOutlets', 'hasMore'));
     }
 
+    /**
+     * AJAX endpoint untuk load more outlets
+     */
+    public function loadMoreOutlets(Request $request)
+{
+    try {
+        \Log::info('LoadMoreOutlets Request Data:', $request->all());
+
+        // Validasi data
+        $validator = Validator::make($request->all(), [
+            'offset' => 'required|integer|min:0',
+            'kota' => 'nullable|string',
+            'branch_id' => 'nullable|integer|exists:branches,id'
+        ]);
+
+        if ($validator->fails()) {
+            \Log::error('Validation failed:', $validator->errors()->toArray());
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal: ' . implode(', ', $validator->errors()->all())
+            ], 422);
+        }
+
+        $validated = $validator->validated();
+
+        $query = Outlet::with('branch')
+            ->where('status', 'aktif');
+
+        // Filter berdasarkan kota
+        if (!empty($validated['kota'])) {
+            $query->whereHas('branch', function ($q) use ($validated) {
+                $q->where('kota', $validated['kota']);
+            });
+        }
+
+        // Filter berdasarkan branch_id
+        if (!empty($validated['branch_id'])) {
+            $query->where('branch_id', $validated['branch_id']);
+        }
+
+        // Hitung total
+        $totalOutlets = $query->count();
+
+        // Load 6 more outlets starting from offset
+        $outlets = $query->orderBy('nama_outlet')
+            ->skip($validated['offset'])
+            ->take(6)
+            ->get();
+
+        $allLoaded = ($validated['offset'] + $outlets->count()) >= $totalOutlets;
+
+        \Log::info('LoadMoreOutlets Results:', [
+            'offset' => $validated['offset'],
+            'outlets_count' => $outlets->count(),
+            'totalOutlets' => $totalOutlets,
+            'allLoaded' => $allLoaded
+        ]);
+
+        // Jika tidak ada outlet lagi
+        if ($outlets->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'html' => '',
+                'count' => 0,
+                'allLoaded' => true,
+                'total' => $totalOutlets,
+                'message' => 'Tidak ada outlet lagi'
+            ]);
+        }
+
+        // Generate HTML untuk outlets baru
+        $html = '';
+        foreach ($outlets as $outlet) {
+            $gambar = $this->getOutletImage($outlet);
+
+            // Buat HTML untuk setiap outlet card
+            $html .= '<div class="outlet-card" data-city="' . ($outlet->branch ? $outlet->branch->kota : '') . '">';
+            $html .= '<div class="outlet-card-inner">';
+            $html .= '<div class="card-header">' . e($outlet->nama_outlet) . '</div>';
+            $html .= '<div class="card-image">';
+            $html .= '<img src="' . e($gambar) . '" alt="' . e($outlet->nama_outlet) . '" class="outlet-img" onerror="this.onerror=null;this.src=\'' . asset('images/placeholder-outlet.jpg') . '\'">';
+            $html .= '</div>';
+            $html .= '<div class="card-body">';
+
+            // Info grid
+            $html .= '<div class="info-grid">';
+            $html .= '<div class="info-item">';
+            $html .= '<div class="info-label"><i class="fas fa-store"></i> CABANG</div>';
+            $html .= '<div class="info-value">' . e($outlet->branch ? $outlet->branch->nama_cabang : 'Tidak diketahui') . '</div>';
+            $html .= '</div>';
+            $html .= '<div class="info-item">';
+            $html .= '<div class="info-label"><i class="fas fa-city"></i> KOTA</div>';
+            $html .= '<div class="info-value">' . e($outlet->branch ? $outlet->branch->kota : 'Tidak diketahui') . '</div>';
+            $html .= '</div>';
+            $html .= '<div class="info-item full-width">';
+            $html .= '<div class="info-label"><i class="fas fa-map-marker-alt"></i> ALAMAT</div>';
+            $html .= '<div class="info-value address">' . e($outlet->alamat_lengkap ?? $outlet->alamat) . '</div>';
+            $html .= '</div>';
+            $html .= '</div>';
+
+            // Contact & hours
+            $html .= '<div class="contact-hours">';
+            $html .= '<div class="contact-hours-grid">';
+            $html .= '<div class="contact-item">';
+            $html .= '<div class="contact-label"><i class="fas fa-phone"></i> TELEPON</div>';
+            $html .= '<div class="contact-value">' . e($outlet->telepon ?? '-') . '</div>';
+            $html .= '</div>';
+            $html .= '<div class="hours-item">';
+            $html .= '<div class="hours-label"><i class="fas fa-clock"></i> JAM OPERASIONAL</div>';
+            $html .= '<div class="hours-value">' . e($outlet->jam_operasional ?? '24 Jam') . '</div>';
+            $html .= '</div>';
+            $html .= '</div>';
+            $html .= '</div>';
+
+            // Button detail
+            $html .= '<button class="btn-detail" onclick="showOutletPopup(' . $outlet->id . ')">';
+            $html .= '<i class="fas fa-eye"></i> Lihat Detail';
+            $html .= '</button>';
+
+            $html .= '</div>';
+            $html .= '</div>';
+            $html .= '</div>';
+        }
+
+        return response()->json([
+            'success' => true,
+            'html' => $html,
+            'count' => $outlets->count(),
+            'allLoaded' => $allLoaded,
+            'total' => $totalOutlets,
+            'current_offset' => $validated['offset'] + $outlets->count()
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('Load more outlets error: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'request' => $request->all()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memuat outlet. Error: ' . $e->getMessage(),
+            'debug' => env('APP_DEBUG') ? $e->getTraceAsString() : null
+        ], 500);
+    }
+}
+private function getOutletImage($outlet)
+{
+    if (!empty($outlet->foto_outlet)) {
+        // Jika sudah URL lengkap
+        if (Str::startsWith($outlet->foto_outlet, ['http://', 'https://'])) {
+            return $outlet->foto_outlet;
+        }
+
+        // Cek apakah file ada di public/images/outlets/
+        $filename = basename($outlet->foto_outlet);
+        $publicPath = 'images/outlets/' . $filename;
+
+        if (file_exists(public_path($publicPath))) {
+            return asset($publicPath);
+        }
+
+        // Coba langsung path yang ada
+        if (file_exists(public_path($outlet->foto_outlet))) {
+            return asset($outlet->foto_outlet);
+        }
+    }
+
+    return asset('images/placeholder-outlet.jpg');
+}
     /**
      * Form login
      */
@@ -405,104 +586,95 @@ $reviews = Review::with('user')
         return view('customer.login');
     }
 
-    /**
-     * Proses login
-     */
-    public function login(Request $request)
-    {
-        // Pastikan session sudah dimulai
-        if (!session()->isStarted()) {
-            session()->start();
+   /**
+ * Proses login
+ */
+public function login(Request $request)
+{
+    $validated = $request->validate([
+        'email' => 'required|email',
+        'password' => 'required',
+    ]);
+
+    try {
+        $remember = $request->filled('remember');
+        $credentials = [
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+        ];
+
+        // Debug logging
+        \Log::info('Login attempt', ['email' => $validated['email']]);
+        $userCheck = User::where('email', $validated['email'])->first();
+        if ($userCheck) {
+            \Log::info('User found', [
+                'user_id' => $userCheck->id,
+                'status' => $userCheck->status,
+                'email_verified_at' => $userCheck->email_verified_at,
+                'password_hash_exists' => !empty($userCheck->password)
+            ]);
+        } else {
+            \Log::info('User not found for email: ' . $validated['email']);
         }
 
-        $validated = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
+        if (!Auth::attempt($credentials, $remember)) {
+            \Log::info('Auth attempt failed for email: ' . $validated['email']);
+            return back()->withErrors(['message' => 'Email atau password salah'])->withInput();
+        }
+
+        \Log::info('Auth attempt successful', ['user_id' => Auth::id()]);
+
+        $request->session()->regenerate();
+        $user = Auth::user();
+
+        // Cek status user
+        if ($user->status === 'inactive') {
+            Auth::logout();
+            return back()->withErrors(['message' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.'])->withInput();
+        }
+
+        // ===== PERBAIKAN DI SINI =====
+        // Check user role and redirect accordingly
+        if ($user->hasRole('admin_pusat') || $user->hasRole('admin_cabang')) {
+            // Log out from web guard and log in with admin guard
+            Auth::logout();
+            Auth::guard('admin')->login($user);
+            return redirect()->route('admin.dashboard');
+        } elseif ($user->hasRole('driver')) {
+            // Log out from web guard and log in with driver guard
+            Auth::logout();
+            Auth::guard('driver')->login($user);
+            return redirect()->route('driver.dashboard');
+        } elseif ($user->hasRole('operator')) {
+            // For operator, redirect to appropriate dashboard
+            Auth::logout();
+            Auth::guard('admin')->login($user);
+            return redirect()->route('admin.dashboard');
+        }
+
+        // For customer and other roles, continue as usual
+        session()->put('user', [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'avatar' => $user->avatar_url,
+            'membership_status' => $user->membership_status,
+            'membership_level' => $user->membership_level,
         ]);
 
-        try {
-            $remember = $request->filled('remember');
-            $credentials = [
-                'email' => $validated['email'],
-                'password' => $validated['password'],
-            ];
+        return redirect()->route('customer.beranda');
 
-            // Debug logging
-            \Log::info('Login attempt', ['email' => $validated['email']]);
-            $userCheck = User::where('email', $validated['email'])->first();
-            if ($userCheck) {
-                \Log::info('User found', [
-                    'user_id' => $userCheck->id,
-                    'status' => $userCheck->status,
-                    'email_verified_at' => $userCheck->email_verified_at,
-                    'password_hash_exists' => !empty($userCheck->password)
-                ]);
-            } else {
-                \Log::info('User not found for email: ' . $validated['email']);
-            }
-
-            if (!Auth::attempt($credentials, $remember)) {
-                \Log::info('Auth attempt failed for email: ' . $validated['email']);
-                return back()->withErrors(['message' => 'Email atau password salah'])->withInput();
-            }
-
-            \Log::info('Auth attempt successful', ['user_id' => Auth::id()]);
-
-            // Regenerate session to persist authentication immediately
-            try {
-                session()->regenerate();
-            } catch (\Exception $e) {
-                \Log::warning('Session regeneration failed after login', ['error' => $e->getMessage()]);
-            }
-
-            $user = Auth::user();
-
-            // Cek status user
-            if ($user->status === 'inactive') {
-                Auth::logout();
-                return back()->withErrors(['message' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.'])->withInput();
-            }
-
-            session()->put('user', [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'avatar' => $user->avatar_url,
-                'membership_status' => $user->membership_status,
-                'membership_level' => $user->membership_level,
-            ]);
-
-            // Check if user has admin role and redirect accordingly
-            if ($user->hasRole('admin_pusat') || $user->hasRole('admin_cabang')) {
-                // Log out from web guard and log in with admin guard
-                Auth::logout();
-                Auth::guard('admin')->login($user);
-                return redirect()->route('admin.dashboard');
-            } else {
-                // Ensure user has customer role if not admin
-                if (!$user->hasRole('customer')) {
-                    $user->assignRole('customer');
-                }
-                return redirect()->route('customer.beranda');
-            }
-
-        } catch (\Exception $e) {
-            return back()->withErrors(['message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()])
-                        ->withInput();
-        }
+    } catch (\Exception $e) {
+        return back()->withErrors(['message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()])
+                    ->withInput();
     }
-
+}
     /**
      * Form register
      */
     public function showRegister()
     {
-        // Pastikan session sudah dimulai
-        if (!session()->isStarted()) {
-            session()->start();
-        }
-
         if (session()->has('user')) {
             return redirect()->route('customer.beranda')->with('info', 'Anda sudah login!');
         }
@@ -521,11 +693,6 @@ $reviews = Review::with('user')
      */
     public function register(Request $request)
     {
-        // Pastikan session sudah dimulai
-        if (!session()->isStarted()) {
-            session()->start();
-        }
-
         \Log::info('CustomerController::register - Starting', $request->all());
 
         try {
@@ -569,31 +736,18 @@ $reviews = Review::with('user')
     public function logout(Request $request)
     {
         try {
-            // Log the user out
             Auth::logout();
-
-            // Forget remember me cookie if exists
             $recaller = Auth::getRecallerName();
-            if ($recaller) {
-                Cookie::queue(Cookie::forget($recaller));
-            }
+            Cookie::queue(Cookie::forget($recaller));
 
-            // Clear all user-related session data
-            session()->forget(['user', 'token', 'applied_promo', 'loyalty_discount']);
-
-            // Invalidate the session completely
+            session()->forget(['user', 'token']);
             $request->session()->invalidate();
-
-            // Regenerate CSRF token
             $request->session()->regenerateToken();
 
             return redirect()->route('customer.beranda');
 
         } catch (\Exception $e) {
-            // Fallback: clear session data even if logout fails
-            session()->forget(['user', 'token', 'applied_promo', 'loyalty_discount']);
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+            session()->forget(['user', 'token']);
             return redirect()->route('customer.beranda');
         }
     }
@@ -1191,6 +1345,7 @@ $reviews = Review::with('user')
                 'kode_promo' => $request->kode_promo,
                 'status' => 'menunggu_pembayaran',
                 'waktu_kadaluarsa' => now()->addHours(24),
+                'created_by' => Auth::id(),
             ]);
 
             foreach ($request->penumpang as $dataPenumpang) {
@@ -2062,10 +2217,39 @@ $reviews = Review::with('user')
                 $buktiPembayaran = $path;
             }
 
-            // For online payments (QRIS/BCA), mark as success immediately
-            // For manual transfer, keep as pending until admin approval
-            $paymentStatus = 'success';
-            if ($request->payment_method === 'manual_transfer') {
+            // Handle different payment methods
+            $paymentStatus = 'pending'; // Default for manual transfer
+            $paylabsResponse = null;
+
+            // For Paylabs payments (QRIS and VA), create payment with Paylabs
+            if (in_array($request->payment_method, ['qris', 'bca_va', 'mandiri_va', 'bni_va', 'bri_va'])) {
+                try {
+                    // Map payment method to Paylabs channel code
+                    $channelMap = [
+                        'qris' => 'QRIS',
+                        'bca_va' => 'VA_BCA',
+                        'mandiri_va' => 'VA_MANDIRI',
+                        'bni_va' => 'VA_BNI',
+                        'bri_va' => 'VA_BRI',
+                    ];
+
+                    $channelCode = $channelMap[$request->payment_method] ?? 'QRIS';
+
+                    // Create Paylabs payment
+                    $paylabsResponse = $this->paylabsService->createPayment($payment, $channelCode, ucfirst(str_replace('_', ' ', $request->payment_method)));
+
+                    if ($paylabsResponse['success']) {
+                        // For online payments, mark as success immediately (simulated)
+                        // In production, this would wait for webhook callback
+                        $paymentStatus = 'success';
+                    } else {
+                        throw new \Exception('Gagal membuat pembayaran Paylabs: ' . $paylabsResponse['error']);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Paylabs payment creation failed: ' . $e->getMessage());
+                    throw new \Exception('Gagal memproses pembayaran online. Silakan coba lagi.');
+                }
+            } elseif ($request->payment_method === 'manual_transfer') {
                 $paymentStatus = 'pending'; // Wait for admin approval
             }
 
@@ -2077,9 +2261,14 @@ $reviews = Review::with('user')
                 'tanggal_transfer' => $request->tanggal_transfer,
                 'jumlah_transfer' => $request->jumlah_transfer,
                 'paid_at' => $paymentStatus === 'success' ? now() : null,
+                // Add Paylabs fields if available
+                'paylabs_transaction_id' => $paylabsResponse['transaction_id'] ?? null,
+                'qr_code' => $paylabsResponse['payment_data']['qrCode'] ?? null,
+                'qris_url' => $paylabsResponse['payment_data']['qrisUrl'] ?? null,
+                'no_virtual_account' => $paylabsResponse['payment_data']['vaCode'] ?? $paylabsResponse['payment_data']['vaNumber'] ?? null,
             ]);
 
-            // Only activate membership for online payments or successful manual transfers
+            // Only activate membership for successful online payments or approved manual transfers
             if ($paymentStatus === 'success') {
                 $user->update([
                     'membership_status' => 'active',
@@ -2315,82 +2504,43 @@ $reviews = Review::with('user')
         return view('customer.contact', compact('user', 'masterKontak'));
     }
 
+    /**
+     * Proses pengiriman pesan kontak
+     */
     public function submitContact(Request $request)
-{
-    // Cek apakah user sudah login (untuk customer service pesan)
-    if (!Auth::check()) {
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda harus login terlebih dahulu untuk mengirim pesan ke Customer Service'
-            ], 401);
+    {
+        $validator = Validator::make($request->all(), [
+            'nama' => 'required|string|max:100',
+            'email' => 'required|email|max:100',
+            'telepon' => 'nullable|string|max:20',
+            'pesan' => 'required|string|min:10|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Mohon periksa kembali data yang Anda masukkan.');
         }
 
-        return redirect()->route('customer.login')
-            ->with('error', 'Anda harus login terlebih dahulu untuk mengirim pesan ke Customer Service');
-    }
-
-    $validator = Validator::make($request->all(), [
-        'nama' => 'required|string|max:100',
-        'email' => 'required|email|max:100',
-        'telepon' => 'nullable|string|max:20',
-        'pesan' => 'required|string|min:10|max:1000',
-    ]);
-
-    if ($validator->fails()) {
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        return redirect()->back()
-            ->withErrors($validator)
-            ->withInput()
-            ->with('error', 'Mohon periksa kembali data yang Anda masukkan.');
-    }
-
-    try {
-        $dataPesan = [
-            'nama_pengirim' => $request->nama,
-            'email_pengirim' => $request->email,
-            'nomor_telepon' => $request->telepon,
-            'pesan' => $request->pesan,
-            'status' => 'terkirim',
-            'kategori' => $request->kategori ?? 'umum',
-            'subjek' => $request->subjek ?? null,
-            'prioritas' => 'sedang'
-        ];
-
-        PesanKontak::create($dataPesan);
-
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Pesan Anda sudah terkirim ke Customer Service'
+        try {
+            PesanKontak::create([
+                'nama_pengirim' => $request->nama,
+                'email_pengirim' => $request->email,
+                'nomor_telepon' => $request->telepon,
+                'pesan' => $request->pesan,
+                'status' => 'terkirim',
             ]);
+
+            return redirect()->back()
+                ->with('success', 'Pesan Anda telah berhasil dikirim! Kami akan menghubungi Anda dalam waktu 1x24 jam.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan saat mengirim pesan. Silakan coba lagi nanti.')
+                ->withInput();
         }
-
-        return redirect()->back()
-            ->with('success', 'Pesan Anda sudah terkirim ke Customer Service');
-
-    } catch (\Exception $e) {
-        \Log::error('Contact form error: ' . $e->getMessage());
-
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat mengirim pesan. Silakan coba lagi nanti.'
-            ], 500);
-        }
-
-        return redirect()->back()
-            ->with('error', 'Terjadi kesalahan saat mengirim pesan. Silakan coba lagi nanti.')
-            ->withInput();
     }
-}
 
     /**
      * API: return policy content for AJAX modal

@@ -19,54 +19,74 @@ use Spatie\Permission\Models\Role;
 
 class AuthController extends Controller
 {
-    public function performLogin(array $data)
-    {
-        // Validasi manual
-        $validator = Validator::make($data, [
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
+   public function performLogin(array $data)
+{
+    // Validasi manual
+    $validator = Validator::make($data, [
+        'email' => 'required|email',
+        'password' => 'required'
+    ]);
 
-        if ($validator->fails()) {
-            return [
-                'success' => false,
-                'errors' => $validator->errors()
-            ];
-        }
-
-        // Coba login dengan credentials
-        if (!Auth::attempt([
-            'email' => $data['email'],
-            'password' => $data['password']
-        ], isset($data['remember']) ? true : false)) {
-            return [
-                'success' => false,
-                'message' => 'Email atau password salah'
-            ];
-        }
-
-        $user = Auth::user();
-
-        // Cek status user
-        if ($user->status === 'inactive') {
-            // Jika akun inactive, logout session yang mungkin sudah aktif
-            Auth::logout();
-            return [
-                'success' => false,
-                'message' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.'
-            ];
-        }
-
-        // Buat token API seperti biasa (untuk API)
-        $token = $user->createToken('SmartShuttle-API')->plainTextToken;
-
+    if ($validator->fails()) {
         return [
-            'success' => true,
-            'user' => $user->load('roles'),
-            'token' => $token,
-            'role' => $user->getRoleNames()->first()
+            'success' => false,
+            'errors' => $validator->errors()
         ];
     }
+
+    // Coba login dengan credentials
+    if (!Auth::attempt([
+        'email' => $data['email'],
+        'password' => $data['password']
+    ], isset($data['remember']) ? true : false)) {
+        return [
+            'success' => false,
+            'message' => 'Email atau password salah'
+        ];
+    }
+
+    $user = Auth::user();
+
+    // Cek status user
+    if ($user->status === 'inactive') {
+        // Jika akun inactive, logout session yang mungkin sudah aktif
+        Auth::logout();
+        return [
+            'success' => false,
+            'message' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.'
+        ];
+    }
+
+    // ===== PERBAIKAN: Tentukan redirect berdasarkan role =====
+    $role = $user->getRoleNames()->first();
+    $redirectRoute = null;
+
+    switch ($role) {
+        case 'admin_pusat':
+        case 'admin_cabang':
+        case 'operator':
+            $redirectRoute = 'admin.dashboard';
+            break;
+        case 'driver':
+            $redirectRoute = 'driver.dashboard';
+            break;
+        case 'customer':
+        default:
+            $redirectRoute = 'customer.beranda';
+            break;
+    }
+
+    // Buat token API seperti biasa (untuk API)
+    $token = $user->createToken('SmartShuttle-API')->plainTextToken;
+
+    return [
+        'success' => true,
+        'user' => $user->load('roles'),
+        'token' => $token,
+        'role' => $role,
+        'redirect_route' => $redirectRoute  // Tambahkan informasi redirect
+    ];
+}
 
     // Method untuk handle registrasi Google via API
     public function googleAuth(Request $request)
@@ -429,51 +449,53 @@ class AuthController extends Controller
     }
 
     // API LOGIN
-    public function login(Request $request)
-    {
-        \Log::info('AuthController::login API - Starting', $request->all());
+    // API LOGIN
+public function login(Request $request)
+{
+    \Log::info('AuthController::login API - Starting', $request->all());
 
-        try {
-            $validator = Validator::make($request->all(), [
-                'email' => 'required|email',
-                'password' => 'required'
-            ]);
+    try {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $result = $this->performLogin($request->all());
-
-            if (!$result['success']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $result['message']
-                ], 401);
-            }
-
-            return response()->json([
-                'success' => true,
-                'user' => $result['user'],
-                'token' => $result['token'],
-                'role' => $result['role']
-            ]);
-
-        } catch (\Exception $e) {
-            \Log::error('AuthController::login API - Exception', [
-                'message' => $e->getMessage()
-            ]);
-
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan sistem'
-            ], 500);
+                'errors' => $validator->errors()
+            ], 422);
         }
-    }
 
+        $result = $this->performLogin($request->all());
+
+        if (!$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message']
+            ], 401);
+        }
+
+        // Untuk API, kita tetap return token, tapi tambahkan info redirect
+        return response()->json([
+            'success' => true,
+            'user' => $result['user'],
+            'token' => $result['token'],
+            'role' => $result['role'],
+            'redirect_route' => $result['redirect_route'] ?? 'customer.beranda'
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('AuthController::login API - Exception', [
+            'message' => $e->getMessage()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan sistem'
+        ], 500);
+    }
+}
     public function logout(Request $request)
     {
         try {

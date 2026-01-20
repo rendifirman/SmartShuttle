@@ -5,14 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 
 class DriverController extends Controller
 {
-    public function dashboard()
-    {
-        return view('driver.dashboard-driver');
-    }
-
     /**
      * Show driver login form
      */
@@ -22,49 +18,99 @@ class DriverController extends Controller
     }
 
     /**
-     * Process driver login
+     * Handle driver login
      */
     public function login(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required'
+            'password' => 'required',
         ]);
 
-        $credentials = $request->only('email', 'password');
-
-        if (Auth::guard('driver')->attempt($credentials, $request->filled('remember'))) {
+        if (Auth::guard('driver')->attempt($request->only('email', 'password'))) {
             $request->session()->regenerate();
-
-            // Check if user has driver role
-            $user = Auth::guard('driver')->user();
-            if (!$user->hasRole('driver')) {
-                Auth::guard('driver')->logout();
-                return back()->withErrors(['email' => 'Anda tidak memiliki akses driver.']);
-            }
-
             return redirect()->intended(route('driver.dashboard'));
         }
 
         return back()->withErrors([
-            'email' => 'Email atau password salah.'
-        ])->onlyInput('email');
+            'email' => 'The provided credentials do not match our records.',
+        ]);
     }
 
     /**
-     * Proses logout driver
+     * Show driver dashboard
+     */
+    public function dashboard()
+    {
+        return view('driver.dashboard');
+    }
+
+    /**
+     * Handle driver logout
      */
     public function logout(Request $request)
     {
-        try {
-            Auth::guard('driver')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+        Auth::guard('driver')->logout();
 
-            return redirect()->route('customer.beranda');
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-        } catch (\Exception $e) {
-            return redirect()->route('driver.dashboard');
-        }
+        return redirect()->route('customer.login');
+    }
+
+    /**
+     * Show driver schedule
+     */
+    public function jadwal()
+    {
+        return view('driver.jadwal');
+    }
+
+    /**
+     * Show driver reports
+     */
+    public function laporan()
+    {
+        return view('driver.laporan');
+    }
+
+    /**
+     * Show driver trips
+     */
+    public function perjalanan()
+    {
+        return view('driver.perjalanan');
+    }
+
+    /**
+     * Show driver profile
+     */
+    public function profile()
+    {
+        return view('driver.profile');
+    }
+
+    /**
+     * Show driver profile edit form
+     */
+    public function profileEdit()
+    {
+        return view('driver.profile-edit');
+    }
+
+    /**
+     * Show driver settings page
+     */
+    public function pengaturan()
+    {
+        return view('driver.pengaturan');
+    }
+
+    /**
+     * Show driver help/FAQ page
+     */
+    public function bantuan()
+    {
+        return view('driver.bantuan');
     }
 }

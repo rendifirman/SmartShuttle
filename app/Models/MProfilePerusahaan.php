@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class MProfilePerusahaan extends Model
 {
@@ -55,7 +56,8 @@ class MProfilePerusahaan extends Model
         'link_faq',
         'status',
         'created_by',
-        'updated_by'
+        'updated_by',
+        'deleted_by'
     ];
 
     protected $dates = ['tanggal_berdiri', 'deleted_at'];
@@ -63,6 +65,49 @@ class MProfilePerusahaan extends Model
     protected $casts = [
         'tanggal_berdiri' => 'date'
     ];
+
+    // Relasi ke user yang membuat
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    // Relasi ke user yang update
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    // Relasi ke user yang delete
+    public function deleter()
+    {
+        return $this->belongsTo(User::class, 'deleted_by');
+    }
+
+    // Boot method untuk auto-fill audit fields
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (Auth::check()) {
+                $model->created_by = Auth::id();
+            }
+        });
+
+        static::updating(function ($model) {
+            if (Auth::check()) {
+                $model->updated_by = Auth::id();
+            }
+        });
+
+        static::deleting(function ($model) {
+            if (Auth::check()) {
+                $model->deleted_by = Auth::id();
+                $model->save();
+            }
+        });
+    }
 
     // Accessor untuk URL gambar
     public function getLogoUrlAttribute()

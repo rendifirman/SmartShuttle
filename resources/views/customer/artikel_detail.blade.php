@@ -7,9 +7,31 @@
     <title>{{ $article->judul }} - Smart Shuttle</title>
     <meta name="description" content="{{ $article->meta_description ?? Str::limit(strip_tags($article->konten), 160) }}">
     <meta name="keywords" content="{{ $article->meta_keywords }}">
+
+    <!-- PERBAIKAN: Tentukan foto untuk OG Image -->
+    @php
+        // Tentukan foto berdasarkan ID artikel
+        $fotoArtikel = [
+            1 => 'AR1.png',
+            2 => 'AR2.png',
+            3 => 'AR3.png',
+            4 => 'AR1.png',
+            5 => 'AR2.png',
+            6 => 'AR3.png',
+        ];
+
+        if (isset($fotoArtikel[$article->id])) {
+            $fotoUrl = asset('images/' . $fotoArtikel[$article->id]);
+        } else {
+            $availableFoto = ['AR1.png', 'AR2.png', 'AR3.png'];
+            $modIndex = ($article->id - 1) % count($availableFoto);
+            $fotoUrl = asset('images/' . $availableFoto[$modIndex]);
+        }
+    @endphp
+
     <meta property="og:title" content="{{ $article->judul }}">
     <meta property="og:description" content="{{ $article->meta_description ?? Str::limit(strip_tags($article->konten), 160) }}">
-    <meta property="og:image" content="{{ $article->gambar_url }}">
+    <meta property="og:image" content="{{ $fotoUrl }}">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta name="twitter:card" content="summary_large_image">
 
@@ -316,7 +338,8 @@
     <!-- Main Content -->
     <main class="container">
         <!-- Main Image -->
-        <img src="{{ $article->gambar_url }}" alt="{{ $article->judul }}" class="article-main-image">
+        <!-- FOTO UTAMA ARTIKEL (Pakai foto kamu) -->
+        <img src="{{ $fotoUrl }}" alt="{{ $article->judul }}" class="article-main-image">
 
         <!-- Article Content -->
         <div class="article-content">
@@ -345,8 +368,20 @@
                 <h2 class="section-title">Artikel Terkait</h2>
                 <div class="related-grid">
                     @foreach($relatedArticles as $related)
+                        <!-- Tentukan foto untuk artikel terkait -->
+                        @php
+                            // LOGIKA YANG SAMA untuk artikel terkait
+                            if (isset($fotoArtikel[$related->id])) {
+                                $relatedFotoUrl = asset('images/' . $fotoArtikel[$related->id]);
+                            } else {
+                                $availableFoto = ['AR1.png', 'AR2.png', 'AR3.png'];
+                                $modIndex = ($related->id - 1) % count($availableFoto);
+                                $relatedFotoUrl = asset('images/' . $availableFoto[$modIndex]);
+                            }
+                        @endphp
+
                         <a href="{{ route('customer.artikel.detail', $related->slug) }}" class="related-card">
-                            <img src="{{ $related->gambar_url }}" alt="{{ $related->judul }}" class="related-image">
+                            <img src="{{ $relatedFotoUrl }}" alt="{{ $related->judul }}" class="related-image">
                             <div class="related-content">
                                 <div class="related-category">{{ $related->kategori }}</div>
                                 <h3 class="related-title">{{ $related->judul }}</h3>

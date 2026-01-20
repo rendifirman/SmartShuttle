@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Promo extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'promo';
 
@@ -86,7 +87,7 @@ class Promo extends Model
                   ->orWhere('kategori_promo', 'keluarga');
             });
         }
-        
+
         return $query->where('khusus_member', false)
                     ->where('kategori_promo', '!=', 'membership');
     }
@@ -107,7 +108,7 @@ class Promo extends Model
     public function validateForUser($userData, $jumlahTiket = 1, $totalPembelian = 0): array
     {
         $isMember = $userData['membership_status'] === 'active' ?? false;
-        
+
         // Validasi dasar
         if (!$this->isValid()) {
             return [

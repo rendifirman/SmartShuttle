@@ -12,6 +12,8 @@ use App\Models\Shuttle;
 use App\Models\MLayanan;
 use App\Models\Promo;
 use App\Models\Outlet;
+use App\Models\Artikel;
+use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
@@ -68,6 +70,50 @@ class AdminController extends Controller
     public function profilePerusahaan()
     {
         return view('admin.profileperusahaan');
+    }
+
+    public function kontak()
+    {
+        return view('admin.kontak');
+    }
+
+    public function kontakPerusahaan()
+    {
+        $kontak = \App\Models\MMasterKontak::getDataKontak();
+        return view('admin.kontakperusahaan', compact('kontak'));
+    }
+
+    public function updateKontakPerusahaan(Request $request, $id)
+    {
+        $kontak = \App\Models\MMasterKontak::findOrFail($id);
+
+        $request->validate([
+            'nama_perusahaan' => 'required|string|max:255',
+            'deskripsi_singkat' => 'required|string|max:500',
+            'email_utama' => 'required|email|max:255',
+            'email_dukungan' => 'nullable|email|max:255',
+            'telepon_utama' => 'required|string|max:20',
+            'telepon_dukungan' => 'nullable|string|max:20',
+            'alamat_kantor_pusat' => 'required|string|max:500',
+            'facebook_url' => 'nullable|url|max:255',
+            'instagram_url' => 'nullable|url|max:255',
+            'twitter_url' => 'nullable|url|max:255',
+            'jam_operasional' => 'nullable|array',
+            'link_kebijakan_privasi' => 'nullable|url|max:255',
+            'link_syarat_ketentuan' => 'nullable|url|max:255',
+            'status' => 'required|in:active,inactive',
+        ]);
+
+        $data = $request->all();
+
+        // Handle jam_operasional array
+        if ($request->has('jam_operasional') && is_array($request->jam_operasional)) {
+            $data['jam_operasional'] = json_encode($request->jam_operasional);
+        }
+
+        $kontak->update($data);
+
+        return redirect()->route('admin.kontakperusahaan')->with('success', 'Kontak perusahaan berhasil diperbarui.');
     }
 
     public function pusat()
@@ -145,7 +191,10 @@ class AdminController extends Controller
             'status' => 'required|in:aktif,nonaktif'
         ]);
 
-        Branch::create($request->all());
+        $data = $request->all();
+        $data['created_by'] = auth()->id();
+
+        Branch::create($data);
 
         return redirect()->route('admin.cabangperusahaan')->with('success', 'Cabang berhasil ditambahkan.');
     }
@@ -187,6 +236,9 @@ class AdminController extends Controller
             return redirect()->route('admin.cabangperusahaan')->with('error', 'Cabang tidak dapat dihapus karena masih memiliki outlet.');
         }
 
+        $branch->deleted_by = auth()->id();
+        $branch->save();
+
         $branch->delete();
 
         return redirect()->route('admin.cabangperusahaan')->with('success', 'Cabang berhasil dihapus.');
@@ -199,7 +251,7 @@ class AdminController extends Controller
     }
 
     // ========================= OUTLET CRUD METHODS =========================
-    
+
     public function outletPerusahaan(Request $request)
     {
         // Get outlets with filtering
@@ -308,10 +360,10 @@ class AdminController extends Controller
     {
         $outlet = Outlet::findOrFail($id);
         $branches = Branch::where('status', 'aktif')->get();
-        
+
         // Parse fasilitas string ke array
         $fasilitasArray = $outlet->fasilitas ? explode(',', $outlet->fasilitas) : [];
-        
+
         return view('admin.outletperusahaan-edit', compact('outlet', 'branches', 'fasilitasArray'));
     }
 
@@ -373,16 +425,16 @@ class AdminController extends Controller
     public function showOutlet($id)
     {
         $outlet = Outlet::with('branch')->findOrFail($id);
-        
+
         // Parse fasilitas string ke array
         $fasilitasArray = $outlet->fasilitas ? explode(',', $outlet->fasilitas) : [];
-        
+
         return view('admin.outletperusahaan-show', compact('outlet', 'fasilitasArray'));
     }
 
     // ========================= END OUTLET CRUD =========================
 
-    public function promo(Request $request)
+   public function promo(Request $request)
     {
         // Get promos with filtering
         $query = Promo::query();
@@ -404,6 +456,10 @@ class AdminController extends Controller
             $query->where('kategori_promo', $request->kategori_promo);
         }
 
+        if ($request->filled('tipe_promo')) {
+            $query->where('tipe_promo', $request->tipe_promo);
+        }
+
         if ($request->filled('status')) {
             if ($request->status == 'aktif') {
                 $query->where('status', true)
@@ -411,9 +467,11 @@ class AdminController extends Controller
                       ->whereDate('tanggal_berakhir', '>=', now());
             } elseif ($request->status == 'nonaktif') {
                 $query->where('status', false);
-            } elseif ($request->status == 'kadaluarsa') {
-                $query->where('status', true)
+            } elseif ($request->status == 'expired') {
+                $query->where(function($q) {
+                    $q->where('status', true)
                       ->whereDate('tanggal_berakhir', '<', now());
+                });
             }
         }
 
@@ -425,33 +483,191 @@ class AdminController extends Controller
             });
         }
 
-        $promos = $query->paginate(10);
+        $promos = $query->orderBy('created_at', 'desc')->paginate(10);
 
         // Get summary data
-        $totalPromos = Promo::count();
-        $activePromos = Promo::where('status', true)
-                             ->whereDate('tanggal_mulai', '<=', now())
-                             ->whereDate('tanggal_berakhir', '>=', now())
-                             ->count();
-        $inactivePromos = Promo::where('status', false)->count();
-        $expiredPromos = Promo::where('status', true)
-                              ->whereDate('tanggal_berakhir', '<', now())
-                              ->count();
+        $totalPromo = Promo::count();
+        $activePromo = Promo::where('status', true)
+                           ->whereDate('tanggal_mulai', '<=', now())
+                           ->whereDate('tanggal_berakhir', '>=', now())
+                           ->count();
+        $inactivePromo = Promo::where('status', false)->count();
+        $expiredPromo = Promo::where('status', true)
+                            ->whereDate('tanggal_berakhir', '<', now())
+                            ->count();
+
+        // Calculate ongoing promos (aktif dan belum expired)
+        $ongoingPromo = $activePromo;
 
         // Get unique values for filter dropdowns
         $discountTypes = Promo::distinct()->pluck('jenis_diskon')->filter()->sort()->values();
         $categories = Promo::distinct()->pluck('kategori_promo')->filter()->sort()->values();
+        $promoTypes = Promo::distinct()->pluck('tipe_promo')->filter()->sort()->values();
 
         return view('admin.promo', compact(
             'promos',
-            'totalPromos',
-            'activePromos',
-            'inactivePromos',
-            'expiredPromos',
+            'totalPromo',
+            'activePromo',
+            'inactivePromo',
+            'expiredPromo',
+            'ongoingPromo',
             'discountTypes',
-            'categories'
+            'categories',
+            'promoTypes'
         ));
     }
+      public function createPromo()
+    {
+        return view('admin.promo-create');
+    }
+
+    /**
+     * Store new promo
+     */
+    public function storePromo(Request $request)
+    {
+        $request->validate([
+            'kode_promo' => 'required|string|max:50|unique:promo,kode_promo',
+            'nama_promo' => 'required|string|max:255',
+            'jenis_diskon' => 'required|in:persentase,nominal',
+            'nilai_diskon' => 'required|numeric|min:0',
+            'maksimal_diskon' => 'nullable|numeric|min:0',
+            'minimal_pembelian' => 'nullable|numeric|min:0',
+            'min_tiket' => 'nullable|integer|min:1',
+            'kategori_promo' => 'required|in:umum,keluarga,membership',
+            'tipe_promo' => 'required|in:all,shuttle,paket,sewa',
+            'tanggal_mulai' => 'required|date',
+            'tanggal_berakhir' => 'required|date|after_or_equal:tanggal_mulai',
+            'kuota' => 'nullable|integer|min:1',
+            'deskripsi' => 'required|string',
+            'pesan_error' => 'nullable|string',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'khusus_member' => 'nullable|boolean',
+            'status' => 'nullable|boolean',
+        ]);
+
+        $data = $request->except('gambar', 'khusus_member', 'status');
+        $data['khusus_member'] = $request->has('khusus_member') ? 1 : 0;
+        $data['status'] = $request->has('status') ? 1 : 0;
+        $data['terpakai'] = 0;
+
+        // Handle image upload
+        if ($request->hasFile('gambar')) {
+            $imagePath = $request->file('gambar')->store('promo_images', 'public');
+            $data['gambar'] = $imagePath;
+        }
+
+        Promo::create($data);
+
+        return redirect()->route('admin.promo')->with('success', 'Promo berhasil ditambahkan.');
+    }
+
+    /**
+     * Show edit promo form
+     */
+    public function editPromo($id)
+    {
+        $promo = Promo::findOrFail($id);
+        return view('admin.promo-edit', compact('promo'));
+    }
+
+    /**
+     * Update promo
+     */
+    public function updatePromo(Request $request, $id)
+    {
+        $promo = Promo::findOrFail($id);
+
+        $request->validate([
+            'kode_promo' => 'required|string|max:50|unique:promo,kode_promo,' . $id,
+            'nama_promo' => 'required|string|max:255',
+            'jenis_diskon' => 'required|in:persentase,nominal',
+            'nilai_diskon' => 'required|numeric|min:0',
+            'maksimal_diskon' => 'nullable|numeric|min:0',
+            'minimal_pembelian' => 'nullable|numeric|min:0',
+            'min_tiket' => 'nullable|integer|min:1',
+            'kategori_promo' => 'required|in:umum,keluarga,membership',
+            'tipe_promo' => 'required|in:all,shuttle,paket,sewa',
+            'tanggal_mulai' => 'required|date',
+            'tanggal_berakhir' => 'required|date|after_or_equal:tanggal_mulai',
+            'kuota' => 'nullable|integer|min:1',
+            'deskripsi' => 'required|string',
+            'pesan_error' => 'nullable|string',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'khusus_member' => 'nullable|boolean',
+            'status' => 'nullable|boolean',
+        ]);
+
+        $data = $request->except('gambar', 'khusus_member', 'status');
+        $data['khusus_member'] = $request->has('khusus_member') ? 1 : 0;
+        $data['status'] = $request->has('status') ? 1 : 0;
+
+        // Handle image upload
+        if ($request->hasFile('gambar')) {
+            // Delete old image if exists
+            if ($promo->gambar && Storage::disk('public')->exists($promo->gambar)) {
+                Storage::disk('public')->delete($promo->gambar);
+            }
+
+            $imagePath = $request->file('gambar')->store('promo_images', 'public');
+            $data['gambar'] = $imagePath;
+        }
+
+        $promo->update($data);
+
+        return redirect()->route('admin.promo')->with('success', 'Promo berhasil diperbarui.');
+    }
+
+    /**
+     * Show promo detail
+     */
+    public function showPromo($id)
+    {
+        $promo = Promo::findOrFail($id);
+
+        // Calculate status
+        $now = now();
+        $startDate = \Carbon\Carbon::parse($promo->tanggal_mulai);
+        $endDate = \Carbon\Carbon::parse($promo->tanggal_berakhir);
+
+        $statusClass = 'status-nonaktif';
+        $statusText = 'Nonaktif';
+
+        if($promo->status) {
+            if($now->between($startDate, $endDate)) {
+                $statusClass = 'status-aktif';
+                $statusText = 'Aktif';
+            } else if($now->gt($endDate)) {
+                $statusClass = 'status-expired';
+                $statusText = 'Expired';
+            }
+        }
+
+        return view('admin.promo-show', compact('promo', 'statusClass', 'statusText'));
+    }
+
+    /**
+     * Delete promo
+     */
+    public function destroyPromo($id)
+    {
+        $promo = Promo::findOrFail($id);
+
+        // Check if promo has been used
+        if ($promo->terpakai > 0) {
+            return redirect()->route('admin.promo')->with('error', 'Promo tidak dapat dihapus karena sudah digunakan.');
+        }
+
+        // Delete image if exists
+        if ($promo->gambar && Storage::disk('public')->exists($promo->gambar)) {
+            Storage::disk('public')->delete($promo->gambar);
+        }
+
+        $promo->delete();
+
+        return redirect()->route('admin.promo')->with('success', 'Promo berhasil dihapus.');
+    }
+    // Promo CRUD Methods
 
     public function armada(Request $request)
     {
@@ -540,6 +756,7 @@ class AdminController extends Controller
         $data['total_kursi'] = $request->kapasitas_kursi;
         $data['fasilitas'] = $request->fasilitas ?? 'AC Double,WiFi High Speed,Charger USB-C';
         $data['layout_kursi'] = \App\Models\KursiTerpesan::generateLayoutKursi($request->kapasitas_kursi);
+        $data['created_by'] = auth()->id();
 
         // Handle kelengkapan array
         if ($request->has('kelengkapan') && is_array($request->kelengkapan)) {
@@ -622,6 +839,9 @@ class AdminController extends Controller
         })->exists()) {
             return redirect()->route('admin.armada')->with('error', 'Armada tidak dapat dihapus karena masih memiliki pemesanan aktif.');
         }
+
+        $shuttle->deleted_by = auth()->id();
+        $shuttle->save();
 
         $shuttle->delete();
 
@@ -863,10 +1083,178 @@ class AdminController extends Controller
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()->route('customer.beranda');
+            return redirect()->route('customer.login');
 
         } catch (\Exception $e) {
             return redirect()->route('admin.dashboard');
         }
+    }
+
+    // Artikel Management Methods
+    public function artikel(Request $request)
+    {
+        // Get artikels with filtering
+        $query = Artikel::query();
+
+        // Apply filters
+        if ($request->filled('kategori')) {
+            $query->where('kategori', $request->kategori);
+        }
+
+        if ($request->filled('penulis')) {
+            $query->where('penulis', 'like', '%' . $request->penulis . '%');
+        }
+
+        if ($request->filled('status')) {
+            if ($request->status === 'publik') {
+                $query->where('status', true);
+            } elseif ($request->status === 'draft') {
+                $query->where('status', false);
+            }
+        }
+
+        if ($request->filled('tanggal_dari')) {
+            $query->whereDate('tanggal_publikasi', '>=', $request->tanggal_dari);
+        }
+
+        if ($request->filled('tanggal_sampai')) {
+            $query->whereDate('tanggal_publikasi', '<=', $request->tanggal_sampai);
+        }
+
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('judul', 'like', '%' . $request->search . '%')
+                  ->orWhere('konten', 'like', '%' . $request->search . '%')
+                  ->orWhere('penulis', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $artikels = $query->orderBy('tanggal_publikasi', 'desc')->paginate(10);
+
+        // Get summary data
+        $totalArtikel = Artikel::count();
+        $artikelAktif = Artikel::where('status', true)->count();
+        $artikelDraft = Artikel::where('status', false)->count();
+
+        // Get unique values for filter dropdowns
+        $kategoriList = Artikel::distinct()->pluck('kategori')->filter()->sort()->values();
+        $penulisList = Artikel::distinct()->pluck('penulis')->filter()->sort()->values();
+
+        return view('admin.artikel', compact(
+            'artikels',
+            'totalArtikel',
+            'artikelAktif',
+            'artikelDraft',
+            'kategoriList',
+            'penulisList'
+        ));
+    }
+
+    /**
+     * Show create artikel form
+     */
+    public function createArtikel()
+    {
+        return view('admin.artikel-create');
+    }
+
+    /**
+     * Store new artikel
+     */
+    public function storeArtikel(Request $request)
+    {
+        $request->validate([
+            'judul' => 'required|string|max:255',
+            'konten' => 'required|string',
+            'kategori' => 'required|string|max:100',
+            'penulis' => 'required|string|max:255',
+            'tanggal_publikasi' => 'required|date',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'status' => 'nullable|boolean',
+        ]);
+
+        $data = $request->except('gambar', 'status');
+        $data['status'] = $request->has('status') ? 1 : 0;
+
+        // Handle image upload
+        if ($request->hasFile('gambar')) {
+            $imagePath = $request->file('gambar')->store('artikel_images', 'public');
+            $data['gambar'] = $imagePath;
+        }
+
+        Artikel::create($data);
+
+        return redirect()->route('admin.artikel.index')->with('success', 'Artikel berhasil ditambahkan.');
+    }
+
+    /**
+     * Show edit artikel form
+     */
+    public function editArtikel($id)
+    {
+        $artikel = Artikel::findOrFail($id);
+        return view('admin.artikel-edit', compact('artikel'));
+    }
+
+    /**
+     * Update artikel
+     */
+    public function updateArtikel(Request $request, $id)
+    {
+        $artikel = Artikel::findOrFail($id);
+
+        $request->validate([
+            'judul' => 'required|string|max:255',
+            'konten' => 'required|string',
+            'kategori' => 'required|string|max:100',
+            'penulis' => 'required|string|max:255',
+            'tanggal_publikasi' => 'required|date',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'status' => 'nullable|boolean',
+        ]);
+
+        $data = $request->except('gambar', 'status');
+        $data['status'] = $request->has('status') ? 1 : 0;
+
+        // Handle image upload
+        if ($request->hasFile('gambar')) {
+            // Delete old image if exists
+            if ($artikel->gambar && Storage::disk('public')->exists($artikel->gambar)) {
+                Storage::disk('public')->delete($artikel->gambar);
+            }
+
+            $imagePath = $request->file('gambar')->store('artikel_images', 'public');
+            $data['gambar'] = $imagePath;
+        }
+
+        $artikel->update($data);
+
+        return redirect()->route('admin.artikel.index')->with('success', 'Artikel berhasil diperbarui.');
+    }
+
+    /**
+     * Show artikel detail
+     */
+    public function showArtikel($id)
+    {
+        $artikel = Artikel::findOrFail($id);
+        return view('admin.artikel-show', compact('artikel'));
+    }
+
+    /**
+     * Delete artikel
+     */
+    public function destroyArtikel($id)
+    {
+        $artikel = Artikel::findOrFail($id);
+
+        // Delete image if exists
+        if ($artikel->gambar && Storage::disk('public')->exists($artikel->gambar)) {
+            Storage::disk('public')->delete($artikel->gambar);
+        }
+
+        $artikel->delete();
+
+        return redirect()->route('admin.artikel.index')->with('success', 'Artikel berhasil dihapus.');
     }
 }

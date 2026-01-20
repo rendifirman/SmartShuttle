@@ -13,8 +13,6 @@
         --text-light: #666;
         --white: #ffffff;
         --light-gray: #f8f9fa;
-        --whatsapp-green: #25D366;
-        --phone-blue: #3498DB;
     }
 
     /* FIX: Pastikan navbar tidak memiliki margin/padding extra */
@@ -48,7 +46,6 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        animation: fadeInBackground 1s ease-out;
     }
 
     /* Container utama - PASTIKAN SAMA DENGAN NAVBAR */
@@ -399,21 +396,6 @@
         border-left-color: #3498db;
     }
 
-    .error-message {
-        color: #e74c3c;
-        display: block;
-        margin-top: -10px;
-        margin-bottom: 10px;
-        font-size: 12px;
-        font-weight: 500;
-    }
-
-    .form-input.error,
-    .form-textarea.error {
-        border-color: #e74c3c;
-        background-color: rgba(231, 76, 60, 0.05);
-    }
-
     /* Tombol Konfigurasi di Kartu Kontak */
     .config-button-container {
         position: absolute;
@@ -445,151 +427,6 @@
         box-shadow: 0 8px 20px rgba(44, 62, 80, 0.4);
     }
 
-    /* ========== FLOATING CUSTOMER SERVICE BUTTONS ========== */
-    .floating-cs-container {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        z-index: 9999;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        transition: all 0.3s ease;
-    }
-
-    .cs-button {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 65px;
-        height: 65px;
-        border-radius: 50%;
-        border: none;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
-        text-decoration: none;
-        animation: float 3s ease-in-out infinite;
-        overflow: hidden;
-    }
-
-    .cs-button::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent);
-        border-radius: 50%;
-    }
-
-    .cs-button.whatsapp {
-        background: linear-gradient(135deg, var(--whatsapp-green), #128C7E);
-    }
-
-    .cs-button.phone {
-        background: linear-gradient(135deg, var(--phone-blue), #2980b9);
-    }
-
-    .cs-button i {
-        color: white;
-        font-size: 28px;
-        z-index: 1;
-        transition: transform 0.3s ease;
-    }
-
-    .cs-button:hover {
-        transform: translateY(-8px) scale(1.15);
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
-    }
-
-    .cs-button:hover i {
-        transform: rotate(15deg) scale(1.1);
-    }
-
-    .cs-button:hover::after {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
-
-    /* Tooltip untuk button */
-    .cs-button::after {
-        content: attr(data-tooltip);
-        position: absolute;
-        bottom: calc(100% + 15px);
-        left: 50%;
-        transform: translateX(-50%) translateY(10px);
-        background: rgba(0, 0, 0, 0.85);
-        color: white;
-        padding: 10px 15px;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 600;
-        white-space: nowrap;
-        opacity: 0;
-        transition: all 0.3s ease;
-        pointer-events: none;
-        z-index: 10000;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    /* Animasi floating */
-    @keyframes float {
-        0%, 100% {
-            transform: translateY(0);
-        }
-        50% {
-            transform: translateY(-12px);
-        }
-    }
-
-    /* Animation classes */
-    .animate__animated {
-        animation-duration: 0.5s;
-    }
-
-    .animate__fadeInDown {
-        animation-name: fadeInDown;
-    }
-
-    .animate__fadeOutUp {
-        animation-name: fadeOutUp;
-    }
-
-    @keyframes fadeInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @keyframes fadeOutUp {
-        from {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        to {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-    }
-
-    @keyframes fadeInBackground {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
-    }
-
     /* Responsive Styles */
     @media (max-width: 1024px) {
         .contact-content {
@@ -605,7 +442,7 @@
         .contact-title {
             font-size: 38px;
         }
-        
+
         .contact-page {
             min-height: calc(100vh - 80px);
         }
@@ -631,31 +468,10 @@
 
         .contact-page {
             padding: 20px 15px 60px;
-            background-attachment: scroll;
         }
-        
+
         .contact-container {
             padding: 0 15px !important;
-        }
-
-        /* Responsive floating buttons */
-        .floating-cs-container {
-            bottom: 20px;
-            right: 20px;
-        }
-
-        .cs-button {
-            width: 55px;
-            height: 55px;
-        }
-
-        .cs-button i {
-            font-size: 22px;
-        }
-
-        .cs-button::after {
-            font-size: 12px;
-            padding: 8px 12px;
         }
     }
 
@@ -684,38 +500,17 @@
             padding: 12px;
             font-size: 14px;
         }
-        
+
         .contact-page {
             padding: 20px 10px 50px;
         }
-        
+
         .contact-container {
             padding: 0 10px !important;
         }
-        
+
         .contact-content {
             padding: 0 10px;
-        }
-
-        /* Responsive floating buttons */
-        .floating-cs-container {
-            bottom: 15px;
-            right: 15px;
-            gap: 10px;
-        }
-
-        .cs-button {
-            width: 50px;
-            height: 50px;
-        }
-
-        .cs-button i {
-            font-size: 20px;
-        }
-
-        .cs-button::after {
-            font-size: 11px;
-            padding: 6px 10px;
         }
     }
 </style>
@@ -723,41 +518,6 @@
 
 @section('content')
 <div class="contact-page">
-    <!-- Floating Customer Service Buttons -->
-    <div class="floating-cs-container">
-        <!-- WhatsApp Button -->
-        @php
-            $whatsappNumber = $masterKontak->telepon_utama ?? '085811224321';
-            // Format nomor WhatsApp: hapus semua karakter non-digit
-            $whatsappNumber = preg_replace('/[^0-9]/', '', $whatsappNumber);
-            // Jika nomor diawali dengan 0, ganti dengan 62
-            if (substr($whatsappNumber, 0, 1) === '0') {
-                $whatsappNumber = '62' . substr($whatsappNumber, 1);
-            }
-            $whatsappUrl = "https://wa.me/{$whatsappNumber}?text=Halo%20{{ $masterKontak->nama_perusahaan ?? 'Smart Shuttle' }}%2C%20saya%20ingin%20bertanya%20tentang%20layanan%20shuttle.";
-        @endphp
-        <a href="{{ $whatsappUrl }}"
-           target="_blank"
-           class="cs-button whatsapp"
-           data-tooltip="Chat WhatsApp"
-           title="Chat via WhatsApp">
-            <i class="fab fa-whatsapp"></i>
-        </a>
-
-        <!-- Phone Button -->
-        @php
-            $phoneNumber = $masterKontak->telepon_utama ?? '0858-1122-4321';
-            // Format untuk tel: link
-            $phoneUrl = "tel:" . preg_replace('/[^0-9+]/', '', $phoneNumber);
-        @endphp
-        <a href="{{ $phoneUrl }}"
-           class="cs-button phone"
-           data-tooltip="Telepon Customer Service"
-           title="Telepon Customer Service">
-            <i class="fas fa-phone"></i>
-        </a>
-    </div>
-
     <div class="contact-container">
         <section class="contact-section" id="contactSection">
             <div class="contact-header">
@@ -778,6 +538,30 @@
                     @endif
 
                     <h6 class="contact-subtitle">Kami disini untuk membantu anda</h6>
+
+                    @if(session('success'))
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> {{ session('success') }}
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="alert alert-error">
+                            <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+                        </div>
+                    @endif
+
+                    @if(session('info'))
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> {{ session('info') }}
+                        </div>
+                    @endif
+
+                    @if($errors->any())
+                        <div class="alert alert-error">
+                            <i class="fas fa-exclamation-circle"></i> Mohon periksa kembali data yang Anda masukkan.
+                        </div>
+                    @endif
 
                     <div class="contact-item">
                         <span class="contact-icon"><i class="fas fa-envelope"></i></span>
@@ -817,39 +601,13 @@
                     <h5 class="form-title">Kenyamanan anda, prioritas kami</h5>
                     <p class="form-subtitle">Beri kami masukan agar {{ $masterKontak->nama_perusahaan ?? 'Smart Shuttle' }} terus jadi pilihan terbaik untuk perjalanan Anda.</p>
 
-                    {{-- ======= ALERT UNTUK FORM ======= --}}
-                    @if(session('success'))
-                        <div class="alert alert-success">
-                            <i class="fas fa-check-circle"></i> {{ session('success') }}
-                        </div>
-                    @endif
-
-                    @if(session('error'))
-                        <div class="alert alert-error">
-                            <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
-                        </div>
-                    @endif
-
-                    @if(session('info'))
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i> {{ session('info') }}
-                        </div>
-                    @endif
-
-                    @if($errors->any())
-                        <div class="alert alert-error">
-                            <i class="fas fa-exclamation-circle"></i> Mohon periksa kembali data yang Anda masukkan.
-                        </div>
-                    @endif
-
                     <form action="{{ route('customer.contact.submit') }}" method="POST" class="contact-form" id="contactForm">
                         @csrf
-                        <input type="hidden" name="ajax_submit" value="1">
-                        
+
                         <input type="text" name="nama" placeholder="Nama Lengkap" class="form-input"
                                value="{{ old('nama') }}" required />
                         @error('nama')
-                            <small class="error-message">
+                            <small style="color: #e74c3c; display: block; margin-top: -10px; margin-bottom: 10px; font-size: 12px; font-weight: 500;">
                                 <i class="fas fa-exclamation-circle"></i> {{ $message }}
                             </small>
                         @enderror
@@ -857,7 +615,7 @@
                         <input type="email" name="email" placeholder="Email" class="form-input"
                                value="{{ old('email') }}" required />
                         @error('email')
-                            <small class="error-message">
+                            <small style="color: #e74c3c; display: block; margin-top: -10px; margin-bottom: 10px; font-size: 12px; font-weight: 500;">
                                 <i class="fas fa-exclamation-circle"></i> {{ $message }}
                             </small>
                         @enderror
@@ -865,15 +623,15 @@
                         <input type="text" name="telepon" placeholder="Nomor Telepon" class="form-input"
                                value="{{ old('telepon') }}" />
                         @error('telepon')
-                            <small class="error-message">
+                            <small style="color: #e74c3c; display: block; margin-top: -10px; margin-bottom: 10px; font-size: 12px; font-weight: 500;">
                                 <i class="fas fa-exclamation-circle"></i> {{ $message }}
                             </small>
                         @enderror
 
                         <textarea name="pesan" placeholder="Pesan atau ulasan Anda" rows="4" class="form-textarea" required>{{ old('pesan') }}</textarea>
                         @error('pesan')
-                            <small class="error-message">
-                                <i class="fas fa-exclamation-circle"></i> {{ $message }}
+                            <small style="color: #e74c3c; display: block; margin-top: -10px; margin-bottom: 10px; font-size: 12px; font-weight: 500;">
+                                <i class="fas fa-exclamation-circle"></i> {{ message }}
                             </small>
                         @enderror
 
@@ -891,15 +649,12 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOMContentLoaded - init scripts kontak');
-
         /* ---------- FORM SUBMISSION ---------- */
         const contactForm = document.getElementById('contactForm');
         const submitBtn = document.getElementById('submitBtn');
 
         if (contactForm && submitBtn) {
             contactForm.addEventListener('submit', function(e) {
-                // Validasi sederhana
                 const nama = contactForm.querySelector('input[name="nama"]').value.trim();
                 const email = contactForm.querySelector('input[name="email"]').value.trim();
                 const pesan = contactForm.querySelector('textarea[name="pesan"]').value.trim();
@@ -910,7 +665,6 @@
                     return false;
                 }
 
-                // Validasi email
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(email)) {
                     e.preventDefault();
@@ -918,7 +672,6 @@
                     return false;
                 }
 
-                // Disable tombol submit
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
             });
@@ -929,13 +682,7 @@
         const bgImage = new Image();
         const photoUrl = "{{ asset('images/backgroundpeta.png') }}";
 
-        bgImage.onload = function() {
-            console.log('Background photo loaded successfully');
-        };
-
         bgImage.onerror = function() {
-            console.log('Custom background photo not found');
-            // Jika foto tidak ditemukan, gunakan warna netral
             if (contactPage) {
                 contactPage.style.background = 'linear-gradient(135deg, rgba(44, 62, 80, 0.85), rgba(127, 140, 141, 0.8))';
             }
@@ -943,140 +690,19 @@
 
         bgImage.src = photoUrl;
 
-        /* ---------- FLOATING BUTTONS EFFECT ---------- */
-        const csButtons = document.querySelectorAll('.cs-button');
+        /* ---------- FIX NAVBAR FORCE CENTER ---------- */
+        const navbar = document.querySelector('.navbar-main-wrapper');
+        if (navbar) {
+            // Force center with JavaScript sebagai fallback
+            const viewportWidth = window.innerWidth;
+            const navbarWidth = navbar.offsetWidth;
+            const offset = (viewportWidth - navbarWidth) / 2;
 
-        csButtons.forEach(button => {
-            // Tambahkan efek klik
-            button.addEventListener('click', function(e) {
-                // Animasi klik
-                this.style.transform = 'scale(0.9)';
-                setTimeout(() => {
-                    this.style.transform = '';
-                }, 200);
-            });
-
-            // Tambahkan tooltip arrow
-            const tooltipArrow = document.createElement('div');
-            tooltipArrow.className = 'tooltip-arrow';
-            this.appendChild(tooltipArrow);
-        });
-
-        /* ---------- VALIDASI REAL-TIME FORM ---------- */
-        const formInputs = document.querySelectorAll('.form-input, .form-textarea');
-        formInputs.forEach(input => {
-            input.addEventListener('input', function() {
-                if (this.value.trim() !== '') {
-                    this.style.borderColor = '#27ae60';
-                    this.classList.remove('error');
-                    const errorMessage = this.nextElementSibling;
-                    if (errorMessage && errorMessage.classList.contains('error-message')) {
-                        errorMessage.remove();
-                    }
-                } else {
-                    this.style.borderColor = 'rgba(44, 62, 80, 0.1)';
-                }
-            });
-
-            input.addEventListener('blur', function() {
-                if (this.value.trim() !== '') {
-                    this.style.borderColor = 'rgba(44, 62, 80, 0.1)';
-                }
-            });
-        });
-    });
-
-    {{-- AJAX Form Submission --}}
-    $(document).ready(function() {
-        $('#contactForm').on('submit', function(e) {
-            e.preventDefault();
-            
-            var form = $(this);
-            var submitBtn = $('#submitBtn');
-            var originalBtnText = submitBtn.html();
-            
-            // Disable button and show loading
-            submitBtn.prop('disabled', true);
-            submitBtn.html('<i class="fas fa-spinner fa-spin"></i> Mengirim...');
-            
-            // Clear previous alerts
-            $('.alert').remove();
-            
-            // Remove previous error messages
-            $('.error-message').remove();
-            $('.form-input, .form-textarea').removeClass('error');
-            
-            // AJAX request
-            $.ajax({
-                url: form.attr('action'),
-                type: 'POST',
-                data: form.serialize(),
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        // Show success message
-                        showAlert('success', response.message);
-                        
-                        // Reset form
-                        form[0].reset();
-                        
-                        // Focus on first input
-                        form.find('input[name="nama"]').focus();
-                    } else {
-                        // Show error message
-                        showAlert('error', response.message || 'Terjadi kesalahan');
-                        
-                        // Show validation errors if any
-                        if (response.errors) {
-                            $.each(response.errors, function(key, value) {
-                                var input = form.find('[name="' + key + '"]');
-                                input.addClass('error');
-                                input.after('<small class="error-message"><i class="fas fa-exclamation-circle"></i> ' + value[0] + '</small>');
-                            });
-                        }
-                    }
-                },
-                error: function(xhr) {
-                    var message = 'Terjadi kesalahan sistem. Silakan coba lagi.';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        message = xhr.responseJSON.message;
-                    }
-                    showAlert('error', message);
-                },
-                complete: function() {
-                    // Re-enable button
-                    submitBtn.prop('disabled', false);
-                    submitBtn.html(originalBtnText);
-                }
-            });
-        });
-        
-        // Function to show alert
-        function showAlert(type, message) {
-            var alertClass = type === 'success' ? 'alert-success' : 'alert-error';
-            var icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
-            
-            var alertHtml = '<div class="alert ' + alertClass + ' animate__animated animate__fadeInDown">' +
-                            '<i class="fas ' + icon + '"></i> ' + message +
-                            '</div>';
-            
-            // Insert alert before form
-            $('#contactForm').before(alertHtml);
-            
-            // Auto remove alert after 5 seconds
-            setTimeout(function() {
-                $('.alert').addClass('animate__fadeOutUp');
-                setTimeout(function() {
-                    $('.alert').remove();
-                }, 500);
-            }, 5000);
+            if (offset > 0) {
+                navbar.style.marginLeft = 'auto';
+                navbar.style.marginRight = 'auto';
+            }
         }
-        
-        // Remove error class and message on input
-        $('#contactForm input, #contactForm textarea').on('input', function() {
-            $(this).removeClass('error');
-            $(this).next('.error-message').remove();
-        });
     });
 </script>
 @endpush

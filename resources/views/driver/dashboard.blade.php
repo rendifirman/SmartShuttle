@@ -1,0 +1,494 @@
+@extends('layouts.app-driver')
+
+@section('title', 'Dashboard Driver - Smart Shuttle')
+
+@push('styles')
+<style>
+    :root {
+        --primary-color: #0d3559;
+        --secondary-color: #ff6a00;
+        --accent-color: #2E86AB;
+        --background-color: #f5f7fa;
+        --text-dark: #333333;
+    }
+
+    .top-profile {
+        text-align: right;
+        font-size: 15px;
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .dashboard-container {
+        max-width: 100%;
+        padding: 20px;
+    }
+
+    /* Stats Grid - 4 kolom sejajar */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        text-align: center;
+        border-left: 4px solid var(--secondary-color);
+        transition: transform 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 120px;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: #666;
+        font-weight: 500;
+        text-align: center;
+    }
+
+    /* Main Grid */
+    .main-grid {
+        display: grid;
+        grid-template-columns: 3fr 4fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+        align-items: stretch;
+    }
+
+    .profile-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Map Card */
+    .map-card {
+        background: var(--secondary-color);
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 2rem;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        justify-content: space-between;
+    }
+
+    .map-card .card-header {
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    /* Map Placeholder */
+    .map-placeholder {
+        background: white;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-dark);
+        padding: 2rem;
+        text-align: center;
+        flex-grow: 1;
+        margin: 1rem 0;
+        min-height: 180px;
+    }
+
+    .map-placeholder i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: var(--secondary-color);
+    }
+
+    .map-placeholder p {
+        font-size: 0.9rem;
+        color: #666;
+        margin: 0;
+        line-height: 1.4;
+    }
+
+    /* REVISI: Jadwal Card Memanjang */
+    .schedule-full-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 2rem;
+        grid-column: 1 / -1; /* Memanjang full width */
+        margin-bottom: 1.5rem;
+    }
+
+    .schedule-full-card .card-header {
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        color: var(--text-dark);
+        text-align: center;
+        border-bottom: 2px solid var(--secondary-color);
+        padding-bottom: 1rem;
+    }
+
+    /* REVISI: Schedule Table yang Lebih Besar */
+    .schedule-table-full {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 1rem;
+        margin: 1.5rem 0;
+    }
+
+    .schedule-table-full tr {
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+
+    .schedule-table-full tr:hover {
+        background: #e9ecef;
+        transform: translateY(-2px);
+    }
+
+    .schedule-table-full td {
+        padding: 1.2rem;
+        vertical-align: middle;
+        font-size: 1rem;
+    }
+
+    .schedule-table-full td:first-child {
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
+        font-weight: 700;
+        color: var(--primary-color);
+        width: 25%;
+        font-size: 1.1rem;
+    }
+
+    .schedule-table-full td:last-child {
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    /* Profile Styles */
+    .profile-image {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin: 0 auto 1.5rem;
+        border: 4px solid var(--secondary-color);
+    }
+
+    .status-badge {
+        background: #28a745;
+        color: white;
+        padding: 0.5rem 1.5rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 1.5rem;
+    }
+
+    .profile-name {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .profile-info {
+        text-align: center;
+        width: 100%;
+    }
+
+    .profile-info p {
+        margin: 0.75rem 0;
+        color: #666;
+        font-size: 1rem;
+        text-align: center;
+        line-height: 1.4;
+    }
+
+    .profile-info strong {
+        color: var(--text-dark);
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 25px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+        font-size: 0.9rem;
+    }
+
+    .btn-primary {
+        background: var(--secondary-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #e55a00;
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background: white;
+        color: var(--secondary-color);
+        border: 2px solid white;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.9);
+        transform: translateY(-2px);
+    }
+
+    /* Card Headers */
+    .card-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text-dark);
+    }
+
+    .map-card .card-header {
+        color: white;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .main-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .dashboard-container {
+            padding: 1rem;
+        }
+
+        .profile-card {
+            padding: 1.5rem;
+        }
+
+        .profile-image {
+            width: 80px;
+            height: 80px;
+        }
+
+        .profile-name {
+            font-size: 1.3rem;
+        }
+
+        .map-card {
+            padding: 1.5rem;
+        }
+
+        .schedule-full-card {
+            padding: 1.5rem;
+        }
+
+        .schedule-table-full td {
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .schedule-table-full td:first-child {
+            font-size: 1rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stat-card {
+            min-height: 100px;
+            padding: 1rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+        }
+
+        .map-placeholder {
+            padding: 1.5rem;
+            min-height: 150px;
+        }
+
+        .schedule-table-full {
+            border-spacing: 0 0.5rem;
+        }
+
+        .schedule-table-full td {
+            padding: 0.8rem;
+            font-size: 0.85rem;
+        }
+
+        .schedule-table-full td:first-child {
+            font-size: 0.9rem;
+            width: 30%;
+        }
+    }
+</style>
+@endpush
+
+@section('content')
+
+<h2>Dashboard Driver</h2>
+<hr>
+
+<div class="dashboard-container">
+    <!-- Stats row - 4 KOLOM SEJAJAR -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Perjalanan hari ini</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">34</div>
+            <div class="stat-label">Total penumpang</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">2</div>
+            <div class="stat-label">Paket hari ini</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">5</div>
+            <div class="stat-label">Total perjalanan</div>
+        </div>
+    </div>
+
+    <!-- Middle boxes -->
+    <div class="main-grid">
+        <!-- Profile Card -->
+        <div class="profile-card">
+            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile" class="profile-image">
+            <div class="status-badge">Sedang Bekerja</div>
+            <h3 class="profile-name">Dimas Mahendra</h3>
+            <div class="profile-info">
+                <p><strong>NIK:</strong> 1223498761230002</p>
+                <p><strong>No. SIM:</strong> 02876549</p>
+                <p><strong>Kontak:</strong> 089654388976</p>
+            </div>
+        </div>
+
+        <!-- Peta & Navigasi -->
+        <div class="map-card">
+            <h3 class="card-header">Peta & Navigasi</h3>
+            <div class="map-placeholder">
+                <i class="fas fa-map text-3xl mb-2"></i>
+                <p class="text-center text-sm">Maps akan tampil saat perjalanan aktif</p>
+            </div>
+            <button class="btn btn-secondary">Mulai Navigasi</button>
+        </div>
+    </div>
+
+    <!-- REVISI: Jadwal Hari Ini Memanjang -->
+    <div class="schedule-full-card">
+        <h3 class="card-header">Jadwal Hari Ini</h3>
+        <table class="schedule-table-full">
+            <tr>
+                <td>Jadwal Shuttle</td>
+                <td>
+                    <strong>Jakarta - Bandung</strong><br>
+                    <span style="color: var(--secondary-color);">08.00 - 12.00 WIB</span><br>
+                    <small>Bus A - 12 Penumpang</small>
+                </td>
+            </tr>
+            <tr>
+                <td>Jadwal Paket</td>
+                <td>
+                    <strong>Tidak ada pengiriman</strong><br>
+                    <span style="color: #666;">Tidak ada jadwal pengiriman paket hari ini</span>
+                </td>
+            </tr>
+            <tr>
+                <td>Jadwal Armada</td>
+                <td>
+                    <strong>Perawatan Rutin</strong><br>
+                    <span style="color: var(--secondary-color);">14.00 - 16.00 WIB</span><br>
+                    <small>Bus B - Service berkala</small>
+                </td>
+            </tr>
+            <tr>
+                <td>Jadwal Tambahan</td>
+                <td>
+                    <strong>Bandung - Jakarta</strong><br>
+                    <span style="color: var(--secondary-color);">15.00 - 19.00 WIB</span><br>
+                    <small>Bus A - 8 Penumpang</small>
+                </td>
+            </tr>
+        </table>
+        <button class="btn btn-primary">Lihat Detail Jadwal</button>
+    </div>
+</div>
+@endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Driver Dashboard loaded');
+
+        // Contoh interaksi dengan tombol
+        const buttons = document.querySelectorAll('.btn');
+        buttons.forEach(button => {
+            button.addEventListener('click', function() {
+                const buttonText = this.textContent.trim();
+                switch(buttonText) {
+                    case 'Mulai Navigasi':
+                        alert('Fitur navigasi akan segera dimulai');
+                        break;
+                    case 'Lihat Detail Jadwal':
+                        // Redirect ke halaman jadwal jika route ada
+                        window.location.href = "{{ route('driver.jadwal') ?? '#' }}";
+                        break;
+                }
+            });
+        });
+    });
+</script>
+@endpush

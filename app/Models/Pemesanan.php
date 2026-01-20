@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Pemesanan extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'pemesanan';
 
@@ -32,7 +33,10 @@ class Pemesanan extends Model
         'status_pembayaran',
         'outlet_asal_id',
         'outlet_tujuan_id',
-        'kode_promo'
+        'kode_promo',
+        'created_by',
+        'updated_by',
+        'deleted_by'
     ];
 
     protected $casts = [
@@ -85,6 +89,24 @@ class Pemesanan extends Model
     public function outletTujuan()
     {
         return $this->belongsTo(Outlet::class, 'outlet_tujuan_id', 'id_outlet');
+    }
+
+    // Relasi ke user yang membuat
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    // Relasi ke user yang update
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    // Relasi ke user yang delete
+    public function deleter()
+    {
+        return $this->belongsTo(User::class, 'deleted_by');
     }
 
     // Scope untuk pemesanan aktif
