@@ -558,4 +558,80 @@ class PembayaranController extends Controller
         if ($points >= 1000) return 'Silver';
         return 'Bronze';
     }
+
+    /**
+     * Simulasi pembayaran berhasil (untuk testing)
+     */
+    public function simulasiPembayaran($kodePembayaran, $status = 'berhasil')
+    {
+        DB::beginTransaction();
+
+        try {
+            $pembayaran = Pembayaran::where('kode_pembayaran', $kodePembayaran)
+                ->firstOrFail();
+
+            // Cek jika pembayaran sudah berhasil
+            if ($pembayaran->status === 'berhasil') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pembayaran sudah berhasil diproses sebelumnya'
+                ], 400);
+            }
+
+            // Update pembayaran
+            $pembayaran->update([
+                'status' => $status,
+                'paylabs_status' => 'PAID',
+                'waktu_pembayaran' => now(),
+                'paylabs_response' => json_encode([
+                    'simulated' => true,
+                    'status' => 'PAID',
+                    'transactionId' => 'SIM' . strtoupper(Str::random(10)),
+                    'merchantTradeNo' => $kodePembayaran
+                ])
+            ]);
+
+            // Update pemesanan
+            $this->updatePemesananAfterPayment($pembayaran);
+
+            // Add loyalty points
+            $user = User::find($pembayaran->pemesanan->customer_id);
+            if ($user) {
+                $this->addLoyaltyPoints($user);
+            }
+
+            DB::commit();
+
+            Log::info('Payment simulation successful', [
+                'kode_pembayaran' => $kodePembayaran,
+                'status' => $status,
+                'pemesanan_id' => $pembayaran->pemesanan_id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pembayaran berhasil disimulasikan',
+                'data' => [
+                    'kode_pembayaran' => $kodePembayaran,
+                    'status' => $status,
+                    'points_added' => $user ? 100 : 0,
+                    'loyalty_points_added' => $user ? $this->calculateLoyaltyPoints($user->membership_level) : 0,
+                    'membership_level' => $user ? $user->membership_level : null
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Payment simulation failed: ' . $e->getMessage(), [
+                'kode_pembayaran' => $kodePembayaran,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mensimulasikan pembayaran: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

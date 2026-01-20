@@ -228,6 +228,16 @@ class KursiTerpesan extends Model
     }
 
     /**
+     * Mark seats as booked after successful payment
+     */
+    public static function markSeatsAsBooked($pemesananId)
+    {
+        return self::where('pemesanan_id', $pemesananId)
+            ->where('status', 'terpesan')
+            ->update(['status' => 'terisi']);
+    }
+
+    /**
      * Get semua kursi terpesan untuk jadwal
      */
     public static function getKursiTerpesanByJadwal($jadwalId)
