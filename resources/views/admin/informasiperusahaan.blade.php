@@ -316,7 +316,7 @@
             </div>
 
             <div class="card">
-                <h4>Legal & Administratif</h4>
+                <h4>Legal & Administrati</h4>
 
                 <div class="form-row">
                     <div class="form-group">
