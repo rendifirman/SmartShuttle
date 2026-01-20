@@ -2857,7 +2857,7 @@
 
                 <div class="form-notice">
                     <i class="fas fa-info-circle"></i>
-                    Review Anda akan membantu kami meningkatkan layanan
+                    Review Anda akan membantu kami meningkatkan layana
                 </div>
             </div>
         </div>
