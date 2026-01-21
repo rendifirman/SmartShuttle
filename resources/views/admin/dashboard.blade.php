@@ -4,7 +4,7 @@
 <style>
 /* ================= DASHBOARD ================= */
 .dashboard {
-    padding: 24px 32px 40px;
+    padding: 16px;
     background: #f8f8f6;
 }
 
@@ -13,7 +13,7 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
 }
 
 .dashboard-header h2 {
@@ -24,7 +24,7 @@
 
 .search-box {
     position: relative;
-    max-width: 1130px;
+    width: 100%;
 }
 
 .search-box input {
@@ -34,6 +34,7 @@
     border: 1px solid #d1d5db;
     font-size: 14px;
     outline: none;
+    box-sizing: border-box;
 }
 
 .search-box .icon {
@@ -45,19 +46,27 @@
     opacity: 0.6;
 }
 
+.branch-info {
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    font-size: 14px;
+    text-align: center;
+}
+
 /* SUMMARY */
 .summary {
     display: grid;
-    text-align: center;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 22px;
-    margin-bottom: 28px;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
 }
 
 .summary-card {
     background: #ffffff;
     border-radius: 12px;
-    padding: 42px;
+    padding: 24px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.06);
     transition: transform 0.3s ease;
 }
@@ -80,29 +89,24 @@
 
 /* GRID */
 .content-grid {
-    display: grid;
-    grid-template-columns: 4fr 3fr;
-    gap: 22px;
-    margin-bottom: 28px;
-}
-
-@media (max-width: 1024px) {
-    .content-grid {
-        grid-template-columns: 1fr;
-    }
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
 }
 
 /* CARD */
 .card {
     background: #ffffff;
     border-radius: 12px;
-    padding: 22px 24px;
+    padding: 20px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    overflow: hidden;
 }
 
 .card h4 {
     margin: 0 0 16px;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
 }
 
@@ -111,28 +115,38 @@
     position: relative;
     height: 250px;
     margin-top: 10px;
+    width: 100%;
 }
 
 .chart-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 12px;
     margin-bottom: 20px;
 }
 
 .chart-filters {
     display: flex;
     gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.chart-filters::-webkit-scrollbar {
+    display: none;
 }
 
 .chart-filter {
-    padding: 6px 12px;
+    padding: 8px 12px;
     border-radius: 6px;
     border: 1px solid #d1d5db;
     background: #fff;
     font-size: 12px;
     cursor: pointer;
     transition: all 0.3s;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .chart-filter.active {
@@ -147,7 +161,8 @@
 
 .chart-stats {
     display: flex;
-    gap: 20px;
+    flex-direction: column;
+    gap: 12px;
     margin-top: 20px;
     padding-top: 20px;
     border-top: 1px solid #e5e7eb;
@@ -163,17 +178,20 @@
     width: 12px;
     height: 12px;
     border-radius: 3px;
+    flex-shrink: 0;
 }
 
 .stat-label {
     font-size: 12px;
     color: #6b7280;
+    flex-shrink: 0;
 }
 
 .stat-value {
     font-size: 14px;
     font-weight: 600;
-    margin-left: 4px;
+    margin-left: auto;
+    text-align: right;
 }
 
 /* ORANGE CARD */
@@ -198,18 +216,24 @@
     justify-content: space-between;
     align-items: center;
     font-size: 14px;
-    padding: 10px 0;
+    padding: 12px 0;
 }
 
 .route-list li:not(:last-child) {
     border-bottom: 1px solid rgba(255,255,255,0.25);
 }
 
-/* TABLE */
+/* TABLE CONTAINER */
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 10px;
+}
+
 .table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
+    min-width: 600px;
 }
 
 .table thead {
@@ -222,6 +246,7 @@
     padding: 12px 14px;
     font-size: 13px;
     text-align: left;
+    white-space: nowrap;
 }
 
 .table tbody tr {
@@ -241,6 +266,7 @@
     border-radius: 20px;
     font-size: 12px;
     font-weight: 500;
+    display: inline-block;
 }
 
 .badge.departed {
@@ -259,28 +285,138 @@
     background: #8b5cf6;
 }
 
-/* RESPONSIVE */
-@media (max-width: 768px) {
+/* RESPONSIVE FOR TABLET */
+@media (min-width: 768px) {
     .dashboard {
+        padding: 20px 24px 32px;
+    }
+    
+    .summary {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+    }
+    
+    .summary-card {
+        padding: 32px 24px;
+    }
+    
+    .content-grid {
+        flex-direction: row;
+        gap: 20px;
+    }
+    
+    .content-grid > .card {
+        flex: 1;
+    }
+    
+    .chart-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .chart-filters {
+        overflow-x: visible;
+    }
+    
+    .chart-stats {
+        flex-direction: row;
+        gap: 20px;
+    }
+    
+    .stat-value {
+        margin-left: 4px;
+    }
+    
+    .branch-info {
+        text-align: left;
+        padding: 12px 16px;
+    }
+}
+
+/* RESPONSIVE FOR DESKTOP */
+@media (min-width: 1024px) {
+    .dashboard {
+        padding: 24px 32px 40px;
+    }
+    
+    .content-grid {
+        display: grid;
+        grid-template-columns: 4fr 3fr;
+        gap: 22px;
+    }
+    
+    .summary {
+        gap: 22px;
+        margin-bottom: 28px;
+    }
+    
+    .summary-card {
+        padding: 42px;
+    }
+    
+    .dashboard-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .search-box {
+        max-width: 300px;
+    }
+    
+    .table {
+        min-width: 100%;
+    }
+}
+
+/* RESPONSIVE FOR LARGE DESKTOP */
+@media (min-width: 1280px) {
+    .search-box {
+        max-width: 400px;
+    }
+}
+
+/* TOUCH FRIENDLY FOR MOBILE */
+@media (max-width: 767px) {
+    .chart-filter {
+        padding: 10px 16px;
+        font-size: 13px;
+    }
+    
+    .table th,
+    .table td {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+    
+    .badge {
+        padding: 6px 12px;
+        font-size: 11px;
+    }
+    
+    .route-list li {
+        font-size: 13px;
+        padding: 10px 0;
+    }
+}
+
+/* IMPROVE TOUCH TARGETS */
+@media (max-width: 480px) {
+    .summary-card {
+        padding: 20px;
+    }
+    
+    .card {
         padding: 16px;
     }
-
-    .summary {
-        grid-template-columns: 1fr;
-        gap: 16px;
-    }
-
-    .summary-card {
-        padding: 24px;
-    }
-
+    
     .chart-container {
-        height: 200px;
+        height: 220px;
     }
-
-    .table {
-        display: block;
-        overflow-x: auto;
+    
+    .stat-item {
+        font-size: 11px;
     }
 }
 </style>
@@ -388,52 +524,54 @@
     <div class="card">
         <h4>Perjalanan Hari Ini</h4>
 
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Waktu</th>
-                    <th>Rute</th>
-                    <th>Kode Armada</th>
-                    <th>Driver</th>
-                    <th>Kursi</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>08:00</td>
-                    <td>Jakarta → Bandung</td>
-                    <td>S-001</td>
-                    <td>Dimas Mahendra</td>
-                    <td>10/12</td>
-                    <td><span class="badge departed">Berangkat</span></td>
-                </tr>
-                <tr>
-                    <td>10:30</td>
-                    <td>Bandung → Jakarta</td>
-                    <td>S-002</td>
-                    <td>Budi Santoso</td>
-                    <td>8/12</td>
-                    <td><span class="badge in-progress">Dalam Perjalanan</span></td>
-                </tr>
-                <tr>
-                    <td>13:00</td>
-                    <td>Sukabumi → Jakarta</td>
-                    <td>S-003</td>
-                    <td>Andi Wijaya</td>
-                    <td>12/12</td>
-                    <td><span class="badge completed">Selesai</span></td>
-                </tr>
-                <tr>
-                    <td>15:30</td>
-                    <td>Jakarta → Bandung</td>
-                    <td>S-001</td>
-                    <td>Dimas Mahendra</td>
-                    <td>6/12</td>
-                    <td><span class="badge scheduled">Terjadwal</span></td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Waktu</th>
+                        <th>Rute</th>
+                        <th>Kode Armada</th>
+                        <th>Driver</th>
+                        <th>Kursi</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>08:00</td>
+                        <td>Jakarta → Bandung</td>
+                        <td>S-001</td>
+                        <td>Dimas Mahendra</td>
+                        <td>10/12</td>
+                        <td><span class="badge departed">Berangkat</span></td>
+                    </tr>
+                    <tr>
+                        <td>10:30</td>
+                        <td>Bandung → Jakarta</td>
+                        <td>S-002</td>
+                        <td>Budi Santoso</td>
+                        <td>8/12</td>
+                        <td><span class="badge in-progress">Dalam Perjalanan</span></td>
+                    </tr>
+                    <tr>
+                        <td>13:00</td>
+                        <td>Sukabumi → Jakarta</td>
+                        <td>S-003</td>
+                        <td>Andi Wijaya</td>
+                        <td>12/12</td>
+                        <td><span class="badge completed">Selesai</span></td>
+                    </tr>
+                    <tr>
+                        <td>15:30</td>
+                        <td>Jakarta → Bandung</td>
+                        <td>S-001</td>
+                        <td>Dimas Mahendra</td>
+                        <td>6/12</td>
+                        <td><span class="badge scheduled">Terjadwal</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
 </div>
@@ -442,6 +580,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Get canvas element
     const ctx = document.getElementById('salesChart').getContext('2d');
+    
+    // Adjust chart for mobile
+    const isMobile = window.innerWidth < 768;
+    const chartHeight = isMobile ? 220 : 250;
 
     // Data untuk grafik harian
     const dailyData = {
@@ -450,7 +592,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {
                 label: 'Smart Shuttle',
                 data: [1200000, 1400000, 1100000, 1300000, 1600000, 2000000, 1800000],
-                backgroundColor: '#4da3ff',
+                backgroundColor: 'rgba(77, 163, 255, 0.1)',
                 borderColor: '#4da3ff',
                 borderWidth: 2,
                 fill: true,
@@ -459,7 +601,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {
                 label: 'SmartSend',
                 data: [400000, 500000, 350000, 600000, 550000, 700000, 600000],
-                backgroundColor: '#ff6a21',
+                backgroundColor: 'rgba(255, 106, 33, 0.1)',
                 borderColor: '#ff6a21',
                 borderWidth: 2,
                 fill: true,
@@ -468,7 +610,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {
                 label: 'SmartRent',
                 data: [800000, 900000, 700000, 1100000, 1000000, 1200000, 1100000],
-                backgroundColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 borderColor: '#10b981',
                 borderWidth: 2,
                 fill: true,
@@ -482,9 +624,9 @@ document.addEventListener('DOMContentLoaded', function() {
         labels: ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'],
         datasets: [
             {
-                label: 'Tiket Reguler',
+                label: 'Smart Shuttle',
                 data: [5200000, 5800000, 6100000, 6800000],
-                backgroundColor: '#4da3ff',
+                backgroundColor: 'rgba(77, 163, 255, 0.1)',
                 borderColor: '#4da3ff',
                 borderWidth: 2,
                 fill: true,
@@ -493,7 +635,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {
                 label: 'SmartSend',
                 data: [1800000, 2200000, 2400000, 2600000],
-                backgroundColor: '#ff6a21',
+                backgroundColor: 'rgba(255, 106, 33, 0.1)',
                 borderColor: '#ff6a21',
                 borderWidth: 2,
                 fill: true,
@@ -502,7 +644,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {
                 label: 'SmartRent',
                 data: [3200000, 3800000, 4100000, 4500000],
-                backgroundColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 borderColor: '#10b981',
                 borderWidth: 2,
                 fill: true,
@@ -516,9 +658,9 @@ document.addEventListener('DOMContentLoaded', function() {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
         datasets: [
             {
-                label: 'Tiket Reguler',
+                label: 'Smart Shuttle',
                 data: [22000000, 24000000, 26000000, 28000000, 30000000, 32000000],
-                backgroundColor: '#4da3ff',
+                backgroundColor: 'rgba(77, 163, 255, 0.1)',
                 borderColor: '#4da3ff',
                 borderWidth: 2,
                 fill: true,
@@ -527,7 +669,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {
                 label: 'SmartSend',
                 data: [9000000, 10000000, 11000000, 12000000, 13000000, 14000000],
-                backgroundColor: '#ff6a21',
+                backgroundColor: 'rgba(255, 106, 33, 0.1)',
                 borderColor: '#ff6a21',
                 borderWidth: 2,
                 fill: true,
@@ -536,7 +678,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {
                 label: 'SmartRent',
                 data: [15000000, 17000000, 18000000, 19000000, 21000000, 23000000],
-                backgroundColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 borderColor: '#10b981',
                 borderWidth: 2,
                 fill: true,
@@ -547,7 +689,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Format currency
     const formatCurrency = (value) => {
-        return 'Rp ' + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        if (value >= 1000000) {
+            return 'Rp ' + (value / 1000000).toFixed(1).replace('.', ',') + ' jt';
+        }
+        if (value >= 1000) {
+            return 'Rp ' + (value / 1000).toFixed(0) + ' rb';
+        }
+        return 'Rp ' + value.toString();
     };
 
     // Create chart
@@ -559,17 +707,23 @@ document.addEventListener('DOMContentLoaded', function() {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    display: true,
+                    display: !isMobile,
                     position: 'top',
                     labels: {
                         padding: 15,
                         usePointStyle: true,
-                        pointStyle: 'circle'
+                        pointStyle: 'circle',
+                        font: {
+                            size: isMobile ? 11 : 12
+                        }
                     }
                 },
                 tooltip: {
                     mode: 'index',
                     intersect: false,
+                    bodyFont: {
+                        size: isMobile ? 11 : 12
+                    },
                     callbacks: {
                         label: function(context) {
                             let label = context.dataset.label || '';
@@ -586,17 +740,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 x: {
                     grid: {
                         display: false
+                    },
+                    ticks: {
+                        font: {
+                            size: isMobile ? 11 : 12
+                        }
                     }
                 },
                 y: {
                     beginAtZero: true,
                     ticks: {
                         callback: function(value) {
-                            if (value >= 1000000) {
-                                return 'Rp ' + (value / 1000000) + ' jt';
-                            }
                             return formatCurrency(value);
-                        }
+                        },
+                        font: {
+                            size: isMobile ? 11 : 12
+                        },
+                        maxTicksLimit: isMobile ? 5 : 8
                     },
                     grid: {
                         color: 'rgba(0,0,0,0.05)'
@@ -651,6 +811,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Implementasi pencarian bisa ditambahkan di sini
             }
         }
+    });
+
+    // Handle window resize for chart
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            salesChart.resize();
+        }, 250);
     });
 });
 </script>

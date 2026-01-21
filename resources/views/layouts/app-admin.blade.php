@@ -272,31 +272,33 @@
             display: none;
             background: #0d3559;
             color: white;
-            padding: 15px 20px;
+            padding: 0 15px;
             font-size: 18px;
             font-weight: bold;
-            position: sticky;
+            position: fixed;
             top: 0;
-            z-index: 1001;
+            left: 0;
+            width: 100%;
+            z-index: 1100;
             box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-            align-items: center;
-            justify-content: space-between;
             height: 60px;
+            align-items: center;
         }
 
         .mobile-header-content {
             display: flex;
             align-items: center;
-            width: 100%;
             justify-content: space-between;
+            width: 100%;
         }
 
         .mobile-logo {
             color: #ff6a00;
             font-size: 16px;
             font-weight: bold;
-            margin-left: 10px;
             flex: 1;
+            text-align: center;
+            padding-right: 40px;
         }
 
         .mobile-hamburger {
@@ -312,6 +314,8 @@
             justify-content: center;
             border-radius: 5px;
             transition: background-color 0.3s ease;
+            z-index: 1101;
+            position: relative;
         }
 
         .mobile-hamburger:hover {
@@ -454,12 +458,11 @@
         @media (max-width: 480px) {
             .mobile-header {
                 height: 55px;
-                padding: 12px 15px;
+                padding: 0 12px;
             }
 
             .mobile-logo {
                 font-size: 14px;
-                margin-left: 8px;
             }
 
             .mobile-hamburger {
@@ -526,7 +529,6 @@
             <i class="fas fa-bars"></i>
         </button>
         <span class="mobile-logo">SMART SHUTTLE {{ Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasRole('admin_pusat') ? 'ADMIN PUSAT' : 'ADMIN CABANG' }}</span>
-        <div style="width: 40px;"></div>
     </div>
 </div>
 
@@ -1105,7 +1107,6 @@
         // Di sini Anda bisa menambahkan logika logout yang sesuai
         // Contoh: Menggunakan Laravel's built-in logout
 
-
         // Untuk saat ini, kita hanya akan menunjukkan pesan
         alert('Logout berhasil! Mengarahkan ke halaman login...');
 
@@ -1133,11 +1134,6 @@
 
         document.getElementById('setting-toggle').addEventListener('click', function() {
             toggleSubmenu('setting-submenu', this.querySelector('.menu-arrow'));
-        });
-
-        // Event listener untuk nested submenu tiket
-        document.getElementById('tiket-toggle').addEventListener('click', function() {
-            toggleNestedSubmenu('tiket-toggle', 'tiket-submenu');
         });
 
         // Logout functionality
@@ -1183,7 +1179,12 @@
         const overlay = document.getElementById('overlay');
         const menuLinks = document.querySelectorAll('.menu-item, .submenu-item');
 
-        mobileHamburgerBtn.addEventListener('click', toggleSidebar);
+        // Pastikan hamburger button bisa di-klik
+        mobileHamburgerBtn.addEventListener('click', function(e) {
+            e.stopPropagation(); // Mencegah event bubbling
+            toggleSidebar();
+        });
+
         overlay.addEventListener('click', closeSidebar);
 
         // Close sidebar when clicking a link on mobile
@@ -1216,7 +1217,13 @@
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
                 closeSidebar();
+                hideLogoutModal();
             }
+        });
+
+        // Mencegah klik pada sidebar menutup sidebar itu sendiri
+        document.getElementById('sidebar').addEventListener('click', function(e) {
+            e.stopPropagation();
         });
     });
 </script>
