@@ -79,6 +79,12 @@ class Pemesanan extends Model
         return $this->hasOne(Transaksi::class, 'pemesanan_id');
     }
 
+    // Relasi ke pembayaran
+    public function pembayaran()
+    {
+        return $this->hasOne(Pembayaran::class, 'pemesanan_id');
+    }
+
     // Relasi ke outlet asal
     public function outletAsal()
     {
@@ -197,5 +203,53 @@ class Pemesanan extends Model
     public function getWaktuFormattedAttribute()
     {
         return \Carbon\Carbon::parse($this->jadwal->waktu_keberangkatan)->format('H:i') . ' WIB';
+    }
+
+    /**
+     * Mendapatkan status display untuk halaman riwayat
+     * Status ini dinamis berdasarkan data terbaru dari database pembayaran
+     *
+     * @return string Status display: 'open', 'proses', atau 'selesai'
+     */
+    public function getStatusDisplayAttribute()
+    {
+        // Ambil pembayaran terbaru dari relasi
+        $pembayaran = $this->pembayaran;
+
+        // Jika ada pembayaran dan statusnya 'sukses' atau 'dibayar', tampilkan 'selesai'
+        if ($pembayaran && in_array($pembayaran->status, ['sukses', 'dibayar', 'berhasil', 'success'])) {
+            return 'selesai';
+        }
+
+        // Jika status pembayaran dalam database adalah 'dibayar', 'berhasil', atau 'sukses'
+        if (in_array($this->status, ['dibayar', 'selesai', 'dikonfirmasi', 'dikonfirmasi_pembayaran'])) {
+            return 'selesai';
+        }
+
+        // Jika pemesanan sedang menunggu pembayaran atau diproses
+        if (in_array($this->status, ['menunggu_pembayaran', 'diproses', 'menunggu_konfirmasi'])) {
+            return 'proses';
+        }
+
+        // Status default: open (belum ada aksi)
+        return 'open';
+    }
+
+    /**
+     * Mendapatkan text status untuk tampilan
+     *
+     * @return string Text status: 'Open', 'Proses', atau 'Selesai'
+     */
+    public function getStatusLabelAttribute()
+    {
+        $statusDisplay = $this->getStatusDisplayAttribute();
+
+        $labels = [
+            'open' => 'Open',
+            'proses' => 'Proses',
+            'selesai' => 'Sukses'
+        ];
+
+        return $labels[$statusDisplay] ?? 'Open';
     }
 }

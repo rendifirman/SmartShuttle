@@ -12,6 +12,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Tambahkan middleware global untuk inisialisasi session dan CSRF
+        $middleware->web(append: [
+            \App\Http\Middleware\InitializeSessionAndCsrf::class,
+            \App\Http\Middleware\EnsureCsrfTokenInResponse::class,
+        ]);
+
         $middleware->alias([
             'admin.role' => \App\Http\Middleware\CheckAdminRole::class,
             'branch.access' => \App\Http\Middleware\CheckBranchAccess::class,

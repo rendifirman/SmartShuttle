@@ -17,8 +17,17 @@ class EnsureSessionStarted
     public function handle(Request $request, Closure $next)
     {
         // Ensure session is started for all web requests that might need CSRF protection
-        if (!$request->is('api/*') && !session()->isStarted()) {
-            session()->start();
+        if (!$request->is('api/*')) {
+            // Pastikan session sudah dimulai
+            if (!session()->isStarted()) {
+                session()->start();
+            }
+
+            // Pastikan session token (CSRF) di-generate
+            // Ini penting untuk form submission
+            if (!session()->token()) {
+                session()->regenerateToken();
+            }
         }
 
         return $next($request);

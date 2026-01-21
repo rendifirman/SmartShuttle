@@ -583,6 +583,24 @@ private function getOutletImage($outlet)
             return redirect()->route('customer.beranda')->with('info', 'Anda sudah login!');
         }
 
+        // Pastikan session dan CSRF token sudah diinisialisasi sebelum render view
+        if (!session()->isStarted()) {
+            session()->start();
+        }
+
+        if (!session()->token()) {
+            session()->regenerateToken();
+        }
+
+        // Log untuk debugging first load issues
+        \Log::info('CustomerController::showLogin - Session initialized', [
+            'session_id' => session()->getId(),
+            'has_csrf_token' => !empty(session()->token()),
+            'csrf_token' => substr(session()->token() ?? '', 0, 10) . '...',
+            'session_has_user' => session()->has('user'),
+            'auth_check' => Auth::check(),
+        ]);
+
         return view('customer.login');
     }
 
@@ -597,6 +615,13 @@ public function login(Request $request)
     ]);
 
     try {
+        // Log CSRF token validation at start
+        \Log::info('Login request start', [
+            'email' => $validated['email'],
+            'has_csrf_token' => !empty($request->session()->token()),
+            'session_id' => session()->getId(),
+        ]);
+
         $remember = $request->filled('remember');
         $credentials = [
             'email' => $validated['email'],
@@ -663,9 +688,26 @@ public function login(Request $request)
             'membership_level' => $user->membership_level,
         ]);
 
+        // Pastikan session di-save sebelum redirect
+        try {
+            session()->save();
+        } catch (\Exception $e) {
+            \Log::warning('Failed to save session after login', ['error' => $e->getMessage()]);
+        }
+
+        \Log::info('Login successful', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'session_saved' => true,
+        ]);
+
         return redirect()->route('customer.beranda');
 
     } catch (\Exception $e) {
+        \Log::error('Login exception', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
         return back()->withErrors(['message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()])
                     ->withInput();
     }
@@ -678,6 +720,22 @@ public function login(Request $request)
         if (session()->has('user')) {
             return redirect()->route('customer.beranda')->with('info', 'Anda sudah login!');
         }
+
+        // Pastikan session dan CSRF token sudah diinisialisasi sebelum render view
+        if (!session()->isStarted()) {
+            session()->start();
+        }
+
+        if (!session()->token()) {
+            session()->regenerateToken();
+        }
+
+        // Log untuk debugging
+        \Log::info('CustomerController::showRegister - Session initialized', [
+            'session_id' => session()->getId(),
+            'has_csrf_token' => !empty(session()->token()),
+            'csrf_token' => substr(session()->token() ?? '', 0, 10) . '...',
+        ]);
 
         $syaratKetentuan = SyaratKetentuan::getUntukPengguna();
         $kebijakanPrivasi = KebijakanPrivasi::getAktif();
@@ -1567,7 +1625,8 @@ public function login(Request $request)
         $riwayat = Pemesanan::with([
             'jadwal.shuttle',
             'jadwal.rutes',
-            'detailPenumpang'
+            'detailPenumpang',
+            'pembayaran' // Eager load pembayaran untuk status dinamis
         ])
         ->where('customer_id', $user->id)
         ->orderBy('created_at', 'desc')

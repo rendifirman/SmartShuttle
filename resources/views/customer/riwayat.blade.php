@@ -438,12 +438,9 @@
 <div class="order-history">
     @forelse($riwayat as $index => $pemesanan)
         @php
-            $status = 'open';
-            if ($pemesanan->status_pemesanan == 'menunggu_pembayaran' || $pemesanan->status_pemesanan == 'diproses') {
-                $status = 'proses';
-            } elseif ($pemesanan->status_pemesanan == 'selesai' || $pemesanan->status_pemesanan == 'dikonfirmasi') {
-                $status = 'selesai';
-            }
+            // Gunakan status dinamis dari database (baca status terbaru dari pembayaran)
+            $status = $pemesanan->status_display;
+            $statusLabel = $pemesanan->status_label;
 
             $routeString = 'Rute Tidak Diketahui';
             $kotaAsal = 'Jakarta';
@@ -517,13 +514,7 @@
 
                 <div class="order-status">
                     <div class="status {{ $status }}">
-                        @if($status == 'open')
-                            Open
-                        @elseif($status == 'proses')
-                            Proses
-                        @else
-                            Selesai
-                        @endif
+                        {{ $statusLabel }}
                     </div>
 
                     <div class="button-qr-container">
