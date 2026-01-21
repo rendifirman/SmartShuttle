@@ -604,6 +604,10 @@
                 <i class="fas fa-route submenu-icon"></i>
                 <span>Rute</span>
             </a>
+            <a href="{{ route('admin.jadwal') }}" class="submenu-item" id="jadwal-link">
+                <i class="fas fa-calendar-alt submenu-icon"></i>
+                <span>Jadwal</span>
+            </a>
         </div>
 
         <!-- Transaksi (with submenu) -->
@@ -743,6 +747,7 @@
         'driver': { title: 'Master Data - Driver', icon: 'fas fa-user-tie' },
         'pegawai': { title: 'Master Data - Pegawai', icon: 'fas fa-users' },
         'rute': { title: 'Master Data - Rute', icon: 'fas fa-route' },
+        'jadwal': { title: 'Master Data - Jadwal', icon: 'fas fa-calendar-alt' },
         'smartsend-transaksi': { title: 'Transaksi - SmartSend', icon: 'fas fa-shopping-cart' },
         'perjalanan': { title: 'Transaksi - Perjalanan', icon: 'fas fa-route' },
         'armada-transaksi': { title: 'Transaksi - Armada', icon: 'fas fa-bus' },
@@ -931,6 +936,16 @@
 
             document.getElementById('rute-link').classList.add('active');
             updatePageTitle('rute');
+        }
+        else if (currentPath.includes('jadwal')) {
+            // Buka submenu master data
+            const masterDataSubmenu = document.getElementById('master-data-submenu');
+            const masterDataArrow = document.getElementById('master-data-toggle').querySelector('.menu-arrow');
+            masterDataSubmenu.classList.add('open');
+            masterDataArrow.classList.add('rotated');
+
+            document.getElementById('jadwal-link').classList.add('active');
+            updatePageTitle('jadwal');
         }
 
         // Transaksi - Smartsend (termasuk tiket-perjalanan untuk backward compatibility)
