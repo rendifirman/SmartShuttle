@@ -109,13 +109,13 @@ Route::post('/customer/cek-reservasi', [CekReservasiController::class, 'proses']
 Route::get('/customer/cek-reservasi/hasil/{kode}', [CekReservasiController::class, 'hasil'])
     ->name('customer.cek-reservasi.hasil');
 
-Route::middleware(['ensure.session'])->group(function () {
+
     Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])
         ->name('login.google');
 
     Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
         ->name('login.google.callback');
-});
+
 
 
 // ★★★ AUTH ROUTES - HANYA UNTUK TAMU ★★★
