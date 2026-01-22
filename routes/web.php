@@ -126,7 +126,7 @@ Route::middleware(['ensure.session', 'guest.customer'])->group(function () {
     // Password reset
     Route::prefix('password')->group(function () {
         Route::get('/forgot', [AuthController::class, 'showForgotForm'])->name('password.request');
-        Route::post('/email', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
+        Route::post('/email', [AuthController::class, 'sendResetLinkEmail'])->name('password.email.custom');
         Route::get('/token', [AuthController::class, 'showTokenForm'])->name('password.token');
         Route::post('/token/verify', [AuthController::class, 'verifyToken'])->name('password.token.verify');
         Route::get('/reset', [AuthController::class, 'showResetForm'])->name('password.reset');
