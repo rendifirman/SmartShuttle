@@ -18,13 +18,6 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\EnsureCsrfTokenInResponse::class,
         ]);
 
-        // Skip ValidatePathEncoding for OAuth routes
-        $middleware->validatePathEncoding(
-            except: [
-                '/auth/google*',
-            ]
-        );
-
         $middleware->alias([
             'admin.role' => \App\Http\Middleware\CheckAdminRole::class,
             'branch.access' => \App\Http\Middleware\CheckBranchAccess::class,

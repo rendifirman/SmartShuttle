@@ -22,9 +22,17 @@ class GoogleAuthController extends Controller
 
     }
 
-    public function handleGoogleCallback()
+    public function handleGoogleCallback(Request $request)
     {
         try {
+            // Decode query string to handle URL encoded parameters
+            $code = $request->input('code');
+            $state = $request->input('state');
+
+            if (!$code) {
+                throw new \Exception('Authorization code not found');
+            }
+
            $googleUser = Socialite::driver('google')->stateless()->user();
 
 
