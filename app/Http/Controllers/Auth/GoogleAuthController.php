@@ -16,14 +16,17 @@ class GoogleAuthController extends Controller
     public function redirectToGoogle()
     {
         return Socialite::driver('google')
-            ->with(['prompt' => 'select_account'])
-            ->redirect();
+    ->stateless()
+    ->with(['prompt' => 'select_account'])
+    ->redirect();
+
     }
 
     public function handleGoogleCallback()
     {
         try {
-            $googleUser = Socialite::driver('google')->user();
+           $googleUser = Socialite::driver('google')->stateless()->user();
+
 
             \Log::info('Google OAuth Response:', [
                 'id' => $googleUser->getId(),
@@ -106,7 +109,7 @@ class GoogleAuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'avatar' => $user->avatar_url,
+                'avatar' => $user->avatar,
                 'membership_status' => $user->membership_status,
                 'membership_level' => $user->membership_level,
             ]);
