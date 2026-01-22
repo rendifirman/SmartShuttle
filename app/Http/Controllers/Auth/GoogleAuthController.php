@@ -16,32 +16,20 @@ class GoogleAuthController extends Controller
     public function redirectToGoogle()
     {
         try {
-            $clientId = config('services.google.client_id');
-            $redirectUri = config('services.google.redirect');
-            
-            if (!$clientId || !$redirectUri) {
-                \Log::error('Google OAuth credentials missing', [
-                    'has_client_id' => !empty($clientId),
-                    'has_redirect_uri' => !empty($redirectUri),
-                ]);
-                return redirect()->route('customer.login')
-                    ->withErrors('Konfigurasi Google OAuth belum lengkap. Hubungi administrator.');
-            }
-            
-            \Log::info('Google redirect initialized', [
-                'client_id' => substr($clientId, 0, 20) . '...',
-                'redirect_uri' => $redirectUri,
+            \Log::info('Redirecting to Google OAuth');
+            $response = Socialite::driver('google')->redirect();
+            \Log::info('Socialite redirect response created', [
+                'class' => class_basename($response),
+                'headers' => $response->headers() ?? [],
             ]);
-            
-            return Socialite::driver('google')
-                ->redirect();
-        } catch (\Exception $e) {
-            \Log::error('Google redirect exception: ' . $e->getMessage(), [
-                'code' => $e->getCode(),
-                'trace' => $e->getTraceAsString()
+            return $response;
+        } catch (\Throwable $e) {
+            \Log::error('Google redirect error', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ]);
-            return redirect()->route('customer.login')
-                ->withErrors('Gagal mengarahkan ke Google. ' . $e->getMessage());
+            throw $e;
         }
     }
 
