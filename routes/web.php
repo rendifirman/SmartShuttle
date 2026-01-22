@@ -114,6 +114,7 @@ Route::middleware('web')->group(function () {
         ->name('login.google');
 
     Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
+        ->withoutMiddleware('Illuminate\Http\Middleware\ValidatePathEncoding')
         ->name('login.google.callback');
 });
 

@@ -39,7 +39,12 @@ class GoogleAuthController extends Controller
 
             if (!$user) {
                 // Cek apakah email sudah terdaftar (untuk menghindari duplikat)
-                $user = User::where('email', $googleUser->getEmail())->first();
+                $userEmail = filter_var($googleUser->getEmail(), FILTER_VALIDATE_EMAIL);
+                if (!$userEmail) {
+                    throw new \Exception('Invalid email format from Google');
+                }
+
+                $user = User::where('email', $userEmail)->first();
 
                 if ($user) {
                     // User sudah ada dengan email ini, update dengan Google ID
@@ -61,8 +66,8 @@ class GoogleAuthController extends Controller
                     try {
                         $user = User::create([
                             'name' => $googleUser->getName(),
-                            'username' => $this->generateUsername($googleUser->getEmail()),
-                            'email' => $googleUser->getEmail(),
+                            'username' => $this->generateUsername($userEmail),
+                            'email' => $userEmail,
                             'password' => Hash::make(Str::random(16)),
                             'google_id' => $googleUser->getId(),
                             'provider' => 'google',
