@@ -16,20 +16,39 @@ class GoogleAuthController extends Controller
     public function redirectToGoogle()
     {
         try {
+            $clientId = config('services.google.client_id');
+            $clientSecret = config('services.google.client_secret');
+            $redirectUri = config('services.google.redirect');
+
+            \Log::info('Google OAuth check', [
+                'client_id_set' => !empty($clientId),
+                'client_secret_set' => !empty($clientSecret),
+                'redirect_uri' => $redirectUri,
+            ]);
+
+            if (empty($clientId) || empty($clientSecret) || empty($redirectUri)) {
+                \Log::error('Google OAuth credentials incomplete');
+                return response()->json([
+                    'error' => 'Google OAuth belum dikonfigurasi. Silakan hubungi administrator.',
+                    'missing' => [
+                        'client_id' => empty($clientId),
+                        'client_secret' => empty($clientSecret),
+                        'redirect_uri' => empty($redirectUri),
+                    ]
+                ], 500);
+            }
+
             \Log::info('Redirecting to Google OAuth');
-            $response = Socialite::driver('google')->redirect();
-            \Log::info('Socialite redirect response created', [
-                'class' => class_basename($response),
-                'headers' => $response->headers() ?? [],
-            ]);
-            return $response;
-        } catch (\Throwable $e) {
-            \Log::error('Google redirect error', [
+            return Socialite::driver('google')->redirect();
+        } catch (\Exception $e) {
+            \Log::error('Google redirect exception', [
                 'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
+                'code' => $e->getCode(),
+                'file' => $e->getFile() . ':' . $e->getLine(),
             ]);
-            throw $e;
+            return response()->json([
+                'error' => 'Gagal redirect ke Google: ' . $e->getMessage()
+            ], 500);
         }
     }
 
