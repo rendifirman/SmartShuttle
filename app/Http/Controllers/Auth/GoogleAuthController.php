@@ -27,15 +27,13 @@ class GoogleAuthController extends Controller
             ]);
 
             if (empty($clientId) || empty($clientSecret) || empty($redirectUri)) {
-                \Log::error('Google OAuth credentials incomplete');
-                return response()->json([
-                    'error' => 'Google OAuth belum dikonfigurasi. Silakan hubungi administrator.',
-                    'missing' => [
-                        'client_id' => empty($clientId),
-                        'client_secret' => empty($clientSecret),
-                        'redirect_uri' => empty($redirectUri),
-                    ]
-                ], 500);
+                \Log::error('Google OAuth credentials incomplete', [
+                    'client_id' => empty($clientId) ? 'MISSING' : 'OK',
+                    'client_secret' => empty($clientSecret) ? 'MISSING' : 'OK',
+                    'redirect_uri' => empty($redirectUri) ? 'MISSING' : $redirectUri,
+                ]);
+                return redirect()->route('customer.login')
+                    ->withErrors('Konfigurasi Google OAuth belum lengkap. Hubungi administrator.');
             }
 
             \Log::info('Redirecting to Google OAuth');
@@ -46,9 +44,8 @@ class GoogleAuthController extends Controller
                 'code' => $e->getCode(),
                 'file' => $e->getFile() . ':' . $e->getLine(),
             ]);
-            return response()->json([
-                'error' => 'Gagal redirect ke Google: ' . $e->getMessage()
-            ], 500);
+            return redirect()->route('customer.login')
+                ->withErrors('Error: ' . $e->getMessage());
         }
     }
 
