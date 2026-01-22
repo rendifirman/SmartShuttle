@@ -17,8 +17,8 @@ class RedirectIfAuthenticatedCustomer
      */
     public function handle(Request $request, Closure $next)
     {
-        // Cek jika user sudah login (baik melalui session atau auth)
-        if (Auth::guard('customer')->check()) {
+        // Cek jika user sudah login melalui session (customer menggunakan session-based auth)
+        if (session()->has('user')) {
             return redirect()->route('customer.beranda');
         }
 
