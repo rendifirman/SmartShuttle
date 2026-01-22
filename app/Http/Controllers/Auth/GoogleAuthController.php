@@ -98,7 +98,8 @@ class GoogleAuthController extends Controller
             }
 
             // Login user (langsung masuk ke beranda)
-            Auth::login($user, true);
+            Auth::guard('customer')->login($user, true);
+
 
             // Regenerate session to persist authentication immediately
             try {
@@ -107,16 +108,7 @@ class GoogleAuthController extends Controller
                 \Log::warning('Session regeneration failed after Google login', ['error' => $e->getMessage()]);
             }
 
-            // Set session untuk customer
-            session()->put('user', [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'avatar' => $user->avatar_url,
-                'membership_status' => $user->membership_status,
-                'membership_level' => $user->membership_level,
-            ]);
+          
 
             // Debug logs to help diagnose session/auth persistence issues
             try {

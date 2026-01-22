@@ -17,13 +17,8 @@ class RedirectIfAuthenticatedCustomer
      */
     public function handle(Request $request, Closure $next)
     {
-        // Pastikan session sudah dimulai untuk semua request (penting untuk CSRF)
-        if (!session()->isStarted()) {
-            session()->start();
-        }
-
         // Cek jika user sudah login (baik melalui session atau auth)
-        if (Auth::check()) {
+        if (Auth::guard('customer')->check()) {
             return redirect()->route('customer.beranda');
         }
 

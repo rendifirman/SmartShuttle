@@ -109,6 +109,15 @@ Route::post('/customer/cek-reservasi', [CekReservasiController::class, 'proses']
 Route::get('/customer/cek-reservasi/hasil/{kode}', [CekReservasiController::class, 'hasil'])
     ->name('customer.cek-reservasi.hasil');
 
+Route::middleware(['ensure.session'])->group(function () {
+    Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])
+        ->name('login.google');
+
+    Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
+        ->name('login.google.callback');
+});
+
+
 // ★★★ AUTH ROUTES - HANYA UNTUK TAMU ★★★
 Route::middleware(['ensure.session', 'guest.customer'])->group(function () {
     // Login/Register tradisional
@@ -117,11 +126,6 @@ Route::middleware(['ensure.session', 'guest.customer'])->group(function () {
     Route::get('/customer/register', [CustomerController::class, 'showRegister'])->name('customer.register');
     Route::post('/customer/register', [CustomerController::class, 'register'])->name('customer.register.post');
 
-    // Google OAuth
-    Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])
-        ->name('login.google');
-    Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
-        ->name('login.google.callback');
 
     // Password reset
     Route::prefix('password')->group(function () {
