@@ -18,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\EnsureCsrfTokenInResponse::class,
         ]);
 
+        // Remove ValidatePathEncoding for OAuth callback
+        $middleware->remove(\Illuminate\Http\Middleware\ValidatePathEncoding::class);
+
         $middleware->alias([
             'admin.role' => \App\Http\Middleware\CheckAdminRole::class,
             'branch.access' => \App\Http\Middleware\CheckBranchAccess::class,

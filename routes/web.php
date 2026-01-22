@@ -109,14 +109,14 @@ Route::post('/customer/cek-reservasi', [CekReservasiController::class, 'proses']
 Route::get('/customer/cek-reservasi/hasil/{kode}', [CekReservasiController::class, 'hasil'])
     ->name('customer.cek-reservasi.hasil');
 
-Route::middleware('web')->group(function () {
-    Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])
-        ->name('login.google');
+// Google OAuth Routes - bypass ValidatePathEncoding middleware
+Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])
+    ->middleware('web')
+    ->name('login.google');
 
-    Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
-        ->withoutMiddleware('Illuminate\Http\Middleware\ValidatePathEncoding')
-        ->name('login.google.callback');
-});
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
+    ->middleware(['session', 'cookie', 'cookie.encrypt', 'cookie.queue'])
+    ->name('login.google.callback');
 
 
 
