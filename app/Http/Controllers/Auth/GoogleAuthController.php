@@ -16,10 +16,7 @@ class GoogleAuthController extends Controller
     public function redirectToGoogle()
     {
         return Socialite::driver('google')
-    ->stateless()
-    ->with(['prompt' => 'select_account'])
-    ->redirect();
-
+            ->redirect();
     }
 
     public function handleGoogleCallback(Request $request)
@@ -33,7 +30,7 @@ class GoogleAuthController extends Controller
                 throw new \Exception('Authorization code not found');
             }
 
-           $googleUser = Socialite::driver('google')->stateless()->user();
+            $googleUser = Socialite::driver('google')->user();
 
 
             \Log::info('Google OAuth Response:', [

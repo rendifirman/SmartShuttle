@@ -650,7 +650,7 @@ class PaylabsService
     /**
      * Generate signature for Paylabs v2.3 - PERBAIKAN BESAR
      */
-    private function generateSignatureV23($requestData, $timestamp, $endpointPath)
+    public function generateSignatureV23($requestData, $timestamp, $endpointPath)
     {
         try {
             // Log request data untuk debugging
