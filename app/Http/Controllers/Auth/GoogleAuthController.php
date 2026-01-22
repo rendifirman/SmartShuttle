@@ -97,18 +97,27 @@ class GoogleAuthController extends Controller
                     ->withErrors('Akun Anda dinonaktifkan. Silakan hubungi administrator.');
             }
 
-            // Login user (langsung masuk ke beranda)
-            Auth::guard('customer')->login($user, true);
+            // Login user using Auth::guard('web') dan session storage
+            Auth::guard('web')->login($user, true);
 
+            // Store user data di session seperti CustomerController
+            session()->put('user', [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'avatar' => $user->avatar_url,
+                'membership_status' => $user->membership_status,
+                'membership_level' => $user->membership_level,
+            ]);
 
             // Regenerate session to persist authentication immediately
             try {
                 session()->regenerate();
+                session()->save();
             } catch (\Exception $e) {
-                \Log::warning('Session regeneration failed after Google login', ['error' => $e->getMessage()]);
+                \Log::warning('Session regeneration/save failed after Google login', ['error' => $e->getMessage()]);
             }
-
-          
 
             // Debug logs to help diagnose session/auth persistence issues
             try {
