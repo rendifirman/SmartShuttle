@@ -272,31 +272,33 @@
             display: none;
             background: #0d3559;
             color: white;
-            padding: 15px 20px;
+            padding: 0 15px;
             font-size: 18px;
             font-weight: bold;
-            position: sticky;
+            position: fixed;
             top: 0;
-            z-index: 1001;
+            left: 0;
+            width: 100%;
+            z-index: 1100;
             box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-            align-items: center;
-            justify-content: space-between;
             height: 60px;
+            align-items: center;
         }
 
         .mobile-header-content {
             display: flex;
             align-items: center;
-            width: 100%;
             justify-content: space-between;
+            width: 100%;
         }
 
         .mobile-logo {
             color: #ff6a00;
             font-size: 16px;
             font-weight: bold;
-            margin-left: 10px;
             flex: 1;
+            text-align: center;
+            padding-right: 40px;
         }
 
         .mobile-hamburger {
@@ -312,6 +314,8 @@
             justify-content: center;
             border-radius: 5px;
             transition: background-color 0.3s ease;
+            z-index: 1101;
+            position: relative;
         }
 
         .mobile-hamburger:hover {
@@ -454,12 +458,11 @@
         @media (max-width: 480px) {
             .mobile-header {
                 height: 55px;
-                padding: 12px 15px;
+                padding: 0 12px;
             }
 
             .mobile-logo {
                 font-size: 14px;
-                margin-left: 8px;
             }
 
             .mobile-hamburger {
@@ -526,7 +529,6 @@
             <i class="fas fa-bars"></i>
         </button>
         <span class="mobile-logo">SMART SHUTTLE {{ Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasRole('admin_pusat') ? 'ADMIN PUSAT' : 'ADMIN CABANG' }}</span>
-        <div style="width: 40px;"></div>
     </div>
 </div>
 
@@ -604,6 +606,10 @@
                 <i class="fas fa-route submenu-icon"></i>
                 <span>Rute</span>
             </a>
+            <a href="{{ route('admin.jadwal') }}" class="submenu-item" id="jadwal-link">
+                <i class="fas fa-calendar-alt submenu-icon"></i>
+                <span>Jadwal</span>
+            </a>
         </div>
 
         <!-- Transaksi (with submenu) -->
@@ -616,24 +622,18 @@
         </div>
 
         <div class="submenu" id="transaksi-submenu">
-            <div class="submenu-item" id="tiket-toggle">
-                <div class="menu-left">
-                    <i class="fas fa-ticket-alt submenu-icon"></i>
-                    <span>Tiket</span>
-                </div>
-                <i class="fas fa-chevron-right submenu-arrow"></i>
-            </div>
-
-            <div class="submenu nested-submenu" id="tiket-submenu">
-                <a href="{{ route('admin.tiket-perjalanan') }}" class="submenu-item" id="tiket-perjalanan-link">
-                    <i class="fas fa-route submenu-icon"></i>
-                    <span>Perjalanan</span>
-                </a>
-                <a href="{{ route('admin.tiket-armada') }}" class="submenu-item" id="tiket-armada-link">
-                    <i class="fas fa-bus submenu-icon"></i>
-                    <span>Armada</span>
-                </a>
-            </div>
+            <a href="{{ route('admin.smartsend-transaksi') }}" class="submenu-item" id="smartsend-transaksi-link">
+                <i class="fas fa-shopping-cart submenu-icon"></i>
+                <span>Smartsend</span>
+            </a>
+            <a href="{{ route('admin.perjalanan') }}" class="submenu-item" id="perjalanan-link">
+                <i class="fas fa-route submenu-icon"></i>
+                <span>Perjalanan</span>
+            </a>
+            <a href="{{ route('admin.armada-transaksi') }}" class="submenu-item" id="armada-transaksi-link">
+                <i class="fas fa-bus submenu-icon"></i>
+                <span>Armada</span>
+            </a>
         </div>
 
         <!-- SmartSend (with submenu) -->
@@ -749,8 +749,10 @@
         'driver': { title: 'Master Data - Driver', icon: 'fas fa-user-tie' },
         'pegawai': { title: 'Master Data - Pegawai', icon: 'fas fa-users' },
         'rute': { title: 'Master Data - Rute', icon: 'fas fa-route' },
-        'tiket-perjalanan': { title: 'Transaksi Tiket - Perjalanan', icon: 'fas fa-route' },
-        'tiket-armada': { title: 'Transaksi Tiket - Armada', icon: 'fas fa-bus' },
+        'jadwal': { title: 'Master Data - Jadwal', icon: 'fas fa-calendar-alt' },
+        'smartsend-transaksi': { title: 'Transaksi - SmartSend', icon: 'fas fa-shopping-cart' },
+        'perjalanan': { title: 'Transaksi - Perjalanan', icon: 'fas fa-route' },
+        'armada-transaksi': { title: 'Transaksi - Armada', icon: 'fas fa-bus' },
         'smartsend-tiket': { title: 'SmartSend - Tiket', icon: 'fas fa-ticket-alt' },
         'smartsend-perjalanan': { title: 'SmartSend - Perjalanan', icon: 'fas fa-route' },
         'smartsend-armada': { title: 'SmartSend - Armada', icon: 'fas fa-bus' },
@@ -897,7 +899,7 @@
             document.getElementById('artikel-link').classList.add('active');
             updatePageTitle('artikel');
         }
-        else if (currentPath.includes('armada')) {
+        else if (currentPath.includes('armada') && !currentPath.includes('armada-transaksi')) {
             // Buka submenu master data
             const masterDataSubmenu = document.getElementById('master-data-submenu');
             const masterDataArrow = document.getElementById('master-data-toggle').querySelector('.menu-arrow');
@@ -937,39 +939,51 @@
             document.getElementById('rute-link').classList.add('active');
             updatePageTitle('rute');
         }
+        else if (currentPath.includes('jadwal')) {
+            // Buka submenu master data
+            const masterDataSubmenu = document.getElementById('master-data-submenu');
+            const masterDataArrow = document.getElementById('master-data-toggle').querySelector('.menu-arrow');
+            masterDataSubmenu.classList.add('open');
+            masterDataArrow.classList.add('rotated');
 
-        // Transaksi
-        else if (currentPath.includes('tiket-perjalanan')) {
-            // Buka submenu transaksi
-            const transaksiSubmenu = document.getElementById('transaksi-submenu');
-            const transaksiArrow = document.getElementById('transaksi-toggle').querySelector('.menu-arrow');
-            transaksiSubmenu.classList.add('open');
-            transaksiArrow.classList.add('rotated');
-
-            // Buka nested submenu tiket
-            const tiketSubmenu = document.getElementById('tiket-submenu');
-            const tiketArrow = document.getElementById('tiket-toggle').querySelector('.submenu-arrow');
-            tiketSubmenu.classList.add('open');
-            tiketArrow.classList.add('rotated');
-
-            document.getElementById('tiket-perjalanan-link').classList.add('active');
-            updatePageTitle('tiket-perjalanan');
+            document.getElementById('jadwal-link').classList.add('active');
+            updatePageTitle('jadwal');
         }
-        else if (currentPath.includes('tiket-armada')) {
+
+        // Transaksi - Smartsend (termasuk tiket-perjalanan untuk backward compatibility)
+        else if (currentPath.includes('smartsend-transaksi')) {
             // Buka submenu transaksi
             const transaksiSubmenu = document.getElementById('transaksi-submenu');
             const transaksiArrow = document.getElementById('transaksi-toggle').querySelector('.menu-arrow');
             transaksiSubmenu.classList.add('open');
             transaksiArrow.classList.add('rotated');
 
-            // Buka nested submenu tiket
-            const tiketSubmenu = document.getElementById('tiket-submenu');
-            const tiketArrow = document.getElementById('tiket-toggle').querySelector('.submenu-arrow');
-            tiketSubmenu.classList.add('open');
-            tiketArrow.classList.add('rotated');
+            document.getElementById('smartsend-transaksi-link').classList.add('active'); // ID diubah
+            updatePageTitle('smartsend-transaksi'); // Key diubah
+        }
+        // Transaksi - Perjalanan
+        else if (currentPath.includes('perjalanan') && 
+                !currentPath.includes('tiket-perjalanan') && 
+                !currentPath.includes('smartsend-perjalanan')) {
+            // Buka submenu transaksi
+            const transaksiSubmenu = document.getElementById('transaksi-submenu');
+            const transaksiArrow = document.getElementById('transaksi-toggle').querySelector('.menu-arrow');
+            transaksiSubmenu.classList.add('open');
+            transaksiArrow.classList.add('rotated');
 
-            document.getElementById('tiket-armada-link').classList.add('active');
-            updatePageTitle('tiket-armada');
+            document.getElementById('perjalanan-link').classList.add('active');
+            updatePageTitle('perjalanan');
+        }
+        // Transaksi - Armada (termasuk tiket-armada untuk backward compatibility)
+        else if (currentPath.includes('armada-transaksi') || currentPath.includes('tiket-armada')) {
+            // Buka submenu transaksi
+            const transaksiSubmenu = document.getElementById('transaksi-submenu');
+            const transaksiArrow = document.getElementById('transaksi-toggle').querySelector('.menu-arrow');
+            transaksiSubmenu.classList.add('open');
+            transaksiArrow.classList.add('rotated');
+
+            document.getElementById('armada-transaksi-link').classList.add('active');
+            updatePageTitle('armada-transaksi');
         }
 
         // SmartSend
@@ -1093,7 +1107,6 @@
         // Di sini Anda bisa menambahkan logika logout yang sesuai
         // Contoh: Menggunakan Laravel's built-in logout
 
-
         // Untuk saat ini, kita hanya akan menunjukkan pesan
         alert('Logout berhasil! Mengarahkan ke halaman login...');
 
@@ -1121,11 +1134,6 @@
 
         document.getElementById('setting-toggle').addEventListener('click', function() {
             toggleSubmenu('setting-submenu', this.querySelector('.menu-arrow'));
-        });
-
-        // Event listener untuk nested submenu tiket
-        document.getElementById('tiket-toggle').addEventListener('click', function() {
-            toggleNestedSubmenu('tiket-toggle', 'tiket-submenu');
         });
 
         // Logout functionality
@@ -1171,7 +1179,12 @@
         const overlay = document.getElementById('overlay');
         const menuLinks = document.querySelectorAll('.menu-item, .submenu-item');
 
-        mobileHamburgerBtn.addEventListener('click', toggleSidebar);
+        // Pastikan hamburger button bisa di-klik
+        mobileHamburgerBtn.addEventListener('click', function(e) {
+            e.stopPropagation(); // Mencegah event bubbling
+            toggleSidebar();
+        });
+
         overlay.addEventListener('click', closeSidebar);
 
         // Close sidebar when clicking a link on mobile
@@ -1204,7 +1217,13 @@
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
                 closeSidebar();
+                hideLogoutModal();
             }
+        });
+
+        // Mencegah klik pada sidebar menutup sidebar itu sendiri
+        document.getElementById('sidebar').addEventListener('click', function(e) {
+            e.stopPropagation();
         });
     });
 </script>

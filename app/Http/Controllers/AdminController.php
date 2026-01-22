@@ -1024,15 +1024,21 @@ class AdminController extends Controller
     }
 
     // Transaksi Methods
-    public function tiketPerjalanan()
+    public function smartsendTransaksi()
     {
-        return view('admin.tiket-perjalanan');
+        return view('admin.transaksi.smartsend');
     }
 
-    public function tiketArmada()
+    public function perjalanan()
     {
-        return view('admin.tiket-armada');
+        return view('admin.transaksi.perjalanan');
     }
+
+    public function armadaTransaksi()
+    {
+        return view('admin.transaksi.armada');
+    }
+
 
     // SmartSend Methods
     public function smartsendTiket()

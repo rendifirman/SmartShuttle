@@ -37,6 +37,7 @@
         box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         margin-bottom: 30px;
         display: none; /* Sembunyikan form edit awal */
+        width: 100%;
     }
 
     .form-card.show {
@@ -60,6 +61,9 @@
         font-size: 15px;
         background: rgba(255, 255, 255, 0.95);
         color: #333;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
     }
 
     .form-card input:focus {
@@ -77,7 +81,8 @@
     }
 
     button[type="submit"] {
-        width: 200px;
+        width: 100%;
+        max-width: 200px;
         margin-top: 30px;
         padding: 14px;
         background: #FF6B2C;
@@ -91,6 +96,7 @@
         margin-left: auto;
         margin-right: auto;
         transition: background 0.3s, transform 0.2s;
+        -webkit-tap-highlight-color: transparent;
     }
 
     button[type="submit"]:hover {
@@ -104,7 +110,8 @@
 
     /* Tombol Edit Profil */
     .edit-profile-btn {
-        width: 200px;
+        width: 100%;
+        max-width: 200px;
         padding: 14px;
         background: #FF6B2C;
         color: white;
@@ -116,6 +123,7 @@
         display: block;
         margin: 30px auto;
         transition: background 0.3s, transform 0.2s;
+        -webkit-tap-highlight-color: transparent;
     }
 
     .edit-profile-btn:hover {
@@ -130,17 +138,18 @@
     /* Additional info section */
     .profile-info-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        grid-template-columns: 1fr;
         gap: 20px;
         margin-bottom: 30px;
     }
 
     .info-card {
         background: #fff;
-        padding: 25px;
+        padding: 20px;
         border-radius: 8px;
         border: 1px solid #ddd;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        width: 100%;
     }
 
     .info-card h4 {
@@ -154,10 +163,11 @@
 
     .info-item {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
+        align-items: flex-start;
         padding: 12px 0;
         border-bottom: 1px solid #eee;
+        width: 100%;
     }
 
     .info-item:last-child {
@@ -167,13 +177,15 @@
     .info-label {
         font-weight: 600;
         color: #00274D;
-        min-width: 150px;
+        width: 100%;
+        margin-bottom: 5px;
     }
 
     .info-value {
         color: #666;
-        flex: 1;
-        text-align: right;
+        width: 100%;
+        text-align: left;
+        word-break: break-word;
     }
 
     .data-empty {
@@ -196,10 +208,11 @@
     /* Action buttons */
     .action-buttons {
         display: flex;
+        flex-direction: column;
         gap: 15px;
         margin-top: 20px;
         justify-content: center;
-        flex-wrap: wrap;
+        width: 100%;
     }
 
     .btn-secondary {
@@ -211,11 +224,12 @@
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s;
-        min-width: 200px;
+        width: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
+        -webkit-tap-highlight-color: transparent;
     }
 
     .btn-secondary:hover {
@@ -226,13 +240,16 @@
     /* Profile header with avatar */
     .profile-header {
         display: flex;
+        flex-direction: column;
         align-items: center;
+        text-align: center;
         gap: 20px;
         margin-bottom: 20px;
         padding: 20px;
         background: #fff;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        width: 100%;
     }
 
     .profile-avatar {
@@ -259,18 +276,20 @@
     }
 
     .profile-header-info {
-        flex: 1;
+        width: 100%;
     }
 
     .profile-header-info h2 {
-        font-size: 28px;
+        font-size: 24px;
         color: #00274D;
         margin-bottom: 5px;
+        line-height: 1.3;
     }
 
     .profile-header-info p {
         color: #666;
         font-size: 16px;
+        line-height: 1.4;
     }
 
     .avatar-edit-btn {
@@ -283,7 +302,11 @@
         transition: background 0.3s;
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 5px;
+        margin: 10px 0 5px;
+        -webkit-tap-highlight-color: transparent;
+        width: auto;
     }
 
     .avatar-edit-btn:hover {
@@ -301,8 +324,11 @@
         transition: background 0.3s;
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 5px;
-        margin-left: 10px;
+        margin: 5px 0;
+        -webkit-tap-highlight-color: transparent;
+        width: auto;
     }
 
     .avatar-delete-btn:hover {
@@ -320,6 +346,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
+        width: 100%;
     }
 
     .success-message i {
@@ -334,6 +361,7 @@
         border-radius: 6px;
         margin-bottom: 20px;
         border: 1px solid #f5c6cb;
+        width: 100%;
     }
 
     .alert-danger ul {
@@ -350,6 +378,8 @@
         padding: 2px 8px;
         border-radius: 4px;
         border: 1px dashed #ff6b6b;
+        display: inline-block;
+        margin-top: 2px;
     }
 
     /* Cancel edit button */
@@ -362,12 +392,14 @@
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s;
-        min-width: 200px;
+        width: 100%;
+        max-width: 200px;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
         margin: 0 auto 30px;
+        -webkit-tap-highlight-color: transparent;
     }
 
     .cancel-edit-btn:hover {
@@ -380,6 +412,7 @@
         position: relative;
         overflow: hidden;
         display: inline-block;
+        width: auto;
     }
 
     .file-input {
@@ -395,9 +428,11 @@
     /* Avatar buttons container */
     .avatar-buttons {
         display: flex;
+        flex-direction: column;
         gap: 10px;
         justify-content: center;
         margin-top: 10px;
+        width: 100%;
     }
 
     /* Loading overlay */
@@ -420,76 +455,206 @@
         font-size: 2rem;
     }
 
-    /* Responsive untuk layar kecil */
-    @media (max-width: 768px) {
-        .profile-box h3 {
-            font-size: 28px;
-        }
-
-        .profile-header {
-            flex-direction: column;
-            text-align: center;
-        }
-
-        .profile-info-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .info-item {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 5px;
-        }
-
-        .info-value {
-            text-align: left;
-            width: 100%;
-        }
-
-        .action-buttons {
-            flex-direction: column;
-        }
-
-        button[type="submit"], .btn-secondary, .edit-profile-btn, .cancel-edit-btn {
-            width: 100%;
-        }
-
-        .avatar-buttons {
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .avatar-delete-btn {
-            margin-left: 0;
-            margin-top: 5px;
-        }
-    }
-
-    /* Grid layout for form */
-    .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-
-    @media (max-width: 768px) {
-        .form-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
     /* Form note */
     .form-note {
         font-size: 14px;
         color: rgba(255, 255, 255, 0.8);
         margin-top: 5px;
         font-style: italic;
+        display: block;
     }
 
     /* Required field indicator */
     .required::after {
         content: ' *';
         color: #ff6b6b;
+    }
+
+    /* Form grid */
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    /* Mobile-specific styles */
+    @media (max-width: 768px) {
+        .profile-box h3 {
+            font-size: 24px;
+        }
+
+        .profile-box p {
+            font-size: 16px;
+        }
+
+        .form-card {
+            padding: 20px;
+        }
+
+        .form-card label {
+            font-size: 15px;
+        }
+
+        .form-card input {
+            padding: 12px;
+            font-size: 14px;
+        }
+
+        button[type="submit"],
+        .edit-profile-btn,
+        .cancel-edit-btn {
+            padding: 12px;
+            font-size: 15px;
+        }
+
+        .info-card h4 {
+            font-size: 18px;
+        }
+
+        .info-label,
+        .info-value {
+            font-size: 14px;
+        }
+
+        .profile-header-info h2 {
+            font-size: 22px;
+        }
+
+        .btn-secondary {
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+    }
+
+    /* Tablet and desktop styles */
+    @media (min-width: 769px) {
+        .profile-info-grid {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .action-buttons {
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+
+        .btn-secondary {
+            width: auto;
+            min-width: 200px;
+            flex: 1;
+        }
+
+        .profile-header {
+            flex-direction: row;
+            text-align: left;
+        }
+
+        .profile-header-info {
+            flex: 1;
+        }
+
+        .avatar-buttons {
+            flex-direction: row;
+        }
+
+        .avatar-delete-btn {
+            margin-left: 10px;
+        }
+
+        .info-item {
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .info-label {
+            width: 150px;
+            margin-bottom: 0;
+        }
+
+        .info-value {
+            text-align: right;
+            flex: 1;
+        }
+    }
+
+    /* Very small mobile devices */
+    @media (max-width: 374px) {
+        .profile-box {
+            padding: 20px;
+        }
+
+        .profile-box h3 {
+            font-size: 22px;
+        }
+
+        .form-card {
+            padding: 15px;
+        }
+
+        .profile-avatar,
+        .profile-avatar-initials {
+            width: 80px;
+            height: 80px;
+            font-size: 32px;
+        }
+
+        .profile-header-info h2 {
+            font-size: 20px;
+        }
+
+        button[type="submit"],
+        .edit-profile-btn,
+        .cancel-edit-btn,
+        .btn-secondary {
+            padding: 10px 16px;
+            font-size: 14px;
+        }
+    }
+
+    /* Landscape mode optimization */
+    @media (max-height: 600px) and (orientation: landscape) {
+        .profile-header {
+            flex-direction: row;
+            padding: 15px;
+        }
+
+        .avatar-buttons {
+            flex-direction: row;
+            justify-content: center;
+        }
+
+        .action-buttons {
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+
+        .btn-secondary {
+            min-width: 180px;
+        }
+    }
+
+    /* Touch-friendly styles */
+    button, 
+    .btn-secondary,
+    .edit-profile-btn,
+    .cancel-edit-btn,
+    .avatar-edit-btn,
+    .avatar-delete-btn {
+        min-height: 44px; /* Minimum touch target size */
+        touch-action: manipulation;
+    }
+
+    input, textarea {
+        font-size: 16px; /* Prevent iOS zoom on focus */
+    }
+
+    /* Smooth scrolling for mobile */
+    html {
+        scroll-behavior: smooth;
     }
 </style>
 @endpush
@@ -526,23 +691,32 @@
     <div style="position: relative; text-align: center;">
         @php
             // Menggunakan method getAvatarOrInitials dari model User
+            $user = Auth::user();
             $avatarData = $user->getAvatarOrInitials();
         @endphp
         
-        @if($avatarData['has_avatar'])
-            <img src="{{ $avatarData['avatar_url'] }}" 
-                 alt="Profile Picture" 
-                 class="profile-avatar"
-                 id="avatarImage"
-                 onerror="this.onerror=null; this.style.display='none'; document.getElementById('avatarInitials').style.display='flex';">
-            <div class="profile-avatar-initials" id="avatarInitials" style="display: none;">
-                {{ $avatarData['initials'] }}
-            </div>
-        @else
-            <div class="profile-avatar-initials" id="avatarInitials">
-                {{ $avatarData['initials'] }}
-            </div>
-        @endif
+        <!-- Avatar Container -->
+        <div id="avatarContainer">
+            @if($avatarData['has_avatar'])
+                <img src="{{ $avatarData['avatar_url'] }}" 
+                     alt="Profile Picture" 
+                     class="profile-avatar"
+                     id="avatarImage"
+                     onerror="this.onerror=null; this.style.display='none'; document.getElementById('avatarInitials').style.display='flex';">
+                <div class="profile-avatar-initials" id="avatarInitials" style="display: none;">
+                    {{ $avatarData['initials'] }}
+                </div>
+            @else
+                <div class="profile-avatar-initials" id="avatarInitials">
+                    {{ $avatarData['initials'] }}
+                </div>
+                <img src="{{ $avatarData['avatar_url'] }}" 
+                     alt="Profile Picture" 
+                     class="profile-avatar"
+                     id="avatarImage"
+                     style="display: none;">
+            @endif
+        </div>
         
         <!-- Form upload avatar (hidden) -->
         <form id="avatarUploadForm" style="display: none;" enctype="multipart/form-data">
@@ -767,6 +941,9 @@
         const editProfileForm = document.getElementById('editProfileForm');
         const loadingOverlay = document.getElementById('loadingOverlay');
 
+        // Mobile detection
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
         // Show edit form when button is clicked
         if (showEditFormBtn) {
             showEditFormBtn.addEventListener('click', function() {
@@ -780,7 +957,13 @@
                 editProfileForm.classList.add('show');
 
                 // Scroll to form
-                editProfileForm.scrollIntoView({ behavior: 'smooth' });
+                if (isMobile) {
+                    setTimeout(() => {
+                        editProfileForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                } else {
+                    editProfileForm.scrollIntoView({ behavior: 'smooth' });
+                }
             });
         }
 
@@ -797,7 +980,13 @@
                 editProfileForm.classList.remove('show');
 
                 // Scroll back to top
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                if (isMobile) {
+                    setTimeout(() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }, 100);
+                } else {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
             });
         }
 
@@ -878,35 +1067,53 @@
         }
 
         // Avatar upload handling
-        document.getElementById('avatarInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            // Validasi file
-            if (file.size > 2 * 1024 * 1024) {
-                alert('Ukuran file maksimal 2MB');
-                return;
+        const avatarInput = document.getElementById('avatarInput');
+        if (avatarInput) {
+            avatarInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                // Validasi file
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('Ukuran file maksimal 2MB');
+                    return;
+                }
+                
+                const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Format file harus JPG, PNG, GIF, atau WebP');
+                    return;
+                }
+                
+                // Upload via AJAX
+                uploadAvatar(file);
+            });
+        }
+
+        // Prevent form from keeping disabled state on page refresh
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                hideLoading();
             }
-            
-            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg'];
-            if (!validTypes.includes(file.type)) {
-                alert('Format file harus JPG, PNG, GIF, atau WebP');
-                return;
-            }
-            
-            // Upload via AJAX
-            uploadAvatar(file);
         });
     });
 
     // Show loading overlay
     function showLoading() {
-        document.getElementById('loadingOverlay').style.display = 'flex';
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
     }
 
     // Hide loading overlay
     function hideLoading() {
-        document.getElementById('loadingOverlay').style.display = 'none';
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
     }
 
     // Upload avatar function
@@ -937,8 +1144,9 @@
                 // Show success message
                 showSuccessMessage('Foto profil berhasil diupload!');
                 
-                // Reload halaman setelah 1.5 detik
+                // Hide loading and reload after delay
                 setTimeout(() => {
+                    hideLoading();
                     location.reload();
                 }, 1500);
             } else {
@@ -981,8 +1189,9 @@
                 // Show success message
                 showSuccessMessage('Foto profil berhasil dihapus!');
                 
-                // Reload halaman setelah 1.5 detik
+                // Hide loading and reload after delay
                 setTimeout(() => {
+                    hideLoading();
                     location.reload();
                 }, 1500);
             } else {
@@ -1013,7 +1222,9 @@
 
         // Insert success message at the top
         const profileHeader = document.querySelector('.profile-header');
-        profileHeader.parentNode.insertBefore(successMessage, profileHeader);
+        if (profileHeader && profileHeader.parentNode) {
+            profileHeader.parentNode.insertBefore(successMessage, profileHeader);
+        }
 
         // Auto remove message after 5 seconds
         setTimeout(() => {
@@ -1022,5 +1233,17 @@
             }
         }, 5000);
     }
+
+    // Handle mobile keyboard showing/hiding
+    window.addEventListener('resize', function() {
+        if (document.activeElement.tagName === 'INPUT') {
+            setTimeout(() => {
+                document.activeElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }, 300);
+        }
+    });
 </script>
 @endpush

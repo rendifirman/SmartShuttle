@@ -15,6 +15,7 @@ use App\Http\Controllers\Customer\CekReservasiController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ArtikelController;
 use App\Http\Controllers\Admin\ProfilePerusahaanController;
+use App\Http\Controllers\Admin\JadwalController;
 use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\PaylabsTestController;
@@ -310,6 +311,17 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     Route::get('/kontakperusahaan', [AdminController::class, 'kontakPerusahaan'])->name('admin.kontakperusahaan');
     Route::put('/kontakperusahaan/{id}', [AdminController::class, 'updateKontakPerusahaan'])->name('admin.kontak.update');
 
+    // ★★★ ROUTE JADWAL ★★★
+    Route::prefix('jadwal')->group(function () {
+        Route::get('/', [JadwalController::class, 'index'])->name('admin.jadwal');
+        Route::get('/create', [JadwalController::class, 'create'])->name('admin.jadwal.create');
+        Route::post('/', [JadwalController::class, 'store'])->name('admin.jadwal.store');
+        Route::get('/{jadwal}', [JadwalController::class, 'show'])->name('admin.jadwal.show');
+        Route::get('/{jadwal}/edit', [JadwalController::class, 'edit'])->name('admin.jadwal.edit');
+        Route::put('/{jadwal}', [JadwalController::class, 'update'])->name('admin.jadwal.update');
+        Route::delete('/{jadwal}', [JadwalController::class, 'destroy'])->name('admin.jadwal.destroy');
+    });
+
     // Rute CRUD
     Route::prefix('rute')->group(function () {
         Route::get('/', [AdminController::class, 'rute'])->name('admin.rute');
@@ -335,9 +347,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     Route::get('/driver', [AdminController::class, 'driver'])->name('admin.driver');
     Route::get('/pegawai', [AdminController::class, 'pegawai'])->name('admin.pegawai');
 
-    // Transaksi Routes
-    Route::get('/tiket-perjalanan', [AdminController::class, 'tiketPerjalanan'])->name('admin.tiket-perjalanan');
-    Route::get('/tiket-armada', [AdminController::class, 'tiketArmada'])->name('admin.tiket-armada');
+    // ★★★ TRANSAKSI ROUTES (DIPERBARUI) ★★★
+    Route::get('/smartsend-transaksi', [AdminController::class, 'smartsendTransaksi'])->name('admin.smartsend-transaksi');
+    Route::get('/perjalanan', [AdminController::class, 'perjalanan'])->name('admin.perjalanan');
+    Route::get('/armada-transaksi', [AdminController::class, 'armadaTransaksi'])->name('admin.armada-transaksi');
 
     // SmartSend Routes
     Route::get('/smartsend-tiket', [AdminController::class, 'smartsendTiket'])->name('admin.smartsend-tiket');

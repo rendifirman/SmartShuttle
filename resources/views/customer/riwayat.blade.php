@@ -330,7 +330,7 @@
     .filter-options {
         display: flex;
         gap: 15px;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
     }
     .filter-btn {
         padding: 8px 16px;
@@ -341,6 +341,7 @@
         cursor: pointer;
         transition: all 0.3s;
         font-size: 14px;
+        white-space: nowrap;
     }
     .filter-btn:hover {
         background: #e9ecef;
@@ -356,60 +357,236 @@
         gap: 15px;
     }
 
-    @media (max-width: 768px) {
-        .profile-box h3 {
-            font-size: 28px;
+    /* DESKTOP STYLES */
+    @media (min-width: 769px) {
+        .filter-options {
+            flex-wrap: wrap;
         }
+    }
+
+    /* MOBILE OPTIMIZATION */
+    @media (max-width: 768px) {
+        .profile-box {
+            padding: 20px;
+        }
+        
+        .profile-box h3 {
+            font-size: 24px;
+        }
+        
+        .profile-box p {
+            font-size: 16px;
+        }
+        
+        .filter-section {
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-title {
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .filter-options {
+            flex-direction: row;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            gap: 10px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            flex-wrap: nowrap;
+        }
+        
+        .filter-options::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .filter-btn {
+            padding: 8px 14px;
+            font-size: 13px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            border-radius: 18px;
+        }
+        
         .order-header {
             flex-direction: column;
+            align-items: flex-start;
         }
+        
         .order-status {
             align-items: flex-start;
             margin-top: 20px;
-            flex-direction: row;
-            justify-content: space-between;
+            flex-direction: column;
             width: 100%;
+            gap: 15px;
         }
+        
         .button-qr-container {
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
             width: 100%;
+            align-items: stretch;
         }
-        .ticket-container, .qr-modal-box {
-            width: 95%;
-        }
-        .filter-options {
-            flex-direction: column;
-        }
+        
         .cek-tiket-btn,
         .qr-container {
             width: 100%;
+            justify-content: center;
+            text-align: center;
         }
+        
         .qr-container {
             min-width: unset;
             height: 130px;
+            padding: 10px;
         }
+        
         .qr-thumbnail {
             width: 90px;
             height: 90px;
         }
+        
+        .route {
+            font-size: 18px;
+        }
+        
+        .date, .time, .passengers {
+            font-size: 14px;
+        }
+        
+        .order-item {
+            padding: 20px;
+        }
+        
+        .status {
+            padding: 7px 15px;
+            font-size: 13px;
+        }
+        
+        .ticket-container, .qr-modal-box {
+            width: 95%;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .profile-box {
+            padding: 18px;
+        }
+        
+        .profile-box h3 {
+            font-size: 22px;
+        }
+        
+        .filter-btn {
+            padding: 7px 12px;
+            font-size: 12px;
+        }
+        
+        .order-item {
+            padding: 18px;
+        }
+        
+        .route {
+            font-size: 17px;
+            line-height: 1.3;
+        }
+        
+        .qr-container {
+            height: 120px;
+        }
+        
+        .qr-thumbnail {
+            width: 85px;
+            height: 85px;
+        }
+        
+        .qr-code {
+            font-size: 11px;
+        }
+        
+        .status {
+            padding: 6px 14px;
+            font-size: 12px;
+        }
+        
+        .cek-tiket-btn {
+            padding: 10px 16px;
+            font-size: 14px;
+        }
+        
         .qr-modal-img {
             width: 200px;
             height: 200px;
         }
     }
 
-    @media (max-width: 480px) {
-        .qr-container {
-            height: 120px;
+    /* Untuk tampilan yang sangat kecil (iPhone SE dll) */
+    @media (max-width: 375px) {
+        .filter-btn {
+            padding: 6px 10px;
+            font-size: 11px;
         }
+        
+        .order-item {
+            padding: 16px;
+        }
+        
+        .route {
+            font-size: 16px;
+        }
+        
+        .qr-container {
+            height: 110px;
+        }
+        
         .qr-thumbnail {
             width: 80px;
             height: 80px;
         }
+        
+        .date, .time, .passengers {
+            font-size: 13px;
+        }
+        
         .qr-modal-img {
             width: 180px;
             height: 180px;
+        }
+    }
+
+    /* Untuk Galaxy Fold & device sangat kecil */
+    @media (max-width: 320px) {
+        .profile-box h3 {
+            font-size: 20px;
+        }
+        
+        .profile-box p {
+            font-size: 14px;
+        }
+        
+        .filter-btn {
+            padding: 5px 8px;
+            font-size: 10px;
+        }
+        
+        .route {
+            font-size: 15px;
+        }
+        
+        .qr-container {
+            height: 100px;
+        }
+        
+        .qr-thumbnail {
+            width: 70px;
+            height: 70px;
+        }
+        
+        .cek-tiket-btn {
+            padding: 8px 14px;
+            font-size: 13px;
         }
     }
 </style>
@@ -713,6 +890,9 @@
 
         // setup modal ticket events
         setupModalEvents();
+        
+        // optimize mobile filter
+        optimizeMobileFilter();
     });
 
     // Set up click handler untuk membuka modal QR Code
@@ -995,30 +1175,78 @@
                 filterButtons.forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
                 filterOrders(filter);
+                
+                // Scroll filter ke posisi aktif di mobile
+                if (window.innerWidth <= 768) {
+                    setTimeout(() => {
+                        this.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'nearest',
+                            inline: 'center'
+                        });
+                    }, 100);
+                }
             });
         });
     }
 
     function filterOrders(status) {
         const allOrders = document.querySelectorAll('.order-item');
+        const allDividers = document.querySelectorAll('.divider');
+        
         allOrders.forEach(order => {
             if (status === 'all' || status === 'semua') {
                 order.style.display = '';
-                const nextDivider = order.nextElementSibling;
-                if (nextDivider && nextDivider.classList.contains('divider')) nextDivider.style.display = '';
             } else {
                 const orderStatus = order.getAttribute('data-status');
                 if (orderStatus === status) {
                     order.style.display = '';
-                    const nextDivider = order.nextElementSibling;
-                    if (nextDivider && nextDivider.classList.contains('divider')) nextDivider.style.display = '';
                 } else {
                     order.style.display = 'none';
-                    const nextDivider = order.nextElementSibling;
-                    if (nextDivider && nextDivider.classList.contains('divider')) nextDivider.style.display = 'none';
                 }
             }
         });
+        
+        // Hide/show dividers based on visible orders
+        allDividers.forEach((divider, index) => {
+            const prevOrder = divider.previousElementSibling;
+            const nextOrder = divider.nextElementSibling;
+            
+            if (prevOrder && nextOrder && 
+                prevOrder.style.display !== 'none' && 
+                nextOrder.style.display !== 'none' &&
+                prevOrder.classList.contains('order-item') && 
+                nextOrder.classList.contains('order-item')) {
+                divider.style.display = '';
+            } else {
+                divider.style.display = 'none';
+            }
+        });
     }
+
+    /* ------------------------------
+       Mobile optimization for filter
+       ------------------------------ */
+    function optimizeMobileFilter() {
+        if (window.innerWidth <= 768) {
+            const filterOptions = document.querySelector('.filter-options');
+            if (filterOptions) {
+                // Scroll filter ke posisi aktif
+                const activeBtn = filterOptions.querySelector('.filter-btn.active');
+                if (activeBtn) {
+                    setTimeout(() => {
+                        activeBtn.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'nearest',
+                            inline: 'center'
+                        });
+                    }, 100);
+                }
+            }
+        }
+    }
+
+    // Panggil saat halaman dimuat dan di-resize
+    window.addEventListener('resize', optimizeMobileFilter);
 </script>
 @endpush
