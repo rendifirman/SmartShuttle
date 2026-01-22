@@ -15,8 +15,34 @@ class GoogleAuthController extends Controller
 {
     public function redirectToGoogle()
     {
-        return Socialite::driver('google')
-            ->redirect();
+        try {
+            $clientId = config('services.google.client_id');
+            $redirectUri = config('services.google.redirect');
+            
+            if (!$clientId || !$redirectUri) {
+                \Log::error('Google OAuth credentials missing', [
+                    'has_client_id' => !empty($clientId),
+                    'has_redirect_uri' => !empty($redirectUri),
+                ]);
+                return redirect()->route('customer.login')
+                    ->withErrors('Konfigurasi Google OAuth belum lengkap. Hubungi administrator.');
+            }
+            
+            \Log::info('Google redirect initialized', [
+                'client_id' => substr($clientId, 0, 20) . '...',
+                'redirect_uri' => $redirectUri,
+            ]);
+            
+            return Socialite::driver('google')
+                ->redirect();
+        } catch (\Exception $e) {
+            \Log::error('Google redirect exception: ' . $e->getMessage(), [
+                'code' => $e->getCode(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->route('customer.login')
+                ->withErrors('Gagal mengarahkan ke Google. ' . $e->getMessage());
+        }
     }
 
     public function handleGoogleCallback(Request $request)

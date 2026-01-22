@@ -109,14 +109,12 @@ Route::post('/customer/cek-reservasi', [CekReservasiController::class, 'proses']
 Route::get('/customer/cek-reservasi/hasil/{kode}', [CekReservasiController::class, 'hasil'])
     ->name('customer.cek-reservasi.hasil');
 
-// Google OAuth Routes - simple without ValidatePathEncoding
-Route::middleware('web')->group(function () {
-    Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])
-        ->name('login.google');
+// Google OAuth Routes - minimal middleware for proper OAuth flow
+Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])
+    ->name('login.google');
 
-    Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
-        ->name('login.google.callback');
-});
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
+    ->name('login.google.callback');
 
 
 
