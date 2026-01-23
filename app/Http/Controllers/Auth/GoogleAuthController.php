@@ -136,7 +136,7 @@ class GoogleAuthController extends Controller
                         throw $e;
 
                     }
-                    
+
                 }
             }
 
@@ -148,7 +148,7 @@ class GoogleAuthController extends Controller
             }
 
             // Login user using Auth::guard('web') dan session storage
-            Auth::guard('web')->login($user, true);
+            Auth::guard('customer')->login($user, true);
 
             // Store user data di session seperti CustomerController
             session()->put('user', [
@@ -172,8 +172,8 @@ class GoogleAuthController extends Controller
             // Debug logs to help diagnose session/auth persistence issues
             try {
                 \Log::info('Post-GoogleLogin debug', [
-                    'auth_check' => Auth::check(),
-                    'auth_user_id' => Auth::id(),
+                    'auth_check' => Auth::guard('customer')->check(),
+                    'auth_user_id' => Auth::guard('customer')->id(),
                     'session_id' => session()->getId(),
                     'session_user' => session()->get('user')
                 ]);
@@ -218,7 +218,8 @@ class GoogleAuthController extends Controller
 
     public function logout(Request $request)
     {
-        Auth::logout();
+        Auth::guard('customer')->logout();
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
