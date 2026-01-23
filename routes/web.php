@@ -166,7 +166,7 @@ Route::delete('/customer/avatar/delete', [CustomerController::class, 'deleteAvat
 // ============================================================
 
 // ★★★ ROUTES YANG BUTUH LOGIN ★★★
-Route::middleware(['auth.customer'])->group(function () {
+Route::middleware(['auth:web'])->group(function () {
 
     // ★★★ PROFIL & DASHBOARD ★★★
     Route::get('/customer/dashboardprofile', [CustomerController::class, 'profil'])->name('customer.dashboardprofile');
