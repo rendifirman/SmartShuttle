@@ -37,7 +37,11 @@ class GoogleAuthController extends Controller
             }
 
             \Log::info('Redirecting to Google OAuth');
-            return Socialite::driver('google')->redirect();
+            // Gunakan scopes dan prompt untuk menampilkan halaman pemilihan akun
+            return Socialite::driver('google')
+                ->scopes(['profile', 'email'])
+                ->with(['prompt' => 'select_account'])
+                ->redirect();
         } catch (\Exception $e) {
             \Log::error('Google redirect exception', [
                 'message' => $e->getMessage(),
@@ -52,6 +56,7 @@ class GoogleAuthController extends Controller
     public function handleGoogleCallback(Request $request)
     {
         try {
+
             // Decode query string to handle URL encoded parameters
             $code = $request->input('code');
             $state = $request->input('state');
@@ -129,7 +134,9 @@ class GoogleAuthController extends Controller
                         DB::rollBack();
                         \Log::error('Failed to create user via Google:', ['error' => $e->getMessage()]);
                         throw $e;
+
                     }
+                    
                 }
             }
 
