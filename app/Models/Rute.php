@@ -4,16 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Rute extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $table = 'rutes';
-
     protected $fillable = [
         'layanan_id',
+        'master_harga_id',
         'kode_rute',
         'nama_rute',
         'kota_asal',
@@ -22,94 +21,241 @@ class Rute extends Model
         'jarak',
         'harga_dasar',
         'rute_pemberhentian',
-        'status',
-        'created_by',
-        'updated_by',
-        'deleted_by'
+        'segment_details',
+        'status'
     ];
 
-    protected $appends = ['formatted_harga'];
+    protected $casts = [
+        'rute_pemberhentian' => 'array',
+        'segment_details' => 'array'
+    ];
 
-    // Relasi ke layanan
+    /**
+     * Relasi ke segments rute (untuk SmartSend)
+     * Segments menentukan outlet mana yang bisa pickup/drop di rute ini
+     */
+    public function segments()
+    {
+        return $this->hasMany(RuteSegment::class, 'rute_id', 'id')
+                    ->orderBy('urutan_segment', 'asc');
+    }
+
+    /**
+     * Relasi ke master harga
+     */
+    public function masterHarga()
+    {
+        return $this->belongsTo(MasterHarga::class);
+    }
+
+    /**
+     * Relasi ke layanan
+     */
     public function layanan()
     {
-        return $this->belongsTo(MLayanan::class, 'layanan_id', 'id_layanan');
+        return $this->belongsTo(MLayanan::class, 'layanan_id');
     }
 
-    public function jadwals()
+    /**
+     * Relasi ke shipments
+     */
+    public function shipments()
     {
-        return $this->hasMany(Jadwal::class, 'rute_id');
+        return $this->hasMany(Shipment::class);
     }
 
-    public function getPemberhentianArrayAttribute()
-    {
-        return $this->rute_pemberhentian ? json_decode($this->rute_pemberhentian, true) : [];
-    }
-
-    public function getFormattedHargaAttribute()
-    {
-        return 'Rp ' . number_format($this->harga_dasar, 0, ',', '.');
-    }
-
-    // Format durasi untuk display
-    public function getFormattedDurasiAttribute()
-    {
-        $parts = explode(':', $this->durasi);
-        if (count($parts) >= 2) {
-            $jam = intval($parts[0]);
-            $menit = intval($parts[1]);
-
-            $result = '';
-            if ($jam > 0) {
-                $result .= $jam . ' Jam';
-            }
-            if ($menit > 0) {
-                if ($jam > 0) $result .= ' ';
-                $result .= $menit . ' Menit';
-            }
-            return $result;
-        }
-        return $this->durasi;
-    }
-
-    // Scope untuk rute berdasarkan layanan
-    public function scopeByLayanan($query, $layananId)
-    {
-        return $query->where('layanan_id', $layananId);
-    }
-
-    // Scope untuk rute aktif
+    /**
+     * Scope untuk rute aktif
+     */
     public function scopeAktif($query)
     {
         return $query->where('status', 'aktif');
     }
 
-    // Scope untuk search
-    public function scopeSearch($query, $search)
+    /**
+     * Cari rute berdasarkan outlet asal dan tujuan
+     */
+    public function scopeByOutlets($query, $outletAsal, $outletTujuan)
     {
-        return $query->where(function($q) use ($search) {
-            $q->where('kode_rute', 'like', '%' . $search . '%')
-              ->orWhere('nama_rute', 'like', '%' . $search . '%')
-              ->orWhere('kota_asal', 'like', '%' . $search . '%')
-              ->orWhere('kota_tujuan', 'like', '%' . $search . '%');
+        return $query->where(function($q) use ($outletAsal) {
+            $q->whereJsonContains('rute_pemberhentian', [['outlets' => [$outletAsal]]])
+              ->orWhere('kota_asal', $outletAsal);
+        })
+        ->where(function($q) use ($outletTujuan) {
+            $q->whereJsonContains('rute_pemberhentian', [['outlets' => [$outletTujuan]]])
+              ->orWhere('kota_tujuan', $outletTujuan);
         });
     }
 
-    // Relasi ke user yang membuat
-    public function creator()
+    /**
+     * Hitung jarak antara dua outlet dalam rute
+     */
+    public function hitungJarakOutlet($outletAsalNama, $outletTujuanNama)
     {
-        return $this->belongsTo(User::class, 'created_by');
+        $pemberhentian = $this->rute_pemberhentian ?? [];
+        
+        $foundAsal = false;
+        $foundTujuan = false;
+        $jarakKumulatif = 0;
+        $jarakAsalKeTujuan = 0;
+        
+        foreach ($pemberhentian as $stop) {
+            $outletsInStop = $stop['outlets'] ?? [];
+            
+            // Cek apakah outlet asal ada di stop ini
+            if (in_array($outletAsalNama, $outletsInStop)) {
+                $foundAsal = true;
+            }
+            
+            // Jika sudah menemukan asal, mulai hitung jarak
+            if ($foundAsal && !$foundTujuan) {
+                $jarakAsalKeTujuan += $stop['jarak_segment'] ?? 0;
+            }
+            
+            // Cek apakah outlet tujuan ada di stop ini
+            if (in_array($outletTujuanNama, $outletsInStop)) {
+                $foundTujuan = true;
+                break; // Berhenti setelah menemukan tujuan
+            }
+        }
+        
+        // Jika tidak ditemukan dalam rute pemberhentian, cek kota asal/tujuan utama
+        if (!$foundAsal && $this->kota_asal === $outletAsalNama) {
+            $foundAsal = true;
+        }
+        
+        if (!$foundTujuan && $this->kota_tujuan === $outletTujuanNama) {
+            $foundTujuan = true;
+            // Tambahkan jarak total jika tujuan adalah kota tujuan utama
+            $jarakAsalKeTujuan = $this->jarak_total ?? 0;
+        }
+        
+        return ($foundAsal && $foundTujuan) ? $jarakAsalKeTujuan : 0;
     }
 
-    // Relasi ke user yang update
-    public function updater()
+    /**
+     * Dapatkan outlet tujuan yang valid berdasarkan outlet asal
+     */
+    public static function getOutletTujuanValid($outletAsalId)
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        try {
+            $outletAsal = Outlet::with('branch')->find($outletAsalId);
+            if (!$outletAsal) {
+                return collect();
+            }
+            
+            $namaOutletAsal = $outletAsal->nama_outlet;
+            $kotaOutletAsal = $outletAsal->branch->kota ?? null;
+            
+            $semuaRute = self::aktif()->get();
+            $outletTujuanList = collect();
+            
+            foreach ($semuaRute as $rute) {
+                $pemberhentian = $rute->rute_pemberhentian ?? [];
+                $foundAsal = false;
+                
+                foreach ($pemberhentian as $stop) {
+                    $outletsInStop = $stop['outlets'] ?? [];
+                    
+                    // Cek apakah outlet asal ada di stop ini
+                    if (in_array($namaOutletAsal, $outletsInStop)) {
+                        $foundAsal = true;
+                    }
+                    
+                    // Jika ditemukan asal, kumpulkan outlet setelahnya
+                    if ($foundAsal) {
+                        foreach ($outletsInStop as $outletNama) {
+                            if ($outletNama !== $namaOutletAsal) {
+                                // Cari outlet berdasarkan nama
+                                $outletTujuan = Outlet::where('nama_outlet', $outletNama)
+                                    ->where('status', 'aktif')
+                                    ->with('branch')
+                                    ->first();
+                                
+                                if ($outletTujuan && 
+                                    !$outletTujuanList->contains('id', $outletTujuan->id)) {
+                                    
+                                    $jarak = $rute->hitungJarakOutlet($namaOutletAsal, $outletNama);
+                                    
+                                    $outletTujuanList->push([
+                                        'id' => $outletTujuan->id,
+                                        'nama_outlet' => $outletTujuan->nama_outlet,
+                                        'kota' => $outletTujuan->branch->kota ?? 'Unknown',
+                                        'alamat' => $outletTujuan->alamat_lengkap,
+                                        'jarak_dari_asal' => $jarak > 0 ? round($jarak, 2) : rand(50, 300),
+                                        'rute_nama' => $rute->nama_rute
+                                    ]);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Cek jika outlet asal adalah kota asal utama
+                if (!$foundAsal && $rute->kota_asal === $kotaOutletAsal) {
+                    $foundAsal = true;
+                    foreach ($pemberhentian as $stop) {
+                        foreach ($stop['outlets'] ?? [] as $outletNama) {
+                            $outletTujuan = Outlet::where('nama_outlet', $outletNama)
+                                ->where('status', 'aktif')
+                                ->with('branch')
+                                ->first();
+                            
+                            if ($outletTujuan && 
+                                !$outletTujuanList->contains('id', $outletTujuan->id)) {
+                                
+                                $jarak = $rute->jarak_total ?? rand(50, 300);
+                                
+                                $outletTujuanList->push([
+                                    'id' => $outletTujuan->id,
+                                    'nama_outlet' => $outletTujuan->nama_outlet,
+                                    'kota' => $outletTujuan->branch->kota ?? 'Unknown',
+                                    'alamat' => $outletTujuan->alamat_lengkap,
+                                    'jarak_dari_asal' => round($jarak, 2),
+                                    'rute_nama' => $rute->nama_rute
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Hapus duplikat berdasarkan ID outlet
+            return $outletTujuanList->unique('id')->values();
+            
+        } catch (\Exception $e) {
+            \Log::error('Error in Rute::getOutletTujuanValid: ' . $e->getMessage());
+            return collect();
+        }
     }
 
-    // Relasi ke user yang delete
-    public function deleter()
+    /**
+     * Cari rute yang menghubungkan dua outlet
+     */
+    public static function cariRuteUntukOutlet($outletAsalId, $outletTujuanId)
     {
-        return $this->belongsTo(User::class, 'deleted_by');
+        $outletAsal = Outlet::find($outletAsalId);
+        $outletTujuan = Outlet::find($outletTujuanId);
+        
+        if (!$outletAsal || !$outletTujuan) {
+            return null;
+        }
+        
+        $namaOutletAsal = $outletAsal->nama_outlet;
+        $namaOutletTujuan = $outletTujuan->nama_outlet;
+        
+        $rutes = self::aktif()->get();
+        
+        foreach ($rutes as $rute) {
+            $jarak = $rute->hitungJarakOutlet($namaOutletAsal, $namaOutletTujuan);
+            if ($jarak > 0) {
+                return [
+                    'rute' => $rute,
+                    'jarak' => $jarak
+                ];
+            }
+        }
+        
+        return null;
     }
 }

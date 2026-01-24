@@ -38,6 +38,10 @@ use Carbon\Carbon;
 use App\Models\Review;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
+use App\Models\Shipment;
+use App\Models\RuteSegment;
+use App\Models\MasterHarga;
+use App\Models\ShipmentTracking;
 use App\Services\PaylabsService;
 
 // Helper function untuk mendapatkan inisial nama
@@ -105,7 +109,7 @@ class CustomerController extends Controller
         $promos = Promo::active()
             ->where(function($query) use ($serviceType) {
                 $query->where('tipe_promo', $serviceType)
-                      ->orWhere('tipe_promo', 'all');
+                    ->orWhere('tipe_promo', 'all');
             })
             ->get()
             ->map(function ($promo) use ($userData, $jumlahTiket, $totalPembelian, $isMember) {
@@ -296,8 +300,7 @@ $reviews = Review::with('user')
                     'gambar' => asset($p->gambar ?? 'images/default-promo.jpg'),
                     'periode' => ($p->tanggal_mulai ? $p->tanggal_mulai->format('d M Y') : '') . ' - ' . ($p->tanggal_berakhir ? $p->tanggal_berakhir->format('d M Y') : ''),
                 ];
-            })
-            ;
+            });
 
         // Ambil artikel terbaru yang aktif (diambil dari ArtikelSeeder)
         $articles = Artikel::aktif()
@@ -408,172 +411,174 @@ $reviews = Review::with('user')
      * AJAX endpoint untuk load more outlets
      */
     public function loadMoreOutlets(Request $request)
-{
-    try {
-        \Log::info('LoadMoreOutlets Request Data:', $request->all());
+    {
+        try {
+            \Log::info('LoadMoreOutlets Request Data:', $request->all());
 
-        // Validasi data
-        $validator = Validator::make($request->all(), [
-            'offset' => 'required|integer|min:0',
-            'kota' => 'nullable|string',
-            'branch_id' => 'nullable|integer|exists:branches,id'
-        ]);
+            // Validasi data
+            $validator = Validator::make($request->all(), [
+                'offset' => 'required|integer|min:0',
+                'kota' => 'nullable|string',
+                'branch_id' => 'nullable|integer|exists:branches,id'
+            ]);
 
-        if ($validator->fails()) {
-            \Log::error('Validation failed:', $validator->errors()->toArray());
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal: ' . implode(', ', $validator->errors()->all())
-            ], 422);
-        }
+            if ($validator->fails()) {
+                \Log::error('Validation failed:', $validator->errors()->toArray());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal: ' . implode(', ', $validator->errors()->all())
+                ], 422);
+            }
 
-        $validated = $validator->validated();
+            $validated = $validator->validated();
 
-        $query = Outlet::with('branch')
-            ->where('status', 'aktif');
+            $query = Outlet::with('branch')
+                ->where('status', 'aktif');
 
-        // Filter berdasarkan kota
-        if (!empty($validated['kota'])) {
-            $query->whereHas('branch', function ($q) use ($validated) {
-                $q->where('kota', $validated['kota']);
-            });
-        }
+            // Filter berdasarkan kota
+            if (!empty($validated['kota'])) {
+                $query->whereHas('branch', function ($q) use ($validated) {
+                    $q->where('kota', $validated['kota']);
+                });
+            }
 
-        // Filter berdasarkan branch_id
-        if (!empty($validated['branch_id'])) {
-            $query->where('branch_id', $validated['branch_id']);
-        }
+            // Filter berdasarkan branch_id
+            if (!empty($validated['branch_id'])) {
+                $query->where('branch_id', $validated['branch_id']);
+            }
 
-        // Hitung total
-        $totalOutlets = $query->count();
+            // Hitung total
+            $totalOutlets = $query->count();
 
-        // Load 6 more outlets starting from offset
-        $outlets = $query->orderBy('nama_outlet')
-            ->skip($validated['offset'])
-            ->take(6)
-            ->get();
+            // Load 6 more outlets starting from offset
+            $outlets = $query->orderBy('nama_outlet')
+                ->skip($validated['offset'])
+                ->take(6)
+                ->get();
 
-        $allLoaded = ($validated['offset'] + $outlets->count()) >= $totalOutlets;
+            $allLoaded = ($validated['offset'] + $outlets->count()) >= $totalOutlets;
 
-        \Log::info('LoadMoreOutlets Results:', [
-            'offset' => $validated['offset'],
-            'outlets_count' => $outlets->count(),
-            'totalOutlets' => $totalOutlets,
-            'allLoaded' => $allLoaded
-        ]);
+            \Log::info('LoadMoreOutlets Results:', [
+                'offset' => $validated['offset'],
+                'outlets_count' => $outlets->count(),
+                'totalOutlets' => $totalOutlets,
+                'allLoaded' => $allLoaded
+            ]);
 
-        // Jika tidak ada outlet lagi
-        if ($outlets->isEmpty()) {
+            // Jika tidak ada outlet lagi
+            if ($outlets->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'html' => '',
+                    'count' => 0,
+                    'allLoaded' => true,
+                    'total' => $totalOutlets,
+                    'message' => 'Tidak ada outlet lagi'
+                ]);
+            }
+
+            // Generate HTML untuk outlets baru
+            $html = '';
+            foreach ($outlets as $outlet) {
+                $gambar = $this->getOutletImage($outlet);
+
+                // Buat HTML untuk setiap outlet card
+                $html .= '<div class="outlet-card" data-city="' . ($outlet->branch ? $outlet->branch->kota : '') . '">';
+                $html .= '<div class="outlet-card-inner">';
+                $html .= '<div class="card-header">' . e($outlet->nama_outlet) . '</div>';
+                $html .= '<div class="card-image">';
+                $html .= '<img src="' . e($gambar) . '" alt="' . e($outlet->nama_outlet) . '" class="outlet-img" onerror="this.onerror=null;this.src=\'' . asset('images/placeholder-outlet.jpg') . '\'">';
+                $html .= '</div>';
+                $html .= '<div class="card-body">';
+
+                // Info grid
+                $html .= '<div class="info-grid">';
+                $html .= '<div class="info-item">';
+                $html .= '<div class="info-label"><i class="fas fa-store"></i> CABANG</div>';
+                $html .= '<div class="info-value">' . e($outlet->branch ? $outlet->branch->nama_cabang : 'Tidak diketahui') . '</div>';
+                $html .= '</div>';
+                $html .= '<div class="info-item">';
+                $html .= '<div class="info-label"><i class="fas fa-city"></i> KOTA</div>';
+                $html .= '<div class="info-value">' . e($outlet->branch ? $outlet->branch->kota : 'Tidak diketahui') . '</div>';
+                $html .= '</div>';
+                $html .= '<div class="info-item full-width">';
+                $html .= '<div class="info-label"><i class="fas fa-map-marker-alt"></i> ALAMAT</div>';
+                $html .= '<div class="info-value address">' . e($outlet->alamat_lengkap ?? $outlet->alamat) . '</div>';
+                $html .= '</div>';
+                $html .= '</div>';
+
+                // Contact & hours
+                $html .= '<div class="contact-hours">';
+                $html .= '<div class="contact-hours-grid">';
+                $html .= '<div class="contact-item">';
+                $html .= '<div class="contact-label"><i class="fas fa-phone"></i> TELEPON</div>';
+                $html .= '<div class="contact-value">' . e($outlet->telepon ?? '-') . '</div>';
+                $html .= '</div>';
+                $html .= '<div class="hours-item">';
+                $html .= '<div class="hours-label"><i class="fas fa-clock"></i> JAM OPERASIONAL</div>';
+                $html .= '<div class="hours-value">' . e($outlet->jam_operasional ?? '24 Jam') . '</div>';
+                $html .= '</div>';
+                $html .= '</div>';
+                $html .= '</div>';
+
+                // Button detail
+                $html .= '<button class="btn-detail" onclick="showOutletPopup(' . $outlet->id . ')">';
+                $html .= '<i class="fas fa-eye"></i> Lihat Detail';
+                $html .= '</button>';
+
+                $html .= '</div>';
+                $html .= '</div>';
+                $html .= '</div>';
+            }
+
             return response()->json([
                 'success' => true,
-                'html' => '',
-                'count' => 0,
-                'allLoaded' => true,
+                'html' => $html,
+                'count' => $outlets->count(),
+                'allLoaded' => $allLoaded,
                 'total' => $totalOutlets,
-                'message' => 'Tidak ada outlet lagi'
+                'current_offset' => $validated['offset'] + $outlets->count()
             ]);
-        }
 
-        // Generate HTML untuk outlets baru
-        $html = '';
-        foreach ($outlets as $outlet) {
-            $gambar = $this->getOutletImage($outlet);
+        } catch (\Exception $e) {
+            \Log::error('Load more outlets error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
 
-            // Buat HTML untuk setiap outlet card
-            $html .= '<div class="outlet-card" data-city="' . ($outlet->branch ? $outlet->branch->kota : '') . '">';
-            $html .= '<div class="outlet-card-inner">';
-            $html .= '<div class="card-header">' . e($outlet->nama_outlet) . '</div>';
-            $html .= '<div class="card-image">';
-            $html .= '<img src="' . e($gambar) . '" alt="' . e($outlet->nama_outlet) . '" class="outlet-img" onerror="this.onerror=null;this.src=\'' . asset('images/placeholder-outlet.jpg') . '\'">';
-            $html .= '</div>';
-            $html .= '<div class="card-body">';
-
-            // Info grid
-            $html .= '<div class="info-grid">';
-            $html .= '<div class="info-item">';
-            $html .= '<div class="info-label"><i class="fas fa-store"></i> CABANG</div>';
-            $html .= '<div class="info-value">' . e($outlet->branch ? $outlet->branch->nama_cabang : 'Tidak diketahui') . '</div>';
-            $html .= '</div>';
-            $html .= '<div class="info-item">';
-            $html .= '<div class="info-label"><i class="fas fa-city"></i> KOTA</div>';
-            $html .= '<div class="info-value">' . e($outlet->branch ? $outlet->branch->kota : 'Tidak diketahui') . '</div>';
-            $html .= '</div>';
-            $html .= '<div class="info-item full-width">';
-            $html .= '<div class="info-label"><i class="fas fa-map-marker-alt"></i> ALAMAT</div>';
-            $html .= '<div class="info-value address">' . e($outlet->alamat_lengkap ?? $outlet->alamat) . '</div>';
-            $html .= '</div>';
-            $html .= '</div>';
-
-            // Contact & hours
-            $html .= '<div class="contact-hours">';
-            $html .= '<div class="contact-hours-grid">';
-            $html .= '<div class="contact-item">';
-            $html .= '<div class="contact-label"><i class="fas fa-phone"></i> TELEPON</div>';
-            $html .= '<div class="contact-value">' . e($outlet->telepon ?? '-') . '</div>';
-            $html .= '</div>';
-            $html .= '<div class="hours-item">';
-            $html .= '<div class="hours-label"><i class="fas fa-clock"></i> JAM OPERASIONAL</div>';
-            $html .= '<div class="hours-value">' . e($outlet->jam_operasional ?? '24 Jam') . '</div>';
-            $html .= '</div>';
-            $html .= '</div>';
-            $html .= '</div>';
-
-            // Button detail
-            $html .= '<button class="btn-detail" onclick="showOutletPopup(' . $outlet->id . ')">';
-            $html .= '<i class="fas fa-eye"></i> Lihat Detail';
-            $html .= '</button>';
-
-            $html .= '</div>';
-            $html .= '</div>';
-            $html .= '</div>';
-        }
-
-        return response()->json([
-            'success' => true,
-            'html' => $html,
-            'count' => $outlets->count(),
-            'allLoaded' => $allLoaded,
-            'total' => $totalOutlets,
-            'current_offset' => $validated['offset'] + $outlets->count()
-        ]);
-
-    } catch (\Exception $e) {
-        \Log::error('Load more outlets error: ' . $e->getMessage(), [
-            'trace' => $e->getTraceAsString(),
-            'request' => $request->all()
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal memuat outlet. Error: ' . $e->getMessage(),
-            'debug' => env('APP_DEBUG') ? $e->getTraceAsString() : null
-        ], 500);
-    }
-}
-private function getOutletImage($outlet)
-{
-    if (!empty($outlet->foto_outlet)) {
-        // Jika sudah URL lengkap
-        if (Str::startsWith($outlet->foto_outlet, ['http://', 'https://'])) {
-            return $outlet->foto_outlet;
-        }
-
-        // Cek apakah file ada di public/images/outlets/
-        $filename = basename($outlet->foto_outlet);
-        $publicPath = 'images/outlets/' . $filename;
-
-        if (file_exists(public_path($publicPath))) {
-            return asset($publicPath);
-        }
-
-        // Coba langsung path yang ada
-        if (file_exists(public_path($outlet->foto_outlet))) {
-            return asset($outlet->foto_outlet);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat outlet. Error: ' . $e->getMessage(),
+                'debug' => env('APP_DEBUG') ? $e->getTraceAsString() : null
+            ], 500);
         }
     }
 
-    return asset('images/placeholder-outlet.jpg');
-}
+    private function getOutletImage($outlet)
+    {
+        if (!empty($outlet->foto_outlet)) {
+            // Jika sudah URL lengkap
+            if (Str::startsWith($outlet->foto_outlet, ['http://', 'https://'])) {
+                return $outlet->foto_outlet;
+            }
+
+            // Cek apakah file ada di public/images/outlets/
+            $filename = basename($outlet->foto_outlet);
+            $publicPath = 'images/outlets/' . $filename;
+
+            if (file_exists(public_path($publicPath))) {
+                return asset($publicPath);
+            }
+
+            // Coba langsung path yang ada
+            if (file_exists(public_path($outlet->foto_outlet))) {
+                return asset($outlet->foto_outlet);
+            }
+        }
+
+        return asset('images/placeholder-outlet.jpg');
+    }
+
     /**
      * Form login
      */
@@ -604,114 +609,115 @@ private function getOutletImage($outlet)
         return view('customer.login');
     }
 
-   /**
- * Proses login
- */
-public function login(Request $request)
-{
-    $validated = $request->validate([
-        'email' => 'required|email',
-        'password' => 'required',
-    ]);
-
-    try {
-        // Log CSRF token validation at start
-        \Log::info('Login request start', [
-            'email' => $validated['email'],
-            'has_csrf_token' => !empty($request->session()->token()),
-            'session_id' => session()->getId(),
+    /**
+     * Proses login
+     */
+    public function login(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
         ]);
 
-        $remember = $request->filled('remember');
-        $credentials = [
-            'email' => $validated['email'],
-            'password' => $validated['password'],
-        ];
-
-        // Debug logging
-        \Log::info('Login attempt', ['email' => $validated['email']]);
-        $userCheck = User::where('email', $validated['email'])->first();
-        if ($userCheck) {
-            \Log::info('User found', [
-                'user_id' => $userCheck->id,
-                'status' => $userCheck->status,
-                'email_verified_at' => $userCheck->email_verified_at,
-                'password_hash_exists' => !empty($userCheck->password)
-            ]);
-        } else {
-            \Log::info('User not found for email: ' . $validated['email']);
-        }
-
-        if (!Auth::attempt($credentials, $remember)) {
-            \Log::info('Auth attempt failed for email: ' . $validated['email']);
-            return back()->withErrors(['message' => 'Email atau password salah'])->withInput();
-        }
-
-        \Log::info('Auth attempt successful', ['user_id' => Auth::id()]);
-
-        $request->session()->regenerate();
-        $user = Auth::user();
-
-        // Cek status user
-        if ($user->status === 'inactive') {
-            Auth::logout();
-            return back()->withErrors(['message' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.'])->withInput();
-        }
-
-        // ===== PERBAIKAN DI SINI =====
-        // Check user role and redirect accordingly
-        if ($user->hasRole('admin_pusat') || $user->hasRole('admin_cabang')) {
-            // Log out from web guard and log in with admin guard
-            Auth::logout();
-            Auth::guard('admin')->login($user);
-            return redirect()->route('admin.dashboard');
-        } elseif ($user->hasRole('driver')) {
-            // Log out from web guard and log in with driver guard
-            Auth::logout();
-            Auth::guard('driver')->login($user);
-            return redirect()->route('driver.dashboard');
-        } elseif ($user->hasRole('operator')) {
-            // For operator, redirect to appropriate dashboard
-            Auth::logout();
-            Auth::guard('admin')->login($user);
-            return redirect()->route('admin.dashboard');
-        }
-
-        // For customer and other roles, continue as usual
-        session()->put('user', [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'avatar' => $user->avatar_url,
-            'membership_status' => $user->membership_status,
-            'membership_level' => $user->membership_level,
-        ]);
-
-        // Pastikan session di-save sebelum redirect
         try {
-            session()->save();
+            // Log CSRF token validation at start
+            \Log::info('Login request start', [
+                'email' => $validated['email'],
+                'has_csrf_token' => !empty($request->session()->token()),
+                'session_id' => session()->getId(),
+            ]);
+
+            $remember = $request->filled('remember');
+            $credentials = [
+                'email' => $validated['email'],
+                'password' => $validated['password'],
+            ];
+
+            // Debug logging
+            \Log::info('Login attempt', ['email' => $validated['email']]);
+            $userCheck = User::where('email', $validated['email'])->first();
+            if ($userCheck) {
+                \Log::info('User found', [
+                    'user_id' => $userCheck->id,
+                    'status' => $userCheck->status,
+                    'email_verified_at' => $userCheck->email_verified_at,
+                    'password_hash_exists' => !empty($userCheck->password)
+                ]);
+            } else {
+                \Log::info('User not found for email: ' . $validated['email']);
+            }
+
+            if (!Auth::attempt($credentials, $remember)) {
+                \Log::info('Auth attempt failed for email: ' . $validated['email']);
+                return back()->withErrors(['message' => 'Email atau password salah'])->withInput();
+            }
+
+            \Log::info('Auth attempt successful', ['user_id' => Auth::id()]);
+
+            $request->session()->regenerate();
+            $user = Auth::user();
+
+            // Cek status user
+            if ($user->status === 'inactive') {
+                Auth::logout();
+                return back()->withErrors(['message' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.'])->withInput();
+            }
+
+            // ===== PERBAIKAN DI SINI =====
+            // Check user role and redirect accordingly
+            if ($user->hasRole('admin_pusat') || $user->hasRole('admin_cabang')) {
+                // Log out from web guard and log in with admin guard
+                Auth::logout();
+                Auth::guard('admin')->login($user);
+                return redirect()->route('admin.dashboard');
+            } elseif ($user->hasRole('driver')) {
+                // Log out from web guard and log in with driver guard
+                Auth::logout();
+                Auth::guard('driver')->login($user);
+                return redirect()->route('driver.dashboard');
+            } elseif ($user->hasRole('operator')) {
+                // For operator, redirect to appropriate dashboard
+                Auth::logout();
+                Auth::guard('admin')->login($user);
+                return redirect()->route('admin.dashboard');
+            }
+
+            // For customer and other roles, continue as usual
+            session()->put('user', [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'avatar' => $user->avatar_url,
+                'membership_status' => $user->membership_status,
+                'membership_level' => $user->membership_level,
+            ]);
+
+            // Pastikan session di-save sebelum redirect
+            try {
+                session()->save();
+            } catch (\Exception $e) {
+                \Log::warning('Failed to save session after login', ['error' => $e->getMessage()]);
+            }
+
+            \Log::info('Login successful', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'session_saved' => true,
+            ]);
+
+            return redirect()->route('customer.beranda');
+
         } catch (\Exception $e) {
-            \Log::warning('Failed to save session after login', ['error' => $e->getMessage()]);
+            \Log::error('Login exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()->withErrors(['message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()])
+                        ->withInput();
         }
-
-        \Log::info('Login successful', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'session_saved' => true,
-        ]);
-
-        return redirect()->route('customer.beranda');
-
-    } catch (\Exception $e) {
-        \Log::error('Login exception', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ]);
-        return back()->withErrors(['message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()])
-                    ->withInput();
     }
-}
+
     /**
      * Form register
      */
@@ -1463,7 +1469,7 @@ public function login(Request $request)
         return $prefix . $date . $random;
     }
 
-   /**
+    /**
      * Halaman pemilihan kursi
      */
     public function showPemilihanKursi(Request $request)
@@ -1779,7 +1785,7 @@ public function login(Request $request)
     }
 
     /**
-     * Update profil dengan upload avatar
+     * Update profil dengan upload avatar - PERBAIKAN UTAMA
      */
     public function updateProfile(Request $request)
     {
@@ -1825,36 +1831,33 @@ public function login(Request $request)
                 $user->password = bcrypt($validated['password']);
             }
 
-            // Handle upload avatar
+            // PERBAIKAN UTAMA: Handle upload avatar dengan benar
             if ($request->hasFile('avatar')) {
-                // Validasi file
-                $file = $request->file('avatar');
-
-                // Generate nama file unik
-                $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
-
-                // Simpan file ke storage
-                $path = $file->storeAs('avatars', $filename, 'public');
-
-                // Hapus avatar lama jika ada
-                $user->deleteOldAvatar();
-
-                // Simpan path ke database
-                $user->avatar = $path;
+                // ✅ 1. Hapus avatar lama jika ada
+                if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                    Storage::disk('public')->delete($user->avatar);
+                }
+                
+                // ✅ 2. Simpan file fisik ke storage/app/public/avatars
+                $avatarPath = $request->avatar->store('avatars', 'public');
+                // Hasil: "avatars/1738234567.jpg" (file benar-benar tersimpan)
+                
+                // ✅ 3. Simpan path ke database
+                $user->avatar = $avatarPath;
             }
 
             $user->save();
 
             DB::commit();
 
-            // Update session
+            // Update session dengan avatar baru
             session()->put('user', [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'nik' => $user->nik,
-                'avatar' => $user->avatar_url,
+                'avatar' => $user->getSafeAvatarUrl(), // Gunakan method getSafeAvatarUrl
                 'membership_status' => $user->membership_status,
                 'membership_level' => $user->membership_level,
             ]);
@@ -1872,10 +1875,12 @@ public function login(Request $request)
     }
 
     /**
-     * Upload avatar secara langsung (AJAX)
+     * Upload avatar secara langsung (AJAX) - VERSI SUDAH BENAR
      */
     public function uploadAvatar(Request $request)
     {
+        \Log::info('Upload Avatar Request:', $request->all());
+
         if (!Auth::check()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -1885,9 +1890,15 @@ public function login(Request $request)
         // Validasi
         $validator = Validator::make($request->all(), [
             'avatar' => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
+        ], [
+            'avatar.required' => 'Pilih file gambar terlebih dahulu',
+            'avatar.image' => 'File harus berupa gambar',
+            'avatar.mimes' => 'Format gambar harus JPG, JPEG, PNG, GIF, atau WebP',
+            'avatar.max' => 'Ukuran gambar maksimal 2MB',
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Avatar validation failed:', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
                 'message' => implode(', ', $validator->errors()->all())
@@ -1898,44 +1909,67 @@ public function login(Request $request)
 
         try {
             $file = $request->file('avatar');
+            \Log::info('File uploaded:', [
+                'name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+                'mime' => $file->getMimeType()
+            ]);
 
             // Generate nama file unik
             $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
 
-            // Simpan file ke storage
+            // Simpan file ke storage public
             $path = $file->storeAs('avatars', $filename, 'public');
+            
+            \Log::info('File saved to:', ['path' => $path]);
 
             // Hapus avatar lama jika ada
-            $user->deleteOldAvatar();
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+                \Log::info('Old avatar deleted:', ['old_path' => $user->avatar]);
+            }
 
-            // Update database
+            // Update database - PERBAIKAN: Pastikan field avatar di-update
             $user->avatar = $path;
             $user->save();
 
             DB::commit();
 
-            // Update session
-            session()->put('user', [
+            \Log::info('Avatar updated in database:', [
+                'user_id' => $user->id,
+                'avatar_path' => $path,
+                'avatar_url' => $user->getSafeAvatarUrl()
+            ]);
+
+            // Update session dengan data fresh
+            $request->session()->put('user', [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'nik' => $user->nik,
-                'avatar' => $user->avatar_url,
+                'avatar' => $user->getSafeAvatarUrl(),
                 'membership_status' => $user->membership_status,
                 'membership_level' => $user->membership_level,
             ]);
+
+            // Juga update session langsung untuk header
+            session(['avatar_url' => $user->getSafeAvatarUrl()]);
+            session(['user_initials' => $user->initials]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Foto profil berhasil diupload',
                 'avatar_url' => $user->getSafeAvatarUrl(),
-                'has_avatar' => !empty($user->avatar)
+                'has_avatar' => !empty($user->avatar),
+                'initials' => $user->initials
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Upload avatar error: ' . $e->getMessage());
+            \Log::error('Upload avatar error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
 
             return response()->json([
                 'success' => false,
@@ -1958,8 +1992,10 @@ public function login(Request $request)
         DB::beginTransaction();
 
         try {
-            // Hapus avatar dari storage
-            $user->deleteOldAvatar();
+            // Hapus avatar dari storage jika ada
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
 
             // Set avatar ke null di database
             $user->avatar = null;
@@ -2626,6 +2662,25 @@ public function login(Request $request)
     }
 
     /**
+ * Method aman untuk mengambil data dengan fallback
+ */
+public static function getAktif()
+{
+    try {
+        // Cek apakah tabel ada
+        if (!Schema::hasTable('master_harga')) {
+            \Log::warning('Tabel master_harga tidak ditemukan di database');
+            return null;
+        }
+        
+        return self::aktif()->first();
+    } catch (\Exception $e) {
+        \Log::warning('Error mengambil master harga aktif: ' . $e->getMessage());
+        return null;
+    }
+}
+
+    /**
      * Cek harga paket (AJAX)
      */
     public function cekHargaPaket(Request $request)
@@ -2704,16 +2759,15 @@ public function login(Request $request)
             $validated = $request->validate([
                 'nama_pengirim' => 'required|string|max:100',
                 'telepon_pengirim' => 'required|string|max:20',
-                'email_pengirim' => 'required|email|max:100',
+                'email_pengirim' => 'nullable|email|max:100',
                 'nama_penerima' => 'required|string|max:100',
                 'telepon_penerima' => 'required|string|max:20',
-                'kota_asal' => 'required|string',
-                'kota_tujuan' => 'required|string',
-                'berat' => 'required|numeric|min:0.1',
-                'panjang' => 'nullable|numeric|min:0',
-                'lebar' => 'nullable|numeric|min:0',
-                'tinggi' => 'nullable|numeric|min:0',
-                'keterangan' => 'nullable|string',
+                'alamat_tujuan' => 'nullable|string|max:255',
+                'kota_asal' => 'required|string|max:100',
+                'kota_tujuan' => 'required|string|max:100',
+                'berat' => 'required|numeric|min:0.1|max:100', // max 100 kg
+                'jarak' => 'required|numeric|min:1|max:1000', // max 1000 km
+                'catatan' => 'nullable|string|max:500',
                 'harga_total' => 'required|numeric',
                 'kode_harga' => 'required|string'
             ]);
@@ -2744,7 +2798,7 @@ public function login(Request $request)
                 'panjang' => $validated['panjang'] ?? 0,
                 'lebar' => $validated['lebar'] ?? 0,
                 'tinggi' => $validated['tinggi'] ?? 0,
-                'keterangan' => $validated['keterangan'] ?? null,
+                'keterangan' => $validated['catatan'] ?? null,
                 'harga_total' => $validated['harga_total'],
                 'kode_harga' => $validated['kode_harga'],
                 'status' => 'pending',
@@ -2767,190 +2821,190 @@ public function login(Request $request)
     }
 
     /**
- * Store review with strict auth validation
- */
-public function storeReview(Request $request)
-{
-    try {
-        // Validasi input
-        $validated = $request->validate([
-            'rating' => 'required|integer|min:1|max:5',
-            'review' => 'required|string|min:10|max:500'
-        ]);
+     * Store review with strict auth validation
+     */
+    public function storeReview(Request $request)
+    {
+        try {
+            // Validasi input
+            $validated = $request->validate([
+                'rating' => 'required|integer|min:1|max:5',
+                'review' => 'required|string|min:10|max:500'
+            ]);
 
-        // Cek apakah user sudah login (backend validation)
-        if (!auth()->check()) {
+            // Cek apakah user sudah login (backend validation)
+            if (!auth()->check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Silakan login terlebih dahulu untuk memberikan review',
+                    'requiresLogin' => true
+                ], 401);
+            }
+
+            // Cek apakah user sudah memberikan review hari ini (optional)
+            $todayReview = Review::where('user_id', auth()->id())
+                ->whereDate('created_at', today())
+                ->first();
+
+            if ($todayReview) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda sudah memberikan review hari ini. Silakan coba lagi besok.'
+                ], 400);
+            }
+
+            // Simpan review ke database dengan status approved langsung
+            $review = Review::create([
+                'user_id' => auth()->id(),
+                'rating' => $validated['rating'],
+                'review' => $validated['review'],
+                'status' => 'approved'
+            ]);
+
+            // Load user data untuk response
+            $review->load('user');
+
+            // Data untuk response
+            $reviewData = [
+                'id' => $review->id,
+                'user_name' => $review->user->name,
+                'avatar' => $review->user?->avatar_url ?? null,
+                'rating' => $review->rating,
+                'content' => $review->review,
+                'date' => $review->created_at->format('d M Y')
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Review berhasil dikirim!',
+                'review' => $reviewData
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Silakan login terlebih dahulu untuk memberikan review',
-                'requiresLogin' => true
-            ], 401);
-        }
-
-        // Cek apakah user sudah memberikan review hari ini (optional)
-        $todayReview = Review::where('user_id', auth()->id())
-            ->whereDate('created_at', today())
-            ->first();
-
-        if ($todayReview) {
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda sudah memberikan review hari ini. Silakan coba lagi besok.'
-            ], 400);
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Simpan review ke database dengan status approved langsung
-        $review = Review::create([
-            'user_id' => auth()->id(),
-            'rating' => $validated['rating'],
-            'review' => $validated['review'],
-            'status' => 'approved'
-        ]);
-
-        // Load user data untuk response
-        $review->load('user');
-
-        // Data untuk response
-        $reviewData = [
-            'id' => $review->id,
-            'user_name' => $review->user->name,
-            'avatar' => $review->user?->avatar_url ?? null,
-            'rating' => $review->rating,
-            'content' => $review->review,
-            'date' => $review->created_at->format('d M Y')
-        ];
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Review berhasil dikirim!',
-            'review' => $reviewData
-        ]);
-
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Validasi gagal',
-            'errors' => $e->errors()
-        ], 422);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-        ], 500);
     }
-}
 
-/**
- * Get reviews for AJAX (baru)
- */
-public function getReviews(Request $request)
-{
-    try {
-        $reviews = Review::with('user')
-            ->where('status', 'approved')
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function($review) {
-                return [
-                    'id' => $review->id,
-                    'user_name' => $review->user->name ?? 'User',
-                    'avatar' => $review->user?->avatar_url ?? null,
-                    'rating' => $review->rating,
-                    'content' => $review->review,
-                    'date' => $review->created_at->format('d M Y')
-                ];
-            });
+    /**
+     * Get reviews for AJAX (baru)
+     */
+    public function getReviews(Request $request)
+    {
+        try {
+            $reviews = Review::with('user')
+                ->where('status', 'approved')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function($review) {
+                    return [
+                        'id' => $review->id,
+                        'user_name' => $review->user->name ?? 'User',
+                        'avatar' => $review->user?->avatar_url ?? null,
+                        'rating' => $review->rating,
+                        'content' => $review->review,
+                        'date' => $review->created_at->format('d M Y')
+                    ];
+                });
 
-        return response()->json([
-            'success' => true,
-            'reviews' => $reviews,
-            'total' => $reviews->count()
-        ]);
+            return response()->json([
+                'success' => true,
+                'reviews' => $reviews,
+                'total' => $reviews->count()
+            ]);
 
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal memuat review: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-/**
- * Get review statistics (jumlah per rating)
- */
-public function getReviewStats(Request $request)
-{
-    try {
-        // Hitung statistik dari database
-        $stats = [
-            5 => Review::where('status', 'approved')->where('rating', 5)->count(),
-            4 => Review::where('status', 'approved')->where('rating', 4)->count(),
-            3 => Review::where('status', 'approved')->where('rating', 3)->count(),
-            2 => Review::where('status', 'approved')->where('rating', 2)->count(),
-            1 => Review::where('status', 'approved')->where('rating', 1)->count(),
-        ];
-
-        $totalReviews = array_sum($stats);
-        $averageRating = Review::where('status', 'approved')->avg('rating') ?? 0;
-
-        return response()->json([
-            'success' => true,
-            'stats' => $stats,
-            'totalReviews' => $totalReviews,
-            'averageRating' => round($averageRating, 1),
-            'percentage5Star' => $totalReviews > 0 ? round(($stats[5] / $totalReviews) * 100) : 0
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil statistik review'
-        ], 500);
-    }
-}
-
-/**
- * Get filtered reviews by rating
- */
-public function getFilteredReviews(Request $request)
-{
-    try {
-        $rating = $request->input('rating', 0);
-
-        $query = Review::with('user')
-            ->where('status', 'approved');
-
-        if ($rating > 0) {
-            $query->where('rating', $rating);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat review: ' . $e->getMessage()
+            ], 500);
         }
-
-        $reviews = $query->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function($review) {
-                return [
-                    'id' => $review->id,
-                    'user_name' => $review->user->name ?? 'User',
-                    'avatar' => $review->user?->avatar_url ?? null,
-                    'rating' => $review->rating,
-                    'content' => $review->review,
-                    'date' => $review->created_at->format('d M Y')
-                ];
-            });
-
-        return response()->json([
-            'success' => true,
-            'reviews' => $reviews,
-            'total' => $reviews->count(),
-            'filteredRating' => $rating
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal memuat review'
-        ], 500);
     }
-}
+
+    /**
+     * Get review statistics (jumlah per rating)
+     */
+    public function getReviewStats(Request $request)
+    {
+        try {
+            // Hitung statistik dari database
+            $stats = [
+                5 => Review::where('status', 'approved')->where('rating', 5)->count(),
+                4 => Review::where('status', 'approved')->where('rating', 4)->count(),
+                3 => Review::where('status', 'approved')->where('rating', 3)->count(),
+                2 => Review::where('status', 'approved')->where('rating', 2)->count(),
+                1 => Review::where('status', 'approved')->where('rating', 1)->count(),
+            ];
+
+            $totalReviews = array_sum($stats);
+            $averageRating = Review::where('status', 'approved')->avg('rating') ?? 0;
+
+            return response()->json([
+                'success' => true,
+                'stats' => $stats,
+                'totalReviews' => $totalReviews,
+                'averageRating' => round($averageRating, 1),
+                'percentage5Star' => $totalReviews > 0 ? round(($stats[5] / $totalReviews) * 100) : 0
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil statistik review'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get filtered reviews by rating
+     */
+    public function getFilteredReviews(Request $request)
+    {
+        try {
+            $rating = $request->input('rating', 0);
+
+            $query = Review::with('user')
+                ->where('status', 'approved');
+
+            if ($rating > 0) {
+                $query->where('rating', $rating);
+            }
+
+            $reviews = $query->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function($review) {
+                    return [
+                        'id' => $review->id,
+                        'user_name' => $review->user->name ?? 'User',
+                        'avatar' => $review->user?->avatar_url ?? null,
+                        'rating' => $review->rating,
+                        'content' => $review->review,
+                        'date' => $review->created_at->format('d M Y')
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'reviews' => $reviews,
+                'total' => $reviews->count(),
+                'filteredRating' => $rating
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat review'
+            ], 500);
+        }
+    }
 
     /**
      * Get all promos (AJAX)
@@ -2967,7 +3021,7 @@ public function getFilteredReviews(Request $request)
                 ->whereDate('tanggal_berakhir', '>=', $now)
                 ->where(function($query) {
                     $query->whereNull('kuota')
-                          ->orWhereRaw('terpakai < kuota');
+                        ->orWhereRaw('terpakai < kuota');
                 })
                 ->orderBy('tanggal_berakhir', 'asc')
                 ->get();
@@ -2976,7 +3030,7 @@ public function getFilteredReviews(Request $request)
             $thirtyDaysAgo = Carbon::now()->subDays(30);
             $inactivePromos = Promo::where(function($query) use ($now) {
                     $query->where('status', false)
-                          ->orWhere('tanggal_berakhir', '<', $now);
+                        ->orWhere('tanggal_berakhir', '<', $now);
                 })
                 ->where('tanggal_berakhir', '>=', $thirtyDaysAgo)
                 ->orderBy('tanggal_berakhir', 'desc')
@@ -3051,5 +3105,1154 @@ public function getFilteredReviews(Request $request)
             'remaining_quota' => $promo->kuota ? ($promo->kuota - $promo->terpakai) : null,
             'days_remaining' => $isActive ? max(0, $now->diffInDays($endDate, false)) : 0
         ];
+    }
+
+    /**
+     * SmartSend page
+     */
+    public function smartsend()
+    {
+        $profile = MProfilePerusahaan::first();
+        $user = session()->get('user', null);
+        // Make status check case-insensitive
+        $outlets = Outlet::whereRaw('LOWER(status) = ?', ['aktif'])->get();
+        $outletsGrouped = $outlets->groupBy('kota');
+    
+        $layanan = []; // Tambahkan layanan jika ada
+        
+        $promos = Promo::where('status', true)
+            ->orderBy('created_at', 'desc')
+            ->take(3)
+            ->get()
+            ->map(function($promo) {
+                return [
+                    'id' => $promo->id,
+                    'nama' => $promo->nama_promo,
+                    'deskripsi' => $promo->deskripsi,
+                    'gambar' => asset('storage/' . $promo->gambar_promo),
+                    'periode' => Carbon::parse($promo->tanggal_mulai)->format('d M') . ' - ' . Carbon::parse($promo->tanggal_selesai)->format('d M Y'),
+                ];
+            })
+            ->toArray();
+
+        if (empty($promos)) {
+            $promos = [
+                [
+                    'id' => 1,
+                    'nama' => 'Diskon 30% Shuttle',
+                    'deskripsi' => 'Nikmati diskon 30% untuk semua rute shuttle reguler. Berlaku untuk pemesanan minimal 2 tiket.',
+                    'gambar' => asset('images/promo1.jpg'),
+                    'periode' => '1 Mar - 31 Mar 2024',
+                ]
+            ];
+        }
+
+        // Data artikel
+        $artikelsFromDB = Artikel::orderBy('tanggal_publikasi', 'desc')->take(3)->get();
+        $articles = [];
+
+        foreach ($artikelsFromDB as $artikel) {
+            $articles[] = [
+                'id' => $artikel->id,
+                'image' => asset('images/default-article.jpg'),
+                'category' => $artikel->kategori,
+                'title' => $artikel->judul,
+                'excerpt' => substr(strip_tags($artikel->konten), 0, 100) . '...',
+                'date' => Carbon::parse($artikel->tanggal_publikasi)->translatedFormat('d F Y'),
+                'read_time' => '5 min read',
+                'tags' => explode(', ', $artikel->meta_keywords),
+                'full_content' => $artikel->konten,
+                'author' => $artikel->penulis
+            ];
+        }
+
+        if (empty($articles)) {
+            $articles = [
+                [
+                    'id' => 1,
+                    'image' => asset('images/default-article.jpg'),
+                    'category' => 'Tips & Trik',
+                    'title' => 'Tips Perjalanan Aman dengan Shuttle Selama Liburan',
+                    'excerpt' => 'Pelajari cara mempersiapkan perjalanan shuttle yang aman dan nyaman selama musim liburan untuk pengalaman terbaik.',
+                    'date' => '15 Maret 2024',
+                    'read_time' => '5 min read',
+                    'tags' => ['Perjalanan', 'Tips', 'Liburan'],
+                    'full_content' => '<h3>Persiapan Sebelum Perjalanan</h3><p>Perjalanan dengan shuttle selama liburan memerlukan persiapan yang matang. Pastikan Anda memesan tiket jauh-jauh hari untuk mendapatkan harga terbaik dan kursi pilihan. Smart Shuttle menawarkan pemesanan online yang mudah melalui website atau aplikasi kami.</p>',
+                    'author' => 'Admin SmartShuttle'
+                ]
+            ];
+        }
+
+        $activeService = 'kirim-paket'; // Set default untuk SmartSend
+
+        return view('customer.smartsend', compact(
+            'profile', 
+            'user', 
+            'outlets',     
+            'outletsGrouped', 
+            'layanan', 
+            'promos', 
+            'articles', 
+            'activeService'
+        ));
+    }
+
+    /**
+     * Halaman form cek resi
+     */
+    public function cekResi()
+    {
+        $user = session()->get('user', null);
+        $profile = MProfilePerusahaan::first();
+        
+        return view('customer.cek_resi', compact('user', 'profile'));
+    }
+
+    /**
+     * Proses validasi kode resi
+     */
+    public function prosesCekResi(Request $request)
+    {
+        $validated = $request->validate([
+            'kode_resi' => 'required|string|max:20'
+        ]);
+        
+        // Cari shipment berdasarkan kode resi (case insensitive)
+        $shipment = Shipment::whereRaw('LOWER(kode_resi) = ?', [strtolower(trim($validated['kode_resi']))])->first();
+        
+        if (!$shipment) {
+            return redirect()->route('customer.cek-resi')
+                ->withErrors([
+                    'kode_resi' => 'Kode resi "' . $validated['kode_resi'] . '" tidak ditemukan. Pastikan kode resi sudah benar.'
+                ])
+                ->withInput();
+        }
+        
+        // Redirect ke halaman detail paket
+        return redirect()->route('customer.detail-paket', ['kode_resi' => $shipment->kode_resi])
+            ->with('success', 'Paket ditemukan!');
+    }
+
+    /**
+     * Buat pengiriman paket baru dengan LOGIC HARGA BARU
+     */
+    public function buatPengirimanPaket(Request $request)
+    {
+        $validated = $request->validate([
+            'nama_pengirim' => 'required|string|max:100',
+            'telepon_pengirim' => 'required|string|max:20',
+            'email_pengirim' => 'nullable|email|max:100',
+            'nama_penerima' => 'required|string|max:100',
+            'telepon_penerima' => 'required|string|max:20',
+            'alamat_tujuan' => 'nullable|string|max:255',
+            'kota_asal' => 'required|string|max:100',
+            'kota_tujuan' => 'required|string|max:100',
+            'berat' => 'required|numeric|min:0.1|max:100', // max 100 kg
+            'jarak' => 'required|numeric|min:1|max:1000', // max 1000 km
+            'catatan' => 'nullable|string|max:500',
+        ]);
+        
+        DB::beginTransaction();
+        
+        try {
+            // Generate kode resi baru dengan format ss-YYYYMMDD-XXXX
+            $kodeResi = Shipment::generateKodeResi();
+            
+            // Hitung harga berdasarkan LOGIC BARU
+            $harga = Shipment::hitungHarga($validated['berat'], $validated['jarak']);
+            
+            // Simpan ke database dengan semua data harga
+            $shipment = Shipment::create([
+                'kode_resi' => $kodeResi,
+                'kota_asal' => $validated['kota_asal'],
+                'kota_tujuan' => $validated['kota_tujuan'],
+                'berat' => $validated['berat'],
+                'jarak' => $validated['jarak'],
+                'harga_berat' => $harga['harga_berat'],
+                'harga_jarak' => $harga['harga_jarak'],
+                'harga_total' => $harga['harga_total'],
+                'nama_pengirim' => $validated['nama_pengirim'],
+                'telepon_pengirim' => $validated['telepon_pengirim'],
+                'nama_penerima' => $validated['nama_penerima'],
+                'telepon_penerima' => $validated['telepon_penerima'],
+                'alamat_tujuan' => $validated['alamat_tujuan'] ?? null,
+                'catatan' => $validated['catatan'] ?? null,
+                'user_id' => auth()->id(),
+                'status' => 'diproses',
+                'tanggal_dibuat' => now(),
+            ]);
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Paket berhasil dibuat!',
+                'data' => [
+                    'kode_resi' => $kodeResi,
+                    'redirect_url' => route('customer.detail-paket', ['kode_resi' => $kodeResi])
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Gagal membuat pengiriman paket: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat membuat paket: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API untuk cek status paket (AJAX) - UNTUK MODAL
+     */
+    public function cekStatusPaket(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'resi' => 'required|string'
+            ]);
+            
+            $shipment = Shipment::whereRaw('LOWER(kode_resi) = ?', [strtolower($validated['resi'])])->first();
+            
+            if (!$shipment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nomor resi tidak ditemukan'
+                ]);
+            }
+            
+            $status = $shipment->statusLabel;
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'resi' => $shipment->kode_resi,
+                    'status' => $shipment->status,
+                    'status_text' => $status['label'],
+                    'status_color' => $status['color'],
+                    'kota_asal' => $shipment->kota_asal,
+                    'kota_tujuan' => $shipment->kota_tujuan,
+                    'nama_penerima' => $shipment->nama_penerima,
+                    'berat' => $shipment->berat . ' kg',
+                    'jarak' => $shipment->jarak . ' km',
+                    'harga_total' => 'Rp ' . number_format($shipment->harga_total, 0, ',', '.'),
+                    'tanggal_dibuat' => $shipment->tanggal_dibuat->format('d M Y H:i')
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * API untuk hitung harga real-time (AJAX)
+     */
+    public function hitungHargaPaket(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'berat' => 'required|numeric|min:0.1|max:100',
+                'jarak' => 'required|numeric|min:1|max:1000'
+            ]);
+            
+            // Hitung harga dengan LOGIC BARU
+            $harga = Shipment::hitungHarga($validated['berat'], $validated['jarak']);
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'harga_berat' => 'Rp ' . number_format($harga['harga_berat'], 0, ',', '.'),
+                    'harga_jarak' => 'Rp ' . number_format($harga['harga_jarak'], 0, ',', '.'),
+                    'harga_total' => 'Rp ' . number_format($harga['harga_total'], 0, ',', '.'),
+                    'harga_total_raw' => $harga['harga_total'],
+                    'perhitungan' => $this->formatPerhitungan($validated['berat'], $validated['jarak'], $harga)
+                ],
+                'message' => 'Harga berhasil dihitung!'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Helper: Format perhitungan untuk display
+     */
+    private function formatPerhitungan($berat, $jarak, $harga)
+    {
+        $text = "Perhitungan Harga:\n";
+        
+        // Bagian berat
+        if ($berat <= 5) {
+            $text .= "• Berat {$berat} kg (≤5 kg) = Rp 7.000\n";
+        } else {
+            $text .= "• Berat {$berat} kg = 5 kg pertama (Rp 7.000) + ";
+            $text .= ($berat - 5) . " kg × Rp 2.000 = Rp " . number_format($harga['harga_berat'], 0, ',', '.') . "\n";
+        }
+        
+        // Bagian jarak
+        $kelipatan = ceil($jarak / 10);
+        $text .= "• Jarak {$jarak} km = {$kelipatan} × 10 km × Rp 2.000 = Rp " . number_format($harga['harga_jarak'], 0, ',', '.') . "\n";
+        
+        // Total
+        $text .= "• Total = Rp " . number_format($harga['harga_berat'], 0, ',', '.') . " + Rp " . number_format($harga['harga_jarak'], 0, ',', '.') . " = Rp " . number_format($harga['harga_total'], 0, ',', '.');
+        
+        return $text;
+    }
+
+    /**
+     * API: Get outlet tujuan berdasarkan outlet asal
+     */
+    public function getOutletTujuanByRute(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'outlet_asal_id' => 'required|integer|exists:outlets,id'
+            ]);
+
+            if ($validator->fails()) {
+                \Log::warning('Validation failed for getOutletTujuanByRute', $validator->errors()->toArray());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Outlet asal tidak valid',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $outletAsalId = $request->outlet_asal_id;
+
+            // 1. Validasi outlet asal ada
+            $outletAsal = Outlet::with('branch')->find($outletAsalId);
+            if (!$outletAsal) {
+                \Log::warning('Outlet asal not found: ' . $outletAsalId);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Outlet asal tidak ditemukan'
+                ], 404);
+            }
+
+            \Log::info('Getting destinations for: ' . $outletAsal->nama_outlet . ' (ID: ' . $outletAsalId . ')');
+
+            // 2. Gunakan RuteSegment untuk mendapatkan destination outlets
+            $outletTujuan = RuteSegment::getOutletTujuanValid($outletAsalId);
+
+            \Log::info('Found ' . $outletTujuan->count() . ' destination outlets for outlet ' . $outletAsalId);
+
+            // 3. Return success even if empty (user should see "no routes" message)
+            return response()->json([
+                'success' => true,
+                'data' => $outletTujuan->values(),
+                'total' => $outletTujuan->count(),
+                'outlet_asal' => [
+                    'id' => $outletAsal->id,
+                    'nama' => $outletAsal->nama_outlet,
+                    'kota' => $outletAsal->branch->kota ?? 'Unknown'
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            \Log::error('Error in getOutletTujuanByRute: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat rute. Silakan coba lagi.',
+                'error_detail' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+ * API: KALKULATOR HARGA SMARTSEND (Cek Harga Saja - Read Only)
+ */
+public function kalkulatorHargaSmartSend(Request $request)
+{
+    try {
+        $validator = Validator::make($request->all(), [
+            'outlet_asal_id' => 'required|integer|exists:outlets,id',
+            'outlet_tujuan_id' => 'required|integer|exists:outlets,id|different:outlet_asal_id',
+            'berat' => 'required|numeric|min:0.1|max:100',
+            'panjang' => 'nullable|numeric|min:0',
+            'lebar' => 'nullable|numeric|min:0',
+            'tinggi' => 'nullable|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal: ' . implode(', ', $validator->errors()->all()),
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $outletAsalId = $request->outlet_asal_id;
+        $outletTujuanId = $request->outlet_tujuan_id;
+
+        // 1. Validasi: Apakah rute valid?
+        $jarak = \App\Models\RuteSegment::hitungJarak($outletAsalId, $outletTujuanId);
+        
+        if ($jarak <= 0) {
+            \Log::warning('Rute tidak valid dari outlet ' . $outletAsalId . ' ke ' . $outletTujuanId);
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada rute yang tersedia antara kedua outlet yang dipilih'
+            ], 404);
+        }
+
+        // 2. Hitung berat volumetric
+        $beratAktual = floatval($request->berat);
+        $volume = floatval($request->panjang ?? 0) * 
+                 floatval($request->lebar ?? 0) * 
+                 floatval($request->tinggi ?? 0);
+        $beratVolumetric = $volume > 0 ? $volume / 6000 : 0;
+        $beratTerpakai = max($beratAktual, $beratVolumetric);
+
+        // 3. Coba ambil master harga dari database, jika tidak ada gunakan default
+        try {
+            $masterHarga = \App\Models\MasterHarga::aktif()->first();
+        } catch (\Exception $e) {
+            \Log::warning('Gagal mengambil master harga: ' . $e->getMessage());
+            $masterHarga = null;
+        }
+
+        // Default values jika master_harga tidak ada
+        $defaultHarga = [
+            'berat_pertama' => 5,
+            'harga_berat_pertama' => 7000,
+            'harga_berat_berikutnya' => 2000,
+            'kelipatan_jarak' => 10,
+            'harga_per_kelipatan' => 2000
+        ];
+
+        // 4. Hitung harga dengan fallback ke default jika master_harga tidak ada
+        $resultBerat = $this->hitungHargaBerat($beratTerpakai, $masterHarga ?? $defaultHarga);
+        $resultJarak = $this->hitungHargaJarak($jarak, $masterHarga ?? $defaultHarga);
+        
+        $hargaBerat = $resultBerat['total'];
+        $hargaJarak = $resultJarak['total'];
+        $hargaTotal = $hargaBerat + $hargaJarak;
+        
+        // Build calculation breakdown
+        $breakdownText = $this->buatCalculationBreakdown($beratTerpakai, $jarak, $resultBerat, $resultJarak);
+
+        // 5. Siapkan data response
+        $outletAsal = \App\Models\Outlet::with('branch')->find($outletAsalId);
+        $outletTujuan = \App\Models\Outlet::with('branch')->find($outletTujuanId);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'outlet_asal' => [
+                    'id' => $outletAsal->id,
+                    'nama' => $outletAsal->nama_outlet,
+                    'kota' => $outletAsal->branch->kota,
+                    'alamat' => $outletAsal->alamat_lengkap
+                ],
+                'outlet_tujuan' => [
+                    'id' => $outletTujuan->id,
+                    'nama' => $outletTujuan->nama_outlet,
+                    'kota' => $outletTujuan->branch->kota,
+                    'alamat' => $outletTujuan->alamat_lengkap
+                ],
+                'jarak' => round($jarak, 2),
+                'berat' => [
+                    'aktual' => round($beratAktual, 2),
+                    'volumetric' => round($beratVolumetric, 2),
+                    'terpakai' => round($beratTerpakai, 2)
+                ],
+                'harga' => [
+                    'berat' => $hargaBerat,
+                    'jarak' => $hargaJarak,
+                    'total' => $hargaTotal,
+                    'formatted' => [
+                        'berat' => 'Rp ' . number_format($hargaBerat, 0, ',', '.'),
+                        'jarak' => 'Rp ' . number_format($hargaJarak, 0, ',', '.'),
+                        'total' => 'Rp ' . number_format($hargaTotal, 0, ',', '.')
+                    ]
+                ],
+                'perhitungan' => $breakdownText,
+                'estimasi_waktu' => $this->hitungEstimasiWaktu($jarak),
+                'note' => $masterHarga ? 
+                    'Harga dihitung berdasarkan data master_harga' : 
+                    '⚠️ Harga dihitung menggunakan nilai default (master_harga belum tersedia)'
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('Error kalkulator harga: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'request' => $request->all()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan sistem. Silakan hubungi administrator.'
+        ], 500);
+    }
+}
+
+    /**
+     * Helper: Hitung harga berdasarkan berat
+     */
+    private function hitungHargaBerat($berat, $masterHarga = null)
+    {
+        $default = [
+            'berat_pertama' => 5,
+            'harga_berat_pertama' => 7000,
+            'harga_berat_berikutnya' => 2000
+        ];
+        
+        // Gunakan nilai dari masterHarga jika tersedia
+        if ($masterHarga) {
+            $beratPertama = $masterHarga->berat_pertama ?? $default['berat_pertama'];
+            $hargaBeratPertama = $masterHarga->harga_berat_pertama ?? $default['harga_berat_pertama'];
+            $hargaBeratBerikutnya = $masterHarga->harga_berat_berikutnya ?? $default['harga_berat_berikutnya'];
+        } else {
+            $beratPertama = $default['berat_pertama'];
+            $hargaBeratPertama = $default['harga_berat_pertama'];
+            $hargaBeratBerikutnya = $default['harga_berat_berikutnya'];
+        }
+        
+        // Calculate total price
+        if ($berat <= $beratPertama) {
+            $hargaTotal = $hargaBeratPertama;
+            $beratTambahan = 0;
+            $hargaTambahan = 0;
+        } else {
+            $beratTambahan = $berat - $beratPertama;
+            $hargaTambahan = ceil($beratTambahan) * $hargaBeratBerikutnya;
+            $hargaTotal = $hargaBeratPertama + $hargaTambahan;
+        }
+        
+        // Return dengan breakdown untuk calculator
+        return [
+            'total' => $hargaTotal,
+            'breakdown' => [
+                'berat_pertama' => $beratPertama,
+                'harga_berat_pertama' => $hargaBeratPertama,
+                'berat_tambahan' => round($beratTambahan, 2),
+                'harga_berat_berikutnya' => $hargaBeratBerikutnya,
+                'harga_tambahan' => $hargaTambahan,
+                'rules_source' => 'master_harga'
+            ]
+        ];
+    }
+
+    /**
+     * Helper: Hitung harga berdasarkan jarak
+     */
+    private function hitungHargaJarak($jarak, $masterHarga = null)
+    {
+        $default = [
+            'kelipatan_jarak' => 10,
+            'harga_per_kelipatan' => 2000
+        ];
+        
+        // Gunakan nilai dari masterHarga jika tersedia
+        if ($masterHarga) {
+            $kelipatanJarak = $masterHarga->kelipatan_jarak ?? $default['kelipatan_jarak'];
+            $hargaPerKelipatan = $masterHarga->harga_per_kelipatan ?? $default['harga_per_kelipatan'];
+        } else {
+            $kelipatanJarak = $default['kelipatan_jarak'];
+            $hargaPerKelipatan = $default['harga_per_kelipatan'];
+        }
+        
+        $kelipatan = ceil($jarak / $kelipatanJarak);
+        $hargaTotal = $kelipatan * $hargaPerKelipatan;
+        
+        // Return dengan breakdown untuk calculator
+        return [
+            'total' => $hargaTotal,
+            'breakdown' => [
+                'jarak_total' => round($jarak, 2),
+                'kelipatan_jarak' => $kelipatanJarak,
+                'jumlah_kelipatan' => $kelipatan,
+                'harga_per_kelipatan' => $hargaPerKelipatan,
+                'rules_source' => 'master_harga'
+            ]
+        ];
+    }
+
+    /**
+     * Helper: Build calculation breakdown text for UI display
+     */
+    private function buatCalculationBreakdown($berat, $jarak, $resultBerat, $resultJarak)
+    {
+        $beratBreakdown = $resultBerat['breakdown'];
+        $jarakBreakdown = $resultJarak['breakdown'];
+        
+        $text = "INFORMASI HARGA PENGIRIMAN\n";
+        $text .= str_repeat("─", 40) . "\n\n";
+        
+        // INFORMASI BERAT
+        $text .= "INFORMASI BERAT:\n";
+        $text .= "• 5 kg pertama: Rp " . number_format($beratBreakdown['harga_berat_pertama'], 0, ',', '.') . "\n";
+        
+        if ($berat > $beratBreakdown['berat_pertama']) {
+            $text .= "• Tambahan " . $beratBreakdown['berat_tambahan'] . " kg × Rp " . number_format($beratBreakdown['harga_berat_berikutnya'], 0, ',', '.') . "\n";
+        }
+        
+        $text .= "  Subtotal Berat: Rp " . number_format($resultBerat['total'], 0, ',', '.') . "\n\n";
+        
+        // INFORMASI JARAK
+        $text .= "INFORMASI JARAK:\n";
+        $text .= "• Total jarak: " . round($jarakBreakdown['jarak_total'], 1) . " km\n";
+        $text .= "• Biaya per 10 km: Rp " . number_format($jarakBreakdown['harga_per_kelipatan'], 0, ',', '.') . "\n";
+        $text .= "  Subtotal Jarak: Rp " . number_format($resultJarak['total'], 0, ',', '.') . "\n\n";
+        
+        // TOTAL
+        $text .= str_repeat("─", 40) . "\n";
+        $text .= "TOTAL BIAYA: Rp " . number_format($resultBerat['total'] + $resultJarak['total'], 0, ',', '.') . "\n";
+        $text .= str_repeat("─", 40);
+        
+        return $text;
+    }
+
+    /**
+     * Helper: Hitung estimasi waktu
+     */
+    private function hitungEstimasiWaktu($jarak)
+    {
+        $jam = $jarak / 60; // asumsi 60 km/jam
+        $totalJam = ceil($jam) + 2; // +2 jam untuk proses
+        
+        if ($totalJam >= 24) {
+            return ceil($totalJam / 24) . ' hari';
+        }
+        
+        return $totalJam . ' jam';
+    }
+
+    /**
+     * API: Get outlet tujuan berdasarkan outlet asal dan rute
+     */
+    public function getOutletTujuanByRuteOld(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'outlet_asal_id' => 'required|exists:outlets,id'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $outletAsal = Outlet::with('branch')->find($request->outlet_asal_id);
+            $kotaAsal = $outletAsal->branch->kota ?? null;
+            
+            if (!$kotaAsal) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kota outlet asal tidak ditemukan'
+                ]);
+            }
+
+            // 1. Cari semua rute yang memiliki kota asal dalam rute_pemberhentian
+            $rutes = Rute::where('status', 'aktif')
+                ->where(function($query) use ($kotaAsal) {
+                    $query->where('kota_asal', $kotaAsal)
+                          ->orWhereJsonContains('rute_pemberhentian', [['kota' => $kotaAsal]]);
+                })
+                ->get();
+
+            if ($rutes->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada rute yang melewati kota asal: ' . $kotaAsal
+                ]);
+            }
+
+            $outletTujuanList = [];
+            
+            foreach ($rutes as $rute) {
+                // Decode rute_pemberhentian
+                $pemberhentian = json_decode($rute->rute_pemberhentian, true) ?? [];
+                
+                // Cari posisi kota asal dalam rute
+                $foundAsal = false;
+                $startCollecting = false;
+                
+                foreach ($pemberhentian as $stop) {
+                    // Jika menemukan kota asal, mulai kumpulkan outlet tujuan setelahnya
+                    if (($stop['kota'] ?? '') === $kotaAsal) {
+                        $foundAsal = true;
+                        $startCollecting = true;
+                        continue;
+                    }
+                    
+                    // Jika sudah melewati kota asal, kumpulkan outlet tujuan
+                    if ($startCollecting && isset($stop['outlets']) && is_array($stop['outlets'])) {
+                        foreach ($stop['outlets'] as $outletName) {
+                            // Cari outlet berdasarkan nama di kota tersebut
+                            $outlet = Outlet::where('nama_outlet', $outletName)
+                                ->whereHas('branch', function($q) use ($stop) {
+                                    $q->where('kota', $stop['kota'] ?? '');
+                                })
+                                ->where('status', 'aktif')
+                                ->first();
+                            
+                            if ($outlet && !in_array($outlet->id, array_column($outletTujuanList, 'id'))) {
+                                $outletTujuanList[] = [
+                                    'id' => $outlet->id,
+                                    'nama_outlet' => $outlet->nama_outlet,
+                                    'kota' => $stop['kota'] ?? '',
+                                    'alamat' => $outlet->alamat_lengkap,
+                                    'rute_id' => $rute->id,
+                                    'rute_nama' => $rute->nama_rute,
+                                ];
+                            }
+                        }
+                    }
+                }
+                
+                // Jika kota asal adalah kota_asal utama dari rute
+                if (!$foundAsal && $rute->kota_asal === $kotaAsal) {
+                    // Ambil semua outlet dari semua pemberhentian setelah kota asal
+                    foreach ($pemberhentian as $stop) {
+                        if (isset($stop['outlets']) && is_array($stop['outlets'])) {
+                            foreach ($stop['outlets'] as $outletName) {
+                                $outlet = Outlet::where('nama_outlet', $outletName)
+                                    ->whereHas('branch', function($q) use ($stop) {
+                                        $q->where('kota', $stop['kota'] ?? '');
+                                    })
+                                    ->where('status', 'aktif')
+                                    ->first();
+                                
+                                if ($outlet && !in_array($outlet->id, array_column($outletTujuanList, 'id'))) {
+                                    $outletTujuanList[] = [
+                                        'id' => $outlet->id,
+                                        'nama_outlet' => $outlet->nama_outlet,
+                                        'kota' => $stop['kota'] ?? '',
+                                        'alamat' => $outlet->alamat_lengkap,
+                                        'rute_id' => $rute->id,
+                                        'rute_nama' => $rute->nama_rute,
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'outlet_asal' => [
+                        'id' => $outletAsal->id,
+                        'nama' => $outletAsal->nama_outlet,
+                        'kota' => $kotaAsal,
+                    ],
+                    'outlet_tujuan' => $outletTujuanList,
+                    'total_tersedia' => count($outletTujuanList)
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API: Kalkulator harga berdasarkan outlet asal-tujuan (CEK HARGA SAJA)
+     */
+    public function kalkulatorHargaRute(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'outlet_asal_id' => 'required|exists:outlets,id',
+                'outlet_tujuan_id' => 'required|exists:outlets,id',
+                'berat' => 'required|numeric|min:0.1|max:100',
+                'panjang' => 'nullable|numeric|min:0',
+                'lebar' => 'nullable|numeric|min:0',
+                'tinggi' => 'nullable|numeric|min:0',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Gunakan KalkulatorEstimasiController yang sudah ada
+            $kalkulator = new KalkulatorEstimasiController();
+            return $kalkulator->hitungEstimasi($request);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Helper: Cari rute yang menghubungkan dua kota
+     */
+    private function cariRuteUntukKota($kotaAsal, $kotaTujuan)
+    {
+        // Cari rute yang memiliki kedua kota dalam urutan yang benar
+        $rutes = Rute::where('status', 'aktif')->get();
+        
+        foreach ($rutes as $rute) {
+            $pemberhentian = json_decode($rute->rute_pemberhentian, true) ?? [];
+            
+            $foundAsal = false;
+            $foundTujuan = false;
+            
+            foreach ($pemberhentian as $stop) {
+                if (($stop['kota'] ?? '') === $kotaAsal) {
+                    $foundAsal = true;
+                }
+                
+                if (($stop['kota'] ?? '') === $kotaTujuan) {
+                    if ($foundAsal) {
+                        $foundTujuan = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Juga cek jika kota asal adalah kota_asal utama
+            if ($rute->kota_asal === $kotaAsal) {
+                $foundAsal = true;
+                // Cek apakah kota tujuan ada dalam pemberhentian
+                foreach ($pemberhentian as $stop) {
+                    if (($stop['kota'] ?? '') === $kotaTujuan) {
+                        $foundTujuan = true;
+                        break;
+                    }
+                }
+            }
+            
+            if ($foundAsal && $foundTujuan) {
+                return $rute;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Helper: Hitung jarak antara dua kota dalam rute
+     */
+    private function hitungJarakDalamRute($rute, $kotaAsal, $kotaTujuan)
+    {
+        // Jika rute memiliki jarak total
+        if ($rute->jarak) {
+            $pemberhentian = json_decode($rute->rute_pemberhentian, true) ?? [];
+            
+            // Hitung jumlah segment antara kedua kota
+            $count = 0;
+            $startCounting = false;
+            
+            foreach ($pemberhentian as $stop) {
+                if (($stop['kota'] ?? '') === $kotaAsal) {
+                    $startCounting = true;
+                    continue;
+                }
+                
+                if ($startCounting) {
+                    $count++;
+                    
+                    if (($stop['kota'] ?? '') === $kotaTujuan) {
+                        break;
+                    }
+                }
+            }
+            
+            // Jika kota asal adalah kota_asal utama
+            if ($rute->kota_asal === $kotaAsal && $count === 0) {
+                $startCounting = false;
+                foreach ($pemberhentian as $stop) {
+                    if (!$startCounting && ($stop['kota'] ?? '') === $kotaTujuan) {
+                        $count = 1; // Asumsi 1 segment
+                        break;
+                    }
+                }
+            }
+            
+            // Jika ditemukan, bagi jarak total secara proporsional
+            if ($count > 0) {
+                $totalSegments = count($pemberhentian);
+                return ($count / $totalSegments) * $rute->jarak;
+            }
+        }
+        
+        // Fallback: gunakan jarak default jika tidak bisa dihitung
+        return 100; // Default 100 km
+    }
+
+    /**
+     * Helper: Format perhitungan detail untuk display
+     */
+    private function formatPerhitunganDetail($berat, $beratVolumetric, $beratTerpakai, $jarak, $hargaBerat, $hargaJarak, $hargaTotal, $tarifBerat, $tarifJarak)
+    {
+        $text = "**Detail Perhitungan:**\n\n";
+        
+        // Bagian berat
+        $text .= "**1. Perhitungan Berat**\n";
+        $text .= "- Berat aktual: " . number_format($berat, 2) . " kg\n";
+        
+        if ($beratVolumetric > 0) {
+            $text .= "- Berat volumetric: " . number_format($beratVolumetric, 2) . " kg (P×L×T÷6000)\n";
+            $text .= "- Berat terpakai: " . number_format($beratTerpakai, 2) . " kg (berat terbesar)\n";
+        }
+        
+        if ($beratTerpakai <= $tarifBerat->berat_pertama) {
+            $text .= "- Harga berat: " . $tarifBerat->berat_pertama . " kg pertama = Rp " . number_format($tarifBerat->harga_berat_pertama, 0, ',', '.') . "\n";
+        } else {
+            $text .= "- Harga berat: " . $tarifBerat->berat_pertama . " kg pertama (Rp " . number_format($tarifBerat->harga_berat_pertama, 0, ',', '.') . ") + ";
+            $text .= ceil($beratTerpakai - $tarifBerat->berat_pertama) . " kg × Rp " . number_format($tarifBerat->harga_berat_berikutnya, 0, ',', '.') . "\n";
+        }
+        $text .= "- **Total harga berat: Rp " . number_format($hargaBerat, 0, ',', '.') . "**\n\n";
+        
+        // Bagian jarak
+        $text .= "**2. Perhitungan Jarak**\n";
+        $text .= "- Jarak tempuh: " . number_format($jarak, 2) . " km\n";
+        $text .= "- Kelipatan: " . ceil($jarak / $tarifJarak->kelipatan_jarak) . " × " . $tarifJarak->kelipatan_jarak . " km\n";
+        $text .= "- Harga jarak: " . ceil($jarak / $tarifJarak->kelipatan_jarak) . " × Rp " . number_format($tarifJarak->harga_per_kelipatan, 0, ',', '.') . "\n";
+        $text .= "- **Total harga jarak: Rp " . number_format($hargaJarak, 0, ',', '.') . "**\n\n";
+        
+        // Total
+        $text .= "**3. Total Biaya Pengiriman**\n";
+        $text .= "- Harga berat: Rp " . number_format($hargaBerat, 0, ',', '.') . "\n";
+        $text .= "- Harga jarak: Rp " . number_format($hargaJarak, 0, ',', '.') . "\n";
+        $text .= "- **TOTAL: Rp " . number_format($hargaTotal, 0, ',', '.') . "**\n\n";
+        
+        $text .= "*Catatan: Jarak dihitung otomatis berdasarkan rute yang dipilih*";
+        
+        return $text;
+    }
+
+    /**
+     * Helper: Get status text
+     */
+    private function getStatusText($status)
+    {
+        $statuses = [
+            'diproses' => 'Sedang Diproses',
+            'dalam_perjalanan' => 'Dalam Perjalanan',
+            'sampai_tujuan' => 'Sampai di Kota Tujuan',
+            'terkirim' => 'Terkirim',
+            'dibatalkan' => 'Dibatalkan'
+        ];
+        
+        return $statuses[$status] ?? 'Tidak Diketahui';
+    }
+
+    /**
+     * Helper: Get status color
+     */
+    private function getStatusColor($status)
+    {
+        $colors = [
+            'diproses' => 'warning',
+            'dalam_perjalanan' => 'primary',
+            'sampai_tujuan' => 'info',
+            'terkirim' => 'success',
+            'dibatalkan' => 'danger'
+        ];
+        
+        return $colors[$status] ?? 'secondary';
+    }
+
+    /**
+     * Halaman detail paket (tracking)
+     */
+    public function detailPaket($kode_resi)
+    {
+        $user = session()->get('user', null);
+        
+        // Cari shipment dengan relasi lengkap
+        $shipment = Shipment::with([
+            'rute',
+            'segmentAsal.outlet.branch',
+            'segmentTujuan.outlet.branch',
+            'outletAsal.branch',
+            'outletTujuan.branch',
+            'trackingHistories' => function($query) {
+                $query->orderBy('waktu_status', 'desc')
+                    ->with(['outlet', 'segment', 'updatedByUser']);
+            },
+            'user'
+        ])->where('kode_resi', $kode_resi)->first();
+        
+        if (!$shipment) {
+            return redirect()->route('customer.cek-resi')
+                ->with('error', 'Kode resi tidak ditemukan');
+        }
+        
+        // Cek apakah user memiliki akses (pengirim atau admin)
+        $isOwner = false;
+        if ($user && $shipment->user_id) {
+            $isOwner = $shipment->user_id == $user['id'];
+        }
+        
+        // Get timeline
+        $timeline = $shipment->timeline;
+        
+        // Get status label
+        $statusLabel = $shipment->statusLabel;
+        
+        return view('customer.detail_paket', compact(
+            'user',
+            'shipment',
+            'timeline',
+            'statusLabel',
+            'isOwner'
+        ));
+    }
+
+    /**
+     * API: Update status shipment (untuk admin)
+     */
+    public function updateStatusShipment(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+        
+        $validator = Validator::make($request->all(), [
+            'kode_resi' => 'required|exists:shipments,kode_resi',
+            'status' => 'required|in:diproses,dalam_perjalanan,sampai_tujuan,terkirim,dibatalkan',
+            'catatan' => 'nullable|string|max:500',
+            'outlet_id' => 'nullable|exists:outlets,id',
+            'segment_id' => 'nullable|exists:rute_segments,id',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        DB::beginTransaction();
+        
+        try {
+            $shipment = Shipment::where('kode_resi', $request->kode_resi)->first();
+            $user = Auth::user();
+            
+            // Update status shipment
+            $shipment->status_pengiriman = $request->status;
+            
+            // Set timestamp berdasarkan status
+            switch ($request->status) {
+                case 'diterima_outlet_asal':
+                    $shipment->waktu_diterima_outlet_asal = now();
+                    break;
+                case 'dalam_perjalanan':
+                    $shipment->waktu_dalam_perjalanan = now();
+                    break;
+                case 'sampai_outlet_tujuan':
+                    $shipment->waktu_sampai_outlet_tujuan = now();
+                    break;
+                case 'siap_diambil':
+                    $shipment->waktu_siap_diambil = now();
+                    break;
+                case 'terkirim':
+                    $shipment->waktu_terkirim = now();
+                    break;
+            }
+            
+            $shipment->save();
+            
+            // Buat tracking history
+            $tracking = ShipmentTracking::create([
+                'shipment_id' => $shipment->id,
+                'outlet_id' => $request->outlet_id,
+                'rute_segment_id' => $request->segment_id,
+                'status' => $this->mapStatusToTracking($request->status),
+                'deskripsi' => $this->generateDeskripsiStatus($request->status, $request->outlet_id),
+                'catatan' => $request->catatan,
+                'updated_by' => $user->id,
+                'updated_by_role' => 'admin',
+                'waktu_status' => now(),
+            ]);
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Status berhasil diperbarui',
+                'data' => [
+                    'shipment' => $shipment,
+                    'tracking' => $tracking,
+                    'status_label' => $shipment->statusLabel,
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Update status shipment error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Helper: Map status shipment ke tracking status
+     */
+    private function mapStatusToTracking($status)
+    {
+        $mapping = [
+            'diproses' => 'paket_diproses',
+            'diterima_outlet_asal' => 'paket_diterima',
+            'dalam_perjalanan' => 'paket_dalam_perjalanan',
+            'sampai_outlet_tujuan' => 'paket_sampai_outlet',
+            'siap_diambil' => 'paket_siap_diambil',
+            'terkirim' => 'paket_terkirim',
+            'dibatalkan' => 'paket_batal',
+        ];
+        
+        return $mapping[$status] ?? 'paket_diproses';
+    }
+
+    /**
+     * Helper: Generate deskripsi status
+     */
+    private function generateDeskripsiStatus($status, $outletId = null)
+    {
+        $outlet = $outletId ? Outlet::find($outletId) : null;
+        $outletName = $outlet ? $outlet->nama_outlet : 'outlet';
+        
+        $deskripsi = [
+            'diproses' => 'Paket sedang diproses',
+            'diterima_outlet_asal' => "Paket diterima di {$outletName}",
+            'dalam_perjalanan' => 'Paket dalam perjalanan menuju outlet tujuan',
+            'sampai_outlet_tujuan' => "Paket sampai di {$outletName}",
+            'siap_diambil' => "Paket siap diambil di {$outletName}",
+            'terkirim' => 'Paket telah terkirim ke penerima',
+            'dibatalkan' => 'Pengiriman dibatalkan',
+        ];
+        
+        return $deskripsi[$status] ?? 'Status diperbarui';
     }
 }

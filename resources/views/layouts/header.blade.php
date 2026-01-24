@@ -1,7 +1,5 @@
 <!-- resources/views/layouts/header.blade.php -->
 <style>
-
-    
     /* CSS Variables untuk Header */
     :root {
         --header-primary: #123352;
@@ -207,6 +205,76 @@
         color: white;
     }
 
+    /* ========== AVATAR STYLING ========== */
+    .profile-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, var(--header-secondary), var(--header-secondary-light));
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        flex-shrink: 0;
+        font-size: 14px;
+        text-transform: uppercase;
+        font-family: 'Roboto', sans-serif;
+        letter-spacing: 0.5px;
+        min-width: 36px;
+        min-height: 36px;
+        overflow: hidden;
+    }
+
+    .profile-avatar.initials-only {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        display: block;
+    }
+
+    .mobile-profile-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, var(--header-secondary), var(--header-secondary-light));
+        box-shadow: 0 4px 12px rgba(255, 88, 30, 0.3);
+        flex-shrink: 0;
+        font-size: 20px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        min-width: 50px;
+        min-height: 50px;
+        overflow: hidden;
+    }
+
+    .mobile-profile-avatar.initials-only {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .mobile-profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        display: block;
+    }
+
     /* ========== PROFILE DROPDOWN ========== */
     .profile-wrapper {
         position: relative;
@@ -237,30 +305,6 @@
 
     .profile-btn.active {
         background: rgba(18, 51, 82, 0.1);
-    }
-
-    .profile-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        color: #fff;
-        background: linear-gradient(135deg, var(--header-secondary), var(--header-secondary-light));
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-        flex-shrink: 0;
-        font-size: 14px;
-        text-transform: uppercase;
-        font-family: 'Roboto', sans-serif;
-    }
-
-    .profile-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 50%;
     }
 
     .profile-name {
@@ -454,10 +498,20 @@
             height: 32px;
             font-size: 13px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            min-width: 32px;
+            min-height: 32px;
         }
 
         .profile-name {
             display: none !important; /* Sembunyikan nama di mobile */
+        }
+
+        .mobile-profile-avatar {
+            width: 45px;
+            height: 45px;
+            font-size: 18px;
+            min-width: 45px;
+            min-height: 45px;
         }
 
         /* DROPDOWN MENU MOBILE - MUNCUL DI BAWAH PROFILE BUTTON */
@@ -696,22 +750,6 @@
             background: rgba(255, 255, 255, 0.1);
         }
 
-        .mobile-profile-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            color: #fff;
-            background: linear-gradient(135deg, var(--header-secondary), var(--header-secondary-light));
-            box-shadow: 0 4px 12px rgba(255, 88, 30, 0.3);
-            flex-shrink: 0;
-            font-size: 20px;
-            text-transform: uppercase;
-        }
-
         .mobile-profile-info {
             flex: 1;
             min-width: 0;
@@ -807,6 +845,8 @@
             width: 30px;
             height: 30px;
             font-size: 12px;
+            min-width: 30px;
+            min-height: 30px;
         }
         
         .dropdown-menu a,
@@ -904,19 +944,69 @@
             </div>
             
             <div class="nav-auth">
+                <!-- BAGIAN AVATAR DI NAVBAR -->
                 @if(session()->has('user') && isset(session('user')['id']))
+                    @php
+                        $user = session('user');
+                        $userName = $user['name'] ?? 'User';
+                        $avatarUrl = $user['avatar'] ?? null;
+                        
+                        // Generate initials dari nama user
+                        $initials = 'GU'; // Guest User default
+                        if (!empty($userName)) {
+                            $nameParts = explode(' ', trim($userName));
+                            if (count($nameParts) >= 2) {
+                                // Jika ada 2 kata atau lebih: ambil huruf pertama dari kata pertama dan terakhir
+                                $initials = strtoupper(substr($nameParts[0], 0, 1) . substr(end($nameParts), 0, 1));
+                            } else {
+                                // Jika hanya satu kata: ambil 2 huruf pertama
+                                $initials = strtoupper(substr($userName, 0, 2));
+                            }
+                        }
+                        
+                        // Debug: cek apa yang ada di avatarUrl
+                        // dd($avatarUrl, session()->all());
+                        
+                        // Tentukan apakah ada avatar yang valid
+                        $hasValidAvatar = false;
+                        
+                        if ($avatarUrl) {
+                            // Cek jika avatar adalah path storage (format: 'avatars/filename.jpg')
+                            if (str_starts_with($avatarUrl, 'avatars/')) {
+                                $hasValidAvatar = true;
+                                $avatarUrl = asset('storage/' . $avatarUrl);
+                            }
+                            // Cek jika avatar sudah URL lengkap
+                            elseif (filter_var($avatarUrl, FILTER_VALIDATE_URL)) {
+                                $hasValidAvatar = true;
+                            }
+                            // Cek jika avatar adalah path public
+                            elseif (str_starts_with($avatarUrl, 'public/avatars/')) {
+                                $hasValidAvatar = true;
+                                $avatarUrl = asset(str_replace('public/', 'storage/', $avatarUrl));
+                            }
+                        }
+                    @endphp
+                    
                     <div class="profile-wrapper">
                         <button id="profile-dropdown" class="profile-btn" type="button" aria-expanded="false">
-                            @if(!empty(session('user')['avatar']))
+                            @if($hasValidAvatar && $avatarUrl)
                                 <span class="profile-avatar">
-                                    <img src="{{ session('user')['avatar'] }}" alt="avatar">
+                                    <img src="{{ $avatarUrl }}" 
+                                         alt="Avatar {{ $userName }}"
+                                         onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML='{{ $initials }}'; this.parentElement.classList.add('initials-only');">
                                 </span>
                             @else
-                                <span class="profile-avatar">{{ strtoupper(substr(session('user')['name'] ?? 'U', 0, 1)) }}</span>
+                                <span class="profile-avatar initials-only">{{ $initials }}</span>
                             @endif
-                            <span class="profile-name">{{ strlen(session('user')['name'] ?? '') > 12 ? substr(session('user')['name'], 0, 12).'...' : (session('user')['name'] ?? 'User') }}</span>
+                            
+                            <span class="profile-name">
+                                {{ strlen($userName) > 12 ? substr($userName, 0, 12).'...' : $userName }}
+                            </span>
                             <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
                         </button>
+                        
+                        <!-- Dropdown menu -->
                         <div id="dropdown-menu" class="dropdown-menu">
                             <a href="{{ route('customer.dashboardprofile') }}">
                                 <i class="fas fa-user-circle"></i>
@@ -960,19 +1050,51 @@
 
     <div class="mobile-sidebar-content">
         @if(session()->has('user') && isset(session('user')['id']))
+            @php
+                $mobileUser = session('user');
+                $mobileUserName = $mobileUser['name'] ?? 'User';
+                $mobileAvatarUrl = $mobileUser['avatar'] ?? null;
+                
+                // Generate initials untuk mobile
+                $mobileInitials = 'GU';
+                if (!empty($mobileUserName)) {
+                    $mobileNameParts = explode(' ', trim($mobileUserName));
+                    if (count($mobileNameParts) >= 2) {
+                        $mobileInitials = strtoupper(substr($mobileNameParts[0], 0, 1) . substr(end($mobileNameParts), 0, 1));
+                    } else {
+                        $mobileInitials = strtoupper(substr($mobileUserName, 0, 2));
+                    }
+                }
+                
+                // Tentukan apakah ada avatar yang valid untuk mobile
+                $mobileHasValidAvatar = false;
+                
+                if ($mobileAvatarUrl) {
+                    if (str_starts_with($mobileAvatarUrl, 'avatars/')) {
+                        $mobileHasValidAvatar = true;
+                        $mobileAvatarUrl = asset('storage/' . $mobileAvatarUrl);
+                    } elseif (filter_var($mobileAvatarUrl, FILTER_VALIDATE_URL)) {
+                        $mobileHasValidAvatar = true;
+                    } elseif (str_starts_with($mobileAvatarUrl, 'public/avatars/')) {
+                        $mobileHasValidAvatar = true;
+                        $mobileAvatarUrl = asset(str_replace('public/', 'storage/', $mobileAvatarUrl));
+                    }
+                }
+            @endphp
+            
             <div class="mobile-profile-section" onclick="location.href='{{ route('customer.dashboardprofile') }}'">
-                @if(!empty(session('user')['avatar']))
+                @if($mobileHasValidAvatar && $mobileAvatarUrl)
                     <div class="mobile-profile-avatar">
-                        <img src="{{ session('user')['avatar'] }}" alt="avatar">
+                        <img src="{{ $mobileAvatarUrl }}" 
+                             alt="Avatar {{ $mobileUserName }}"
+                             onerror="this.onerror=null; this.innerHTML='{{ $mobileInitials }}'; this.classList.add('initials-only');">
                     </div>
                 @else
-                    <div class="mobile-profile-avatar">
-                        {{ strtoupper(substr(session('user')['name'] ?? 'U', 0, 1)) }}
-                    </div>
+                    <div class="mobile-profile-avatar initials-only">{{ $mobileInitials }}</div>
                 @endif
                 <div class="mobile-profile-info">
-                    <div class="mobile-profile-name">{{ session('user')['name'] ?? 'User' }}</div>
-                    <div class="mobile-profile-email">{{ session('user')['email'] ?? '' }}</div>
+                    <div class="mobile-profile-name">{{ $mobileUserName }}</div>
+                    <div class="mobile-profile-email">{{ $mobileUser['email'] ?? '' }}</div>
                 </div>
             </div>
         @endif
@@ -1216,7 +1338,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.style.overflow = 'hidden';
             if (mobileMenuToggle) {
                 mobileMenuToggle.classList.add('active');
-    
             }
         }
     }
@@ -1228,7 +1349,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.style.overflow = '';
             if (mobileMenuToggle) {
                 mobileMenuToggle.classList.remove('active');
-          
             }
         }
     }
@@ -1243,15 +1363,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Close mobile sidebar dengan tombol close
-    if (mobileSidebarClose) {
-        mobileSidebarClose.addEventListener('click', function(e) {
-            e.stopPropagation();
-            closeMobileSidebar();
-        });
-    }
-
-    // Close on overlay click
+    // Close mobile sidebar with overlay click
     if (mobileSidebarOverlay) {
         mobileSidebarOverlay.addEventListener('click', function(e) {
             // Jika dropdown profile sedang terbuka, jangan tutup sidebar
@@ -1326,5 +1438,33 @@ document.addEventListener('DOMContentLoaded', function() {
         navbar.style.background = 'white';
         navbar.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)';
     }
+    
+    /* ========== AVATAR IMAGE ERROR HANDLING ========== */
+    const avatarImages = document.querySelectorAll('.profile-avatar img, .mobile-profile-avatar img');
+    avatarImages.forEach(img => {
+        img.addEventListener('error', function() {
+            console.log('Avatar image failed to load, showing initials');
+            
+            const parent = this.parentElement;
+            const altText = this.alt || '';
+            const userName = altText.replace('Avatar ', '').replace('avatar ', '') || 'User';
+            
+            // Get initials
+            let initials = 'GU';
+            if (userName && userName !== 'User') {
+                const words = userName.split(' ');
+                if (words.length >= 2) {
+                    initials = words[0].charAt(0) + words[words.length - 1].charAt(0);
+                } else {
+                    initials = userName.substring(0, 2);
+                }
+                initials = initials.toUpperCase();
+            }
+            
+            // Replace image with initials
+            parent.innerHTML = initials;
+            parent.classList.add('initials-only');
+        });
+    });
 });
 </script>
