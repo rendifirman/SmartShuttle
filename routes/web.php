@@ -13,7 +13,8 @@ use App\Http\Controllers\ETicketController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Customer\CekReservasiController;
 use App\Http\Controllers\AdminController;
-use App\Http\Controllers\ArtikelController;
+use App\Http\Controllers\ArtikelController; // Controller untuk customer
+use App\Http\Controllers\Admin\ArtikelController as AdminArtikelController; // Alias untuk admin
 use App\Http\Controllers\Admin\ProfilePerusahaanController;
 use App\Http\Controllers\Admin\JadwalController;
 use App\Http\Controllers\API\PaymentController;
@@ -64,6 +65,13 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 // ★★★ ROUTE UTAMA DAN TAMU ★★★
 Route::get('/', [CustomerController::class, 'beranda'])->name('customer.beranda');
 Route::get('/customer/beranda', [CustomerController::class, 'beranda']);
+
+// ★★★ ARTIKEL ROUTES UNTUK CUSTOMER (BISA DIAKSES TANPA LOGIN) ★★★
+Route::prefix('customer')->name('customer.')->group(function () {
+    Route::get('/artikel', [ArtikelController::class, 'index'])->name('artikel.index');
+    Route::get('/artikel/{slug}', [ArtikelController::class, 'show'])->name('artikel.show');
+    Route::get('/artikel/kategori/{kategori}', [ArtikelController::class, 'kategori'])->name('artikel.kategori');
+});
 
 // Halaman statis - bisa diakses tamu
 Route::get('/bantuan', [CustomerController::class, 'bantuan'])->name('customer.bantuan');
@@ -306,13 +314,18 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     Route::get('/promo/{id}/edit', [AdminController::class, 'editPromo'])->name('admin.promo.edit');
     Route::put('/promo/{id}', [AdminController::class, 'updatePromo'])->name('admin.promo.update');
     Route::delete('/promo/{id}', [AdminController::class, 'destroyPromo'])->name('admin.promo.destroy');
-    Route::get('/artikel', [AdminController::class, 'artikel'])->name('admin.artikel.index');
-    Route::get('/artikel/create', [AdminController::class, 'createArtikel'])->name('admin.artikel.create');
-    Route::post('/artikel', [AdminController::class, 'storeArtikel'])->name('admin.artikel.store');
-    Route::get('/artikel/{id}/edit', [AdminController::class, 'editArtikel'])->name('admin.artikel.edit');
-    Route::put('/artikel/{id}', [AdminController::class, 'updateArtikel'])->name('admin.artikel.update');
-    Route::delete('/artikel/{id}', [AdminController::class, 'destroyArtikel'])->name('admin.artikel.destroy');
-    Route::get('/artikel/{id}', [AdminController::class, 'showArtikel'])->name('admin.artikel.show');
+    
+    // ★★★ ARTIKEL ROUTES UNTUK ADMIN ★★★
+    Route::prefix('artikel')->name('admin.artikel.')->group(function () {
+        Route::get('/', [AdminArtikelController::class, 'index'])->name('index');
+        Route::get('/create', [AdminArtikelController::class, 'create'])->name('create');
+        Route::post('/', [AdminArtikelController::class, 'store'])->name('store');
+        Route::get('/{id}', [AdminArtikelController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [AdminArtikelController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [AdminArtikelController::class, 'update'])->name('update');
+        Route::delete('/{id}', [AdminArtikelController::class, 'destroy'])->name('destroy');
+    });
+    
     Route::get('/kontak', [AdminController::class, 'kontak'])->name('admin.kontak');
     Route::get('/kontakperusahaan', [AdminController::class, 'kontakPerusahaan'])->name('admin.kontakperusahaan');
     Route::put('/kontakperusahaan/{id}', [AdminController::class, 'updateKontakPerusahaan'])->name('admin.kontak.update');
@@ -671,13 +684,10 @@ Route::get('/paylabs/create-payment-test/{method?}', function ($method = 'qris')
     }
 })->name('paylabs.create_payment_test');
 
-// Route untuk review
-Route::post('/customer/review', [CustomerController::class, 'storeReview'])->name('customer.review.store');
-
-// Route artikel
-Route::get('/customer/artikel', [ArtikelController::class, 'index'])->name('customer.artikel');
-Route::get('/customer/artikel/{slug}', [ArtikelController::class, 'show'])->name('customer.artikel.detail');
-Route::get('/customer/artikel/kategori/{kategori}', [ArtikelController::class, 'kategori'])->name('customer.artikel.kategori');
+// Route artikel - PERBAIKAN NAMA ROUTE (alternatif tanpa prefix)
+Route::get('/artikel', [ArtikelController::class, 'index'])->name('artikel.index');
+Route::get('/artikel/{slug}', [ArtikelController::class, 'show'])->name('artikel.show');
+Route::get('/artikel/kategori/{kategori}', [ArtikelController::class, 'kategori'])->name('artikel.kategori');
 
 // ★★★ PAYMENT WEBHOOK ROUTES ★★★
 Route::prefix('payment')->group(function () {

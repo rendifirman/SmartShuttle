@@ -4,66 +4,77 @@ namespace App\Http\Controllers;
 
 use App\Models\Artikel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ArtikelController extends Controller
 {
     /**
-     * Menampilkan daftar artikel
+     * Menampilkan daftar artikel untuk customer
      */
     public function index(Request $request)
     {
         $user = session()->get('user');
+        
+        $query = Artikel::where('status', true)
+            ->whereNotNull('tanggal_publikasi')
+            ->where('tanggal_publikasi', '<=', now());
 
         // Filter berdasarkan kategori jika ada
-        $query = Artikel::aktif()->terbaru();
-
-        if ($request->has('kategori')) {
+        if ($request->filled('kategori')) {
             $query->where('kategori', $request->kategori);
         }
 
-        if ($request->has('search')) {
+        // Filter berdasarkan pencarian
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('judul', 'like', '%' . $search . '%')
                   ->orWhere('konten', 'like', '%' . $search . '%')
-                  ->orWhere('kategori', 'like', '%' . $search . '%');
+                  ->orWhere('penulis', 'like', '%' . $search . '%');
             });
         }
 
-        $articles = $query->paginate(9);
-
-        // Ambil semua kategori untuk filter
-        $kategoriList = Artikel::aktif()
+        $articles = $query->orderBy('tanggal_publikasi', 'desc')->paginate(9);
+        
+        $kategoriList = Artikel::where('status', true)
+            ->whereNotNull('tanggal_publikasi')
+            ->where('tanggal_publikasi', '<=', now())
             ->select('kategori')
             ->distinct()
-            ->whereNotNull('kategori')
             ->pluck('kategori')
             ->toArray();
-
-        return view('customer.artikel_index', compact('user', 'articles', 'kategoriList'));
+        
+        return view('customer.artikel_index', compact('articles', 'user', 'kategoriList'));
     }
 
     /**
-     * Menampilkan detail artikel
+     * Menampilkan detail artikel untuk customer
      */
     public function show($slug)
     {
         $user = session()->get('user');
-
-        $article = Artikel::aktif()->where('slug', $slug)->firstOrFail();
-
+        
+        $artikel = Artikel::where('slug', $slug)
+            ->where('status', true)
+            ->whereNotNull('tanggal_publikasi')
+            ->where('tanggal_publikasi', '<=', now())
+            ->firstOrFail();
+        
         // Tambah jumlah dilihat
-        $article->increment('dilihat');
-
-        // Artikel terkait (dengan kategori yang sama)
-        $relatedArticles = Artikel::aktif()
-            ->where('kategori', $article->kategori)
-            ->where('id', '!=', $article->id)
-            ->terbaru()
-            ->limit(3)
+        $artikel->increment('dilihat');
+        
+        // Artikel terkait
+        $relatedArticles = Artikel::where('kategori', $artikel->kategori)
+            ->where('id', '!=', $artikel->id)
+            ->where('status', true)
+            ->whereNotNull('tanggal_publikasi')
+            ->where('tanggal_publikasi', '<=', now())
+            ->orderBy('tanggal_publikasi', 'desc')
+            ->take(3)
             ->get();
-
-        return view('customer.artikel_detail', compact('user', 'article', 'relatedArticles'));
+        
+        // Pastikan view ini ada
+        return view('customer.artikel_detail', compact('user', 'artikel', 'relatedArticles'));
     }
 
     /**
@@ -72,19 +83,25 @@ class ArtikelController extends Controller
     public function kategori($kategori)
     {
         $user = session()->get('user');
-
-        $articles = Artikel::aktif()
-            ->where('kategori', $kategori)
-            ->terbaru()
+        
+        $articles = Artikel::where('kategori', $kategori)
+            ->where('status', true)
+            ->whereNotNull('tanggal_publikasi')
+            ->where('tanggal_publikasi', '<=', now())
+            ->orderBy('tanggal_publikasi', 'desc')
             ->paginate(9);
-
-        $kategoriList = Artikel::aktif()
+        
+        $kategoriNama = $kategori;
+        
+        // Kategori yang tersedia
+        $kategoriList = Artikel::where('status', true)
+            ->whereNotNull('tanggal_publikasi')
+            ->where('tanggal_publikasi', '<=', now())
             ->select('kategori')
             ->distinct()
-            ->whereNotNull('kategori')
             ->pluck('kategori')
             ->toArray();
-
-        return view('customer.artikel_kategori', compact('user', 'articles', 'kategoriList', 'kategori'));
+        
+        return view('customer.artikel_index', compact('user', 'articles', 'kategoriNama', 'kategoriList'));
     }
-}
+}d

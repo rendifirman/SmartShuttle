@@ -220,10 +220,10 @@ textarea {
                     <textarea id="konten" name="konten" placeholder="Tulis konten artikel di sini..." required></textarea>
                 </div>
                 <div class="form-group">
-                    <label for="gambar">Gambar Artikel</label>
-                    <input type="file" id="gambar" name="gambar" accept="image/*">
-                    <small style="color: #666; display: block; margin-top: 5px;">Format: JPG, PNG, Max: 2MB</small>
-                </div>
+    <label for="gambar">Gambar Artikel</label>
+    <input type="file" id="gambar" name="gambar" accept="image/*">
+    <small style="color: #666; display: block; margin-top: 5px;">Format: JPG, PNG, Max: 2MB</small>
+</div>
             </div>
 
             <div class="form-row">

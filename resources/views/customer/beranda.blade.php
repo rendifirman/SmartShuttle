@@ -2339,6 +2339,8 @@
     use App\Models\Promo;
     use App\Models\Artikel;
     use Carbon\Carbon;
+    use Illuminate\Support\Facades\Storage; // TAMBAHKAN INI
+    
     $profile = MProfilePerusahaan::first();
 
     // Data user dari session
@@ -2412,35 +2414,51 @@
         ];
     }
 
-    // Data artikel
-    $artikelsFromDB = Artikel::orderBy('tanggal_publikasi', 'desc')->take(3)->get();
+    // DATA ARTIKEL - PERBAIKAN: Gunakan gambar dari database
+    $artikelsFromDB = Artikel::where('status', true) // Hanya ambil yang aktif
+        ->whereNotNull('tanggal_publikasi')
+        ->where('tanggal_publikasi', '<=', Carbon::now())
+        ->orderBy('tanggal_publikasi', 'desc')
+        ->take(3)
+        ->get();
+    
     $articles = [];
 
-    // List nama file foto kamu yang ada di public/images/
-    $fotoKamu = [
-        'AR1.png',
-        'AR2.png',
-        'AR3.png',
-    ];
-
     foreach ($artikelsFromDB as $index => $artikel) {
-        $fotoIndex = $index % count($fotoKamu);
-        $namaFoto = $fotoKamu[$fotoIndex];
+        // Gunakan gambar dari database jika ada
+        $gambar = asset('images/AR1.png'); // default fallback
+        
+        if ($artikel->gambar) {
+            // Cek apakah gambar ada di storage publik
+            if (Storage::disk('public')->exists($artikel->gambar)) {
+                $gambar = asset('storage/' . $artikel->gambar);
+            }
+            // Jika gambar sudah full URL (misalnya dari seeder)
+            elseif (filter_var($artikel->gambar, FILTER_VALIDATE_URL)) {
+                $gambar = $artikel->gambar;
+            }
+            // Jika gambar adalah path relatif di public folder
+            elseif (file_exists(public_path($artikel->gambar))) {
+                $gambar = asset($artikel->gambar);
+            }
+        }
 
         $articles[] = [
             'id' => $artikel->id,
-            'image' => asset('images/' . $namaFoto),
+            'image' => $gambar, // Gunakan gambar dari database
             'category' => $artikel->kategori,
             'title' => $artikel->judul,
             'excerpt' => substr(strip_tags($artikel->konten), 0, 100) . '...',
             'date' => Carbon::parse($artikel->tanggal_publikasi)->translatedFormat('d F Y'),
             'read_time' => '5 min read',
-            'tags' => explode(', ', $artikel->meta_keywords),
+            'tags' => $artikel->meta_keywords ? explode(', ', $artikel->meta_keywords) : [],
             'full_content' => $artikel->konten,
-            'author' => $artikel->penulis
+            'author' => $artikel->penulis,
+            'slug' => $artikel->slug ?? 'artikel-' . $artikel->id
         ];
     }
 
+    // Jika tidak ada artikel aktif, gunakan data dummy
     if (empty($articles)) {
         $articles = [
             [
@@ -2453,11 +2471,12 @@
                 'read_time' => '5 min read',
                 'tags' => ['Perjalanan', 'Tips', 'Liburan'],
                 'full_content' => '<h3>Persiapan Sebelum Perjalanan</h3><p>Perjalanan dengan shuttle selama liburan memerlukan persiapan yang matang. Pastikan Anda memesan tiket jauh-jauh hari untuk mendapatkan harga terbaik dan kursi pilihan. Smart Shuttle menawarkan pemesanan online yang mudah melalui website atau aplikasi kami.</p>',
-                'author' => 'Admin SmartShuttle'
+                'author' => 'Admin SmartShuttle',
+                'slug' => 'tips-perjalanan-aman'
             ],
             [
                 'id' => 2,
-                'image' => asset('images/article2.jpg'),
+                'image' => asset('/images/AR2.png'),
                 'category' => 'Promo',
                 'title' => 'Diskon Spesial SmartSend untuk Pengiriman Paket',
                 'excerpt' => 'Dapatkan diskon 25% untuk semua pengiriman paket antar kota melalui layanan SmartSend. Berlaku hingga akhir bulan.',
@@ -2465,11 +2484,12 @@
                 'read_time' => '3 min read',
                 'tags' => ['Promo', 'SmartSend', 'Diskon'],
                 'full_content' => '<h3>Diskon SmartSend</h3><p>Nikmati diskon 25% untuk semua pengiriman paket antar kota melalui layanan SmartSend. Berlaku hingga akhir bulan Maret 2024.</p>',
-                'author' => 'Admin SmartShuttle'
+                'author' => 'Admin SmartShuttle',
+                'slug' => 'diskon-smartsend'
             ],
             [
                 'id' => 3,
-                'image' => asset('images/article3.jpg'),
+                'image' => asset('/images/AR3.png'),
                 'category' => 'Berita',
                 'title' => 'Rute Baru SmartShuttle: Jakarta - Bandung',
                 'excerpt' => 'SmartShuttle kini melayani rute baru Jakarta - Bandung dengan armada terbaru dan fasilitas lengkap.',
@@ -2477,7 +2497,8 @@
                 'read_time' => '4 min read',
                 'tags' => ['Berita', 'Rute Baru', 'Jakarta-Bandung'],
                 'full_content' => '<h3>Rute Baru Jakarta - Bandung</h3><p>SmartShuttle kini melayani rute baru Jakarta - Bandung dengan armada terbaru dan fasilitas lengkap untuk kenyamanan perjalanan Anda.</p>',
-                'author' => 'Admin SmartShuttle'
+                'author' => 'Admin SmartShuttle',
+                'slug' => 'rute-baru-jakarta-bandung'
             ]
         ];
     }
@@ -2735,36 +2756,59 @@
         Dapatkan informasi terbaru seputar layanan transportasi, tips perjalanan, dan berita terbaru dari Smart Shuttle.
     </p>
 
-    <div class="articles-grid">
-        @foreach($articles as $index => $article)
-        <div class="article-card">
-            <img src="{{ $article['image'] }}" alt="{{ $article['title'] }}" class="article-image">
-            <div class="article-content">
-                <span class="article-category">{{ $article['category'] }}</span>
-                <h3 class="article-title">{{ $article['title'] }}</h3>
-                <p class="article-excerpt">{{ $article['excerpt'] }}</p>
-                <div class="article-meta">
-                    <div class="article-date">
-                        <i class="far fa-calendar-alt"></i>
-                        {{ $article['date'] }}
+    @if(isset($articles) && count($articles) > 0)
+        <div class="articles-grid">
+            @foreach($articles as $article)
+            <div class="article-card">
+                <!-- Debug gambar (bisa dihapus setelah testing) -->
+                <!-- <small style="color:#666; font-size:10px;">{{ $article['image'] }}</small> -->
+                
+                <img src="{{ $article['image'] ?? asset('images/AR1.png') }}" 
+                     alt="{{ $article['title'] ?? 'Artikel' }}" 
+                     class="article-image"
+                     onerror="this.onerror=null; this.src='{{ asset('images/AR1.png') }}';">
+                
+                <div class="article-content">
+                    <span class="article-category">{{ $article['category'] ?? 'Umum' }}</span>
+                    <h3 class="article-title">{{ $article['title'] ?? 'Judul Artikel' }}</h3>
+                    <p class="article-excerpt">{{ $article['excerpt'] ?? 'Deskripsi artikel...' }}</p>
+                    <div class="article-meta">
+                        <div class="article-date">
+                            <i class="far fa-calendar-alt"></i>
+                            {{ $article['date'] ?? date('d M Y') }}
+                        </div>
+                        
+                        <!-- Pastikan ada slug -->
+                        @if(isset($article['slug']) && !empty($article['slug']))
+                            <a href="{{ route('artikel.show', $article['slug']) }}" class="article-read-more">
+                                Baca Selengkapnya →
+                            </a>
+                        @elseif(isset($article['id']))
+                            <a href="{{ route('artikel.show', $article['id']) }}" class="article-read-more">
+                                Baca Selengkapnya →
+                            </a>
+                        @else
+                            <a href="{{ route('artikel.index') }}" class="article-read-more">
+                                Baca Selengkapnya →
+                            </a>
+                        @endif
                     </div>
-                    @php
-                        $artikelModel = \App\Models\Artikel::find($article['id']);
-                        $slug = $artikelModel ? $artikelModel->slug : $article['id'];
-                    @endphp
-
-                    <a href="{{ route('customer.artikel.detail', $slug) }}" class="article-read-more">
-                        Baca Selengkapnya →
-                    </a>
                 </div>
             </div>
+            @endforeach
         </div>
-        @endforeach
-    </div>
 
-    <a href="{{ route('customer.artikel') }}" class="view-all-articles">
-        Lihat Semua Artikel <i class="fas fa-arrow-right"></i>
-    </a>
+        <a href="{{ route('artikel.index') }}" class="view-all-articles">
+            Lihat Semua Artikel <i class="fas fa-arrow-right"></i>
+        </a>
+    @else
+        <div class="text-center py-5">
+            <p>Tidak ada artikel tersedia saat ini.</p>
+            <a href="{{ route('artikel.index') }}" class="view-all-articles mt-3">
+                Lihat Artikel <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    @endif
 </section>
 
 <!-- Feedback Section -->
@@ -2978,6 +3022,17 @@ document.addEventListener('DOMContentLoaded', function() {
             goToSlide(currentSlide);
         }, 5000);
     }
+
+    /* ========== ARTIKEL DEBUG ========== */
+    // Tampilkan debug informasi artikel di console
+    console.log('=== ARTIKEL DEBUG ===');
+    @foreach($articles as $index => $article)
+        console.log('Artikel {{ $index + 1 }}:', {
+            title: '{{ $article["title"] }}',
+            image: '{{ $article["image"] }}',
+            slug: '{{ $article["slug"] ?? "tidak-ada" }}'
+        });
+    @endforeach
 
     console.log('=== INITIALIZATION COMPLETE ===');
 });

@@ -220,17 +220,29 @@ textarea {
                     <label for="konten">Konten Artikel <span style="color: red">*</span></label>
                     <textarea id="konten" name="konten" placeholder="Tulis konten artikel di sini..." required>{{ old('konten', $artikel->konten) }}</textarea>
                 </div>
-                <div class="form-group">
-                    <label for="gambar">Gambar Artikel</label>
-                    <input type="file" id="gambar" name="gambar" accept="image/*">
-                    <small style="color: #666; display: block; margin-top: 5px;">Format: JPG, PNG, Max: 2MB</small>
-                    @if($artikel->gambar)
-                        <div style="margin-top: 10px;">
-                            <img src="{{ Storage::url($artikel->gambar) }}" alt="Current Image" style="max-width: 200px; max-height: 150px; border: 1px solid #ddd; border-radius: 4px;">
-                            <p style="margin-top: 5px; font-size: 12px; color: #666;">Gambar saat ini</p>
-                        </div>
-                    @endif
-                </div>
+               <div class="form-group">
+    <div class="form-group">
+    <label for="gambar">Gambar Artikel</label>
+    <input type="file" id="gambar" name="gambar" accept="image/*">
+    <small style="color: #666; display: block; margin-top: 5px;">
+        Format: JPG, PNG, Max: 2MB
+    </small>
+    
+    @if($artikel->gambar)
+        <div style="margin-top: 10px;">
+            <img src="{{ Storage::url($artikel->gambar) }}" 
+                 alt="Current Image" 
+                 style="max-width: 200px; max-height: 150px; border: 1px solid #ddd; border-radius: 4px;">
+            <p style="margin-top: 5px; font-size: 12px; color: #666;">Gambar saat ini</p>
+            
+            <!-- Option to delete current image -->
+            <label style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                <input type="checkbox" name="hapus_gambar" value="1">
+                Hapus gambar saat ini
+            </label>
+        </div>
+    @endif
+</div>
             </div>
 
             <div class="form-row">
