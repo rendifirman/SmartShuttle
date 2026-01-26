@@ -215,7 +215,7 @@ tbody tr:hover {
     color: #cc6600;
 }
 
-/* Type Badges */
+/* Type Badges - UNTUK TIPE LOKASI */
 .type-badge {
     padding: 5px 12px;
     border-radius: 15px;
@@ -223,17 +223,61 @@ tbody tr:hover {
     font-weight: 600;
     display: inline-block;
 }
-.type-regular {
+.type-pusat-perbelanjaan {
     background: #e3f2fd;
     color: #1565c0;
 }
-.type-premium {
+.type-perkantoran {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+.type-stasiun {
     background: #fff3e0;
     color: #ef6c00;
 }
-.type-express {
+.type-mall {
     background: #f3e5f5;
     color: #7b1fa2;
+}
+.type-jalan-utama {
+    background: #e0f2f1;
+    color: #00695c;
+}
+.type-wisata {
+    background: #fce4ec;
+    color: #c2185b;
+}
+.type-pusat-kota {
+    background: #fff8e1;
+    color: #f57c00;
+}
+.type-bandara {
+    background: #e8eaf6;
+    color: #3949ab;
+}
+.type-kampus {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+.type-rumah-sakit {
+    background: #ffebee;
+    color: #d32f2f;
+}
+.type-hotel {
+    background: #e0f2f1;
+    color: #00695c;
+}
+.type-kawasan-komersial {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+.type-perumahan {
+    background: #fff8e1;
+    color: #f57c00;
+}
+.type-lainnya {
+    background: #f5f5f5;
+    color: #616161;
 }
 
 /* Action Buttons */
@@ -330,120 +374,6 @@ tbody tr:hover {
     margin: 0;
 }
 
-/* ================= FORM CARD ================= */
-.form-card {
-    background: #fff;
-    border-radius: 12px;
-    padding: 30px;
-    box-shadow: 0 5px 20px rgba(0,0,0,.08);
-    margin-bottom: 25px;
-}
-.form-card h3 {
-    margin-top: 0;
-    margin-bottom: 25px;
-    border-bottom: 2px solid #ff6a00;
-    padding-bottom: 12px;
-    font-size: 20px;
-    color: #0b2a4a;
-}
-.form-row {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    margin-bottom: 20px;
-}
-.form-group {
-    margin-bottom: 18px;
-}
-.form-group label {
-    font-size: 14px;
-    font-weight: 600;
-    display: block;
-    margin-bottom: 8px;
-    color: #333;
-}
-.form-group input,
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 12px 15px;
-    border-radius: 6px;
-    border: 1px solid #ddd;
-    font-size: 14px;
-    transition: border-color 0.3s;
-}
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-    outline: none;
-    border-color: #1e88e5;
-    box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.1);
-}
-textarea {
-    resize: none;
-    min-height: 80px;
-}
-
-/* ================= FORM ACTIONS ================= */
-.form-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 25px;
-    padding-top: 20px;
-    border-top: 1px solid #eee;
-}
-.btn-save {
-    background: #0b2a4a;
-    color: #fff;
-    padding: 12px 30px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: background-color 0.3s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-.btn-save:hover {
-    background: #1a3a5f;
-}
-.btn-reset {
-    background: #ff6a00;
-    color: #fff;
-    padding: 12px 30px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: background-color 0.3s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-.btn-reset:hover {
-    background: #e55c00;
-}
-.btn-cancel {
-    background: #6c757d;
-    color: #fff;
-    padding: 12px 30px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: background-color 0.3s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-.btn-cancel:hover {
-    background: #5a6268;
-}
-
 /* ================= ALERTS ================= */
 .alert {
     padding: 15px 20px;
@@ -465,11 +395,6 @@ textarea {
     border: 1px solid #f5c6cb;
 }
 
-/* ================= UTILITIES ================= */
-.hidden {
-    display: none !important;
-}
-
 /* ================= RESPONSIVE ================= */
 @media (max-width: 992px) {
     .summary {
@@ -480,22 +405,6 @@ textarea {
 @media (max-width: 768px) {
     .filter-top {
         grid-template-columns: repeat(2, 1fr);
-    }
-
-    .form-row {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-
-    .form-actions {
-        flex-direction: column;
-    }
-
-    .btn-save,
-    .btn-reset,
-    .btn-cancel {
-        width: 100%;
-        text-align: center;
     }
 
     .table-actions {
@@ -551,6 +460,21 @@ textarea {
         padding: 5px 8px;
     }
 }
+
+/* SweetAlert Custom */
+.swal2-confirm-custom {
+    background: #dc3545 !important;
+    border: none !important;
+    padding: 10px 25px !important;
+    border-radius: 6px !important;
+}
+
+.swal2-cancel-custom {
+    background: #6c757d !important;
+    border: none !important;
+    padding: 10px 25px !important;
+    border-radius: 6px !important;
+}
 </style>
 @endpush
 
@@ -579,6 +503,14 @@ textarea {
                 <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
             </div>
         @endif
+
+        <!-- INFO SECTION -->
+        <div style="background: #e3f2fd; padding: 12px 15px; margin-bottom: 15px; border-radius: 6px; border-left: 4px solid #2196f3;">
+            <small style="color: #0b2a4a;">
+                <i class="fas fa-info-circle"></i> 
+                <strong>Info:</strong> Menampilkan data outlet dengan field <code>tipe_outlet</code> dari database.
+            </small>
+        </div>
 
         <!-- SUMMARY -->
         <div class="summary">
@@ -667,7 +599,7 @@ textarea {
                             <th>Alamat</th>
                             <th>Telepon</th>
                             <th>Email</th>
-                            <th>Tipe</th>
+                            <th>Tipe Lokasi</th>
                             <th>Kapasitas</th>
                             <th>Status</th>
                             <th>Aksi</th>
@@ -684,14 +616,44 @@ textarea {
                             <td>{{ $outlet->email }}</td>
                             <td>
                                 @php
-                                    $typeClass = '';
-                                    if($outlet->tipe_outlet == 'premium') $typeClass = 'type-premium';
-                                    elseif($outlet->tipe_outlet == 'express') $typeClass = 'type-express';
-                                    else $typeClass = 'type-regular';
+                                    // GUNAKAN tipe_outlet bukan tipe_lokasi
+                                    $tipeOutlet = $outlet->tipe_outlet ?? 'lainnya';
+                                    
+                                    // Mapping untuk display
+                                    $tipeMapping = [
+                                        'mall' => 'Mall',
+                                        'pusat_perbelanjaan' => 'Pusat Perbelanjaan',
+                                        'perkantoran' => 'Perkantoran',
+                                        'stasiun' => 'Stasiun',
+                                        'bandara' => 'Bandara',
+                                        'jalan_utama' => 'Jalan Utama',
+                                        'kawasan_komersial' => 'Kawasan Komersial',
+                                        'perumahan' => 'Perumahan',
+                                        'kampus' => 'Kampus',
+                                        'rumah_sakit' => 'Rumah Sakit',
+                                        'hotel' => 'Hotel',
+                                        'wisata' => 'Wisata',
+                                        'pusat_kota' => 'Pusat Kota',
+                                        'lainnya' => 'Lainnya'
+                                    ];
+                                    
+                                    // Konversi value ke teks yang lebih bagus
+                                    $tipeDisplay = $tipeMapping[$tipeOutlet] ?? ucfirst($tipeOutlet);
+                                    
+                                    // Tentukan class CSS untuk badge warna
+                                    $typeClass = 'type-' . str_replace('_', '-', $tipeOutlet);
+                                    if (!in_array($tipeOutlet, array_keys($tipeMapping))) {
+                                        $typeClass = 'type-lainnya';
+                                    }
                                 @endphp
+                                
                                 <span class="type-badge {{ $typeClass }}">
-                                    {{ ucfirst($outlet->tipe_outlet) }}
+                                    {{ $tipeDisplay }}
                                 </span>
+                                <br>
+                                <small style="font-size: 9px; color: #999;">
+                                    DB: {{ $tipeOutlet }}
+                                </small>
                             </td>
                             <td>{{ $outlet->kapasitas ?? '-' }}</td>
                             <td>
@@ -712,10 +674,12 @@ textarea {
                                 <a href="{{ route('admin.outletperusahaan.edit', $outlet->id) }}" class="btn-action btn-edit" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <form action="{{ route('admin.outletperusahaan.destroy', $outlet->id) }}" method="POST" style="display:inline;" onsubmit="return confirmDelete(event)">
+                                <form action="{{ route('admin.outletperusahaan.destroy', $outlet->id) }}" method="POST" style="display:inline;" class="delete-form">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn-action btn-delete" title="Hapus">
+                                    <button type="button" class="btn-action btn-delete delete-btn" 
+                                            title="Hapus"
+                                            data-outlet-name="{{ $outlet->nama_outlet }}">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
@@ -776,7 +740,7 @@ textarea {
                             @if($endPage < $lastPage - 1)
                                 <span>...</span>
                             @endif
-                            <form method="GET" action="{{ route('admin.outlet.index') }}" style="display:inline;">
+                            <form method="GET" action="{{ route('admin.outletperusahaan') }}" style="display:inline;">
                                 @foreach(request()->except('page') as $name => $value)
                                     <input type="hidden" name="{{ $name }}" value="{{ $value }}">
                                 @endforeach
@@ -814,48 +778,120 @@ textarea {
 </div>
 
 <script>
-// Delete confirmation with better UX
-function confirmDelete(event) {
-    event.preventDefault();
-    const form = event.target.closest('form');
+// Load SweetAlert2 jika diperlukan
+function loadSweetAlert() {
+    return new Promise((resolve) => {
+        if (typeof Swal !== 'undefined') {
+            resolve();
+        } else {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+            script.onload = resolve;
+            document.head.appendChild(script);
+        }
+    });
+}
 
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('Outlet List Page Loaded');
+    console.log('Total outlets:', {{ $outlets->count() }});
+    
+    // Load SweetAlert2
+    await loadSweetAlert();
+    
+    // Initialize delete buttons
+    initializeDeleteButtons();
+    
+    // Initialize filter functionality
+    initializeFilter();
+    
+    // Show success/error messages
+    showNotifications();
+});
+
+// Initialize delete buttons
+function initializeDeleteButtons() {
+    // Event delegation for delete buttons
+    document.addEventListener('click', function(e) {
+        const deleteBtn = e.target.closest('.delete-btn');
+        if (deleteBtn) {
+            e.preventDefault();
+            showDeleteConfirmation(deleteBtn);
+        }
+    });
+}
+
+// Show delete confirmation dialog
+function showDeleteConfirmation(deleteBtn) {
+    const outletName = deleteBtn.getAttribute('data-outlet-name');
+    const form = deleteBtn.closest('form');
+    
     Swal.fire({
         title: 'Hapus Outlet?',
-        text: "Data outlet akan dihapus secara permanen!",
+        html: `
+            <div style="text-align: left; font-size: 14px; margin: 15px 0;">
+                <strong>Outlet yang akan dihapus:</strong><br>
+                <span style="color: #0b2a4a; font-weight: 600;">${outletName}</span>
+                <br><br>
+                <span style="color: #dc3545; font-size: 13px;">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Data akan dihapus permanen!
+                </span>
+            </div>
+        `,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Ya, Hapus!',
-        cancelButtonText: 'Batal'
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="fas fa-trash"></i> Ya, Hapus!',
+        cancelButtonText: '<i class="fas fa-times"></i> Batal',
+        reverseButtons: true,
+        focusCancel: true,
+        customClass: {
+            confirmButton: 'swal2-confirm-custom',
+            cancelButton: 'swal2-cancel-custom'
+        }
     }).then((result) => {
         if (result.isConfirmed) {
+            // Show loading
+            Swal.fire({
+                title: 'Menghapus...',
+                text: 'Sedang menghapus data outlet',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Submit form
             form.submit();
         }
     });
 }
 
-// Filter functionality
-document.getElementById('filterButton').addEventListener('click', function() {
-    document.getElementById('filterForm').submit();
-});
-
-// Enter key in search input
-document.getElementById('searchInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        document.getElementById('filterForm').submit();
+// Initialize filter functionality
+function initializeFilter() {
+    const filterButton = document.getElementById('filterButton');
+    const searchInput = document.getElementById('searchInput');
+    
+    if (filterButton) {
+        filterButton.addEventListener('click', function() {
+            document.getElementById('filterForm').submit();
+        });
     }
-});
-
-// Reset filter form
-function resetFilter() {
-    document.getElementById('filterForm').reset();
-    document.getElementById('filterForm').submit();
+    
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('filterForm').submit();
+            }
+        });
+    }
 }
 
-// SweetAlert for notifications
-@if(session('success') || session('error'))
-document.addEventListener('DOMContentLoaded', function() {
+// Show notifications
+function showNotifications() {
     @if(session('success'))
     Swal.fire({
         icon: 'success',
@@ -875,8 +911,7 @@ document.addEventListener('DOMContentLoaded', function() {
         showConfirmButton: false
     });
     @endif
-});
-@endif
+}
 </script>
 
 <!-- SweetAlert2 -->

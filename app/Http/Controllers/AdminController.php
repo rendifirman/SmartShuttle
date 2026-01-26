@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use App\Models\Branch;
 use App\Models\User;
 use App\Models\Rute;
@@ -13,7 +15,6 @@ use App\Models\MLayanan;
 use App\Models\Promo;
 use App\Models\Outlet;
 use App\Models\Artikel;
-use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
@@ -311,111 +312,150 @@ class AdminController extends Controller
         return view('admin.outletperusahaan-create', compact('branches'));
     }
 
-    public function storeOutlet(Request $request)
-    {
-        $request->validate([
-            'branch_id' => 'required|exists:branches,id',
-            'nama_outlet' => 'required|string|max:255',
-            'alamat_lengkap' => 'required|string',
-            'telepon' => 'required|string|max:20',
-            'email' => 'nullable|email|max:255',
-            'tipe_outlet' => 'required|in:regular,premium,express',
-            'kapasitas_parkir' => 'nullable|integer|min:0',
-            'zona_pelayanan' => 'nullable|string|max:100',
-            'jam_operasional' => 'nullable|string|max:50',
-            'status' => 'required|in:aktif,nonaktif,maintenance',
-        ]);
+   // UBAH DI storeOutlet method:
+public function storeOutlet(Request $request)
+{
+    $request->validate([
+        'branch_id' => 'required|exists:branches,id',
+        'nama_outlet' => 'required|string|max:255',
+        'alamat_lengkap' => 'required|string',
+        'telepon' => 'required|string|max:20',
+        'email' => 'nullable|email|max:255',
+        'tipe_outlet' => 'required|in:mall,pusat_perbelanjaan,perkantoran,stasiun,bandara,jalan_utama,kawasan_komersial,perumahan,kampus,rumah_sakit,hotel,wisata,pusat_kota,lainnya', // PAKAI tipe_outlet
+        'kapasitas_parkir' => 'nullable|integer|min:0',
+        'zona_pelayanan' => 'nullable|string|max:100',
+        'jam_operasional' => 'nullable|string|max:50',
+        'status' => 'required|in:aktif,nonaktif,maintenance',
+        'foto_outlet' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+    ]);
 
-        // Generate kode outlet otomatis
-        $lastOutlet = Outlet::orderBy('id', 'desc')->first();
-        $nextNumber = $lastOutlet ? intval(substr($lastOutlet->kode_outlet, 2)) + 1 : 1;
-        $kodeOutlet = 'OT' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
 
-        // Get branch data for kota
-        $branch = Branch::find($request->branch_id);
+    // Generate kode outlet otomatis
+    $lastOutlet = Outlet::orderBy('id', 'desc')->first();
+    $nextNumber = $lastOutlet ? intval(substr($lastOutlet->kode_outlet, 2)) + 1 : 1;
+    $kodeOutlet = 'OT' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
 
-        // Handle fasilitas array
-        $fasilitas = $request->has('fasilitas') ? implode(',', $request->fasilitas) : null;
+    // Get branch data for kota
+    $branch = Branch::find($request->branch_id);
 
-        Outlet::create([
-            'branch_id' => $request->branch_id,
-            'kode_outlet' => $kodeOutlet,
-            'nama_outlet' => $request->nama_outlet,
-            'alamat_lengkap' => $request->alamat_lengkap,
-            'telepon' => $request->telepon,
-            'email' => $request->email,
-            'kota' => $branch->kota,
-            'tipe_outlet' => $request->tipe_outlet,
-            'kapasitas_parkir' => $request->kapasitas_parkir,
-            'zona_pelayanan' => $request->zona_pelayanan,
-            'jam_operasional' => $request->jam_operasional,
-            'fasilitas' => $fasilitas,
-            'status' => $request->status,
-        ]);
+    // Handle fasilitas array
+    $fasilitas = $request->has('fasilitas') ? implode(', ', $request->fasilitas) : null;
 
-        return redirect()->route('admin.outletperusahaan')->with('success', 'Outlet berhasil ditambahkan.');
+    // Handle file upload
+    $fotoPath = null;
+    if ($request->hasFile('foto_outlet')) {
+        $file = $request->file('foto_outlet');
+        $filename = time() . '_' . Str::slug($request->nama_outlet) . '.' . $file->getClientOriginalExtension();
+        
+        $path = 'images/outlets/';
+        if (!file_exists(public_path($path))) {
+            mkdir(public_path($path), 0777, true);
+        }
+        
+        $file->move(public_path($path), $filename);
+        $fotoPath = $path . $filename;
     }
 
-    public function editOutlet($id)
-    {
-        $outlet = Outlet::findOrFail($id);
-        $branches = Branch::where('status', 'aktif')->get();
+   Outlet::create([
+        'branch_id' => $request->branch_id,
+        'kode_outlet' => $kodeOutlet,
+        'nama_outlet' => $request->nama_outlet,
+        'alamat_lengkap' => $request->alamat_lengkap,
+        'telepon' => $request->telepon,
+        'email' => $request->email,
+        'kota' => $branch->kota,
+        'tipe_outlet' => $request->tipe_outlet, // INI YANG PENTING
+        'kapasitas_parkir' => $request->kapasitas_parkir,
+        'zona_pelayanan' => $request->zona_pelayanan,
+        'jam_operasional' => $request->jam_operasional,
+        'foto_outlet' => $fotoPath,
+        'fasilitas' => $fasilitas,
+        'status' => $request->status,
+    ]);
 
-        // Parse fasilitas string ke array
-        $fasilitasArray = $outlet->fasilitas ? explode(',', $outlet->fasilitas) : [];
+    return redirect()->route('admin.outletperusahaan')->with('success', 'Outlet berhasil ditambahkan.');
+}
 
-        return view('admin.outletperusahaan-edit', compact('outlet', 'branches', 'fasilitasArray'));
+// UBAH METHOD updateOutlet - TAMBAHKAN DEBUG
+public function updateOutlet(Request $request, $id)
+{
+    $outlet = Outlet::findOrFail($id);
+
+    // Validasi - GUNAKAN tipe_outlet BUKAN tipe_lokasi!
+    $request->validate([
+        'nama_outlet' => 'required|string|max:255',
+        'branch_id' => 'required|exists:branches,id',
+        'alamat_lengkap' => 'required|string',
+        'telepon' => 'required|string|max:20',
+        'email' => 'nullable|email|max:255',
+        'tipe_outlet' => 'required|in:mall,pusat_perbelanjaan,perkantoran,stasiun,bandara,jalan_utama,kawasan_komersial,perumahan,kampus,rumah_sakit,hotel,wisata,pusat_kota,lainnya',
+        'kapasitas_parkir' => 'nullable|integer|min:0',
+        'zona_pelayanan' => 'nullable|string|max:100',
+        'jam_operasional' => 'nullable|string|max:50',
+        'status' => 'required|in:aktif,nonaktif,maintenance',
+        'foto_outlet' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+    ]);
+
+    // 1. Handle upload foto
+    if ($request->hasFile('foto_outlet')) {
+        if ($outlet->foto_outlet && file_exists(public_path($outlet->foto_outlet))) {
+            unlink(public_path($outlet->foto_outlet));
+        }
+
+        $file = $request->file('foto_outlet');
+        $filename = time() . '_' . Str::slug($outlet->nama_outlet) . '.' . $file->getClientOriginalExtension();
+        
+        $path = 'images/outlets/';
+        if (!file_exists(public_path($path))) {
+            mkdir(public_path($path), 0777, true);
+        }
+        
+        $file->move(public_path($path), $filename);
+        $outlet->foto_outlet = $path . $filename;
     }
 
-    public function updateOutlet(Request $request, $id)
-    {
-        $outlet = Outlet::findOrFail($id);
-
-        $request->validate([
-            'branch_id' => 'required|exists:branches,id',
-            'nama_outlet' => 'required|string|max:255',
-            'alamat_lengkap' => 'required|string',
-            'telepon' => 'required|string|max:20',
-            'email' => 'nullable|email|max:255',
-            'tipe_outlet' => 'required|in:regular,premium,express',
-            'kapasitas_parkir' => 'nullable|integer|min:0',
-            'zona_pelayanan' => 'nullable|string|max:100',
-            'jam_operasional' => 'nullable|string|max:50',
-            'status' => 'required|in:aktif,nonaktif,maintenance',
-        ]);
-
-        // Get branch data for kota
-        $branch = Branch::find($request->branch_id);
-
-        // Handle fasilitas array
-        $fasilitas = $request->has('fasilitas') ? implode(',', $request->fasilitas) : null;
-
-        $outlet->update([
-            'branch_id' => $request->branch_id,
-            'nama_outlet' => $request->nama_outlet,
-            'alamat_lengkap' => $request->alamat_lengkap,
-            'telepon' => $request->telepon,
-            'email' => $request->email,
-            'kota' => $branch->kota,
-            'tipe_outlet' => $request->tipe_outlet,
-            'kapasitas_parkir' => $request->kapasitas_parkir,
-            'zona_pelayanan' => $request->zona_pelayanan,
-            'jam_operasional' => $request->jam_operasional,
-            'fasilitas' => $fasilitas,
-            'status' => $request->status,
-        ]);
-
-        return redirect()->route('admin.outletperusahaan')->with('success', 'Outlet berhasil diperbarui.');
+    // 2. Handle fasilitas
+    if ($request->has('fasilitas')) {
+        $fasilitasArray = $request->fasilitas;
+        $outlet->fasilitas = implode(', ', $fasilitasArray);
+        
+        $outlet->tersedia_toilet = in_array('Toilet', $fasilitasArray);
+        $outlet->tersedia_musholla = in_array('Musholla', $fasilitasArray);
+        $outlet->tersedia_atm = in_array('ATM', $fasilitasArray);
+        $outlet->tersedia_wifi = in_array('WiFi', $fasilitasArray);
+    } else {
+        $outlet->fasilitas = null;
+        $outlet->tersedia_toilet = false;
+        $outlet->tersedia_musholla = false;
+        $outlet->tersedia_atm = false;
+        $outlet->tersedia_wifi = false;
     }
 
+    // 3. Update field lainnya - HAPUS KOTA!
+    $outlet->update([
+        'branch_id' => $request->branch_id,
+        'nama_outlet' => $request->nama_outlet,
+        'alamat_lengkap' => $request->alamat_lengkap,
+        'telepon' => $request->telepon,
+        'email' => $request->email,
+        'tipe_outlet' => $request->tipe_outlet, // GUNAKAN tipe_outlet BUKAN tipe_lokasi
+        'kapasitas_parkir' => $request->kapasitas_parkir,
+        'zona_pelayanan' => $request->zona_pelayanan,
+        'jam_operasional' => $request->jam_operasional,
+        'status' => $request->status,
+    ]);
+
+    return redirect()->route('admin.outletperusahaan')->with('success', 'Outlet berhasil diperbarui.');
+}
     public function destroyOutlet($id)
     {
         $outlet = Outlet::findOrFail($id);
 
         // Check if outlet has related data before deleting
-        // Contoh: if ($outlet->transactions()->count() > 0) {
-        //     return redirect()->route('admin.outletperusahaan')->with('error', 'Outlet tidak dapat dihapus karena masih memiliki transaksi.');
-        // }
+        // Hapus foto jika ada
+        if ($outlet->foto_outlet && file_exists(public_path($outlet->foto_outlet))) {
+            unlink(public_path($outlet->foto_outlet));
+        }
 
         $outlet->delete();
 
@@ -427,14 +467,26 @@ class AdminController extends Controller
         $outlet = Outlet::with('branch')->findOrFail($id);
 
         // Parse fasilitas string ke array
-        $fasilitasArray = $outlet->fasilitas ? explode(',', $outlet->fasilitas) : [];
+        $selectedFacilities = [];
+        if ($outlet->fasilitas) {
+            $cleanString = trim($outlet->fasilitas, ' "[]\'');
+            if (!empty($cleanString)) {
+                $facilitiesArray = explode(',', $cleanString);
+                foreach ($facilitiesArray as $facility) {
+                    $trimmed = trim($facility, ' "[]\'');
+                    if (!empty($trimmed)) {
+                        $selectedFacilities[] = $trimmed;
+                    }
+                }
+            }
+        }
 
-        return view('admin.outletperusahaan-show', compact('outlet', 'fasilitasArray'));
+        return view('admin.outletperusahaan-show', compact('outlet', 'selectedFacilities'));
     }
 
     // ========================= END OUTLET CRUD =========================
 
-   public function promo(Request $request)
+    public function promo(Request $request)
     {
         // Get promos with filtering
         $query = Promo::query();
@@ -516,7 +568,8 @@ class AdminController extends Controller
             'promoTypes'
         ));
     }
-      public function createPromo()
+
+    public function createPromo()
     {
         return view('admin.promo-create');
     }
@@ -667,7 +720,6 @@ class AdminController extends Controller
 
         return redirect()->route('admin.promo')->with('success', 'Promo berhasil dihapus.');
     }
-    // Promo CRUD Methods
 
     public function armada(Request $request)
     {
@@ -1039,7 +1091,6 @@ class AdminController extends Controller
         return view('admin.transaksi.armada');
     }
 
-
     // SmartSend Methods
     public function smartsendTiket()
     {
@@ -1263,4 +1314,44 @@ class AdminController extends Controller
 
         return redirect()->route('admin.artikel.index')->with('success', 'Artikel berhasil dihapus.');
     }
+
+
+public function editOutlet($id)
+{
+    $outlet = Outlet::with('branch')->findOrFail($id);
+    $branches = Branch::where('status', 'aktif')->get();
+    
+    // Parse fasilitas string ke array dengan benar
+    $selectedFacilities = [];
+    
+    if ($outlet->fasilitas) {
+        // Bersihkan string
+        $cleanString = trim($outlet->fasilitas, ' "[]\'');
+        if (!empty($cleanString)) {
+            $facilitiesArray = explode(',', $cleanString);
+            foreach ($facilitiesArray as $facility) {
+                $trimmed = trim($facility, ' "[]\'');
+                if (!empty($trimmed) && strtolower($trimmed) !== 'null') {
+                    $selectedFacilities[] = $trimmed;
+                }
+            }
+        }
+    }
+    
+    // Tambahkan dari boolean fields jika ada
+    if ($outlet->tersedia_toilet && !in_array('Toilet', $selectedFacilities)) {
+        $selectedFacilities[] = 'Toilet';
+    }
+    if ($outlet->tersedia_musholla && !in_array('Musholla', $selectedFacilities)) {
+        $selectedFacilities[] = 'Musholla';
+    }
+    if ($outlet->tersedia_atm && !in_array('ATM', $selectedFacilities)) {
+        $selectedFacilities[] = 'ATM';
+    }
+    if ($outlet->tersedia_wifi && !in_array('WiFi', $selectedFacilities)) {
+        $selectedFacilities[] = 'WiFi';
+    }
+
+    return view('admin.outletperusahaan-edit', compact('outlet', 'branches', 'selectedFacilities'));
+}
 }

@@ -380,7 +380,7 @@
                             }
                         @endphp
 
-                        <a href="{{ route('customer.artikel.detail', $related->slug) }}" class="related-card">
+                        <a href="{{ route('artikel.show', $related->slug) }}" class="related-card">
                             <img src="{{ $relatedFotoUrl }}" alt="{{ $related->judul }}" class="related-image">
                             <div class="related-content">
                                 <div class="related-category">{{ $related->kategori }}</div>
@@ -394,7 +394,7 @@
 
         <!-- Back Button -->
         <div class="back-section">
-            <a href="{{ route('customer.artikel') }}" class="back-btn">
+            <a href="{{ route('customer.artikel.index') }}" class="back-btn">
                 <i class="fas fa-arrow-left"></i> Kembali ke Daftar Artikel
             </a>
         </div>

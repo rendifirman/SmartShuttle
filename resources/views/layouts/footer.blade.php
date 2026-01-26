@@ -63,7 +63,7 @@
 
 <style>
     .site-footer {
-        background: #00215E;
+        background: #0f2942ff;
         color: white;
         padding: 50px 40px 20px;
         margin-top: auto;

@@ -51,32 +51,30 @@ class ArtikelController extends Controller
      * Menampilkan detail artikel untuk customer
      */
     public function show($slug)
-    {
-        $user = session()->get('user');
-        
-        $artikel = Artikel::where('slug', $slug)
-            ->where('status', true)
-            ->whereNotNull('tanggal_publikasi')
-            ->where('tanggal_publikasi', '<=', now())
-            ->firstOrFail();
-        
-        // Tambah jumlah dilihat
-        $artikel->increment('dilihat');
-        
-        // Artikel terkait
-        $relatedArticles = Artikel::where('kategori', $artikel->kategori)
-            ->where('id', '!=', $artikel->id)
-            ->where('status', true)
-            ->whereNotNull('tanggal_publikasi')
-            ->where('tanggal_publikasi', '<=', now())
-            ->orderBy('tanggal_publikasi', 'desc')
-            ->take(3)
-            ->get();
-        
-        // Pastikan view ini ada
-        return view('customer.artikel_detail', compact('user', 'artikel', 'relatedArticles'));
-    }
-
+{
+    $user = session()->get('user');
+    
+    $article = Artikel::where('slug', $slug)  // Ubah dari $artikel menjadi $article
+        ->where('status', true)
+        ->whereNotNull('tanggal_publikasi')
+        ->where('tanggal_publikasi', '<=', now())
+        ->firstOrFail();
+    
+    // Tambah jumlah dilihat
+    $article->increment('dilihat');
+    
+    // Artikel terkait
+    $relatedArticles = Artikel::where('kategori', $article->kategori)
+        ->where('id', '!=', $article->id)
+        ->where('status', true)
+        ->whereNotNull('tanggal_publikasi')
+        ->where('tanggal_publikasi', '<=', now())
+        ->orderBy('tanggal_publikasi', 'desc')
+        ->take(3)
+        ->get();
+    
+    return view('customer.artikel_detail', compact('user', 'article', 'relatedArticles')); // Ubah di sini juga
+}
     /**
      * Menampilkan artikel berdasarkan kategori
      */
@@ -104,4 +102,4 @@ class ArtikelController extends Controller
         
         return view('customer.artikel_index', compact('user', 'articles', 'kategoriNama', 'kategoriList'));
     }
-}d
+}
