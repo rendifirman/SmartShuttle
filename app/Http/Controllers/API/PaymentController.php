@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\MetodePembayaran;
+use App\Models\MembershipPayment;
 use App\Models\Pembayaran;
 use App\Models\Pemesanan;
 use App\Models\Transaksi;
@@ -357,8 +358,116 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * Test Paylabs connection.
+    /**     * Paylabs v2.3 callback for membership payments.
+     */
+    public function callbackMembershipV23(Request $request)
+    {
+        Log::info('=== PAYLABS v2.3 MEMBERSHIP CALLBACK RECEIVED ===', $request->all());
+
+        DB::beginTransaction();
+
+        try {
+            $timestamp = $request->header('X-TIMESTAMP');
+            $signature = $request->header('X-SIGNATURE');
+
+            $endpointPath = $request->getPathInfo();
+            $rawBody = $request->getContent();
+
+            if (!$this->paylabsService->verifySignatureV23($rawBody, $signature, $timestamp, $endpointPath)) {
+                Log::error('PAYLABS v2.3 Membership Callback signature verification failed', [
+                    'headers' => $request->headers->all(),
+                    'body' => $request->all(),
+                ]);
+
+                return response()->json([
+                    'errCode' => '99',
+                    'errCodeDes' => 'Invalid signature',
+                ], 400);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'errCode' => 'required|string',
+                'merchantId' => 'required|string',
+                'platformTradeNo' => 'required|string',
+                'merchantTradeNo' => 'required|string',
+                'amount' => 'required|numeric',
+                'status' => 'required|string',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'errCode' => '99',
+                    'errCodeDes' => 'Invalid data',
+                ], 400);
+            }
+
+            $membershipPayment = MembershipPayment::where('transaction_id', $request->merchantTradeNo)
+                ->orWhere('platform_trade_no', $request->platformTradeNo)
+                ->first();
+
+            if (!$membershipPayment) {
+                Log::warning('Membership payment not found', [
+                    'merchantTradeNo' => $request->merchantTradeNo,
+                    'platformTradeNo' => $request->platformTradeNo,
+                ]);
+
+                return response()->json([
+                    'errCode' => '99',
+                    'errCodeDes' => 'Membership payment not found',
+                ], 404);
+            }
+
+            $paylabsStatus = $this->mapQRISStatusToPaylabs($request->status);
+            $localStatus = $this->mapPaylabsStatusToLocal($paylabsStatus);
+
+            $updateData = [
+                'paylabs_response' => json_encode($request->all()),
+                'paylabs_raw_response' => json_encode($request->all()),
+                'payment_status' => $localStatus === 'berhasil' ? 'success' : $localStatus,
+                'updated_at' => now(),
+            ];
+
+            foreach (['successTime' => 'success_time', 'expiredTime' => 'expired_time', 'rrn' => 'rrn', 'tid' => 'tid', 'payer' => 'payer_name', 'phoneNumber' => 'payer_phone', 'issuerId' => 'issuer_id'] as $from => $to) {
+                if ($request->has($from)) {
+                    $updateData[$to] = $request->input($from);
+                }
+            }
+
+            if ($paylabsStatus === 'PAID' && $localStatus === 'berhasil') {
+                $updateData['paid_at'] = now();
+                // Activate membership when payment successful
+                $this->activateMembershipAfterPayment($membershipPayment);
+            }
+
+            $membershipPayment->update($updateData);
+
+            DB::commit();
+
+            Log::info('Membership payment callback processed successfully', [
+                'transaction_id' => $membershipPayment->transaction_id,
+                'status' => $paylabsStatus,
+            ]);
+
+            return response()->json([
+                'errCode' => '0',
+                'errCodeDes' => 'Success',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('PAYLABS v2.3 Membership Callback processing error: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'errCode' => '99',
+                'errCodeDes' => 'Callback processing failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**     * Test Paylabs connection.
      */
     public function testConnection()
     {
@@ -650,4 +759,42 @@ class PaymentController extends Controller
             ], 500);
         }
     }
-}
+
+    /**
+     * Activate membership after successful payment
+     */
+    private function activateMembershipAfterPayment(MembershipPayment $membershipPayment): void
+    {
+        try {
+            $user = $membershipPayment->user;
+            if (!$user) {
+                Log::warning('User not found for membership payment', [
+                    'membership_payment_id' => $membershipPayment->id,
+                ]);
+                return;
+            }
+
+            $user->update([
+                'membership_status' => 'active',
+                'membership_start_date' => now(),
+                'membership_end_date' => now()->addMonths(12),
+                'membership_fee' => $membershipPayment->total_amount,
+                'membership_payment_method' => $membershipPayment->payment_method,
+                'membership_payment_status' => 'success',
+                'membership_transaction_id' => $membershipPayment->transaction_id,
+                'membership_level' => 'Bronze',
+                'member_point' => 0,
+                'loyalty_point' => 0,
+            ]);
+
+            Log::info('Membership activated after payment', [
+                'user_id' => $user->id,
+                'transaction_id' => $membershipPayment->transaction_id,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to activate membership: ' . $e->getMessage(), [
+                'membership_payment_id' => $membershipPayment->id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+    }
