@@ -88,11 +88,21 @@ Route::post('/kontak', [CustomerController::class, 'submitContact'])
 Route::get('/syarat-ketentuan-membership', [CustomerController::class, 'syaratKetentuanMembership'])->name('customer.syarat.ketentuan.membership');
 
 // Halaman outlet - bisa diakses tamu
-Route::get('/customer/outlet', [CustomerController::class, 'outlet'])->name('customer.outlet');
-Route::get('/customer/outlet/filter', [CustomerController::class, 'outlet'])->name('customer.outlet.filter');
-Route::post('/customer/outlet/loadMore', [CustomerController::class, 'loadMoreOutlets'])
-    ->name('customer.outlet.loadMore');
-Route::get('/outlet', [CustomerController::class, 'outlet']);
+// ★★★ OUTLET ROUTES ★★★
+// Halaman outlet - bisa diakses tamu
+Route::get('/customer/outlet', [OutletController::class, 'index'])->name('customer.outlet');
+Route::get('/customer/outlet/filter', [OutletController::class, 'filter'])->name('customer.outlet.filter');
+Route::post('/customer/outlet/loadMore', [OutletController::class, 'loadMore'])
+    ->name('customer.outlet.loadMore'); // UNTUK KOMPATIBILITAS
+Route::get('/outlet', [OutletController::class, 'index']);
+
+// Route untuk detail outlet via AJAX (BISA DIAKSES TANPA LOGIN)
+Route::get('/outlet/detail', [OutletController::class, 'getDetail'])->name('outlet.detail');
+
+// Route untuk load more outlets via AJAX (BISA DIAKSES TANPA LOGIN)
+Route::post('/outlet/load-more', [OutletController::class, 'loadMore'])
+    ->name('outlet.loadMore');
+// ★★★ END OUTLET ROUTES ★★★
 
 // Halaman SmartSend - bisa diakses tamu
 Route::get('/customer/smartsend', function() {

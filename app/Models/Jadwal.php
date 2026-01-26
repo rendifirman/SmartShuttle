@@ -33,6 +33,14 @@ class Jadwal extends Model
     /**
      * Relasi ke Shuttle
      */
+
+    public function rutes()
+    {
+        return $this->belongsToMany(Rute::class, 'rute_jadwals', 'jadwal_id', 'rute_id')
+            ->withTimestamps()
+            ->withPivot(['urutan']); // tambahkan jika ada kolom tambahan di pivot
+    }
+
     public function shuttle()
     {
         return $this->belongsTo(Shuttle::class, 'shuttle_id');
