@@ -6,7 +6,6 @@
 @push('styles')
     <style>
         :root {
-            /* Light Mode Variables */
             --bg-primary: #f8f7f3;
             --bg-secondary: #ffffff;
             --bg-card: #ffffff;
@@ -30,7 +29,6 @@
             --status-almost-text: #b35900;
         }
 
-        /* ================= BASE ================= */
         body {
             background: #f4f6fb;
             font-family: 'Segoe UI', sans-serif;
@@ -46,18 +44,6 @@
             overflow-x: hidden;
         }
 
-        /* ================= UTILITIES ================= */
-        .hidden {
-            display: none !important;
-        }
-
-        /* ================= PAGE CONTAINER ================= */
-        .page-container {
-            padding: 20px;
-            min-height: 100vh;
-        }
-
-        /* ================= HEADER ================= */
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -80,7 +66,6 @@
             align-items: center;
         }
 
-        /* ================= BUTTONS ================= */
         .btn {
             padding: 12px 20px;
             border-radius: 10px;
@@ -97,10 +82,11 @@
         .btn-add {
             background: var(--primary-color);
             color: #fff;
+            text-decoration: none;
         }
 
         .btn-add:hover {
-            background: #0d6bb7;
+            background: #e55c00;
         }
 
         .btn-filter {
@@ -114,26 +100,7 @@
         }
 
         .btn-filter:hover {
-            background: #e55c00;
-        }
-
-        .btn-back {
-            background: var(--info-color);
-            color: #fff;
-            padding: 10px 18px;
-            border-radius: 10px;
-            border: none;
-            cursor: pointer;
-            margin-bottom: 15px;
-        }
-
-        .btn-edit-schedule {
-            background: var(--info-color);
-            color: #fff;
-            padding: 10px 18px;
-            border-radius: 10px;
-            border: none;
-            cursor: pointer;
+            background: #0d6bb7;
         }
 
         .btn-excel {
@@ -164,9 +131,12 @@
             border: none;
             cursor: pointer;
             font-size: 12px;
-            margin-right: 5px;
             transition: all 0.3s;
             font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .btn-view {
@@ -187,34 +157,15 @@
             background: #e09b00;
         }
 
-        .btn-save {
-            background: var(--text-primary);
+        .btn-delete {
+            background: var(--danger-color);
             color: #fff;
         }
 
-        .btn-save:hover {
-            background: #1a3a5f;
+        .btn-delete:hover {
+            background: #c82333;
         }
 
-        .btn-reset {
-            background: var(--secondary-color);
-            color: #fff;
-        }
-
-        .btn-reset:hover {
-            background: #e55c00;
-        }
-
-        .btn-cancel {
-            background: var(--info-color);
-            color: #fff;
-        }
-
-        .btn-cancel:hover {
-            background: #5a6268;
-        }
-
-        /* ================= SUMMARY ================= */
         .summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -242,7 +193,6 @@
             font-size: 13px;
         }
 
-        /* ================= FILTER ================= */
         .filter-box {
             background: var(--bg-card);
             border-radius: 14px;
@@ -272,7 +222,7 @@
         .filter-box input:focus {
             outline: none;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.1);
+            box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.1);
         }
 
         .filter-bottom {
@@ -284,7 +234,6 @@
             flex: 1;
         }
 
-        /* ================= TABLE ================= */
         .table-wrapper {
             background: var(--bg-card);
             border-radius: 14px;
@@ -330,7 +279,6 @@
             background-color: rgba(0, 0, 0, 0.02);
         }
 
-        /* Status Badges */
         .status-badge {
             padding: 6px 14px;
             border-radius: 20px;
@@ -356,7 +304,6 @@
             color: var(--status-almost-text);
         }
 
-        /* Seat indicator */
         .seat-indicator {
             display: inline-flex;
             align-items: center;
@@ -372,7 +319,6 @@
             color: var(--text-muted);
         }
 
-        /* ================= PAGINATION ================= */
         .pagination {
             margin-top: 20px;
             display: flex;
@@ -418,216 +364,6 @@
             margin-top: 10px;
         }
 
-        /* ================= FORM CARD ================= */
-        .form-card {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: var(--shadow);
-            margin-bottom: 25px;
-        }
-
-        .form-card h3 {
-            margin-top: 0;
-            margin-bottom: 25px;
-            border-bottom: 2px solid var(--secondary-color);
-            padding-bottom: 12px;
-            font-size: 20px;
-            color: var(--text-primary);
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 18px;
-        }
-
-        .form-group label {
-            font-size: 14px;
-            font-weight: 600;
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-secondary);
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px 15px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            font-size: 14px;
-            transition: border-color 0.3s;
-            background: var(--bg-card);
-            color: var(--text-secondary);
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.1);
-        }
-
-        textarea {
-            resize: none;
-            min-height: 80px;
-        }
-
-        /* Time Row */
-        .time-row {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .time-separator {
-            text-align: center;
-            font-weight: bold;
-            color: var(--text-muted);
-        }
-
-        .time-row small {
-            display: block;
-            margin-top: 5px;
-            color: var(--text-muted);
-            font-size: 12px;
-        }
-
-        /* Price input */
-        .price-input {
-            position: relative;
-        }
-
-        .price-input span {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-        }
-
-        .price-input input {
-            padding-left: 40px;
-        }
-
-        /* Seat slider */
-        .seat-slider-container {
-            padding: 10px 0;
-        }
-
-        .seat-slider {
-            width: 100%;
-            height: 8px;
-            border-radius: 4px;
-            background: #e0e0e0;
-            outline: none;
-            -webkit-appearance: none;
-            margin: 15px 0;
-        }
-
-        .seat-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            cursor: pointer;
-        }
-
-        .seat-slider::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            cursor: pointer;
-            border: none;
-        }
-
-        .seat-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        /* ================= FORM ACTIONS ================= */
-        .form-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-color);
-            flex-wrap: wrap;
-        }
-
-        /* ================= DETAIL CARD ================= */
-        .detail-container {
-            display: grid;
-            gap: 20px;
-            max-width: 1200px;
-        }
-
-        .detail-card {
-            background: var(--bg-card);
-            border-radius: 14px;
-            padding: 20px;
-            box-shadow: var(--shadow);
-        }
-
-        .detail-title {
-            font-weight: 700;
-            font-size: 15px;
-            margin-bottom: 15px;
-            border-bottom: 2px solid var(--secondary-color);
-            padding-bottom: 8px;
-            color: var(--text-primary);
-        }
-
-        .detail-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 15px;
-        }
-
-        .detail-item label {
-            font-size: 12px;
-            color: var(--text-muted);
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .detail-item span {
-            font-weight: 600;
-            font-size: 13px;
-            color: var(--text-secondary);
-            display: block;
-            word-break: break-word;
-        }
-
-        /* ================= RESPONSIVE ================= */
-        @media (max-width: 992px) {
-            .filter-top {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-            
-            .detail-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
         @media (max-width: 768px) {
             .page-header {
                 flex-direction: column;
@@ -646,874 +382,230 @@
             .filter-bottom {
                 flex-direction: column;
             }
-            
-            .form-actions {
-                flex-direction: column;
-            }
-            
-            .time-row {
-                grid-template-columns: 1fr;
-            }
-            
-            .time-separator {
-                display: none;
-            }
-            
-            .btn-save,
-            .btn-reset,
-            .btn-cancel {
-                width: 100%;
-                justify-content: center;
-            }
-            
-            .detail-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .table-actions {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .btn-excel, .btn-pdf {
-                width: 100%;
-                justify-content: center;
-            }
-            
-            .pagination {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .pagination-buttons {
-                width: 100%;
-                overflow-x: auto;
-                justify-content: flex-start;
-                padding-bottom: 10px;
-                -webkit-overflow-scrolling: touch;
-            }
-            
-            .pagination-info {
-                margin-top: 5px;
-                order: 3;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .page-container {
-                padding: 15px;
-            }
-            
-            .summary {
-                grid-template-columns: 1fr;
-            }
-            
-            .form-card {
-                padding: 20px;
-            }
-            
-            .btn-action {
-                padding: 5px 10px;
-                font-size: 11px;
-                margin-bottom: 5px;
-                margin-right: 3px;
-            }
-            
-            .pagination-buttons {
-                display: flex;
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                justify-content: flex-start;
-                padding-bottom: 10px;
-                gap: 4px;
-                width: 100%;
-                -webkit-overflow-scrolling: touch;
-            }
-            
-            .pagination button {
-                padding: 6px 10px;
-                min-width: 32px;
-                font-size: 12px;
-                flex-shrink: 0;
-            }
-        }
-
-        @media (max-width: 400px) {
-            .page-header h2 {
-                font-size: 18px;
-            }
-            
-            .btn {
-                padding: 10px 15px;
-                font-size: 13px;
-            }
-            
-            .btn-add span {
-                display: none;
-            }
-            
-            .btn-add i {
-                margin-right: 0;
-            }
-            
-            .detail-card {
-                padding: 15px;
-            }
-            
-            .filter-box {
-                padding: 15px;
-            }
-            
-            .pagination-buttons {
-                gap: 3px;
-            }
-            
-            .pagination button {
-                padding: 5px 8px;
-                min-width: 28px;
-                font-size: 11px;
-            }
         }
     </style>
 @endpush
 
 @section('content')
 <div class="page-container">
-    <!-- ================= LIST PAGE ================= -->
-    <div id="list-page">
-        <!-- HEADER -->
-        <div class="page-header">
-            <h2>Data Jadwal</h2>
-            <div class="header-actions">
-                <button class="btn btn-add" onclick="showAddForm()">
-                    <i class="fas fa-plus"></i> <span>Tambah Jadwal</span>
-                </button>
-            </div>
+    <!-- HEADER -->
+    <div class="page-header">
+        <h2>Data Jadwal</h2>
+        <div class="header-actions">
+            <a href="{{ route('admin.jadwal.create') }}" class="btn btn-add">
+                <i class="fas fa-plus"></i> <span>Tambah Jadwal</span>
+            </a>
         </div>
+    </div>
 
-        <!-- SUMMARY -->
-        <div class="summary">
-            <div class="summary-card jadwal-total">
-                <h3>14</h3>
-                <p>Total Jadwal</p>
-            </div>
-            <div class="summary-card jadwal-available">
-                <h3>10</h3>
-                <p>Tersedia</p>
-            </div>
-            <div class="summary-card jadwal-almost">
-                <h3>8</h3>
-                <p>Hampir Penuh</p>
-            </div>
-            <div class="summary-card jadwal-full">
-                <h3>2</h3>
-                <p>Penuh</p>
-            </div>
+    <!-- SUMMARY -->
+    <div class="summary">
+        <div class="summary-card jadwal-total">
+            <h3>{{ $totalJadwals }}</h3>
+            <p>Total Jadwal</p>
         </div>
+        <div class="summary-card jadwal-available">
+            <h3>{{ $tersediaJadwals }}</h3>
+            <p>Tersedia</p>
+        </div>
+        <div class="summary-card jadwal-almost">
+            <h3>{{ $hampirPenuhJadwals }}</h3>
+            <p>Hampir Penuh</p>
+        </div>
+        <div class="summary-card jadwal-full">
+            <h3>{{ $penuhJadwals }}</h3>
+            <p>Penuh</p>
+        </div>
+    </div>
 
-        <!-- FILTER -->
-        <div class="filter-box">
+    <!-- FILTER -->
+    <div class="filter-box">
+        <form id="filterForm" method="GET" action="{{ route('admin.jadwal') }}">
             <div class="filter-top">
-                <select id="filter-rute">
-                    <option value="">Pilih Rute</option>
-                    <option value="bandung-jakarta">Bandung - Jakarta</option>
-                    <option value="jakarta-bandung">Jakarta - Bandung</option>
-                    <option value="bandung-surabaya">Bandung - Surabaya</option>
-                    <option value="surabaya-bandung">Surabaya - Bandung</option>
-                    <option value="jakarta-surabaya">Jakarta - Surabaya</option>
+                <select id="filter-layanan" name="layanan_id">
+                    <option value="">Pilih Layanan</option>
+                    @foreach($layanans as $layanan)
+                        <option value="{{ $layanan->id_layanan }}" {{ request('layanan_id') == $layanan->id_layanan ? 'selected' : '' }}>
+                            {{ $layanan->nama_layanan }}
+                        </option>
+                    @endforeach
                 </select>
-                <input type="date" id="filter-tanggal">
-                <select id="filter-status">
+                <select id="filter-shuttle" name="shuttle_id">
+                    <option value="">Pilih Armada</option>
+                    @foreach($shuttles as $shuttle)
+                        <option value="{{ $shuttle->id }}" 
+                                data-layanan="{{ $shuttle->layanan_id }}"
+                                {{ request('shuttle_id') == $shuttle->id ? 'selected' : '' }}>
+                            {{ $shuttle->nama_shuttle }} ({{ $shuttle->nomor_polisi }})
+                        </option>
+                    @endforeach
+                </select>
+                <input type="date" id="filter-tanggal" name="tanggal" value="{{ request('tanggal') }}">
+                <select id="filter-status" name="status">
                     <option value="">Pilih Status</option>
-                    <option value="tersedia">Tersedia</option>
-                    <option value="hampir">Hampir Penuh</option>
-                    <option value="penuh">Penuh</option>
+                    <option value="tersedia" {{ request('status') == 'tersedia' ? 'selected' : '' }}>Tersedia</option>
+                    <option value="penuh" {{ request('status') == 'penuh' ? 'selected' : '' }}>Penuh</option>
+                    <option value="berangkat" {{ request('status') == 'berangkat' ? 'selected' : '' }}>Berangkat</option>
+                    <option value="dibatalkan" {{ request('status') == 'dibatalkan' ? 'selected' : '' }}>Dibatalkan</option>
                 </select>
             </div>
             <div class="filter-bottom">
-                <input type="text" id="search-input" placeholder="Cari Rute/Kapasitas">
-                <button class="btn-filter" onclick="applyFilter()">Filter</button>
+                <input type="text" id="search-input" name="search" placeholder="Cari Armada/Layanan" value="{{ request('search') }}">
+                <button type="submit" class="btn-filter">Filter</button>
             </div>
+        </form>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrapper">
+        <div class="table-actions">
+            <button class="btn-excel">X | Excel</button>
+            <button class="btn-pdf">M | PDF</button>
         </div>
 
-        <!-- TABLE -->
-        <div class="table-wrapper">
-            <div class="table-actions">
-                <button class="btn-excel">X | Excel</button>
-                <button class="btn-pdf">M | PDF</button>
-            </div>
-
-            <table>
-                <thead>
+        <table>
+            <thead>
+                <tr>
+                    <th>Layanan</th>
+                    <th>Armada</th>
+                    <th>Tanggal</th>
+                    <th>Waktu Keberangkatan</th>
+                    <th>Waktu Kedatangan</th>
+                    <th>Harga</th>
+                    <th>Kursi</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($jadwals as $jadwal)
+                    @php
+                        $kapasitas = $jadwal->shuttle ? $jadwal->shuttle->total_kursi : 0;
+                        $kursiTerisi = $kapasitas - $jadwal->kursi_tersedia;
+                        
+                        // Status badge
+                        $statusClass = 'status-available';
+                        $statusText = 'Tersedia';
+                        
+                        if($jadwal->status == 'penuh') {
+                            $statusClass = 'status-full';
+                            $statusText = 'Penuh';
+                        } elseif($jadwal->status == 'berangkat') {
+                            $statusClass = 'status-almost';
+                            $statusText = 'Berangkat';
+                        } elseif($jadwal->status == 'dibatalkan') {
+                            $statusClass = 'status-full';
+                            $statusText = 'Dibatalkan';
+                        } elseif($jadwal->status == 'tersedia' && $jadwal->kursi_tersedia <= ceil($kapasitas * 0.2)) {
+                            $statusClass = 'status-almost';
+                            $statusText = 'Hampir Penuh';
+                        }
+                    @endphp
                     <tr>
-                        <th>Rute</th>
-                        <th>Tanggal</th>
-                        <th>Armada</th>
-                        <th>Waktu Keberangkatan</th>
-                        <th>Waktu Kedatangan</th>
-                        <th>Harga</th>
-                        <th>Kursi</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="jadwal-table-body">
-                    <!-- Data akan diisi oleh JavaScript -->
-                </tbody>
-            </table>
-
-            <div class="pagination">
-                <div class="pagination-buttons">
-                    <button class="active">1</button>
-                    <button>2</button>
-                    <button>3</button>
-                </div>
-                <span class="pagination-info">Menampilkan 1-10 dari 14 data</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= FORM TAMBAH/EDIT JADWAL ================= -->
-    <div id="form-page" class="hidden">
-        <button class="btn btn-back" onclick="showList()">
-            <i class="fas fa-arrow-left"></i> Kembali ke Daftar Jadwal
-        </button>
-
-        <div class="form-card">
-            <h3 id="form-title">Tambah Jadwal Perjalanan</h3>
-
-            <form id="jadwalForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="rute">Rute <span style="color: red">*</span></label>
-                        <select id="rute" required>
-                            <option value="">-- Pilih Rute --</option>
-                            <option value="bandung-jakarta">Bandung - Jakarta</option>
-                            <option value="jakarta-bandung">Jakarta - Bandung</option>
-                            <option value="bandung-surabaya">Bandung - Surabaya</option>
-                            <option value="surabaya-bandung">Surabaya - Bandung</option>
-                            <option value="jakarta-surabaya">Jakarta - Surabaya</option>
-                            <option value="jakarta-yogyakarta">Jakarta - Yogyakarta</option>
-                            <option value="yogyakarta-jakarta">Yogyakarta - Jakarta</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="tanggal">Tanggal <span style="color: red">*</span></label>
-                        <input type="date" id="tanggal" required>
-                    </div>
-                   <div class="form-group">
-    <label for="armada">Armada <span style="color: red">*</span></label>
-    <select id="armada" required>
-        <option value="">-- Pilih Armada --</option>
-        <option value="HIACE-001">HIACE-001 (Executive Class - 10 Seat)</option>
-        <option value="HIACE-002">HIACE-002 (Business Class - 8 Seat)</option>
-        <option value="HIACE-003">HIACE-003 (Economy Class - 12 Seat)</option>
-        <option value="HIACE-004">HIACE-004 (Executive Class - 10 Seat)</option>
-        <option value="HIACE-005">HIACE-005 (Business Class - 8 Seat)</option>
-    </select>
-</div>
-
-                <div class="form-group">
-                    <label>Waktu Perjalanan <span style="color: red">*</span></label>
-                    <div class="time-row">
-                        <div>
-                            <input type="time" id="waktuBerangkat" required>
-                            <small>Waktu Keberangkatan</small>
-                        </div>
-                        <div class="time-separator">-</div>
-                        <div>
-                            <input type="time" id="waktuTiba" required>
-                            <small>Waktu Kedatangan</small>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="harga">Harga Tiket <span style="color: red">*</span></label>
-                        <div class="price-input">
-                            <span>Rp</span>
-                            <input type="number" id="harga" placeholder="Contoh: 150000" min="0" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="totalKursi">Total Kursi</label>
-                        <div class="seat-slider-container">
-                            <input type="range" id="totalKursi" class="seat-slider" min="10" max="60" value="40">
-                            <div class="seat-info">
-                                <span id="seatMin">10</span>
-                                <span id="seatValue">40 kursi</span>
-                                <span id="seatMax">60</span>
+                        <td>
+                            {{ $jadwal->shuttle && $jadwal->shuttle->layanan ? $jadwal->shuttle->layanan->nama_layanan : 'N/A' }}
+                        </td>
+                        <td>
+                            {{ $jadwal->shuttle ? $jadwal->shuttle->nama_shuttle . ' (' . $jadwal->shuttle->nomor_polisi . ')' : 'N/A' }}
+                        </td>
+                        <td>{{ \Carbon\Carbon::parse($jadwal->tanggal_keberangkatan)->format('d/m/Y') }}</td>
+                        <td>{{ substr($jadwal->waktu_keberangkatan, 0, 5) }}</td>
+                        <td>{{ substr($jadwal->waktu_kedatangan, 0, 5) }}</td>
+                        <td>Rp {{ number_format($jadwal->harga_total, 0, ',', '.') }}</td>
+                        <td>
+                            <div class="seat-indicator">
+                                <span class="seats">{{ $kursiTerisi }}</span>
+                                <span>/</span>
+                                <span class="total">{{ $kapasitas }}</span>
                             </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="kursiTerisi">Kursi Terisi</label>
-                        <input type="number" id="kursiTerisi" placeholder="Kursi yang sudah terisi" min="0">
-                    </div>
-                </div>
+                        </td>
+                        <td><span class="status-badge {{ $statusClass }}">{{ $statusText }}</span></td>
+                        <td>
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                <a href="{{ route('admin.jadwal.show', $jadwal->id) }}" class="btn-action btn-view">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <a href="{{ route('admin.jadwal.edit', $jadwal->id) }}" class="btn-action btn-edit">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <form action="{{ route('admin.jadwal.destroy', $jadwal->id) }}" method="POST" style="display: inline;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-action btn-delete" onclick="return confirm('Apakah Anda yakin ingin menghapus jadwal ini?')">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                            Tidak ada data jadwal
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
 
-                <div class="form-group">
-                    <label for="keterangan">Keterangan</label>
-                    <textarea id="keterangan" rows="3" placeholder="Tambahkan keterangan jadwal (opsional)"></textarea>
-                </div>
-
-                <div class="form-actions">
-                    <button class="btn btn-save" type="submit">
-                        <i class="fas fa-save"></i> Simpan Jadwal
-                    </button>
-                    <button class="btn btn-reset" type="reset" onclick="resetForm()">
-                        <i class="fas fa-redo"></i> Reset Form
-                    </button>
-                    <button class="btn btn-cancel" type="button" onclick="showList()">
-                        <i class="fas fa-times"></i> Batal
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- ================= DETAIL PAGE ================= -->
-    <div id="detail-page" class="hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-            <button class="btn btn-back" onclick="showList()">
-                <i class="fas fa-arrow-left"></i> Kembali ke Daftar Jadwal
-            </button>
-            <button class="btn btn-edit-schedule" onclick="editCurrentJadwal()">
-                <i class="fas fa-edit"></i> Edit Jadwal
-            </button>
-        </div>
-
-        <div class="detail-container">
-            <!-- DATA JADWAL -->
-            <div class="detail-card">
-                <div class="detail-title">Data Jadwal</div>
-                <div class="detail-grid">
-                    <div class="detail-item"><label>Rute</label><span id="detail-rute">Bandung - Jakarta</span></div>
-                    <div class="detail-item"><label>Tanggal</label><span id="detail-tanggal">15 Januari 2024</span></div>
-                    <div class="detail-item"><label>Armada</label><span id="detail-armada">BUS-001 (Executive Class)</span></div>
-                    <div class="detail-item"><label>Status</label><span id="detail-status">Tersedia</span></div>
-                </div>
+        <!-- PAGINATION -->
+        @if($jadwals->hasPages())
+        <div class="pagination">
+            <div class="pagination-buttons">
+                {{ $jadwals->links('vendor.pagination.custom') }}
             </div>
-
-            <!-- WAKTU PERJALANAN -->
-            <div class="detail-card">
-                <div class="detail-title">Waktu Perjalanan</div>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <label>Waktu Keberangkatan</label>
-                        <span id="detail-waktuBerangkat">06:00</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Waktu Kedatangan</label>
-                        <span id="detail-waktuTiba">09:00</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Durasi</label>
-                        <span id="detail-durasi">3 jam</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- INFORMASI KURSI -->
-            <div class="detail-card">
-                <div class="detail-title">Informasi Kursi</div>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <label>Total Kursi</label>
-                        <span id="detail-totalKursi">40</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Kursi Terisi</label>
-                        <span id="detail-kursiTerisi">15</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Kursi Kosong</label>
-                        <span id="detail-kursiKosong">25</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Tingkat Kepenuhan</label>
-                        <span id="detail-penuh">37.5%</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- HARGA DAN INFORMASI LAIN -->
-            <div class="detail-card">
-                <div class="detail-title">Harga dan Informasi Lain</div>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <label>Harga Tiket</label>
-                        <span id="detail-harga">Rp 150.000</span>
-                    </div>
-                    <div class="detail-item" style="grid-column: span 2;">
-                        <label>Keterangan</label>
-                        <span id="detail-keterangan">Jadwal reguler Bandung - Jakarta</span>
-                    </div>
-                </div>
+            <div class="pagination-info">
+                Menampilkan {{ $jadwals->firstItem() }} - {{ $jadwals->lastItem() }} dari {{ $jadwals->total() }} data
             </div>
         </div>
+        @endif
     </div>
 </div>
 @endsection
 
 @push('scripts')
 <script>
- // Di bagian const jadwalData, ubah semua "BUS-" menjadi "HIACE-"
-const jadwalData = [
-    {
-        id: 'J001',
-        rute: 'Bandung - Jakarta',
-        tanggal: '2024-01-15',
-        armada: 'HIACE-001',  // Ubah di sini
-        armadaDetail: 'Executive Class - 10 Seat',  // Ubah jumlah seat
-        waktuBerangkat: '06:00',
-        waktuTiba: '09:00',
-        harga: 150000,
-        totalKursi: 10,  // Ubah jumlah kursi
-        kursiTerisi: 3,
-        keterangan: 'Jadwal reguler Bandung - Jakarta',
-        status: 'tersedia'
-    },
-    {
-        id: 'J002',
-        rute: 'Jakarta - Bandung',
-        tanggal: '2024-01-15',
-        armada: 'HIACE-002',  // Ubah di sini
-        armadaDetail: 'Business Class - 8 Seat',  // Ubah jumlah seat
-        waktuBerangkat: '10:00',
-        waktuTiba: '13:00',
-        harga: 175000,
-        totalKursi: 8,  // Ubah jumlah kursi
-        kursiTerisi: 6,
-        keterangan: 'Jadwal siang Jakarta - Bandung',
-        status: 'hampir'
-    },
-    {
-        id: 'J003',
-        rute: 'Bandung - Surabaya',
-        tanggal: '2024-01-15',
-        armada: 'HIACE-003',  // Ubah di sini
-        armadaDetail: 'Economy Class - 12 Seat',  // Ubah jumlah seat
-        waktuBerangkat: '14:00',
-        waktuTiba: '22:00',
-        harga: 250000,
-        totalKursi: 12,  // Ubah jumlah kursi
-        kursiTerisi: 12,
-        keterangan: 'Jadwal malam Bandung - Surabaya',
-        status: 'penuh'
-    },
-    {
-        id: 'J004',
-        rute: 'Surabaya - Bandung',
-        tanggal: '2024-01-16',
-        armada: 'HIACE-004',  // Ubah di sini
-        armadaDetail: 'Executive Class - 10 Seat',  // Ubah jumlah seat
-        waktuBerangkat: '08:00',
-        waktuTiba: '16:00',
-        harga: 240000,
-        totalKursi: 10,  // Ubah jumlah kursi
-        kursiTerisi: 2,
-        keterangan: '',
-        status: 'tersedia'
-    },
-    {
-        id: 'J005',
-        rute: 'Jakarta - Surabaya',
-        tanggal: '2024-01-16',
-        armada: 'HIACE-005',  // Ubah di sini
-        armadaDetail: 'Business Class - 8 Seat',  // Ubah jumlah seat
-        waktuBerangkat: '20:00',
-        waktuTiba: '04:00',
-        harga: 300000,
-        totalKursi: 8,  // Ubah jumlah kursi
-        kursiTerisi: 7,
-        keterangan: 'Jadwal malam dengan fasilitas lengkap',
-        status: 'hampir'
-    }
-];
-
-    // Mode form (tambah/edit)
-    let formMode = 'add';
-    let currentJadwalIndex = -1;
-    let currentJadwalForDetail = null;
-
-    // Fungsi untuk menghitung status berdasarkan kursi
-    function calculateStatus(kursiTerisi, totalKursi) {
-        const persentase = (kursiTerisi / totalKursi) * 100;
-        if (persentase >= 100) return 'penuh';
-        if (persentase >= 80) return 'hampir';
-        return 'tersedia';
-    }
-
-    // Fungsi untuk mendapatkan teks status
-    function getStatusText(status) {
-        const statusMap = {
-            'tersedia': 'Tersedia',
-            'hampir': 'Hampir Penuh',
-            'penuh': 'Penuh'
-        };
-        return statusMap[status] || 'Tidak Diketahui';
-    }
-
-    // Fungsi untuk mendapatkan class status
-    function getStatusClass(status) {
-        const classMap = {
-            'tersedia': 'status-available',
-            'hampir': 'status-almost',
-            'penuh': 'status-full'
-        };
-        return classMap[status] || '';
-    }
-
-    // Fungsi untuk format harga
-    function formatHarga(harga) {
-        return 'Rp ' + harga.toLocaleString('id-ID');
-    }
-
-    // Fungsi untuk format tanggal
-    function formatTanggal(tanggal) {
-        const date = new Date(tanggal);
-        const options = { day: 'numeric', month: 'long', year: 'numeric' };
-        return date.toLocaleDateString('id-ID', options);
-    }
-
-    // Fungsi untuk menghitung durasi
-    function calculateDurasi(waktuBerangkat, waktuTiba) {
-        const [jam1, menit1] = waktuBerangkat.split(':').map(Number);
-        const [jam2, menit2] = waktuTiba.split(':').map(Number);
+    // Filter shuttle berdasarkan layanan
+    document.getElementById('filter-layanan').addEventListener('change', function() {
+        const layananId = this.value;
+        const shuttleSelect = document.getElementById('filter-shuttle');
+        const allOptions = shuttleSelect.querySelectorAll('option');
         
-        let totalMenit1 = jam1 * 60 + menit1;
-        let totalMenit2 = jam2 * 60 + menit2;
-        
-        // Jika waktu tiba lebih kecil dari waktu berangkat, berarti melewati tengah malam
-        if (totalMenit2 < totalMenit1) {
-            totalMenit2 += 24 * 60; // Tambah 24 jam
-        }
-        
-        const durasiMenit = totalMenit2 - totalMenit1;
-        const jam = Math.floor(durasiMenit / 60);
-        const menit = durasiMenit % 60;
-        
-        if (menit === 0) {
-            return `${jam} jam`;
-        }
-        return `${jam} jam ${menit} menit`;
-    }
-
-    // Fungsi untuk render tabel jadwal
-    function renderJadwalTable(data = jadwalData) {
-        const tbody = document.getElementById('jadwal-table-body');
-        tbody.innerHTML = '';
-        
-        data.forEach((jadwal, index) => {
-            const kursiKosong = jadwal.totalKursi - jadwal.kursiTerisi;
-            const status = calculateStatus(jadwal.kursiTerisi, jadwal.totalKursi);
-            
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${jadwal.rute}</td>
-                <td>${formatTanggal(jadwal.tanggal)}</td>
-                <td>${jadwal.armada}</td>
-                <td>${jadwal.waktuBerangkat}</td>
-                <td>${jadwal.waktuTiba}</td>
-                <td>${formatHarga(jadwal.harga)}</td>
-                <td>
-                    <div class="seat-indicator">
-                        <span class="seats">${jadwal.kursiTerisi}</span>
-                        <span>/</span>
-                        <span class="total">${jadwal.totalKursi}</span>
-                    </div>
-                </td>
-                <td><span class="status-badge ${getStatusClass(status)}">${getStatusText(status)}</span></td>
-                <td>
-                    <button class="btn-action btn-view" onclick="showDetail(${index})">View</button>
-                    <button class="btn-action btn-edit" onclick="showEditForm(${index})">Edit</button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
-
-    // Fungsi untuk menampilkan halaman list
-    function showList() {
-        document.getElementById('list-page').classList.remove('hidden');
-        document.getElementById('form-page').classList.add('hidden');
-        document.getElementById('detail-page').classList.add('hidden');
-        renderJadwalTable();
-        window.scrollTo(0, 0);
-    }
-
-    // Fungsi untuk menampilkan form tambah
-    function showAddForm() {
-        formMode = 'add';
-        document.getElementById('form-title').textContent = 'Tambah Jadwal Perjalanan';
-        
-        // Reset form
-        resetForm();
-        
-        // Set tanggal default (besok)
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        document.getElementById('tanggal').value = tomorrow.toISOString().split('T')[0];
-        
-        document.getElementById('list-page').classList.add('hidden');
-        document.getElementById('form-page').classList.remove('hidden');
-        document.getElementById('detail-page').classList.add('hidden');
-        window.scrollTo(0, 0);
-    }
-
-    // Fungsi untuk menampilkan form edit
-    function showEditForm(index) {
-        formMode = 'edit';
-        currentJadwalIndex = index;
-        
-        const jadwal = jadwalData[index];
-        if (!jadwal) {
-            alert('Data jadwal tidak ditemukan!');
-            return;
-        }
-        
-        document.getElementById('form-title').textContent = 'Edit Jadwal Perjalanan';
-        
-        // Isi form dengan data
-        document.getElementById('rute').value = jadwal.rute;
-        document.getElementById('tanggal').value = jadwal.tanggal;
-        document.getElementById('armada').value = jadwal.armada;
-        document.getElementById('waktuBerangkat').value = jadwal.waktuBerangkat;
-        document.getElementById('waktuTiba').value = jadwal.waktuTiba;
-        document.getElementById('harga').value = jadwal.harga;
-        document.getElementById('totalKursi').value = jadwal.totalKursi;
-        document.getElementById('seatValue').textContent = jadwal.totalKursi + ' kursi';
-        document.getElementById('kursiTerisi').value = jadwal.kursiTerisi;
-        document.getElementById('keterangan').value = jadwal.keterangan || '';
-        
-        document.getElementById('list-page').classList.add('hidden');
-        document.getElementById('form-page').classList.remove('hidden');
-        document.getElementById('detail-page').classList.add('hidden');
-        window.scrollTo(0, 0);
-    }
-
-    // Fungsi untuk menampilkan detail
-    function showDetail(index) {
-        const jadwal = jadwalData[index];
-        if (!jadwal) {
-            alert('Data jadwal tidak ditemukan!');
-            return;
-        }
-        
-        currentJadwalForDetail = index;
-        
-        // Hitung nilai yang diperlukan
-        const kursiKosong = jadwal.totalKursi - jadwal.kursiTerisi;
-        const persentase = (jadwal.kursiTerisi / jadwal.totalKursi) * 100;
-        const durasi = calculateDurasi(jadwal.waktuBerangkat, jadwal.waktuTiba);
-        const status = calculateStatus(jadwal.kursiTerisi, jadwal.totalKursi);
-        
-        // Isi detail dengan data
-        document.getElementById('detail-rute').textContent = jadwal.rute;
-        document.getElementById('detail-tanggal').textContent = formatTanggal(jadwal.tanggal);
-        document.getElementById('detail-armada').textContent = jadwal.armada + ' (' + jadwal.armadaDetail.split(' - ')[0] + ')';
-        document.getElementById('detail-status').textContent = getStatusText(status);
-        document.getElementById('detail-waktuBerangkat').textContent = jadwal.waktuBerangkat;
-        document.getElementById('detail-waktuTiba').textContent = jadwal.waktuTiba;
-        document.getElementById('detail-durasi').textContent = durasi;
-        document.getElementById('detail-totalKursi').textContent = jadwal.totalKursi;
-        document.getElementById('detail-kursiTerisi').textContent = jadwal.kursiTerisi;
-        document.getElementById('detail-kursiKosong').textContent = kursiKosong;
-        document.getElementById('detail-penuh').textContent = persentase.toFixed(1) + '%';
-        document.getElementById('detail-harga').textContent = formatHarga(jadwal.harga);
-        document.getElementById('detail-keterangan').textContent = jadwal.keterangan || '-';
-        
-        document.getElementById('list-page').classList.add('hidden');
-        document.getElementById('form-page').classList.add('hidden');
-        document.getElementById('detail-page').classList.remove('hidden');
-        window.scrollTo(0, 0);
-    }
-
-    // Fungsi untuk edit dari halaman detail
-    function editCurrentJadwal() {
-        if (currentJadwalForDetail !== null) {
-            showEditForm(currentJadwalForDetail);
-        }
-    }
-
-    // Fungsi untuk reset form
-    function resetForm() {
-        document.getElementById('jadwalForm').reset();
-        
-        // Set nilai default untuk slider kursi
-        const seatSlider = document.getElementById('totalKursi');
-        document.getElementById('seatValue').textContent = seatSlider.value + ' kursi';
-        
-        // Set waktu default
-        document.getElementById('waktuBerangkat').value = '06:00';
-        document.getElementById('waktuTiba').value = '09:00';
-        
-        // Set tanggal default (besok)
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        document.getElementById('tanggal').value = tomorrow.toISOString().split('T')[0];
-    }
-
-    // Fungsi untuk menerapkan filter
-    function applyFilter() {
-        const searchTerm = document.getElementById('search-input').value.toLowerCase();
-        const ruteFilter = document.getElementById('filter-rute').value;
-        const tanggalFilter = document.getElementById('filter-tanggal').value;
-        const statusFilter = document.getElementById('filter-status').value;
-        
-        const filteredData = jadwalData.filter(jadwal => {
-            // Filter berdasarkan search term
-            if (searchTerm && !(
-                jadwal.rute.toLowerCase().includes(searchTerm) ||
-                jadwal.armada.toLowerCase().includes(searchTerm)
-            )) {
-                return false;
-            }
-            
-            // Filter berdasarkan dropdown
-            if (ruteFilter && jadwal.rute.toLowerCase() !== ruteFilter) {
-                // Untuk pencocokan rute (tanpa spasi)
-                const jadwalRute = jadwal.rute.toLowerCase().replace(/\s+/g, '');
-                const filterRute = ruteFilter.replace(/\s+/g, '');
-                if (!jadwalRute.includes(filterRute)) return false;
-            }
-            
-            if (tanggalFilter && jadwal.tanggal !== tanggalFilter) return false;
-            
-            if (statusFilter) {
-                const status = calculateStatus(jadwal.kursiTerisi, jadwal.totalKursi);
-                if (status !== statusFilter) return false;
-            }
-            
-            return true;
-        });
-        
-        renderJadwalTable(filteredData);
-        
-        // Update info pagination
-        const paginationInfo = document.querySelector('.pagination-info');
-        if (paginationInfo) {
-            const total = filteredData.length;
-            paginationInfo.textContent = `Menampilkan 1-${total} dari ${total} data`;
-        }
-        
-        // Reset pagination
-        document.querySelectorAll('.pagination button').forEach((btn, index) => {
-            btn.classList.toggle('active', index === 0);
-        });
-    }
-
-    // Event listener untuk slider kursi
-    document.getElementById('totalKursi').addEventListener('input', function() {
-        document.getElementById('seatValue').textContent = this.value + ' kursi';
-    });
-
-    // Form submission handler
-    document.getElementById('jadwalForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Validasi form
-        const rute = document.getElementById('rute').value;
-        const tanggal = document.getElementById('tanggal').value;
-        const armada = document.getElementById('armada').value;
-        const waktuBerangkat = document.getElementById('waktuBerangkat').value;
-        const waktuTiba = document.getElementById('waktuTiba').value;
-        const harga = document.getElementById('harga').value;
-        const totalKursi = document.getElementById('totalKursi').value;
-        const kursiTerisi = document.getElementById('kursiTerisi').value || 0;
-        const keterangan = document.getElementById('keterangan').value;
-        
-        if (!rute || !tanggal || !armada || !waktuBerangkat || !waktuTiba || !harga) {
-            alert('Harap isi semua field yang wajib diisi!');
-            return;
-        }
-        
-        // Validasi waktu
-        if (waktuBerangkat >= waktuTiba) {
-            alert('Waktu keberangkatan harus lebih awal dari waktu kedatangan!');
-            return;
-        }
-        
-        // Validasi kursi
-        if (parseInt(kursiTerisi) > parseInt(totalKursi)) {
-            alert('Kursi terisi tidak boleh lebih dari total kursi!');
-            return;
-        }
-        
-        // Get armada detail
-        const armadaSelect = document.getElementById('armada');
-        const armadaDetail = armadaSelect.options[armadaSelect.selectedIndex].text;
-        
-        // Buat objek jadwal
-        const jadwalDataToSave = {
-            id: formMode === 'add' ? 'J' + (jadwalData.length + 1).toString().padStart(3, '0') : jadwalData[currentJadwalIndex].id,
-            rute: rute,
-            tanggal: tanggal,
-            armada: armada,
-            armadaDetail: armadaDetail,
-            waktuBerangkat: waktuBerangkat,
-            waktuTiba: waktuTiba,
-            harga: parseInt(harga),
-            totalKursi: parseInt(totalKursi),
-            kursiTerisi: parseInt(kursiTerisi),
-            keterangan: keterangan
-        };
-        
-        if (formMode === 'add') {
-            // Tambah data baru
-            jadwalData.push(jadwalDataToSave);
-            alert('Jadwal berhasil ditambahkan!');
-        } else {
-            // Update data existing
-            jadwalData[currentJadwalIndex] = jadwalDataToSave;
-            alert('Jadwal berhasil diperbarui!');
-        }
-        
-        // Kembali ke list
-        showList();
-        
-        // Di aplikasi real, di sini akan ada AJAX request ke server
-        console.log('Data jadwal disimpan:', jadwalDataToSave);
-    });
-
-    // Search dengan Enter
-    document.getElementById('search-input').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            applyFilter();
-        }
-    });
-
-    // Pagination
-    document.querySelectorAll('.pagination button').forEach(button => {
-        button.addEventListener('click', function() {
-            document.querySelectorAll('.pagination button').forEach(btn => {
-                btn.classList.remove('active');
+        if (!layananId) {
+            // Show all shuttles
+            allOptions.forEach(option => {
+                option.style.display = '';
             });
-            this.classList.add('active');
-            
-            // Di aplikasi real, di sini akan ada request data untuk halaman yang dipilih
-            console.log('Halaman', this.textContent, 'dipilih');
+            return;
+        }
+        
+        // Filter shuttles by layanan
+        allOptions.forEach(option => {
+            if (option.value === '') {
+                option.style.display = '';
+            } else {
+                const shuttleLayanan = option.getAttribute('data-layanan');
+                if (shuttleLayanan === layananId) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            }
         });
+        
+        // Reset shuttle selection if filtered out
+        const selectedOption = shuttleSelect.options[shuttleSelect.selectedIndex];
+        if (selectedOption && selectedOption.style.display === 'none') {
+            shuttleSelect.value = '';
+        }
     });
-
-    // Inisialisasi
-    window.addEventListener('DOMContentLoaded', function() {
-        renderJadwalTable();
-        
-        // Set tanggal filter default (besok)
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        document.getElementById('filter-tanggal').value = tomorrow.toISOString().split('T')[0];
-        
-        // Set tanggal form default (besok)
-        document.getElementById('tanggal').value = tomorrow.toISOString().split('T')[0];
-        
-        // Set min date untuk tanggal (hari ini)
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('tanggal').min = today;
-        document.getElementById('filter-tanggal').min = today;
+    
+    // Initialize filter based on current selection
+    document.addEventListener('DOMContentLoaded', function() {
+        const layananId = document.getElementById('filter-layanan').value;
+        if (layananId) {
+            document.getElementById('filter-layanan').dispatchEvent(new Event('change'));
+        }
     });
 </script>
 @endpush

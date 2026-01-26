@@ -394,7 +394,7 @@
 
         <!-- Back Button -->
         <div class="back-section">
-            <a href="{{ route('customer.artikel') }}" class="back-btn">
+            <a href="{{ route('customer.artikel.index') }}" class="back-btn">
                 <i class="fas fa-arrow-left"></i> Kembali ke Daftar Artikel
             </a>
         </div>

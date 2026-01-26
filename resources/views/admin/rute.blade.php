@@ -209,12 +209,12 @@ tbody tr:hover {
     text-align: center;
 }
 
-.status-aktif {
+.status-active {
     background: #b8f0a3;
     color: #1e7e34;
 }
 
-.status-nonaktif {
+.status-inactive {
     background: #ff9a9a;
     color: #8b0000;
 }
@@ -226,9 +226,12 @@ tbody tr:hover {
     border: none;
     cursor: pointer;
     font-size: 12px;
-    margin-right: 5px;
     transition: all 0.3s;
     font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .btn-view {
@@ -249,13 +252,14 @@ tbody tr:hover {
     background: #e09b00;
 }
 
-.btn-delete {
-    background: #dc3545;
-    color: #fff;
+/* Untuk tombol delete di form */
+.btn-action[style*="background: #dc3545"]:hover {
+    background: #c82333 !important;
 }
 
-.btn-delete:hover {
-    background: #c82333;
+/* Container untuk aksi agar lebih rapi */
+td:last-child {
+    min-width: 180px;
 }
 
 /* ================= PAGINATION ================= */
@@ -547,6 +551,15 @@ textarea {
         align-items: flex-start;
         gap: 15px;
     }
+    
+    td:last-child {
+        min-width: 150px;
+    }
+    
+    .btn-action {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
 }
 
 @media (max-width: 576px) {
@@ -571,13 +584,17 @@ textarea {
     }
 
     .btn-action {
-        padding: 5px 10px;
-        font-size: 11px;
+        padding: 4px 8px;
+        font-size: 10px;
         margin-bottom: 5px;
     }
 
     .detail-grid {
         grid-template-columns: 1fr;
+    }
+    
+    td:last-child {
+        min-width: 120px;
     }
 }
 </style>
@@ -702,24 +719,26 @@ textarea {
                         <td>{{ number_format($rute->jarak, 0, ',', '.') }} km</td>
                         <td>Rp {{ number_format($rute->harga_dasar, 0, ',', '.') }}</td>
                         <td>
-                            <span class="status-badge status-{{ $rute->status }}">
+                            <span class="status-badge status-{{ $rute->status == 'aktif' ? 'active' : 'inactive' }}">
                                 {{ $rute->status == 'aktif' ? 'Aktif' : 'Tidak Aktif' }}
                             </span>
                         </td>
                         <td>
-                            <a href="{{ route('admin.rute.show', $rute->id) }}" class="btn-action btn-view">
-                                <i class="fas fa-eye"></i> View
-                            </a>
-                            <a href="{{ route('admin.rute.edit', $rute->id) }}" class="btn-action btn-edit">
-                                <i class="fas fa-edit"></i> Edit
-                            </a>
-                            <form action="{{ route('admin.rute.destroy', $rute->id) }}" method="POST" style="display: inline;">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn-action btn-delete" onclick="return confirm('Apakah Anda yakin ingin menghapus rute ini?')">
-                                    <i class="fas fa-trash"></i> Hapus
-                                </button>
-                            </form>
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                <a href="{{ route('admin.rute.show', $rute->id) }}" class="btn-action btn-view">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <a href="{{ route('admin.rute.edit', $rute->id) }}" class="btn-action btn-edit">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <form action="{{ route('admin.rute.destroy', $rute->id) }}" method="POST" style="display: inline;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" class="btn-action" style="background: #dc3545; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 12px; margin: 0; cursor: pointer; font-weight: 600;" onclick="confirmDelete({{ $rute->id }}, '{{ $rute->kode_rute }}')">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     @empty
@@ -742,13 +761,17 @@ textarea {
 </div>
 
 <!-- Modal Delete Confirmation -->
-<div id="deleteModal" class="modal hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
-    <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; width: 90%;">
-        <h3 style="margin-top: 0; color: #0b2a4a;">Konfirmasi Hapus</h3>
-        <p id="deleteMessage">Apakah Anda yakin ingin menghapus rute ini?</p>
+<div id="deleteModal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 15px;">
+    <div style="background: white; padding: 25px; border-radius: 12px; max-width: 400px; width: 100%; box-shadow: 0 5px 20px rgba(0,0,0,0.2);">
+        <h3 style="margin-top: 0; color: #0b2a4a; font-size: 18px; margin-bottom: 15px;">Konfirmasi Hapus</h3>
+        <p id="deleteMessage" style="color: #666; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">Apakah Anda yakin ingin menghapus rute ini?</p>
         <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button id="confirmDelete" class="btn-save" style="background: #dc3545;">Ya, Hapus</button>
-            <button onclick="closeDeleteModal()" class="btn-cancel">Batal</button>
+            <button id="confirmDelete" class="btn-action" style="background: #dc3545; color: white; padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; flex: 1;">
+                <i class="fas fa-check"></i> Ya, Hapus
+            </button>
+            <button onclick="closeDeleteModal()" class="btn-action" style="background: #6c757d; color: white; padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; flex: 1;">
+                <i class="fas fa-times"></i> Batal
+            </button>
         </div>
     </div>
 </div>

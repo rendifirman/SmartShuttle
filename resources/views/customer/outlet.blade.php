@@ -1136,7 +1136,7 @@
                             </div>
 
                             <!-- Button Detail -->
-                            <button class="btn-detail" onclick="showOutletPopup({{ $outlet->id }})">
+                            <button class="btn-detail" data-outlet-id="{{ $outlet->id }}">
                                 <i class="fas fa-eye"></i> Lihat Detail
                             </button>
                         </div>
@@ -1186,7 +1186,7 @@
 
 @php
 // Fungsi untuk data JavaScript
-$outletsArray = $outlets->map(function($o) {
+$outletsArray = $outlets->map(function($o) use ($gambar) {
     // fasilitas → array
     $fasilitas = $o->fasilitas
         ? array_map('trim', explode(',', $o->fasilitas))
@@ -1194,10 +1194,10 @@ $outletsArray = $outlets->map(function($o) {
 
     // Buat array fasilitas tambahan dari boolean fields
     $fasilitasTambahan = [];
-    if ($o->tersedia_toilet) $fasilitasTambahan[] = 'Toilet';
-    if ($o->tersedia_musholla) $fasilitasTambahan[] = 'Musholla';
-    if ($o->tersedia_atm) $fasilitasTambahan[] = 'ATM';
-    if ($o->tersedia_wifi) $fasilitasTambahan[] = 'WiFi';
+    if (isset($o->tersedia_toilet) && $o->tersedia_toilet) $fasilitasTambahan[] = 'Toilet';
+    if (isset($o->tersedia_musholla) && $o->tersedia_musholla) $fasilitasTambahan[] = 'Musholla';
+    if (isset($o->tersedia_atm) && $o->tersedia_atm) $fasilitasTambahan[] = 'ATM';
+    if (isset($o->tersedia_wifi) && $o->tersedia_wifi) $fasilitasTambahan[] = 'WiFi';
 
     // Gabungkan semua fasilitas
     $semuaFasilitas = array_merge($fasilitas, $fasilitasTambahan);
@@ -1221,26 +1221,244 @@ $outletsArray = $outlets->map(function($o) {
         'zona_pelayanan' => $o->zona_pelayanan,
         'kapasitas_parkir' => $o->kapasitas_parkir,
         'gambar' => getOutletImage($o),
-        'foto_url' => $o->foto_url ?? null,
     ];
 })->values();
 @endphp
 
 @push('scripts')
-<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 <script>
-    // Variabel global untuk tracking
-    let currentOffset = {{ $outlets->count() }};
-    let isLoading = false;
-    let allLoaded = {{ !$hasMore ? 'true' : 'false' }};
-    let totalOutlets = {{ $totalOutlets }};
+// Data outlets diambil dari server
+const outletsData = @json($outletsArray);
+const placeholderImage = "{{ asset('images/placeholder-outlet.jpg') }}";
 
-    // Update fungsi loadMoreOutlets() di Blade dengan debugging
-function loadMoreOutlets() {
+// Icon mapping untuk fasilitas
+const facilityIcons = {
+    'Toilet': 'fas fa-restroom',
+    'Musholla': 'fas fa-mosque',
+    'ATM': 'fas fa-money-bill-wave',
+    'WiFi': 'fas fa-wifi',
+    'AC': 'fas fa-snowflake',
+    'Ruang Tunggu': 'fas fa-couch',
+    'Parkir': 'fas fa-parking',
+    'Cafe': 'fas fa-coffee',
+    'Restoran': 'fas fa-utensils',
+    'Mini Market': 'fas fa-store',
+    'Toilet Disabilitas': 'fas fa-wheelchair',
+    'Ruang Menyusui': 'fas fa-baby',
+    'Area Merokok': 'fas fa-smoking',
+    '24 Jam': 'fas fa-clock',
+    'Informasi Tiket': 'fas fa-ticket-alt',
+};
+
+// Variabel untuk tracking
+let currentOffset = {{ $outlets->count() }};
+let isLoading = false;
+let allLoaded = {{ !$hasMore ? 'true' : 'false' }};
+let totalOutlets = {{ $totalOutlets }};
+
+// Utility functions
+function getOutletById(id) {
+    return outletsData.find(o => Number(o.id) === Number(id));
+}
+
+function getFacilityIcon(facility) {
+    for (const [key, icon] of Object.entries(facilityIcons)) {
+        if (facility.toLowerCase().includes(key.toLowerCase())) {
+            return icon;
+        }
+    }
+    return 'fas fa-check-circle';
+}
+
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+// ========== POPUP FUNCTIONS ==========
+function showOutletPopup(id) {
+    console.log('Opening popup for outlet ID:', id);
+    
+    const outlet = getOutletById(id);
+    const popupCard = document.getElementById('popupCard');
+    const popupOverlay = document.getElementById('popupOverlay');
+
+    if (!outlet) {
+        console.error('Outlet not found with ID:', id);
+        alert('Data outlet tidak ditemukan');
+        return;
+    }
+
+    if (!popupCard || !popupOverlay) {
+        console.error('Popup elements not found');
+        return;
+    }
+
+    // Build facilities HTML
+    let facilitiesHtml = '';
+    if (outlet.fasilitas && outlet.fasilitas.length) {
+        outlet.fasilitas.forEach(f => {
+            const icon = getFacilityIcon(f);
+            facilitiesHtml += `
+                <div class="popup-facility-item">
+                    <i class="${icon}"></i>
+                    <span>${escapeHtml(f)}</span>
+                </div>
+            `;
+        });
+    } else {
+        facilitiesHtml = `
+            <div class="no-facilities">
+                <i class="fas fa-info-circle"></i>
+                Tidak ada data fasilitas
+            </div>
+        `;
+    }
+
+    const contentHtml = `
+        <div class="popup-header" id="popupTitle">
+            ${escapeHtml(outlet.nama)}
+            <button class="btn-close-popup" aria-label="Tutup" onclick="hideOutletPopup()">×</button>
+        </div>
+
+        <!-- FOTO DI ATAS -->
+        <div class="popup-top-image">
+            <img src="${escapeHtml(outlet.gambar)}"
+                 alt="${escapeHtml(outlet.nama)}"
+                 onerror="this.onerror=null;this.src='${placeholderImage}'">
+        </div>
+
+        <!-- INFO DI BAWAH dalam 2 kolom -->
+        <div class="popup-content">
+            <!-- Alamat Lengkap (Full Width) -->
+            <div class="full-width-section">
+                <div class="popup-label">
+                    <i class="fas fa-map-marker-alt"></i>
+                    ALAMAT LENGKAP
+                </div>
+                <div class="popup-value">${escapeHtml(outlet.alamat)}</div>
+            </div>
+
+            <!-- Grid 2 Kolom untuk Info Lainnya -->
+            <div class="popup-two-columns">
+                <!-- Kolom Kiri -->
+                <div class="popup-left-column">
+                    <div class="popup-info-item">
+                        <div class="popup-label">
+                            <i class="fas fa-store"></i>
+                            CABANG
+                        </div>
+                        <div class="popup-value">${escapeHtml(outlet.cabang)}</div>
+                    </div>
+
+                    <div class="popup-info-item">
+                        <div class="popup-label">
+                            <i class="fas fa-city"></i>
+                            KOTA
+                        </div>
+                        <div class="popup-value">${escapeHtml(outlet.kota)}</div>
+                    </div>
+
+                    <div class="popup-info-item">
+                        <div class="popup-label">
+                            <i class="fas fa-tag"></i>
+                            TIPE OUTLET
+                        </div>
+                        <div class="popup-value">${escapeHtml(outlet.tipe_outlet || 'Standard')}</div>
+                    </div>
+
+                    <div class="popup-info-item">
+                        <div class="popup-label">
+                            <i class="fas fa-clock"></i>
+                            JAM OPERASIONAL
+                        </div>
+                        <div class="popup-value">${escapeHtml(outlet.jam_operasional)}</div>
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan -->
+                <div class="popup-right-column">
+                    <div class="popup-info-item">
+                        <div class="popup-label">
+                            <i class="fas fa-map-marked-alt"></i>
+                            ZONA PELAYANAN
+                        </div>
+                        <div class="popup-value">${escapeHtml(outlet.zona_pelayanan || 'Seluruh kota')}</div>
+                    </div>
+
+                    <div class="popup-info-item">
+                        <div class="popup-label">
+                            <i class="fas fa-car"></i>
+                            KAPASITAS PARKIR
+                        </div>
+                        <div class="popup-value">${outlet.kapasitas_parkir || 0} kendaraan</div>
+                    </div>
+
+                    <!-- Kontak Section -->
+                    <div class="popup-contact-section">
+                        <div class="popup-info-item">
+                            <div class="popup-label">
+                                <i class="fas fa-phone"></i>
+                                TELEPON
+                            </div>
+                            <div class="popup-value">${escapeHtml(outlet.telepon || '-')}</div>
+                        </div>
+
+                        <div class="popup-info-item">
+                            <div class="popup-label">
+                                <i class="fas fa-envelope"></i>
+                                EMAIL
+                            </div>
+                            <div class="popup-value">${escapeHtml(outlet.email || '-')}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fasilitas (Full Width di bawah) -->
+            <div class="popup-facilities">
+                <div class="popup-facilities-label">
+                    <i class="fas fa-star"></i>
+                    FASILITAS
+                </div>
+                <div class="popup-facilities-grid">
+                    ${facilitiesHtml}
+                </div>
+            </div>
+        </div>
+    `;
+
+    popupCard.innerHTML = contentHtml;
+    popupOverlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    // fokus ke tombol close untuk aksesibilitas
+    const closeBtn = popupCard.querySelector('.btn-close-popup');
+    if (closeBtn) closeBtn.focus();
+}
+
+function hideOutletPopup() {
+    const popupOverlay = document.getElementById('popupOverlay');
+    if (!popupOverlay) return;
+    popupOverlay.style.display = 'none';
+    document.body.style.overflow = '';
+    const popupCard = document.getElementById('popupCard');
+    if (popupCard) popupCard.innerHTML = '';
+}
+
+// ========== LOAD MORE FUNCTIONS ==========
+async function loadMoreOutlets() {
     if (isLoading || allLoaded) return;
 
     const btn = document.getElementById('loadMoreBtn');
     const grid = document.getElementById('outletGrid');
+    const counter = document.getElementById('currentCount');
+    const totalCounter = document.getElementById('totalCount');
 
     // Set loading state
     isLoading = true;
@@ -1250,38 +1468,26 @@ function loadMoreOutlets() {
     const kota = document.getElementById('kotaInput')?.value || '';
     const branchId = document.getElementById('branchIdInput')?.value || '';
 
-    // Debug URL
-    const url = '{{ route("customer.outlet.loadMore") }}';
-    console.log('AJAX URL:', url);
-    console.log('Request data:', { offset: currentOffset, kota, branch_id: branchId });
+    // Prepare request data
+    const requestData = {
+        offset: currentOffset,
+        kota: kota,
+        branch_id: branchId,
+        _token: '{{ csrf_token() }}'
+    };
 
-    // Buat form data
-    const formData = new FormData();
-    formData.append('offset', currentOffset);
-    formData.append('kota', kota);
-    formData.append('branch_id', branchId);
-    formData.append('_token', '{{ csrf_token() }}');
+    try {
+        const response = await fetch('{{ route("customer.outlet.loadMore") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(requestData)
+        });
 
-    // AJAX request - gunakan FormData bukan JSON
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        },
-        body: formData
-    })
-    .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Response data:', data);
+        const data = await response.json();
 
         if (data.success) {
             // Append new outlet cards
@@ -1304,8 +1510,11 @@ function loadMoreOutlets() {
 
             // Update counters
             currentOffset += data.count;
-            document.getElementById('currentCount').textContent = currentOffset;
-            document.getElementById('totalCount').textContent = data.total;
+            if (counter) counter.textContent = currentOffset;
+            if (totalCounter && data.total) totalCounter.textContent = data.total;
+
+            // Re-initialize popup handlers for new cards
+            initializePopupHandlers();
 
             // Update button state
             if (data.allLoaded) {
@@ -1325,86 +1534,73 @@ function loadMoreOutlets() {
                     loadMoreContainer.appendChild(message);
                 }
             }
-
-            // Re-initialize popup handlers for new cards
-            initPopupHandlers();
-
-            // Update outletsData untuk popup
-            updateOutletsData();
-
         } else {
             console.error('Server error:', data.message);
             alert('Gagal memuat outlet: ' + (data.message || 'Error tidak diketahui'));
         }
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('Error loading more outlets:', error);
-        alert('Terjadi kesalahan saat memuat outlet. Silakan coba lagi atau refresh halaman.');
-    })
-    .finally(() => {
+        alert('Terjadi kesalahan saat memuat outlet. Silakan coba lagi.');
+    } finally {
         isLoading = false;
         btn.classList.remove('loading');
+    }
+}
+
+// ========== FILTER FUNCTIONS ==========
+function submitFilterForm() {
+    document.getElementById('filterForm').submit();
+}
+
+function resetFilter() {
+    document.getElementById('kotaInput').value = '';
+    document.getElementById('branchInput').value = '';
+    document.getElementById('branchIdInput').value = '';
+    document.getElementById('filterForm').submit();
+}
+
+// ========== EVENT HANDLERS INITIALIZATION ==========
+function initializePopupHandlers() {
+    // Handle detail button clicks
+    document.querySelectorAll('.btn-detail[data-outlet-id]').forEach(button => {
+        // Remove existing listeners
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+        
+        // Add new listener
+        newButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const outletId = this.getAttribute('data-outlet-id');
+            console.log('Detail button clicked for outlet ID:', outletId);
+            
+            if (outletId) {
+                showOutletPopup(outletId);
+            }
+        });
     });
 }
 
-// Fungsi untuk update outletsData dari server (opsional)
-function updateOutletsData() {
-    // Jika perlu update data untuk popup, bisa ditambahkan di sini
-    console.log('Update outlets data setelah load more');
-}
-
-// Tambahkan di bagian inisialisasi
-document.addEventListener('DOMContentLoaded', function() {
-    // Inisialisasi popup handlers
-    initPopupHandlers();
-
-    // Pastikan tombol load more ada
+function initializeEventListeners() {
+    // Load more button
     const loadMoreBtn = document.getElementById('loadMoreBtn');
     if (loadMoreBtn) {
         loadMoreBtn.addEventListener('click', loadMoreOutlets);
     }
 
-    // Initialize popup handlers
-    function initPopupHandlers() {
-        // Button detail click handlers
-        document.querySelectorAll('.btn-detail').forEach(btn => {
-            if (!btn.hasAttribute('data-handler-initialized')) {
-                btn.setAttribute('data-handler-initialized', 'true');
-                btn.addEventListener('click', function() {
-                    const outletId = this.getAttribute('onclick')?.match(/\d+/)?.[0];
-                    if (outletId) {
-                        showOutletPopup(outletId);
-                    }
-                });
-            }
-        });
-    }
-
-    // Fungsi untuk submit form filter
-    function submitFilterForm() {
-        document.getElementById('filterForm').submit();
-    }
-
-    // Fungsi untuk reset filter
-    function resetFilter() {
-        document.getElementById('kotaInput').value = '';
-        document.getElementById('branchInput').value = '';
-        document.getElementById('branchIdInput').value = '';
-        document.getElementById('filterForm').submit();
-    }
-
-    // Handle branch selection from datalist
+    // Branch selection from datalist
     const branchInput = document.getElementById('branchInput');
     const branchIdInput = document.getElementById('branchIdInput');
-    const branchOptions = document.getElementById('branchOptions');
 
-    if (branchInput) {
+    if (branchInput && branchIdInput) {
         branchInput.addEventListener('input', function() {
-            const inputValue = this.value.toLowerCase();
+            const inputValue = this.value;
+            const branchOptions = document.getElementById('branchOptions');
             let foundBranchId = null;
 
             Array.from(branchOptions.options).forEach(option => {
-                if (option.value.toLowerCase() === inputValue) {
+                if (option.value === inputValue) {
                     foundBranchId = option.getAttribute('data-id');
                 }
             });
@@ -1420,6 +1616,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Kota input enter key
     const kotaInput = document.getElementById('kotaInput');
     if (kotaInput) {
         kotaInput.addEventListener('keypress', function(e) {
@@ -1430,234 +1627,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Data outlets diambil dari server (Blade -> JS)
-    const outletsData = @json($outletsArray);
-    const placeholderImage = "{{ asset('images/placeholder-outlet.jpg') }}";
-
-    // Icon mapping untuk fasilitas
-    const facilityIcons = {
-        'Toilet': 'fas fa-restroom',
-        'Musholla': 'fas fa-mosque',
-        'ATM': 'fas fa-money-bill-wave',
-        'WiFi': 'fas fa-wifi',
-        'AC': 'fas fa-snowflake',
-        'Ruang Tunggu': 'fas fa-couch',
-        'Parkir': 'fas fa-parking',
-        'Cafe': 'fas fa-coffee',
-        'Restoran': 'fas fa-utensils',
-        'Mini Market': 'fas fa-store',
-        'Toilet Disabilitas': 'fas fa-wheelchair',
-        'Ruang Menyusui': 'fas fa-baby',
-        'Area Merokok': 'fas fa-smoking',
-        '24 Jam': 'fas fa-clock',
-        'Informasi Tiket': 'fas fa-ticket-alt',
-    };
-
-    // Utility: cari outlet berdasarkan id
-    function getOutletById(id) {
-        return outletsData.find(o => Number(o.id) === Number(id));
-    }
-
-    // Get icon for facility
-    function getFacilityIcon(facility) {
-        for (const [key, icon] of Object.entries(facilityIcons)) {
-            if (facility.toLowerCase().includes(key.toLowerCase())) {
-                return icon;
-            }
-        }
-        return 'fas fa-check-circle';
-    }
-
-    // Tampilkan popup dengan layout: Foto di ATAS, INFO DI BAWAH
-    function showOutletPopup(id) {
-        const outlet = getOutletById(id);
-        const popupCard = document.getElementById('popupCard');
-        const popupOverlay = document.getElementById('popupOverlay');
-
-        if (!outlet || !popupCard || !popupOverlay) return;
-
-        // build fasilitas HTML dari array fasilitas
-        let facilitiesHtml = '';
-        if (outlet.fasilitas && outlet.fasilitas.length) {
-            outlet.fasilitas.forEach(f => {
-                const icon = getFacilityIcon(f);
-                facilitiesHtml += `
-                    <div class="popup-facility-item">
-                        <i class="${icon}"></i>
-                        <span>${escapeHtml(f)}</span>
-                    </div>
-                `;
-            });
-        } else {
-            facilitiesHtml = `
-                <div class="no-facilities">
-                    <i class="fas fa-info-circle"></i>
-                    Tidak ada data fasilitas
-                </div>
-            `;
-        }
-
-        const contentHtml = `
-            <div class="popup-header" id="popupTitle">
-                ${escapeHtml(outlet.nama)}
-                <button class="btn-close-popup" aria-label="Tutup" onclick="hideOutletPopup()">×</button>
-            </div>
-
-            <!-- FOTO DI ATAS -->
-            <div class="popup-top-image">
-                <img src="${escapeHtml(outlet.gambar)}"
-                     alt="${escapeHtml(outlet.nama)}"
-                     onerror="this.onerror=null;this.src='${placeholderImage}'">
-            </div>
-
-            <!-- INFO DI BAWAH dalam 2 kolom -->
-            <div class="popup-content">
-                <!-- Alamat Lengkap (Full Width) -->
-                <div class="full-width-section">
-                    <div class="popup-label">
-                        <i class="fas fa-map-marker-alt"></i>
-                        ALAMAT LENGKAP
-                    </div>
-                    <div class="popup-value">${escapeHtml(outlet.alamat)}</div>
-                </div>
-
-                <!-- Grid 2 Kolom untuk Info Lainnya -->
-                <div class="popup-two-columns">
-                    <!-- Kolom Kiri -->
-                    <div class="popup-left-column">
-                        <div class="popup-info-item">
-                            <div class="popup-label">
-                                <i class="fas fa-store"></i>
-                                CABANG
-                            </div>
-                            <div class="popup-value">${escapeHtml(outlet.cabang)}</div>
-                        </div>
-
-                        <div class="popup-info-item">
-                            <div class="popup-label">
-                                <i class="fas fa-city"></i>
-                                KOTA
-                            </div>
-                            <div class="popup-value">${escapeHtml(outlet.kota)}</div>
-                        </div>
-
-                        <div class="popup-info-item">
-                            <div class="popup-label">
-                                <i class="fas fa-tag"></i>
-                                TIPE OUTLET
-                            </div>
-                            <div class="popup-value">${escapeHtml(outlet.tipe_outlet || 'Standard')}</div>
-                        </div>
-
-                        <div class="popup-info-item">
-                            <div class="popup-label">
-                                <i class="fas fa-clock"></i>
-                                JAM OPERASIONAL
-                            </div>
-                            <div class="popup-value">${escapeHtml(outlet.jam_operasional)}</div>
-                        </div>
-                    </div>
-
-                    <!-- Kolom Kanan -->
-                    <div class="popup-right-column">
-                        <div class="popup-info-item">
-                            <div class="popup-label">
-                                <i class="fas fa-map-marked-alt"></i>
-                                ZONA PELAYANAN
-                            </div>
-                            <div class="popup-value">${escapeHtml(outlet.zona_pelayanan || 'Seluruh kota')}</div>
-                        </div>
-
-                        <div class="popup-info-item">
-                            <div class="popup-label">
-                                <i class="fas fa-car"></i>
-                                KAPASITAS PARKIR
-                            </div>
-                            <div class="popup-value">${outlet.kapasitas_parkir || 0} kendaraan</div>
-                        </div>
-
-                        <!-- Kontak Section -->
-                        <div class="popup-contact-section">
-                            <div class="popup-info-item">
-                                <div class="popup-label">
-                                    <i class="fas fa-phone"></i>
-                                    TELEPON
-                                </div>
-                                <div class="popup-value">${escapeHtml(outlet.telepon || '-')}</div>
-                            </div>
-
-                            <div class="popup-info-item">
-                                <div class="popup-label">
-                                    <i class="fas fa-envelope"></i>
-                                    EMAIL
-                                </div>
-                                <div class="popup-value">${escapeHtml(outlet.email || '-')}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Fasilitas (Full Width di bawah) -->
-                <div class="popup-facilities">
-                    <div class="popup-facilities-label">
-                        <i class="fas fa-star"></i>
-                        FASILITAS
-                    </div>
-                    <div class="popup-facilities-grid">
-                        ${facilitiesHtml}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        popupCard.innerHTML = contentHtml;
-        popupOverlay.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-
-        // fokus ke tombol close untuk aksesibilitas
-        const closeBtn = popupCard.querySelector('.btn-close-popup');
-        if (closeBtn) closeBtn.focus();
-    }
-
-    function hideOutletPopup() {
-        const popupOverlay = document.getElementById('popupOverlay');
-        if (!popupOverlay) return;
-        popupOverlay.style.display = 'none';
-        document.body.style.overflow = '';
-        const popupCard = document.getElementById('popupCard');
-        if (popupCard) popupCard.innerHTML = '';
-    }
-
-    // Escape HTML untuk mencegah XSS jika data tidak trusted
-    function escapeHtml(str) {
-        if (str === null || str === undefined) return '';
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
-    // Tutup popup saat klik di luar card
+    // Close popup when clicking outside
     document.addEventListener('click', function(event) {
         const popupOverlay = document.getElementById('popupOverlay');
         if (!popupOverlay) return;
+        
         if (event.target === popupOverlay) {
             hideOutletPopup();
         }
     });
 
-    // Tutup popup dengan ESC
+    // Close popup with ESC key
     document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') hideOutletPopup();
+        if (event.key === 'Escape') {
+            hideOutletPopup();
+        }
     });
 
     // Preload background image
-    document.addEventListener('DOMContentLoaded', function() {
-        const outletPage = document.getElementById('outletPage');
+    const outletPage = document.getElementById('outletPage');
+    if (outletPage) {
         const bgImage = new Image();
-        const imageUrl = "{{ asset('images/peta.png') }}";
+        const imageUrl = "{{ asset('images/backgroundpeta.png') }}";
 
         bgImage.onload = function() {
             outletPage.style.backgroundImage = `linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)), url('${imageUrl}')`;
@@ -1675,6 +1666,27 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         bgImage.src = imageUrl;
-    });
+    }
+}
+
+// ========== INITIALIZATION ON DOM LOAD ==========
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing event listeners...');
+    
+    // Initialize all event listeners
+    initializeEventListeners();
+    
+    // Initialize popup handlers for initial cards
+    initializePopupHandlers();
+    
+    console.log('Event listeners initialized successfully');
+});
+
+// Make functions available globally
+window.showOutletPopup = showOutletPopup;
+window.hideOutletPopup = hideOutletPopup;
+window.submitFilterForm = submitFilterForm;
+window.resetFilter = resetFilter;
+window.loadMoreOutlets = loadMoreOutlets;
 </script>
 @endpush

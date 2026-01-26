@@ -73,6 +73,20 @@ class Shuttle extends Model
         );
     }
 
+    public static function getAvailableForLayanan($layananId)
+    {
+        return self::where('layanan_id', $layananId)
+            ->aktif()
+            ->memilikiKapasitas()
+            ->orderBy('nama_shuttle')
+            ->get();
+    }
+
+    public function canBeUsedForSchedule()
+    {
+        return $this->is_available && $this->layanan_id !== null;
+    }
+
     // ================ METHOD UTAMA LAYOUT STABIL ================
 
     /**
@@ -213,6 +227,12 @@ public function getLayoutWithStatus($jadwalId = null)
         return $query->where('layanan_id', $layananId);
     }
 
+    public function scopeMemilikiKapasitas($query)
+    {
+        return $query->whereNotNull('total_kursi')
+                    ->where('total_kursi', '>', 0);
+    }
+
     /**
      * Get fasilitas sebagai array
      */
@@ -302,6 +322,36 @@ public function getLayoutWithStatus($jadwalId = null)
         }
 
         return null;
+    }
+
+
+    public function getFormattedInfoAttribute()
+    {
+        $info = $this->nama_shuttle;
+        if ($this->nomor_polisi) {
+            $info .= " ({$this->nomor_polisi})";
+        }
+        if ($this->total_kursi) {
+            $info .= " - {$this->total_kursi} kursi";
+        }
+        return $info;
+    }
+
+    public function getIsAvailableAttribute()
+    {
+        return $this->status === 'aktif' && $this->total_kursi > 0;
+    }
+
+    public function updateKursiTersedia($jumlah)
+    {
+        if ($jumlah > $this->total_kursi) {
+            throw new \Exception('Jumlah melebihi kapasitas shuttle');
+        }
+
+        $this->kursi_tersedia = $jumlah;
+        $this->save();
+
+        return $this;
     }
 
     // ================ AUDIT RELATIONSHIPS ================

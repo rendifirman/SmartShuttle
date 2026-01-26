@@ -1,4 +1,3 @@
-{{-- resources/views/customer/artikel_index.blade.php --}}
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -32,7 +31,7 @@
 
         /* Header */
         .articles-header {
-            background: linear-gradient(135deg, var(--primary-color, #123352), #00308F);
+            background: linear-gradient(135deg, #123352, #00308F);
             color: white;
             padding: 80px 0 40px;
             text-align: center;
@@ -83,7 +82,7 @@
 
         .search-box input:focus {
             outline: none;
-            border-color: var(--secondary-color, #FF581E);
+            border-color: #FF581E;
         }
 
         .search-box i {
@@ -109,11 +108,13 @@
             font-size: 14px;
             cursor: pointer;
             transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
         }
 
         .kategori-btn:hover,
         .kategori-btn.active {
-            background: var(--secondary-color, #FF581E);
+            background: #FF581E;
             color: white;
         }
 
@@ -156,7 +157,7 @@
 
         .article-category {
             display: inline-block;
-            background: var(--secondary-color, #FF581E);
+            background: #FF581E;
             color: white;
             padding: 4px 12px;
             border-radius: 20px;
@@ -169,7 +170,7 @@
         .article-title {
             font-size: 18px;
             font-weight: 700;
-            color: var(--primary-color, #123352);
+            color: #123352;
             margin-bottom: 10px;
             line-height: 1.4;
         }
@@ -199,14 +200,14 @@
         }
 
         .article-read-more {
-            color: var(--secondary-color, #FF581E);
+            color: #FF581E;
             font-weight: 600;
             text-decoration: none;
             transition: color 0.3s;
         }
 
         .article-read-more:hover {
-            color: var(--primary-color, #123352);
+            color: #123352;
             text-decoration: underline;
         }
 
@@ -233,9 +234,9 @@
         }
 
         .page-link.active {
-            background: var(--secondary-color, #FF581E);
+            background: #FF581E;
             color: white;
-            border-color: var(--secondary-color, #FF581E);
+            border-color: #FF581E;
         }
 
         /* No Results */
@@ -304,13 +305,13 @@
     <main class="container">
         <!-- Search and Filter -->
         <div class="filter-section">
-            <form action="{{ route('customer.artikel') }}" method="GET" class="search-box">
+            <form action="{{ route('customer.artikel.index') }}" method="GET" class="search-box">
                 <i class="fas fa-search"></i>
                 <input type="text" name="search" placeholder="Cari artikel..." value="{{ request('search') }}">
             </form>
 
             <div class="kategori-filter">
-                <a href="{{ route('customer.artikel') }}"
+                <a href="{{ route('customer.artikel.index') }}"
                    class="kategori-btn {{ !request('kategori') ? 'active' : '' }}">
                     Semua
                 </a>
@@ -324,36 +325,29 @@
         </div>
 
         <!-- Articles Grid -->
-        @if($articles->count() > 0)
+        @if(isset($articles) && $articles->count() > 0)
             <div class="articles-grid">
                 @foreach($articles as $article)
-                    <!-- Tentukan foto untuk setiap artikel -->
                     @php
-                        // Tentukan foto berdasarkan ID artikel
-                        $fotoArtikel = [
-                            1 => 'AR1.png',
-                            2 => 'AR2.png',
-                            3 => 'AR3.png',
-                            4 => 'AR2.png',
-                            5 => 'AR2.png',
-                            6 => 'AR3.png',
-                        ];
-
-                        if (isset($fotoArtikel[$article->id])) {
-                            $fotoUrl = asset('images/' . $fotoArtikel[$article->id]);
-                        } else {
-                            $availableFoto = ['AR1.png', 'AR2.png', 'AR3.png'];
-                            $modIndex = ($article->id - 1) % count($availableFoto);
-                            $fotoUrl = asset('images/' . $availableFoto[$modIndex]);
+                        // Gunakan gambar dari database jika ada
+                        $gambarUrl = asset('images/AR1.png'); // default
+                        
+                        if ($article->gambar) {
+                            if (Storage::disk('public')->exists($article->gambar)) {
+                                $gambarUrl = asset('storage/' . $article->gambar);
+                            }
                         }
-
+                        
                         // Format tanggal
                         $tanggalFormat = \Carbon\Carbon::parse($article->tanggal_publikasi)
                             ->translatedFormat('d F Y');
                     @endphp
 
                     <div class="article-card">
-                        <img src="{{ $fotoUrl }}" alt="{{ $article->judul }}" class="article-image">
+                        <img src="{{ $gambarUrl }}" 
+                             alt="{{ $article->judul }}" 
+                             class="article-image"
+                             onerror="this.onerror=null; this.src='{{ asset('images/AR1.png') }}';">
                         <div class="article-content">
                             <span class="article-category">{{ $article->kategori }}</span>
                             <h3 class="article-title">{{ $article->judul }}</h3>
@@ -363,7 +357,7 @@
                                     <i class="far fa-calendar-alt"></i>
                                     {{ $tanggalFormat }}
                                 </div>
-                                <a href="{{ route('customer.artikel.detail', $article->slug) }}" class="article-read-more">
+                                <a href="{{ route('customer.artikel.show', $article->slug) }}" class="article-read-more">
                                     Baca Selengkapnya →
                                 </a>
                             </div>
@@ -400,7 +394,7 @@
                 <i class="far fa-newspaper"></i>
                 <h3>Tidak ada artikel ditemukan</h3>
                 <p>Coba gunakan kata kunci lain atau lihat kategori yang tersedia.</p>
-                <a href="{{ route('customer.artikel') }}" class="kategori-btn">
+                <a href="{{ route('customer.artikel.index') }}" class="kategori-btn">
                     Lihat Semua Artikel
                 </a>
             </div>
@@ -411,7 +405,7 @@
     <footer style="background: #f0f0f0; padding: 40px 0; margin-top: 60px;">
         <div class="container" style="text-align: center;">
             <a href="{{ route('customer.beranda') }}"
-               style="display: inline-block; padding: 12px 30px; background: var(--secondary-color, #FF581E); color: white; text-decoration: none; border-radius: 25px; font-weight: 600;">
+               style="display: inline-block; padding: 12px 30px; background: #FF581E; color: white; text-decoration: none; border-radius: 25px; font-weight: 600;">
                 <i class="fas fa-home"></i> Kembali ke Beranda
             </a>
         </div>
@@ -419,7 +413,7 @@
 
     <script>
         // Auto submit search on enter
-        document.querySelector('.search-box input').addEventListener('keypress', function(e) {
+        document.querySelector('.search-box input')?.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 this.closest('form').submit();
             }
@@ -429,7 +423,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.querySelector('.search-box input');
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('search')) {
+            if (searchInput && urlParams.has('search')) {
                 searchInput.focus();
                 searchInput.select();
             }

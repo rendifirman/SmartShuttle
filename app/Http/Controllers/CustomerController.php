@@ -299,111 +299,140 @@ $reviews = Review::with('user')
             })
             ;
 
-        // Ambil artikel terbaru yang aktif (diambil dari ArtikelSeeder)
-        $articles = Artikel::aktif()
-            ->terbaru()
-            ->limit(4)
-            ->get()
-            ->map(function ($a) {
-                return [
-                    'id' => $a->id,
-                    'image' => $a->gambar_url ?? ($a->gambar ? asset('storage/' . $a->gambar) : asset('images/default-article.jpg')),
-                    'title' => $a->judul,
-                    'category' => $a->kategori ?? '',
-                    'excerpt' => $a->excerpt ?? strip_tags(Str::limit($a->konten ?? '', 150)),
-                    'date' => $a->tanggal_publikasi ? $a->tanggal_publikasi->format('d M Y') : '',
-                ];
-            })
-            ->toArray();
+     // Artikel
+$artikelsFromDB = Artikel::aktif()
+    ->orderBy('tanggal_publikasi', 'desc')
+    ->take(4)
+    ->get();
 
-        // Jika tidak ada promo aktif, gunakan contoh data (opsional)
-        if ($promos->isEmpty()) {
-            $promos = collect([
-                [
-                    'id' => 1,
-                    'nama' => 'Promo Awal Tahun',
-                    'deskripsi' => 'Diskon 30% untuk semua layanan shuttle selama bulan Januari',
-                    'gambar' => asset('images/promo/bali.jpg'),
-                    'periode' => '1 Jan 2024 - 31 Mar 2024'
-                ],
-                [
-                    'id' => 2,
-                    'nama' => 'Paket Keluarga',
-                    'deskripsi' => 'Diskon 25% untuk pemesanan tiket shuttle minimal 4 orang',
-                    'gambar' => asset('images/promo/promo2.jpg'),
-                    'periode' => '1 Feb 2024 - 31 Mar 2024'
-                ],
-                [
-                    'id' => 3,
-                    'nama' => 'Member Baru',
-                    'deskripsi' => 'Dapatkan 2 tiket gratis untuk pendaftaran member baru',
-                    'gambar' => asset('images/promo/promo3.jpg'),
-                    'periode' => 'Sepanjang Tahun 2024'
-                ],
-            ]);
+$articles = [];
+
+foreach ($artikelsFromDB as $index => $artikel) {
+    // Gunakan gambar dari database jika ada
+    $gambar = asset('images/AR1.png'); // default fallback
+    
+    // Debug: Lihat apa yang ada di database
+    // \Log::info('Artikel ID: ' . $artikel->id . ', Gambar: ' . $artikel->gambar);
+    
+    if ($artikel->gambar) {
+        // Cek apakah gambar ada di storage publik
+        if (Storage::disk('public')->exists($artikel->gambar)) {
+            $gambar = asset('storage/' . $artikel->gambar);
         }
-        $articles = Artikel::aktif()
-        ->terbaru()
-        ->get()
-        ->map(function ($artikel) {
-            return [
-                'id' => $artikel->id,
-                'title' => $artikel->judul,
-                'excerpt' => $artikel->excerpt,
-                'full_content' => $artikel->konten,
-                'category' => $artikel->kategori,
-                'image' => $artikel->gambar_url,
-                'date' => $artikel->tanggal_format,
-                'read_time' => $artikel->waktu_baca,
-                'tags' => explode(',', $artikel->meta_keywords ?? ''),
-                'slug' => $artikel->slug
-            ];
+        // Jika gambar sudah full URL (misalnya dari seeder)
+        elseif (filter_var($artikel->gambar, FILTER_VALIDATE_URL)) {
+            $gambar = $artikel->gambar;
+        }
+        // Jika gambar adalah path relatif di public folder
+        elseif (file_exists(public_path($artikel->gambar))) {
+            $gambar = asset($artikel->gambar);
+        }
+    }
+
+    $articles[] = [
+        'id' => $artikel->id,
+        'image' => $gambar,
+        'category' => $artikel->kategori,
+        'title' => $artikel->judul,
+        'excerpt' => $artikel->getExcerptAttribute(100), // Gunakan method dari model
+        'date' => $artikel->tanggal_publikasi ? 
+                  $artikel->tanggal_publikasi->translatedFormat('d F Y') : '-',
+        'read_time' => $artikel->getWaktuBacaAttribute(), // Gunakan method dari model
+        'tags' => $artikel->meta_keywords ? explode(', ', $artikel->meta_keywords) : [],
+        'full_content' => $artikel->konten,
+        'author' => $artikel->penulis,
+        'slug' => $artikel->slug ?? 'artikel-' . $artikel->id
+    ];
+}
+
+// Jika tidak ada artikel aktif, gunakan data dummy (opsional)
+if (empty($articles)) {
+    $articles = [
+        [
+            'id' => 1,
+            'image' => asset('/images/AR1.png'),
+            'category' => 'Tips & Trik',
+            'title' => 'Tips Perjalanan Aman dengan Shuttle Selama Liburan',
+            'excerpt' => 'Pelajari cara mempersiapkan perjalanan shuttle yang aman dan nyaman selama musim liburan untuk pengalaman terbaik.',
+            'date' => '15 Maret 2024',
+            'read_time' => '5 min read',
+            'tags' => ['Perjalanan', 'Tips', 'Liburan'],
+            'full_content' => '<h3>Persiapan Sebelum Perjalanan</h3><p>Perjalanan dengan shuttle selama liburan memerlukan persiapan yang matang. Pastikan Anda memesan tiket jauh-jauh hari untuk mendapatkan harga terbaik dan kursi pilihan. Smart Shuttle menawarkan pemesanan online yang mudah melalui website atau aplikasi kami.</p>',
+            'author' => 'Admin SmartShuttle',
+            'slug' => 'tips-perjalanan-aman' // PASTIKAN ADA SLUG
+        ]
+    ];
+}
+
+// TAMBAHKAN INI: Penutup array dan lanjutan method beranda()
+if (empty($articles)) {
+    $articles = [
+        [
+            'id' => 1,
+            'image' => asset('/images/AR1.png'),
+            'category' => 'Tips & Trik',
+            'title' => 'Tips Perjalanan Aman dengan Shuttle Selama Liburan',
+            'excerpt' => 'Pelajari cara mempersiapkan perjalanan shuttle yang aman dan nyaman selama musim liburan untuk pengalaman terbaik.',
+            'date' => '15 Maret 2024',
+            'read_time' => '5 min read',
+            'tags' => ['Perjalanan', 'Tips', 'Liburan'],
+            'full_content' => '<h3>Persiapan Sebelum Perjalanan</h3><p>Perjalanan dengan shuttle selama liburan memerlukan persiapan yang matang. Pastikan Anda memesan tiket jauh-jauh hari untuk mendapatkan harga terbaik dan kursi pilihan. Smart Shuttle menawarkan pemesanan online yang mudah melalui website atau aplikasi kami.</p>',
+            'author' => 'Admin SmartShuttle',
+            'slug' => 'tips-perjalanan-aman'
+        ]
+    ];
+}
+
+// TAMBAHKAN INI: Lanjutan method beranda() dan penutup
+if ($promos->isEmpty()) {
+    $promos = collect([
+        // ... data promo default ...
+    ]);
+}
+
+return view('customer.beranda', compact('user', 'outletsGrouped', 'layanan', 'profile', 'reviews', 'promos', 'articles'));
+} // <-- TUTUP METHOD BERANDA() DENGAN INI
+
+/**
+ * Halaman outlet
+ */
+public function outlet(Request $request)
+{
+    $user = session()->get('user');
+
+    $query = Outlet::with('branch')
+        ->where('status', 'aktif');
+
+    // Filter berdasarkan kota
+    if ($request->filled('kota')) {
+        $query->whereHas('branch', function ($q) use ($request) {
+            $q->where('kota', $request->kota);
         });
-
-        return view('customer.beranda', compact('user', 'outletsGrouped', 'layanan', 'profile', 'reviews', 'promos', 'articles'));
     }
 
-    /**
-     * Halaman outlet
-     */
-    public function outlet(Request $request)
-    {
-        $user = session()->get('user');
-
-        $query = Outlet::with('branch')
-            ->where('status', 'aktif');
-
-        // Filter berdasarkan kota
-        if ($request->filled('kota')) {
-            $query->whereHas('branch', function ($q) use ($request) {
-                $q->where('kota', $request->kota);
-            });
-        }
-
-        // Filter berdasarkan branch_id
-        if ($request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
-        }
-
-        // Pagination untuk initial load (6 items)
-        $outlets = $query->orderBy('nama_outlet')->limit(6)->get();
-        $totalOutlets = $query->count();
-        $hasMore = $totalOutlets > 6;
-
-        $branches = Branch::where('status', 'aktif')
-            ->orderBy('kota')
-            ->get();
-
-        $kotaList = Branch::select('kota')
-            ->distinct()
-            ->where('status', 'aktif')
-            ->orderBy('kota')
-            ->pluck('kota')
-            ->toArray();
-
-        return view('customer.outlet', compact('user', 'outlets', 'branches', 'kotaList', 'totalOutlets', 'hasMore'));
+    // Filter berdasarkan branch_id
+    if ($request->filled('branch_id')) {
+        $query->where('branch_id', $request->branch_id);
     }
 
+    // Pagination untuk initial load (6 items)
+    $outlets = $query->orderBy('nama_outlet')->limit(6)->get();
+    $totalOutlets = $query->count();
+    $hasMore = $totalOutlets > 6;
+
+    $branches = Branch::where('status', 'aktif')
+        ->orderBy('kota')
+        ->get();
+
+    $kotaList = Branch::select('kota')
+        ->distinct()
+        ->where('status', 'aktif')
+        ->orderBy('kota')
+        ->pluck('kota')
+        ->toArray();
+
+    return view('customer.outlet', compact('user', 'outlets', 'branches', 'kotaList', 'totalOutlets', 'hasMore'));
+}
     /**
      * AJAX endpoint untuk load more outlets
      */

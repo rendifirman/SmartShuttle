@@ -9,6 +9,8 @@ class Jadwal extends Model
 {
     use HasFactory;
 
+    protected $table = 'jadwals';
+    
     protected $fillable = [
         'shuttle_id',
         'tanggal_keberangkatan',
@@ -16,91 +18,118 @@ class Jadwal extends Model
         'waktu_kedatangan',
         'harga_total',
         'kursi_tersedia',
+        'keterangan',
         'status'
     ];
-
-    // Relasi ke shuttle
+    
+    protected $casts = [
+        'tanggal_keberangkatan' => 'date',
+        'waktu_keberangkatan' => 'datetime:H:i',
+        'waktu_kedatangan' => 'datetime:H:i',
+        'harga_total' => 'decimal:2',
+        'kursi_tersedia' => 'integer'
+    ];
+    
+    /**
+     * Relasi ke Shuttle
+     */
     public function shuttle()
     {
-        return $this->belongsTo(Shuttle::class);
+        return $this->belongsTo(Shuttle::class, 'shuttle_id');
     }
-
-    // Relasi ke rutes (many-to-many)
-    public function rutes()
+    
+    /**
+     * Relasi ke layanan melalui shuttle
+     */
+    public function layanan()
     {
-        return $this->belongsToMany(Rute::class, 'rute_jadwals', 'jadwal_id', 'rute_id')
-                    ->withPivot('urutan', 'durasi_segment', 'harga_segment')
-                    ->withTimestamps();
+        return $this->hasOneThrough(
+            MLayanan::class,
+            Shuttle::class,
+            'id', // Foreign key pada tabel shuttles
+            'id_layanan', // Foreign key pada tabel layanans
+            'shuttle_id', // Local key pada tabel jadwals
+            'layanan_id' // Local key pada tabel shuttles
+        );
     }
-
-    // Relasi ke rute_jadwals
-    public function ruteJadwals()
+    
+    /**
+     * Format harga ke Rupiah
+     */
+    public function getFormattedHargaAttribute()
     {
-        return $this->hasMany(RuteJadwal::class, 'jadwal_id');
+        return 'Rp ' . number_format($this->harga_total, 0, ',', '.');
     }
-
-    // Method untuk mendapatkan semua pemberhentian
-    public function getAllPemberhentian()
+    
+    /**
+     * Format tanggal Indonesia
+     */
+    public function getFormattedTanggalAttribute()
     {
-        $pemberhentianList = [];
-
-        foreach ($this->rutes as $rute) {
-            $stops = json_decode($rute->rute_pemberhentian, true);
-            if (is_array($stops)) {
-                foreach ($stops as $stop) {
-                    $pemberhentianList[] = [
-                        'kota' => $stop['kota'],
-                        'outlets' => $stop['outlets'] ?? [],
-                        'durasi_singgah' => $stop['durasi_singgah'] ?? 0
-                    ];
-                }
-            }
+        return \Carbon\Carbon::parse($this->tanggal_keberangkatan)->translatedFormat('d F Y');
+    }
+    
+    /**
+     * Hitung durasi perjalanan
+     */
+    public function getDurasiAttribute()
+    {
+        $departure = \Carbon\Carbon::parse($this->waktu_keberangkatan);
+        $arrival = \Carbon\Carbon::parse($this->waktu_kedatangan);
+        
+        // Jika waktu tiba lebih kecil dari waktu berangkat, berarti melewati tengah malam
+        if ($arrival->lessThan($departure)) {
+            $arrival->addDay();
         }
-
-        return $pemberhentianList;
-    }
-
-    // Accessor untuk string rute
-    public function getRuteStringAttribute()
-    {
-        if ($this->rutes->isNotEmpty()) {
-            $rute = $this->rutes->first();
-            return $rute->nama_rute ?? 'Rute Tidak Diketahui';
+        
+        $duration = $departure->diff($arrival);
+        
+        if ($duration->i == 0) {
+            return $duration->h . ' jam';
         }
-        return 'Rute Tidak Diketahui';
+        
+        return $duration->h . ' jam ' . $duration->i . ' menit';
     }
-
-    // Scope untuk jadwal aktif
-    public function scopeAktif($query)
-    {
-        return $query->where('status', 'tersedia')
-                    ->where('kursi_tersedia', '>', 0)
-                    ->whereDate('tanggal_keberangkatan', '>=', now());
-    }
-
-    // ================ AUDIT RELATIONSHIPS ================
-
+    
     /**
-     * User who created this schedule
+     * Cek apakah hampir penuh (kursi tersedia <= 20% kapasitas)
      */
-    public function creator()
+    public function isAlmostFull()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        if ($this->shuttle && $this->shuttle->kapasitas > 0) {
+            $percentage = ($this->kursi_tersedia / $this->shuttle->kapasitas) * 100;
+            return $percentage <= 20;
+        }
+        return false;
     }
-
+    
     /**
-     * User who last updated this schedule
+     * Cek apakah penuh
      */
-    public function updater()
+    public function isFull()
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->kursi_tersedia <= 0;
     }
-
+    
     /**
-     * User who deleted this schedule
+     * Hitung kursi terisi
      */
-    public function deleter()
+    public function getKursiTerisiAttribute()
     {
-        return $this->belongsTo(User::class, 'deleted_by');
+        if ($this->shuttle && $this->shuttle->kapasitas) {
+            return $this->shuttle->kapasitas - $this->kursi_tersedia;
+        }
+        return 0;
+    }
+    
+    /**
+     * Hitung persentase terisi
+     */
+    public function getFillPercentageAttribute()
+    {
+        if ($this->shuttle && $this->shuttle->kapasitas > 0) {
+            return round(($this->kursi_terisi / $this->shuttle->kapasitas) * 100, 1);
+        }
+        return 0;
     }
 }

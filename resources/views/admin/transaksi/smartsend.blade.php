@@ -276,23 +276,55 @@
             border: none;
         }
 
+        /* PERBAIKAN: Tombol aksi dalam tabel dibuat lebih rapi */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
         .btn-info {
             background: #4da3ff;
             color: var(--white);
             border: none;
-            padding: 6px 12px;
+            padding: 8px 14px;
             border-radius: var(--radius-sm);
-            font-size: 12px;
-            margin-right: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 80px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: var(--transition);
         }
 
         .btn-edit {
             background: var(--text-medium);
             color: var(--white);
             border: none;
-            padding: 6px 12px;
+            padding: 8px 14px;
             border-radius: var(--radius-sm);
-            font-size: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 80px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: var(--transition);
+        }
+
+        .btn-info:hover {
+            background: #2d8cff;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-edit:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
         }
 
         .table-box {
@@ -315,7 +347,7 @@
         }
 
         th, td {
-            padding: 12px;
+            padding: 14px 12px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
@@ -1167,7 +1199,18 @@
             }
             
             th, td {
-                padding: 8px 6px;
+                padding: 10px 8px;
+            }
+            
+            /* Perbaikan responsive untuk tombol aksi */
+            .action-buttons {
+                flex-direction: column;
+                gap: 6px;
+            }
+            
+            .btn-info, .btn-edit {
+                width: 100%;
+                min-width: auto;
             }
             
             .modal-box {
@@ -1363,12 +1406,14 @@
                             <td>sistem</td>
                             <td><span class="badge badge-success">Sukses</span></td>
                             <td>
-                                <button class="btn btn-info" onclick="openDetail()">
-                                    <i class="fas fa-eye"></i> Detail
-                                </button>
-                                <button class="btn btn-edit">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
+                                <div class="action-buttons">
+                                    <button class="btn btn-info" onclick="openDetail()">
+                                        <i class="fas fa-eye"></i> Detail
+                                    </button>
+                                    <button class="btn btn-edit">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         <tr>
@@ -1382,12 +1427,14 @@
                             <td>admin</td>
                             <td><span class="badge badge-success">Sukses</span></td>
                             <td>
-                                <button class="btn btn-info" onclick="openDetail()">
-                                    <i class="fas fa-eye"></i> Detail
-                                </button>
-                                <button class="btn btn-edit">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
+                                <div class="action-buttons">
+                                    <button class="btn btn-info" onclick="openDetail()">
+                                        <i class="fas fa-eye"></i> Detail
+                                    </button>
+                                    <button class="btn btn-edit">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         <!-- More rows can be added here -->
