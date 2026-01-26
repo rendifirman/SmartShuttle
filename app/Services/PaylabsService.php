@@ -163,16 +163,22 @@ class PaylabsService
     /**
      * Create payment request
      */
-    public function createPayment(Pembayaran $payment, $channelCode, $channelName)
+    public function createPayment($payment, $channelCode, $channelName)
     {
         try {
+            // Handle different payment model types
+            $paymentId = $payment->id;
+            $paymentCode = $payment instanceof \App\Models\Pembayaran ? $payment->kode_pembayaran : $payment->transaction_id;
+            $amount = $payment instanceof \App\Models\Pembayaran ? $payment->jumlah : $payment->amount;
+
             Log::info('PAYLABS: Creating payment', [
-                'payment_id' => $payment->id,
-                'kode_pembayaran' => $payment->kode_pembayaran,
-                'amount' => $payment->jumlah,
+                'payment_id' => $paymentId,
+                'kode_pembayaran' => $paymentCode,
+                'amount' => $amount,
                 'channel_code' => $channelCode,
                 'channel_name' => $channelName,
-                'mid' => $this->mid
+                'mid' => $this->mid,
+                'payment_type' => get_class($payment)
             ]);
 
             // Jika testing mode aktif, langsung return dummy
@@ -212,7 +218,7 @@ class PaylabsService
     /**
      * Create QRIS payment (v2.3)
      */
-    private function createQRISPayment(Pembayaran $payment, $channelCode, $channelName)
+    private function createQRISPayment($payment, $channelCode, $channelName)
     {
         try {
             // Generate request ID
@@ -221,23 +227,28 @@ class PaylabsService
             // Prepare product info
             $productInfo = $this->prepareProductInfo($payment);
 
+            // Handle different payment model types
+            $amount = $payment instanceof \App\Models\Pembayaran ? $payment->jumlah : $payment->amount;
+            $merchantTradeNo = $payment instanceof \App\Models\Pembayaran ? $payment->kode_pembayaran : $payment->transaction_id;
+            $expiryTime = $payment instanceof \App\Models\Pembayaran ? $payment->waktu_kadaluarsa : $payment->waktu_kadaluarsa;
+
             // Prepare request data sesuai spesifikasi v2.3
             $requestData = [
                 'requestId' => $requestId,
                 'merchantId' => $this->mid,
                 'storeId' => $this->storeId,
                 'paymentType' => 'QRIS',
-                'amount' => number_format((float) $payment->jumlah, 2, '.', ''),
-                'merchantTradeNo' => $payment->kode_pembayaran,
+                'amount' => number_format((float) $amount, 2, '.', ''),
+                'merchantTradeNo' => $merchantTradeNo,
                 'notifyUrl' => $this->callbackUrl,
                 'feeType' => 'BEN', // BEN: Merchant, OUR: Customer
-                'productName' => 'Smart Shuttle Ticket',
+                'productName' => $payment instanceof \App\Models\Pembayaran ? 'Smart Shuttle Ticket' : 'Membership Payment',
                 'productInfo' => $productInfo
             ];
 
             // Tambahkan expire time jika ada waktu kadaluarsa
-            if ($payment->waktu_kadaluarsa) {
-                $expireSeconds = Carbon::now()->diffInSeconds($payment->waktu_kadaluarsa);
+            if ($expiryTime) {
+                $expireSeconds = Carbon::now()->diffInSeconds($expiryTime);
                 if ($expireSeconds > 0) {
                     $requestData['expire'] = $expireSeconds;
                 }
@@ -304,7 +315,7 @@ class PaylabsService
     /**
      * Create Virtual Account payment
      */
-    private function createVirtualAccountPayment(Pembayaran $payment, $channelCode, $channelName)
+    private function createVirtualAccountPayment($payment, $channelCode, $channelName)
     {
         try {
             // Generate request ID
@@ -392,7 +403,7 @@ class PaylabsService
     /**
      * Create E-Wallet payment
      */
-    private function createEWalletPayment(Pembayaran $payment, $channelCode, $channelName)
+    private function createEWalletPayment($payment, $channelCode, $channelName)
     {
         try {
             // Generate request ID
@@ -404,30 +415,46 @@ class PaylabsService
             // Prepare product info
             $productInfo = $this->prepareProductInfo($payment);
 
+            // Handle different payment model types
+            $amount = $payment instanceof \App\Models\Pembayaran ? $payment->jumlah : $payment->amount;
+            $merchantTradeNo = $payment instanceof \App\Models\Pembayaran ? $payment->kode_pembayaran : $payment->transaction_id;
+            $expiryTime = $payment instanceof \App\Models\Pembayaran ? $payment->waktu_kadaluarsa : $payment->waktu_kadaluarsa;
+
+            // Get customer info based on payment type
+            if ($payment instanceof \App\Models\Pembayaran) {
+                $customerInfo = [
+                    'name' => $payment->pemesanan->nama_pemesan ?? 'Customer',
+                    'email' => $payment->pemesanan->email_pemesan ?? 'customer@example.com',
+                    'phone' => $payment->pemesanan->telepon_pemesan ?? '08123456789'
+                ];
+            } else {
+                $customerInfo = [
+                    'name' => $payment->user->name ?? 'Customer',
+                    'email' => $payment->user->email ?? 'customer@example.com',
+                    'phone' => $payment->user->phone ?? '08123456789'
+                ];
+            }
+
             // Prepare request data untuk E-Wallet
             $requestData = [
                 'requestId' => $requestId,
                 'merchantId' => $this->mid,
                 'storeId' => $this->storeId,
                 'paymentType' => 'E_WALLET',
-                'amount' => number_format((float) $payment->jumlah, 2, '.', ''),
-                'merchantTradeNo' => $payment->kode_pembayaran,
+                'amount' => number_format((float) $amount, 2, '.', ''),
+                'merchantTradeNo' => $merchantTradeNo,
                 'notifyUrl' => $this->callbackUrl,
                 'returnUrl' => $this->returnUrl,
                 'feeType' => 'BEN',
-                'productName' => 'Smart Shuttle Ticket',
+                'productName' => $payment instanceof \App\Models\Pembayaran ? 'Smart Shuttle Ticket' : 'Membership Payment',
                 'productInfo' => $productInfo,
                 'walletType' => $walletType,
-                'customerInfo' => [
-                    'name' => $payment->pemesanan->nama_pemesan ?? 'Customer',
-                    'email' => $payment->pemesanan->email_pemesan ?? 'customer@example.com',
-                    'phone' => $payment->pemesanan->telepon_pemesan ?? '08123456789'
-                ]
+                'customerInfo' => $customerInfo
             ];
 
             // Tambahkan expire time
-            if ($payment->waktu_kadaluarsa) {
-                $expireSeconds = Carbon::now()->diffInSeconds($payment->waktu_kadaluarsa);
+            if ($expiryTime) {
+                $expireSeconds = Carbon::now()->diffInSeconds($expiryTime);
                 if ($expireSeconds > 0) {
                     $requestData['expire'] = $expireSeconds;
                 }
@@ -554,12 +581,11 @@ class PaylabsService
             $paylabsStatus = $this->mapVAStatusToPaylabs($statusCode);
             $localStatus = $this->mapPaylabsStatusToLocal($paylabsStatus);
 
-            // Update payment with response data
+            // Update payment with response data - handle different model types
             $updateData = [
                 'paylabs_request_id' => $requestId,
                 'paylabs_transaction_id' => $responseData['platformTradeNo'] ?? null,
                 'paylabs_status' => $paylabsStatus,
-                'status' => $localStatus,
                 'paylabs_response' => json_encode($responseData),
                 'paylabs_raw_response' => json_encode($responseData),
                 'no_virtual_account' => $responseData['vaCode'] ?? $responseData['vaNumber'] ?? null,
@@ -576,6 +602,13 @@ class PaylabsService
                 'account_no' => $responseData['accountNo'] ?? null,
                 'updated_at' => now(),
             ];
+
+            // Handle status field based on payment type
+            if ($payment instanceof \App\Models\Pembayaran) {
+                $updateData['status'] = $localStatus;
+            } else {
+                $updateData['payment_status'] = $paylabsStatus === 'PAID' ? 'success' : 'pending';
+            }
 
             $payment->update($updateData);
 
@@ -922,7 +955,7 @@ class PaylabsService
     /**
      * Generate test payment (for testing mode)
      */
-    private function createTestPayment(Pembayaran $payment, $channelCode, $channelName)
+    private function createTestPayment($payment, $channelCode, $channelName)
     {
         $requestId = 'TEST' . time() . rand(1000, 9999);
         $platformTradeNo = 'PLT' . time() . rand(1000, 9999);
@@ -965,12 +998,11 @@ class PaylabsService
         $paylabsStatus = $channelCode === 'QRIS' ? $this->mapQRISStatus($testResponse['status']) : $testResponse['status'];
         $localStatus = $this->mapPaylabsStatusToLocal($paylabsStatus);
 
-        // Update payment data
+        // Update payment data - handle different model types
         $updateData = [
             'paylabs_request_id' => $requestId,
             'paylabs_transaction_id' => $platformTradeNo,
             'paylabs_status' => $paylabsStatus,
-            'status' => $localStatus,
             'paylabs_response' => json_encode($testResponse),
             'paylabs_raw_response' => json_encode($testResponse),
             'platform_trade_no' => $platformTradeNo,
@@ -978,6 +1010,13 @@ class PaylabsService
             'expired_time' => $testResponse['expiredTime'],
             'updated_at' => now(),
         ];
+
+        // Handle status field based on payment type
+        if ($payment instanceof \App\Models\Pembayaran) {
+            $updateData['status'] = $localStatus;
+        } else {
+            $updateData['payment_status'] = $paylabsStatus === 'PAID' ? 'success' : 'pending';
+        }
 
         if (isset($testResponse['qrCode'])) {
             $updateData['qr_code'] = $testResponse['qrCode'];
@@ -1018,25 +1057,40 @@ class PaylabsService
 
     private function prepareProductInfo($payment)
     {
-        $productInfo = [
-            [
-                'id' => 'TICKET001',
-                'name' => 'Smart Shuttle Ticket',
-                'price' => number_format((float) $payment->jumlah, 2, '.', ''),
-                'type' => 'Ticket',
-                'url' => url('/customer/detail-pemesanan/' . ($payment->pemesanan->kode_booking ?? '')),
-                'quantity' => $payment->pemesanan->jumlah_penumpang ?? 1
-            ]
-        ];
+        if ($payment instanceof \App\Models\Pembayaran) {
+            // Handle shuttle payment
+            $productInfo = [
+                [
+                    'id' => 'TICKET001',
+                    'name' => 'Smart Shuttle Ticket',
+                    'price' => number_format((float) $payment->jumlah, 2, '.', ''),
+                    'type' => 'Ticket',
+                    'url' => url('/customer/detail-pemesanan/' . ($payment->pemesanan->kode_booking ?? '')),
+                    'quantity' => $payment->pemesanan->jumlah_penumpang ?? 1
+                ]
+            ];
 
-        // Tambahkan detail rute jika tersedia
-        if ($payment->pemesanan && $payment->pemesanan->jadwal) {
-            $rutePertama = $payment->pemesanan->jadwal->rutes->first();
-            $ruteTerakhir = $payment->pemesanan->jadwal->rutes->last();
+            // Tambahkan detail rute jika tersedia
+            if ($payment->pemesanan && $payment->pemesanan->jadwal) {
+                $rutePertama = $payment->pemesanan->jadwal->rutes->first();
+                $ruteTerakhir = $payment->pemesanan->jadwal->rutes->last();
 
-            if ($rutePertama && $ruteTerakhir) {
-                $productInfo[0]['name'] = 'Ticket: ' . $rutePertama->kota_asal . ' to ' . $ruteTerakhir->kota_tujuan;
+                if ($rutePertama && $ruteTerakhir) {
+                    $productInfo[0]['name'] = 'Ticket: ' . $rutePertama->kota_asal . ' to ' . $ruteTerakhir->kota_tujuan;
+                }
             }
+        } else {
+            // Handle membership payment
+            $productInfo = [
+                [
+                    'id' => 'MEMBERSHIP001',
+                    'name' => 'Smart Shuttle Membership',
+                    'price' => number_format((float) $payment->amount, 2, '.', ''),
+                    'type' => 'Membership',
+                    'url' => url('/customer/membership'),
+                    'quantity' => 1
+                ]
+            ];
         }
 
         return $productInfo;

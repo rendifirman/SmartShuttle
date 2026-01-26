@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -310,10 +309,10 @@ $articles = [];
 foreach ($artikelsFromDB as $index => $artikel) {
     // Gunakan gambar dari database jika ada
     $gambar = asset('images/AR1.png'); // default fallback
-    
+
     // Debug: Lihat apa yang ada di database
     // \Log::info('Artikel ID: ' . $artikel->id . ', Gambar: ' . $artikel->gambar);
-    
+
     if ($artikel->gambar) {
         // Cek apakah gambar ada di storage publik
         if (Storage::disk('public')->exists($artikel->gambar)) {
@@ -335,7 +334,7 @@ foreach ($artikelsFromDB as $index => $artikel) {
         'category' => $artikel->kategori,
         'title' => $artikel->judul,
         'excerpt' => $artikel->getExcerptAttribute(100), // Gunakan method dari model
-        'date' => $artikel->tanggal_publikasi ? 
+        'date' => $artikel->tanggal_publikasi ?
                   $artikel->tanggal_publikasi->translatedFormat('d F Y') : '-',
         'read_time' => $artikel->getWaktuBacaAttribute(), // Gunakan method dari model
         'tags' => $artikel->meta_keywords ? explode(', ', $artikel->meta_keywords) : [],
@@ -2306,7 +2305,7 @@ public function login(Request $request)
             }
 
             // Handle different payment methods
-            $paymentStatus = 'pending'; // Default for manual transfer
+            $paymentStatus = 'pending'; // Default for all payments - wait for confirmation
             $paylabsResponse = null;
 
             // For Paylabs payments (QRIS and VA), create payment with Paylabs
@@ -2326,13 +2325,13 @@ public function login(Request $request)
                     // Create Paylabs payment
                     $paylabsResponse = $this->paylabsService->createPayment($payment, $channelCode, ucfirst(str_replace('_', ' ', $request->payment_method)));
 
-                    if ($paylabsResponse['success']) {
-                        // For online payments, mark as success immediately (simulated)
-                        // In production, this would wait for webhook callback
-                        $paymentStatus = 'success';
-                    } else {
+                    if (!$paylabsResponse['success']) {
                         throw new \Exception('Gagal membuat pembayaran Paylabs: ' . $paylabsResponse['error']);
                     }
+
+                    // For online payments, status remains 'pending' until webhook callback confirms payment
+                    $paymentStatus = 'pending';
+
                 } catch (\Exception $e) {
                     Log::error('Paylabs payment creation failed: ' . $e->getMessage());
                     throw new \Exception('Gagal memproses pembayaran online. Silakan coba lagi.');
@@ -2356,38 +2355,14 @@ public function login(Request $request)
                 'no_virtual_account' => $paylabsResponse['payment_data']['vaCode'] ?? $paylabsResponse['payment_data']['vaNumber'] ?? null,
             ]);
 
-            // Only activate membership for successful online payments or approved manual transfers
-            if ($paymentStatus === 'success') {
-                $user->update([
-                    'membership_status' => 'active',
-                    'membership_start_date' => now(),
-                    'membership_end_date' => now()->addMonths(12),
-                    'membership_fee' => $payment->total_amount,
-                    'membership_payment_method' => $request->payment_method,
-                    'membership_payment_status' => 'success',
-                    'membership_transaction_id' => $payment->transaction_id,
-                    'membership_level' => 'Bronze',
-                    'member_point' => 0,
-                    'loyalty_point' => 0,
-                ]);
+            // Membership activation will happen via webhook callback for Paylabs payments
+            // or admin approval for manual transfers
+            DB::commit();
 
-                session()->put('user', [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'avatar' => $user->avatar_url,
-                    'membership_status' => 'active',
-                    'membership_level' => 'Bronze',
-                ]);
-
-                DB::commit();
-
+            if (in_array($request->payment_method, ['qris', 'bca_va', 'mandiri_va', 'bni_va', 'bri_va'])) {
                 return redirect()->route('customer.membership')
-                    ->with('success', 'Pembayaran berhasil! Membership Anda sekarang aktif.');
+                    ->with('info', 'Pembayaran telah dibuat. Silakan selesaikan pembayaran menggunakan metode yang dipilih. Status akan diperbarui otomatis setelah pembayaran dikonfirmasi.');
             } else {
-                // For manual transfer, keep status as pending
-                DB::commit();
-
                 return redirect()->route('customer.membership')
                     ->with('info', 'Pembayaran telah dikirim dan menunggu konfirmasi admin. Status membership akan aktif setelah diverifikasi.');
             }
@@ -2480,6 +2455,106 @@ public function login(Request $request)
             'success' => true,
             'message' => 'Loyalty discount berhasil dihapus.'
         ]);
+    }
+
+    /**
+     * Simulate membership payment success (for testing)
+     */
+    public function simulateMembershipPayment(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Authentication required'], 401);
+        }
+
+        $user = Auth::user();
+
+        $validator = Validator::make($request->all(), [
+            'transaction_id' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $payment = MembershipPayment::where('transaction_id', $request->transaction_id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$payment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Membership payment not found'
+            ], 404);
+        }
+
+        if ($payment->payment_status === 'success') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment already completed'
+            ], 400);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Update payment status
+            $payment->update([
+                'payment_status' => 'success',
+                'paid_at' => now(),
+            ]);
+
+            // Activate membership
+            $user->update([
+                'membership_status' => 'active',
+                'membership_start_date' => now(),
+                'membership_end_date' => now()->addMonths(12),
+                'membership_fee' => $payment->total_amount,
+                'membership_payment_method' => $payment->payment_method ?? 'simulated',
+                'membership_payment_status' => 'success',
+                'membership_transaction_id' => $payment->transaction_id,
+                'membership_level' => 'Bronze',
+                'member_point' => 0,
+                'loyalty_point' => 0,
+            ]);
+
+            // Update session
+            session()->put('user', [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $user->avatar_url,
+                'membership_status' => 'active',
+                'membership_level' => 'Bronze',
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Membership payment simulated successfully',
+                'data' => [
+                    'payment' => $payment->fresh(),
+                    'user' => $user->fresh()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Membership payment simulation error: ' . $e->getMessage(), [
+                'transaction_id' => $request->transaction_id,
+                'user_id' => $user->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to simulate membership payment: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -2938,48 +3013,216 @@ public function getReviewStats(Request $request)
     }
 }
 
-/**
- * Get filtered reviews by rating
- */
-public function getFilteredReviews(Request $request)
-{
-    try {
-        $rating = $request->input('rating', 0);
+    /**
+     * Get filtered reviews by rating
+     */
+    public function getFilteredReviews(Request $request)
+    {
+        try {
+            $rating = $request->input('rating', 0);
 
-        $query = Review::with('user')
-            ->where('status', 'approved');
+            $query = Review::with('user')
+                ->where('status', 'approved');
 
-        if ($rating > 0) {
-            $query->where('rating', $rating);
+            if ($rating > 0) {
+                $query->where('rating', $rating);
+            }
+
+            $reviews = $query->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function($review) {
+                    return [
+                        'id' => $review->id,
+                        'user_name' => $review->user->name ?? 'User',
+                        'avatar' => $review->user?->avatar_url ?? null,
+                        'rating' => $review->rating,
+                        'content' => $review->review,
+                        'date' => $review->created_at->format('d M Y')
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'reviews' => $reviews,
+                'total' => $reviews->count(),
+                'filteredRating' => $rating
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat review'
+            ], 500);
         }
-
-        $reviews = $query->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function($review) {
-                return [
-                    'id' => $review->id,
-                    'user_name' => $review->user->name ?? 'User',
-                    'avatar' => $review->user?->avatar_url ?? null,
-                    'rating' => $review->rating,
-                    'content' => $review->review,
-                    'date' => $review->created_at->format('d M Y')
-                ];
-            });
-
-        return response()->json([
-            'success' => true,
-            'reviews' => $reviews,
-            'total' => $reviews->count(),
-            'filteredRating' => $rating
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal memuat review'
-        ], 500);
     }
-}
+
+    /**
+     * Webhook untuk callback pembayaran membership dari Paylabs
+     */
+    public function membershipWebhook(Request $request)
+    {
+        Log::info('=== MEMBERSHIP PAYLABS WEBHOOK RECEIVED ===', $request->all());
+
+        DB::beginTransaction();
+
+        try {
+            // Skip signature verification for testing - TODO: Enable in production
+            $skipSignatureVerification = config('app.env') !== 'production';
+
+            if (!$skipSignatureVerification) {
+                // Verify signature
+                $signature = $request->input('signature');
+                $data = $request->except('signature');
+
+                if (!$this->paylabsService->verifySignatureV23($data, $signature, $request->header('X-TIMESTAMP', ''), '/payment/v2.3/callback')) {
+                    Log::error('MEMBERSHIP PAYLABS Webhook signature verification failed');
+                    return response()->json(['success' => false, 'message' => 'Invalid signature'], 400);
+                }
+            } else {
+                Log::info('MEMBERSHIP PAYLABS Webhook signature verification SKIPPED (testing mode)');
+            }
+
+            $validated = $request->validate([
+                'merchantId' => 'required|string',
+                'transactionId' => 'required|string',
+                'merchantTradeNo' => 'required|string',
+                'status' => 'required|string',
+                'signature' => 'required|string'
+            ]);
+
+            Log::info('MEMBERSHIP PAYLABS Webhook validation passed', [
+                'merchantTradeNo' => $request->merchantTradeNo,
+                'transactionId' => $request->transactionId,
+                'status' => $request->status
+            ]);
+
+            // Find membership payment by transaction ID
+            $payment = MembershipPayment::where('transaction_id', $request->merchantTradeNo)
+                ->orWhere('paylabs_transaction_id', $request->transactionId)
+                ->first();
+
+            if (!$payment) {
+                Log::error('Membership payment not found for webhook', [
+                    'merchantTradeNo' => $request->merchantTradeNo,
+                    'transactionId' => $request->transactionId,
+                    'request_data' => $request->all()
+                ]);
+                return response()->json(['error' => 'Membership payment not found'], 404);
+            }
+
+            Log::info('Membership payment found', [
+                'payment_id' => $payment->id,
+                'current_status' => $payment->payment_status,
+                'user_id' => $payment->user_id
+            ]);
+
+            // Map Paylabs status to local status
+            $localStatus = $this->mapPaylabsStatusToLocal($request->status);
+
+            Log::info('Status mapping', [
+                'paylabs_status' => $request->status,
+                'local_status' => $localStatus
+            ]);
+
+            // Update payment with webhook data
+            $updateData = [
+                'paylabs_status' => $request->status,
+                'payment_status' => $localStatus,
+                'paylabs_response' => json_encode($request->all()),
+                'paylabs_raw_response' => json_encode($request->all()),
+            ];
+
+            if ($request->status === 'PAID') {
+                $updateData['paid_at'] = now();
+                $updateData['success_time'] = now();
+            }
+
+            $payment->update($updateData);
+
+            Log::info('Payment updated', [
+                'payment_id' => $payment->id,
+                'new_status' => $localStatus,
+                'paid_at' => $payment->paid_at
+            ]);
+
+            // If payment is successful, activate membership
+            if ($request->status === 'PAID') {
+                $user = $payment->user;
+
+                if ($user) {
+                    Log::info('Activating membership for user', [
+                        'user_id' => $user->id,
+                        'current_membership_status' => $user->membership_status
+                    ]);
+
+                    $user->update([
+                        'membership_status' => 'active',
+                        'membership_start_date' => now(),
+                        'membership_end_date' => now()->addMonths(12),
+                        'membership_fee' => $payment->total_amount,
+                        'membership_payment_method' => $payment->payment_method,
+                        'membership_payment_status' => 'success',
+                        'membership_transaction_id' => $payment->transaction_id,
+                        'membership_level' => 'Bronze',
+                        'member_point' => 0,
+                        'loyalty_point' => 0,
+                    ]);
+
+                    Log::info('Membership activated via webhook', [
+                        'user_id' => $user->id,
+                        'payment_id' => $payment->id,
+                        'transaction_id' => $payment->transaction_id,
+                        'new_membership_status' => $user->membership_status
+                    ]);
+                } else {
+                    Log::error('User not found for membership activation', [
+                        'user_id' => $payment->user_id,
+                        'payment_id' => $payment->id
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            Log::info('MEMBERSHIP PAYLABS Webhook processed successfully', [
+                'transactionId' => $request->transactionId,
+                'status' => $request->status,
+                'payment_status' => $localStatus
+            ]);
+
+            return response()->json(['success' => true]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('MEMBERSHIP PAYLABS Webhook error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Map Paylabs status to local status for membership payments
+     */
+    private function mapPaylabsStatusToLocal($paylabsStatus)
+    {
+        $mapping = [
+            'PENDING' => 'pending',
+            'PROCESSING' => 'pending',
+            'PAID' => 'success',
+            'EXPIRED' => 'expired',
+            'FAILED' => 'failed',
+            'CANCELLED' => 'cancelled',
+            'REFUNDED' => 'refunded',
+            // QRIS specific statuses
+            '01' => 'pending', // QRIS Pending
+            '02' => 'success', // QRIS Success
+            '09' => 'failed',  // QRIS Failed
+        ];
+
+        return $mapping[$paylabsStatus] ?? 'pending';
+    }
 
     /**
      * Get all promos (AJAX)
@@ -3082,3 +3325,4 @@ public function getFilteredReviews(Request $request)
         ];
     }
 }
+

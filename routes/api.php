@@ -37,6 +37,11 @@ Route::prefix('payment')->group(function () {
     Route::post('/callback-v23', [PaymentController::class, 'callbackV23'])
         ->withoutMiddleware(['auth:sanctum'])
         ->name('api.payment.callback_v23');
+
+    // Membership payment webhook
+    Route::post('/membership/webhook', [App\Http\Controllers\CustomerController::class, 'membershipWebhook'])
+        ->withoutMiddleware(['auth:sanctum'])
+        ->name('api.payment.membership.webhook');
 });
 
 // AUTHENTICATION
