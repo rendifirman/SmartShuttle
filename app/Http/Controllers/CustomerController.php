@@ -2411,7 +2411,7 @@ public function login(Request $request)
     }
 
     /**
-     * Simulate membership payment for testing (same as transaction payment simulation)
+     * Simulate membership payment for testing using real Paylabs response (QRIS only)
      */
     public function simulateMembershipPayment(Request $request)
     {
@@ -2455,19 +2455,35 @@ public function login(Request $request)
                 throw new \Exception('Transaksi membership tidak ditemukan.');
             }
 
-            // Simulate payment success
+            // Create real Paylabs QRIS payment for testing
+            $paylabsResponse = $this->paylabsService->createMembershipPayment($payment, 'QRIS', 'QRIS');
+
+            if (!$paylabsResponse['success']) {
+                throw new \Exception('Gagal membuat pembayaran Paylabs: ' . ($paylabsResponse['error'] ?? 'Unknown error'));
+            }
+
+            $paymentData = $paylabsResponse['payment_data'] ?? [];
+
+            // Update payment with real Paylabs response data AND mark as successful for simulation
             $payment->update([
-                'payment_status' => 'success',
+                'payment_method' => 'qris',
+                'payment_status' => 'success', // Mark as success for simulation testing
                 'paid_at' => now(),
+                'paylabs_transaction_id' => $paylabsResponse['transaction_id'] ?? null,
+                'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
+                'qr_code' => $paymentData['qrCode'] ?? null,
+                'qris_url' => $paymentData['qrisUrl'] ?? null,
+                'paylabs_response' => json_encode($paymentData),
+                'paylabs_raw_response' => json_encode($paylabsResponse),
             ]);
 
-            // Activate membership
+            // Activate membership immediately for simulation
             $user->update([
                 'membership_status' => 'active',
                 'membership_start_date' => now(),
                 'membership_end_date' => now()->addMonths(12),
                 'membership_fee' => $payment->total_amount,
-                'membership_payment_method' => $payment->payment_method,
+                'membership_payment_method' => 'qris',
                 'membership_payment_status' => 'success',
                 'membership_transaction_id' => $payment->transaction_id,
                 'membership_level' => 'Bronze',
@@ -2486,21 +2502,42 @@ public function login(Request $request)
 
             DB::commit();
 
-            Log::info('Membership payment simulated successfully', [
+            Log::info('Membership payment simulated successfully with real Paylabs response', [
                 'user_id' => $user->id,
                 'transaction_id' => $payment->transaction_id,
+                'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
+                'qr_code_available' => !empty($paymentData['qrCode']),
+                'simulation_completed' => true,
             ]);
 
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Simulasi pembayaran berhasil! Membership Anda sekarang aktif.',
-                    'status' => 'success'
+                    'message' => 'Simulasi pembayaran berhasil! Response asli Paylabs diterima dan membership diaktifkan.',
+                    'status' => 'success',
+                    'payment_data' => [
+                        'transaction_id' => $payment->transaction_id,
+                        'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
+                        'qr_code' => $paymentData['qrCode'] ?? null,
+                        'qris_url' => $paymentData['qrisUrl'] ?? null,
+                        'amount' => $payment->total_amount,
+                        'simulation' => true,
+                        'real_paylabs_response' => true,
+                    ]
                 ]);
             }
 
             return redirect()->route('customer.membership')
-                ->with('success', 'Simulasi pembayaran berhasil! Membership Anda sekarang aktif.');
+                ->with('success', 'Simulasi pembayaran berhasil! Response asli Paylabs diterima dan membership diaktifkan.')
+                ->with('payment_data', [
+                    'transaction_id' => $payment->transaction_id,
+                    'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
+                    'qr_code' => $paymentData['qrCode'] ?? null,
+                    'qris_url' => $paymentData['qrisUrl'] ?? null,
+                    'amount' => $payment->total_amount,
+                    'simulation' => true,
+                    'real_paylabs_response' => true,
+                ]);
 
         } catch (\Exception $e) {
             DB::rollBack();

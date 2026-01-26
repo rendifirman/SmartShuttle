@@ -560,7 +560,7 @@ class PembayaranController extends Controller
     }
 
     /**
-     * Simulasi pembayaran berhasil (untuk testing)
+     * Simulasi pembayaran dengan response asli dari Paylabs (untuk testing)
      */
     public function simulasiPembayaran($kodePembayaran, $status = 'berhasil')
     {
@@ -578,20 +578,60 @@ class PembayaranController extends Controller
                 ], 400);
             }
 
-            // Update pembayaran
-            $pembayaran->update([
-                'status' => $status,
-                'paylabs_status' => 'PAID',
-                'waktu_pembayaran' => now(),
-                'paylabs_response' => json_encode([
-                    'simulated' => true,
-                    'status' => 'PAID',
-                    'transactionId' => 'SIM' . strtoupper(Str::random(10)),
-                    'merchantTradeNo' => $kodePembayaran
-                ])
+            // Get payment method details - fallback to QRIS if not set
+            $paymentMethod = $pembayaran->metode ?: 'qris';
+            $method = MetodePembayaran::where('kode', $paymentMethod)->first();
+
+            if (!$method) {
+                // If method not found, try to get any active Paylabs method
+                $method = MetodePembayaran::where('aktif', true)->where('is_paylabs', true)->first();
+                if (!$method) {
+                    throw new \Exception('Tidak ada metode pembayaran Paylabs yang aktif. Pastikan setidaknya satu metode pembayaran Paylabs aktif.');
+                }
+                // Update payment method to the found method
+                $paymentMethod = $method->kode;
+                $pembayaran->metode = $paymentMethod;
+                $pembayaran->save(); // Save the updated method
+            }
+
+            Log::info('Payment simulation method check', [
+                'kode_pembayaran' => $kodePembayaran,
+                'original_method' => $pembayaran->getOriginal('metode'),
+                'current_method' => $paymentMethod,
+                'method_found' => $method ? 'yes' : 'no',
+                'method_name' => $method ? $method->nama : 'N/A',
+                'is_paylabs' => $method ? $method->is_paylabs : 'N/A'
             ]);
 
-            // Update pemesanan
+            // Create real Paylabs payment request for testing
+            $paylabsResponse = $this->paylabsService->createPayment(
+                $pembayaran,
+                $method->paylabs_channel_code,
+                $method->paylabs_channel_name
+            );
+
+            if (!$paylabsResponse['success']) {
+                throw new \Exception('Gagal membuat pembayaran Paylabs: ' . ($paylabsResponse['error'] ?? 'Unknown error'));
+            }
+
+            $paymentData = $paylabsResponse['payment_data'] ?? [];
+
+            // Update pembayaran dengan response asli dari Paylabs DAN mark as successful for simulation
+            $pembayaran->update([
+                'status' => 'berhasil', // Mark as success for simulation testing
+                'paylabs_status' => 'PAID',
+                'waktu_pembayaran' => now(),
+                'paylabs_transaction_id' => $paylabsResponse['transaction_id'] ?? null,
+                'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
+                'qr_code' => $paymentData['qrCode'] ?? null,
+                'qris_url' => $paymentData['qrisUrl'] ?? null,
+                'no_virtual_account' => $paymentData['vaCode'] ?? $paymentData['vaNumber'] ?? null,
+                'nama_bank' => $paymentData['bankName'] ?? null,
+                'paylabs_response' => json_encode($paymentData),
+                'paylabs_raw_response' => json_encode($paylabsResponse),
+            ]);
+
+            // Update pemesanan setelah pembayaran berhasil (for simulation)
             $this->updatePemesananAfterPayment($pembayaran);
 
             // Add loyalty points
@@ -602,18 +642,30 @@ class PembayaranController extends Controller
 
             DB::commit();
 
-            Log::info('Payment simulation successful', [
+            Log::info('Payment simulation completed successfully with real Paylabs response', [
                 'kode_pembayaran' => $kodePembayaran,
-                'status' => $status,
-                'pemesanan_id' => $pembayaran->pemesanan_id
+                'paylabs_transaction_id' => $paylabsResponse['transaction_id'] ?? null,
+                'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
+                'payment_method' => $pembayaran->metode,
+                'qr_code_available' => !empty($paymentData['qrCode']),
+                'va_available' => !empty($paymentData['vaCode'] ?? $paymentData['vaNumber']),
+                'simulation_completed' => true,
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Pembayaran berhasil disimulasikan',
+                'message' => 'Simulasi pembayaran berhasil! Response asli Paylabs diterima dan pembayaran diselesaikan.',
                 'data' => [
                     'kode_pembayaran' => $kodePembayaran,
-                    'status' => $status,
+                    'payment_method' => $pembayaran->metode,
+                    'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
+                    'qr_code' => $paymentData['qrCode'] ?? null,
+                    'qris_url' => $paymentData['qrisUrl'] ?? null,
+                    'virtual_account' => $paymentData['vaCode'] ?? $paymentData['vaNumber'] ?? null,
+                    'bank_name' => $paymentData['bankName'] ?? null,
+                    'amount' => $pembayaran->jumlah,
+                    'simulation' => true,
+                    'real_paylabs_response' => true,
                     'points_added' => $user ? 100 : 0,
                     'loyalty_points_added' => $user ? $this->calculateLoyaltyPoints($user->membership_level) : 0,
                     'membership_level' => $user ? $user->membership_level : null
@@ -630,7 +682,7 @@ class PembayaranController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mensimulasikan pembayaran: ' . $e->getMessage()
+                'message' => 'Gagal membuat pembayaran dengan Paylabs: ' . $e->getMessage()
             ], 500);
         }
     }
