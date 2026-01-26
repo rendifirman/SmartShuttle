@@ -8,6 +8,35 @@ use Illuminate\Support\Str;
 
 class Artikel extends Model
 {
+        /**
+     * Relationship dengan kategori (jika ada model KategoriArtikel)
+     */
+    public function kategoriRelasi()
+    {
+        if (class_exists('App\Models\KategoriArtikel')) {
+            return $this->belongsTo(KategoriArtikel::class, 'kategori', 'nama');
+        }
+        return null;
+    }
+
+    /**
+     * Scope untuk artikel dengan kategori tertentu
+     */
+    public function scopeKategori($query, $kategori)
+    {
+        return $query->where('kategori', $kategori);
+    }
+
+    /**
+     * Cek apakah artikel bisa ditampilkan
+     */
+    public function getBisaDitampilkanAttribute()
+    {
+        return $this->status && 
+               $this->tanggal_publikasi && 
+               $this->tanggal_publikasi <= now();
+    }
+    
     use HasFactory;
 
     protected $table = 'artikels';
@@ -15,7 +44,7 @@ class Artikel extends Model
         'judul',
         'slug',
         'konten',
-        'gambar',
+        'gambar',       // rename dari 'thumbnail' ke 'gambar'
         'kategori',
         'penulis',
         'dilihat',
@@ -31,11 +60,26 @@ class Artikel extends Model
     ];
 
     /**
-     * Scope untuk artikel aktif
+     * Alias untuk kompatibilitas
+     */
+    public function getThumbnailAttribute()
+    {
+        return $this->gambar;
+    }
+
+    public function setThumbnailAttribute($value)
+    {
+        $this->attributes['gambar'] = $value;
+    }
+
+    /**
+     * Scope untuk artikel aktif (tampil di beranda customer)
      */
     public function scopeAktif($query)
     {
-        return $query->where('status', true);
+        return $query->where('status', true)
+                     ->whereNotNull('tanggal_publikasi')
+                     ->where('tanggal_publikasi', '<=', now());
     }
 
     /**
@@ -47,6 +91,22 @@ class Artikel extends Model
     }
 
     /**
+     * Scope untuk artikel publik (untuk admin)
+     */
+    public function scopePublik($query)
+    {
+        return $query->where('status', true);
+    }
+
+    /**
+     * Scope untuk artikel draft (untuk admin)
+     */
+    public function scopeDraft($query)
+    {
+        return $query->where('status', false);
+    }
+
+    /**
      * Mendapatkan URL gambar lengkap
      */
     public function getGambarUrlAttribute()
@@ -55,6 +115,17 @@ class Artikel extends Model
             return asset('storage/' . $this->gambar);
         }
         return asset('images/default-article.jpg');
+    }
+
+    /**
+     * Mendapatkan URL thumbnail (untuk admin)
+     */
+    public function getThumbnailUrlAttribute()
+    {
+        if ($this->gambar) {
+            return asset('storage/' . $this->gambar);
+        }
+        return asset('images/default-thumbnail.jpg');
     }
 
     /**
@@ -80,7 +151,7 @@ class Artikel extends Model
     public function getWaktuBacaAttribute()
     {
         $wordCount = str_word_count(strip_tags($this->konten));
-        $minutes = ceil($wordCount / 200); // Asumsi 200 kata per menit
+        $minutes = ceil($wordCount / 200);
         return $minutes . ' min read';
     }
 
@@ -93,13 +164,13 @@ class Artikel extends Model
 
         static::creating(function ($artikel) {
             if (empty($artikel->slug)) {
-                $artikel->slug = Str::slug($artikel->judul);
+                $artikel->slug = Str::slug($artikel->judul) . '-' . time();
             }
         });
 
         static::updating(function ($artikel) {
             if ($artikel->isDirty('judul')) {
-                $artikel->slug = Str::slug($artikel->judul);
+                $artikel->slug = Str::slug($artikel->judul) . '-' . time();
             }
         });
     }
