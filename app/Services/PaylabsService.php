@@ -1074,11 +1074,20 @@ class PaylabsService
     private function loadPrivateKey()
     {
         try {
-            // Ambil private key dari config
+            // Ambil private key dari config - prefer inline key; fall back to file
             $rawKey = $this->privateKey;
 
             if (empty(trim($rawKey))) {
-                throw new \Exception('PAYLABS: Private key is empty');
+                // Try to load from file if env key is empty
+                $keyFile = config('paylabs.private_key_file');
+                if ($keyFile && file_exists($keyFile)) {
+                    $rawKey = file_get_contents($keyFile);
+                    Log::debug('PAYLABS: Loading private key from file', [
+                        'file' => $keyFile
+                    ]);
+                } else {
+                    throw new \Exception('PAYLABS: Private key is empty and file not found at ' . ($keyFile ?? 'not configured'));
+                }
             }
 
             Log::debug('PAYLABS Raw Private Key (first 100 chars):', [
@@ -1444,6 +1453,400 @@ class PaylabsService
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ];
+        }
+    }
+
+    /**
+     * Create payment for membership using Paylabs
+     * Supports both Pembayaran and MembershipPayment models
+     */
+    public function createMembershipPayment($payment, $channelCode, $channelName)
+    {
+        try {
+            $modelClass = get_class($payment);
+            $isMembership = strpos($modelClass, 'MembershipPayment') !== false;
+
+            Log::info('PAYLABS: Creating membership payment', [
+                'payment_id' => $payment->id,
+                'transaction_id' => $isMembership ? $payment->transaction_id : $payment->kode_pembayaran,
+                'amount' => $isMembership ? $payment->total_amount : $payment->jumlah,
+                'channel_code' => $channelCode,
+                'channel_name' => $channelName,
+                'mid' => $this->mid
+            ]);
+
+            // If testing mode active, return dummy response
+            if (config('paylabs.testing.enabled', false)) {
+                Log::info('PAYLABS: Using testing mode for membership');
+                return $this->createTestMembershipPayment($payment, $channelCode, $channelName);
+            }
+
+            // Choose method based on channel code
+            if ($channelCode === 'QRIS') {
+                return $this->createMembershipQRISPayment($payment, $channelCode, $channelName);
+            } elseif (strpos($channelCode, 'VA_') === 0) {
+                return $this->createMembershipVirtualAccountPayment($payment, $channelCode, $channelName);
+            } else {
+                throw new \Exception("Unsupported payment channel for membership: {$channelCode}");
+            }
+
+        } catch (\Exception $e) {
+            Log::error('PAYLABS Create Membership Payment Error:', [
+                'error' => $e->getMessage(),
+                'payment_id' => $payment->id ?? 'N/A',
+                'channel_code' => $channelCode,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'code' => 'PAYLABS_ERROR',
+                'is_test_mode' => config('paylabs.testing.enabled', false)
+            ];
+        }
+    }
+
+    /**
+     * Create membership QRIS payment (v2.3)
+     */
+    private function createMembershipQRISPayment($payment, $channelCode, $channelName)
+    {
+        try {
+            $isMembership = class_basename($payment) === 'MembershipPayment';
+            $requestId = $this->generateRequestId();
+            $amount = $isMembership ? $payment->total_amount : $payment->jumlah;
+            $transactionId = $isMembership ? $payment->transaction_id : $payment->kode_pembayaran;
+
+            $requestData = [
+                'requestId' => $requestId,
+                'merchantId' => $this->mid,
+                'storeId' => $this->storeId ?: null,
+                'paymentType' => 'QRIS',
+                'amount' => number_format((float) $amount, 2, '.', ''),
+                'merchantTradeNo' => $transactionId,
+                'notifyUrl' => $this->callbackUrl,
+                'feeType' => 'BEN',
+                'productName' => 'Smart Shuttle Membership',
+            ];
+
+            // Add expiry if available
+            $expiryField = $isMembership ? $payment->waktu_kadaluarsa : ($payment->waktu_kadaluarsa ?? null);
+            if ($expiryField) {
+                $expireSeconds = Carbon::now()->diffInSeconds($expiryField);
+                if ($expireSeconds > 0) {
+                    $requestData['expire'] = $expireSeconds;
+                }
+            }
+
+            // Remove null/empty storeId to avoid Paylabs validation error
+            if (empty($requestData['storeId'])) {
+                unset($requestData['storeId']);
+            }
+
+            Log::info('PAYLABS v2.3 Membership QRIS Request Data:', $requestData);
+
+            $timestamp = $this->generatePaylabsTimestamp();
+            $signature = $this->generateSignatureV23($requestData, $timestamp, '/payment/v2.3/qris/create');
+            $endpointUrl = rtrim($this->baseUrl, '/') . '/payment/v2.3/qris/create';
+
+            Log::info('PAYLABS v2.3 Membership QRIS API Call:', [
+                'url' => $endpointUrl,
+                'timestamp' => $timestamp,
+                'request_id' => $requestId
+            ]);
+
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Content-Type' => 'application/json;charset=utf-8',
+                    'Accept' => 'application/json',
+                    'X-TIMESTAMP' => $timestamp,
+                    'X-SIGNATURE' => $signature,
+                    'X-PARTNER-ID' => $this->mid,
+                    'X-REQUEST-ID' => $requestId,
+                ])
+                ->post($endpointUrl, $requestData);
+
+            $statusCode = $response->status();
+            $responseBody = (string) $response->body();
+
+            Log::info('PAYLABS v2.3 Membership QRIS Response:', [
+                'status' => $statusCode,
+                'body' => $responseBody
+            ]);
+
+            if (!$response->successful()) {
+                $errorMsg = "HTTP {$statusCode}: " . substr($responseBody, 0, 200);
+                throw new \Exception($errorMsg);
+            }
+
+            $responseData = json_decode($responseBody, true);
+
+            return $this->processMembershipQRISResponse($payment, $responseData, $requestId);
+
+        } catch (\Exception $e) {
+            Log::error('PAYLABS v2.3 Create Membership QRIS Error:', [
+                'error' => $e->getMessage(),
+                'payment_id' => $payment->id ?? 'N/A',
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Create membership Virtual Account payment (v2.3)
+     */
+    private function createMembershipVirtualAccountPayment($payment, $channelCode, $channelName)
+    {
+        try {
+            $isMembership = class_basename($payment) === 'MembershipPayment';
+            $requestId = $this->generateRequestId();
+            $amount = $isMembership ? $payment->total_amount : $payment->jumlah;
+            $transactionId = $isMembership ? $payment->transaction_id : $payment->kode_pembayaran;
+
+            // Map channel code to bank code
+            $bankCode = match($channelCode) {
+                'VA_BCA' => 'BCAVA',
+                'VA_MANDIRI' => 'MANDIRIVA',
+                'VA_BNI' => 'BNIIVA',
+                'VA_BRI' => 'BRIIVA',
+                default => 'BCAVA'
+            };
+
+            $requestData = [
+                'requestId' => $requestId,
+                'merchantId' => $this->mid,
+                'storeId' => $this->storeId ?: null,
+                'paymentType' => $bankCode,
+                'amount' => number_format((float) $amount, 2, '.', ''),
+                'merchantTradeNo' => $transactionId,
+                'notifyUrl' => $this->callbackUrl,
+                'feeType' => 'BEN',
+                'productName' => 'Smart Shuttle Membership',
+                'payer' => $payment->user ? $payment->user->name : 'Membership User',
+            ];
+
+            // Add expiry if available
+            $expiryField = $isMembership ? $payment->waktu_kadaluarsa : ($payment->waktu_kadaluarsa ?? null);
+            if ($expiryField) {
+                $expireSeconds = Carbon::now()->diffInSeconds($expiryField);
+                if ($expireSeconds > 0) {
+                    $requestData['expire'] = $expireSeconds;
+                }
+            }
+
+            // Remove null/empty storeId to avoid Paylabs validation error
+            if (empty($requestData['storeId'])) {
+                unset($requestData['storeId']);
+            }
+
+            Log::info('PAYLABS v2.3 Membership VA Request Data:', $requestData);
+
+            $timestamp = $this->generatePaylabsTimestamp();
+            $signature = $this->generateSignatureV23($requestData, $timestamp, '/payment/v2.3/va/create');
+            $endpointUrl = rtrim($this->baseUrl, '/') . '/payment/v2.3/va/create';
+
+            Log::info('PAYLABS v2.3 Membership VA API Call:', [
+                'url' => $endpointUrl,
+                'timestamp' => $timestamp,
+                'request_id' => $requestId
+            ]);
+
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Content-Type' => 'application/json;charset=utf-8',
+                    'Accept' => 'application/json',
+                    'X-TIMESTAMP' => $timestamp,
+                    'X-SIGNATURE' => $signature,
+                    'X-PARTNER-ID' => $this->mid,
+                    'X-REQUEST-ID' => $requestId,
+                ])
+                ->post($endpointUrl, $requestData);
+
+            $statusCode = $response->status();
+            $responseBody = (string) $response->body();
+
+            Log::info('PAYLABS v2.3 Membership VA Response:', [
+                'status' => $statusCode,
+                'body' => $responseBody
+            ]);
+
+            if (!$response->successful()) {
+                $errorMsg = "HTTP {$statusCode}: " . substr($responseBody, 0, 200);
+                throw new \Exception($errorMsg);
+            }
+
+            $responseData = json_decode($responseBody, true);
+
+            return $this->processMembershipVAResponse($payment, $responseData, $requestId, $bankCode, $channelName);
+
+        } catch (\Exception $e) {
+            Log::error('PAYLABS v2.3 Create Membership VA Error:', [
+                'error' => $e->getMessage(),
+                'payment_id' => $payment->id ?? 'N/A',
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Process membership QRIS response
+     */
+    private function processMembershipQRISResponse($payment, $responseData, $requestId)
+    {
+        if (isset($responseData['errCode']) && $responseData['errCode'] === '0') {
+            $paylabsStatus = $this->mapQRISStatus($responseData['status'] ?? '01');
+
+            // Helper function to parse Paylabs timestamp format (YYYYMMDDHHmmss)
+            $parseTimestamp = function($timestamp) {
+                if (!$timestamp || strlen($timestamp) < 14) {
+                    return null;
+                }
+                try {
+                    // Format: YYYYMMDDHHmmss -> 20260126130349
+                    return Carbon::createFromFormat('YmdHis', $timestamp);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to parse Paylabs timestamp: ' . $timestamp);
+                    return null;
+                }
+            };
+
+            $updateData = [
+                'paylabs_request_id' => $requestId,
+                'paylabs_transaction_id' => $responseData['platformTradeNo'] ?? null,
+                'paylabs_response' => json_encode($responseData),
+                'paylabs_raw_response' => json_encode($responseData),
+                'qr_code' => $responseData['qrCode'] ?? null,
+                'qris_url' => $responseData['qrisUrl'] ?? null,
+                'nmid' => $responseData['nmid'] ?? null,
+                'platform_trade_no' => $responseData['platformTradeNo'] ?? null,
+                'tid' => $responseData['tid'] ?? null,
+                'rrn' => $responseData['rrn'] ?? null,
+                'payer_name' => $responseData['payer'] ?? null,
+                'payer_phone' => $responseData['phoneNumber'] ?? null,
+                'issuer_id' => $responseData['issuerId'] ?? null,
+                'trans_fee_rate' => $responseData['transFeeRate'] ?? null,
+                'trans_fee_amount' => $responseData['transFeeAmount'] ?? null,
+                'total_trans_fee' => $responseData['totalTransFee'] ?? null,
+                'vat_fee' => $responseData['vatFee'] ?? null,
+                'account_no' => $responseData['accountNo'] ?? null,
+                'create_time' => $parseTimestamp($responseData['createTime'] ?? null),
+                'expired_time' => $parseTimestamp($responseData['expiredTime'] ?? null),
+                'updated_at' => now(),
+            ];
+
+            $payment->update($updateData);
+
+            return [
+                'success' => true,
+                'transaction_id' => $responseData['platformTradeNo'] ?? $requestId,
+                'payment_data' => $responseData,
+                'is_test_mode' => false,
+            ];
+        } else {
+            $errorCode = $responseData['errCode'] ?? 'UNKNOWN';
+            $errorMessage = $responseData['errCodeDes'] ?? 'Unknown error from Paylabs';
+            throw new \Exception("Paylabs Error {$errorCode}: {$errorMessage}");
+        }
+    }
+
+    /**
+     * Process membership VA response
+     */
+    private function processMembershipVAResponse($payment, $responseData, $requestId, $bankCode, $channelName)
+    {
+        if (isset($responseData['errCode']) && $responseData['errCode'] === '0') {
+            $statusCode = $responseData['status'] ?? '01';
+            $paylabsStatus = $this->mapVAStatusToPaylabs($statusCode);
+
+            // Helper function to parse Paylabs timestamp format (YYYYMMDDHHmmss)
+            $parseTimestamp = function($timestamp) {
+                if (!$timestamp || strlen($timestamp) < 14) {
+                    return null;
+                }
+                try {
+                    // Format: YYYYMMDDHHmmss -> 20260126130349
+                    return Carbon::createFromFormat('YmdHis', $timestamp);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to parse Paylabs timestamp: ' . $timestamp);
+                    return null;
+                }
+            };
+
+            $updateData = [
+                'paylabs_request_id' => $requestId,
+                'paylabs_transaction_id' => $responseData['platformTradeNo'] ?? null,
+                'paylabs_response' => json_encode($responseData),
+                'paylabs_raw_response' => json_encode($responseData),
+                'no_virtual_account' => $responseData['vaCode'] ?? $responseData['vaNumber'] ?? null,
+                'bank_name' => $channelName,
+                'platform_trade_no' => $responseData['platformTradeNo'] ?? null,
+                'create_time' => $parseTimestamp($responseData['createTime'] ?? null),
+                'expired_time' => $parseTimestamp($responseData['expiredTime'] ?? null),
+                'trans_fee_rate' => $responseData['transFeeRate'] ?? null,
+                'trans_fee_amount' => $responseData['transFeeAmount'] ?? null,
+                'total_trans_fee' => $responseData['totalTransFee'] ?? null,
+                'vat_fee' => $responseData['vatFee'] ?? null,
+                'fee_type' => $responseData['feeType'] ?? null,
+                'payer_name' => $responseData['payer'] ?? null,
+                'account_no' => $responseData['accountNo'] ?? null,
+                'updated_at' => now(),
+            ];
+
+            $payment->update($updateData);
+
+            return [
+                'success' => true,
+                'transaction_id' => $responseData['platformTradeNo'] ?? $requestId,
+                'payment_data' => $responseData,
+                'is_test_mode' => false,
+            ];
+        } else {
+            $errorCode = $responseData['errCode'] ?? 'UNKNOWN';
+            $errorMessage = $responseData['errCodeDes'] ?? 'Unknown error from Paylabs';
+            throw new \Exception("Paylabs Error {$errorCode}: {$errorMessage}");
+        }
+    }
+
+    /**
+     * Create test membership payment for development
+     */
+    private function createTestMembershipPayment($payment, $channelCode, $channelName)
+    {
+        Log::info('PAYLABS: Test membership payment created', [
+            'channel_code' => $channelCode,
+            'channel_name' => $channelName
+        ]);
+
+        $isMembership = class_basename($payment) === 'MembershipPayment';
+        $requestId = $this->generateRequestId();
+        $amount = $isMembership ? $payment->total_amount : $payment->jumlah;
+        $transactionId = $isMembership ? $payment->transaction_id : $payment->kode_pembayaran;
+
+        $testData = [
+            'errCode' => '0',
+            'errCodeDes' => 'Success',
+            'merchantId' => $this->mid,
+            'platformTradeNo' => 'TEST-MEMBER-' . time() . '-' . Str::random(6),
+            'merchantTradeNo' => $transactionId,
+            'amount' => number_format((float) $amount, 2, '.', ''),
+            'status' => '01',
+            'createTime' => now()->toDateTimeString(),
+            'expiredTime' => now()->addMinutes(30)->toDateTimeString(),
+        ];
+
+        if ($channelCode === 'QRIS') {
+            $testData['qrCode'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmYqRSgAAAC4AAAA3AAAAAAA...';
+            $testData['qrisUrl'] = 'https://example.com/qris-test';
+            return $this->processMembershipQRISResponse($payment, $testData, $requestId);
+        } else {
+            $testData['vaCode'] = 'VA-TEST-' . Str::random(10);
+            $testData['vaNumber'] = '1234567890123456789';
+            return $this->processMembershipVAResponse($payment, $testData, $requestId, 'BCAVA', $channelName);
         }
     }
 }

@@ -299,140 +299,111 @@ $reviews = Review::with('user')
             })
             ;
 
-     // Artikel
-$artikelsFromDB = Artikel::aktif()
-    ->orderBy('tanggal_publikasi', 'desc')
-    ->take(4)
-    ->get();
+        // Ambil artikel terbaru yang aktif (diambil dari ArtikelSeeder)
+        $articles = Artikel::aktif()
+            ->terbaru()
+            ->limit(4)
+            ->get()
+            ->map(function ($a) {
+                return [
+                    'id' => $a->id,
+                    'image' => $a->gambar_url ?? ($a->gambar ? asset('storage/' . $a->gambar) : asset('images/default-article.jpg')),
+                    'title' => $a->judul,
+                    'category' => $a->kategori ?? '',
+                    'excerpt' => $a->excerpt ?? strip_tags(Str::limit($a->konten ?? '', 150)),
+                    'date' => $a->tanggal_publikasi ? $a->tanggal_publikasi->format('d M Y') : '',
+                ];
+            })
+            ->toArray();
 
-$articles = [];
-
-foreach ($artikelsFromDB as $index => $artikel) {
-    // Gunakan gambar dari database jika ada
-    $gambar = asset('images/AR1.png'); // default fallback
-    
-    // Debug: Lihat apa yang ada di database
-    // \Log::info('Artikel ID: ' . $artikel->id . ', Gambar: ' . $artikel->gambar);
-    
-    if ($artikel->gambar) {
-        // Cek apakah gambar ada di storage publik
-        if (Storage::disk('public')->exists($artikel->gambar)) {
-            $gambar = asset('storage/' . $artikel->gambar);
+        // Jika tidak ada promo aktif, gunakan contoh data (opsional)
+        if ($promos->isEmpty()) {
+            $promos = collect([
+                [
+                    'id' => 1,
+                    'nama' => 'Promo Awal Tahun',
+                    'deskripsi' => 'Diskon 30% untuk semua layanan shuttle selama bulan Januari',
+                    'gambar' => asset('images/promo/bali.jpg'),
+                    'periode' => '1 Jan 2024 - 31 Mar 2024'
+                ],
+                [
+                    'id' => 2,
+                    'nama' => 'Paket Keluarga',
+                    'deskripsi' => 'Diskon 25% untuk pemesanan tiket shuttle minimal 4 orang',
+                    'gambar' => asset('images/promo/promo2.jpg'),
+                    'periode' => '1 Feb 2024 - 31 Mar 2024'
+                ],
+                [
+                    'id' => 3,
+                    'nama' => 'Member Baru',
+                    'deskripsi' => 'Dapatkan 2 tiket gratis untuk pendaftaran member baru',
+                    'gambar' => asset('images/promo/promo3.jpg'),
+                    'periode' => 'Sepanjang Tahun 2024'
+                ],
+            ]);
         }
-        // Jika gambar sudah full URL (misalnya dari seeder)
-        elseif (filter_var($artikel->gambar, FILTER_VALIDATE_URL)) {
-            $gambar = $artikel->gambar;
-        }
-        // Jika gambar adalah path relatif di public folder
-        elseif (file_exists(public_path($artikel->gambar))) {
-            $gambar = asset($artikel->gambar);
-        }
-    }
-
-    $articles[] = [
-        'id' => $artikel->id,
-        'image' => $gambar,
-        'category' => $artikel->kategori,
-        'title' => $artikel->judul,
-        'excerpt' => $artikel->getExcerptAttribute(100), // Gunakan method dari model
-        'date' => $artikel->tanggal_publikasi ? 
-                  $artikel->tanggal_publikasi->translatedFormat('d F Y') : '-',
-        'read_time' => $artikel->getWaktuBacaAttribute(), // Gunakan method dari model
-        'tags' => $artikel->meta_keywords ? explode(', ', $artikel->meta_keywords) : [],
-        'full_content' => $artikel->konten,
-        'author' => $artikel->penulis,
-        'slug' => $artikel->slug ?? 'artikel-' . $artikel->id
-    ];
-}
-
-// Jika tidak ada artikel aktif, gunakan data dummy (opsional)
-if (empty($articles)) {
-    $articles = [
-        [
-            'id' => 1,
-            'image' => asset('/images/AR1.png'),
-            'category' => 'Tips & Trik',
-            'title' => 'Tips Perjalanan Aman dengan Shuttle Selama Liburan',
-            'excerpt' => 'Pelajari cara mempersiapkan perjalanan shuttle yang aman dan nyaman selama musim liburan untuk pengalaman terbaik.',
-            'date' => '15 Maret 2024',
-            'read_time' => '5 min read',
-            'tags' => ['Perjalanan', 'Tips', 'Liburan'],
-            'full_content' => '<h3>Persiapan Sebelum Perjalanan</h3><p>Perjalanan dengan shuttle selama liburan memerlukan persiapan yang matang. Pastikan Anda memesan tiket jauh-jauh hari untuk mendapatkan harga terbaik dan kursi pilihan. Smart Shuttle menawarkan pemesanan online yang mudah melalui website atau aplikasi kami.</p>',
-            'author' => 'Admin SmartShuttle',
-            'slug' => 'tips-perjalanan-aman' // PASTIKAN ADA SLUG
-        ]
-    ];
-}
-
-// TAMBAHKAN INI: Penutup array dan lanjutan method beranda()
-if (empty($articles)) {
-    $articles = [
-        [
-            'id' => 1,
-            'image' => asset('/images/AR1.png'),
-            'category' => 'Tips & Trik',
-            'title' => 'Tips Perjalanan Aman dengan Shuttle Selama Liburan',
-            'excerpt' => 'Pelajari cara mempersiapkan perjalanan shuttle yang aman dan nyaman selama musim liburan untuk pengalaman terbaik.',
-            'date' => '15 Maret 2024',
-            'read_time' => '5 min read',
-            'tags' => ['Perjalanan', 'Tips', 'Liburan'],
-            'full_content' => '<h3>Persiapan Sebelum Perjalanan</h3><p>Perjalanan dengan shuttle selama liburan memerlukan persiapan yang matang. Pastikan Anda memesan tiket jauh-jauh hari untuk mendapatkan harga terbaik dan kursi pilihan. Smart Shuttle menawarkan pemesanan online yang mudah melalui website atau aplikasi kami.</p>',
-            'author' => 'Admin SmartShuttle',
-            'slug' => 'tips-perjalanan-aman'
-        ]
-    ];
-}
-
-// TAMBAHKAN INI: Lanjutan method beranda() dan penutup
-if ($promos->isEmpty()) {
-    $promos = collect([
-        // ... data promo default ...
-    ]);
-}
-
-return view('customer.beranda', compact('user', 'outletsGrouped', 'layanan', 'profile', 'reviews', 'promos', 'articles'));
-} // <-- TUTUP METHOD BERANDA() DENGAN INI
-
-/**
- * Halaman outlet
- */
-public function outlet(Request $request)
-{
-    $user = session()->get('user');
-
-    $query = Outlet::with('branch')
-        ->where('status', 'aktif');
-
-    // Filter berdasarkan kota
-    if ($request->filled('kota')) {
-        $query->whereHas('branch', function ($q) use ($request) {
-            $q->where('kota', $request->kota);
+        $articles = Artikel::aktif()
+        ->terbaru()
+        ->get()
+        ->map(function ($artikel) {
+            return [
+                'id' => $artikel->id,
+                'title' => $artikel->judul,
+                'excerpt' => $artikel->excerpt,
+                'full_content' => $artikel->konten,
+                'category' => $artikel->kategori,
+                'image' => $artikel->gambar_url,
+                'date' => $artikel->tanggal_format,
+                'read_time' => $artikel->waktu_baca,
+                'tags' => explode(',', $artikel->meta_keywords ?? ''),
+                'slug' => $artikel->slug
+            ];
         });
+
+        return view('customer.beranda', compact('user', 'outletsGrouped', 'layanan', 'profile', 'reviews', 'promos', 'articles'));
     }
 
-    // Filter berdasarkan branch_id
-    if ($request->filled('branch_id')) {
-        $query->where('branch_id', $request->branch_id);
+    /**
+     * Halaman outlet
+     */
+    public function outlet(Request $request)
+    {
+        $user = session()->get('user');
+
+        $query = Outlet::with('branch')
+            ->where('status', 'aktif');
+
+        // Filter berdasarkan kota
+        if ($request->filled('kota')) {
+            $query->whereHas('branch', function ($q) use ($request) {
+                $q->where('kota', $request->kota);
+            });
+        }
+
+        // Filter berdasarkan branch_id
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        // Pagination untuk initial load (6 items)
+        $outlets = $query->orderBy('nama_outlet')->limit(6)->get();
+        $totalOutlets = $query->count();
+        $hasMore = $totalOutlets > 6;
+
+        $branches = Branch::where('status', 'aktif')
+            ->orderBy('kota')
+            ->get();
+
+        $kotaList = Branch::select('kota')
+            ->distinct()
+            ->where('status', 'aktif')
+            ->orderBy('kota')
+            ->pluck('kota')
+            ->toArray();
+
+        return view('customer.outlet', compact('user', 'outlets', 'branches', 'kotaList', 'totalOutlets', 'hasMore'));
     }
 
-    // Pagination untuk initial load (6 items)
-    $outlets = $query->orderBy('nama_outlet')->limit(6)->get();
-    $totalOutlets = $query->count();
-    $hasMore = $totalOutlets > 6;
-
-    $branches = Branch::where('status', 'aktif')
-        ->orderBy('kota')
-        ->get();
-
-    $kotaList = Branch::select('kota')
-        ->distinct()
-        ->where('status', 'aktif')
-        ->orderBy('kota')
-        ->pluck('kota')
-        ->toArray();
-
-    return view('customer.outlet', compact('user', 'outlets', 'branches', 'kotaList', 'totalOutlets', 'hasMore'));
-}
     /**
      * AJAX endpoint untuk load more outlets
      */
@@ -612,24 +583,6 @@ private function getOutletImage($outlet)
             return redirect()->route('customer.beranda')->with('info', 'Anda sudah login!');
         }
 
-        // Pastikan session dan CSRF token sudah diinisialisasi sebelum render view
-        if (!session()->isStarted()) {
-            session()->start();
-        }
-
-        if (!session()->token()) {
-            session()->regenerateToken();
-        }
-
-        // Log untuk debugging first load issues
-        \Log::info('CustomerController::showLogin - Session initialized', [
-            'session_id' => session()->getId(),
-            'has_csrf_token' => !empty(session()->token()),
-            'csrf_token' => substr(session()->token() ?? '', 0, 10) . '...',
-            'session_has_user' => session()->has('user'),
-            'auth_check' => Auth::check(),
-        ]);
-
         return view('customer.login');
     }
 
@@ -644,13 +597,6 @@ public function login(Request $request)
     ]);
 
     try {
-        // Log CSRF token validation at start
-        \Log::info('Login request start', [
-            'email' => $validated['email'],
-            'has_csrf_token' => !empty($request->session()->token()),
-            'session_id' => session()->getId(),
-        ]);
-
         $remember = $request->filled('remember');
         $credentials = [
             'email' => $validated['email'],
@@ -717,26 +663,9 @@ public function login(Request $request)
             'membership_level' => $user->membership_level,
         ]);
 
-        // Pastikan session di-save sebelum redirect
-        try {
-            session()->save();
-        } catch (\Exception $e) {
-            \Log::warning('Failed to save session after login', ['error' => $e->getMessage()]);
-        }
-
-        \Log::info('Login successful', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'session_saved' => true,
-        ]);
-
         return redirect()->route('customer.beranda');
 
     } catch (\Exception $e) {
-        \Log::error('Login exception', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ]);
         return back()->withErrors(['message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()])
                     ->withInput();
     }
@@ -749,22 +678,6 @@ public function login(Request $request)
         if (session()->has('user')) {
             return redirect()->route('customer.beranda')->with('info', 'Anda sudah login!');
         }
-
-        // Pastikan session dan CSRF token sudah diinisialisasi sebelum render view
-        if (!session()->isStarted()) {
-            session()->start();
-        }
-
-        if (!session()->token()) {
-            session()->regenerateToken();
-        }
-
-        // Log untuk debugging
-        \Log::info('CustomerController::showRegister - Session initialized', [
-            'session_id' => session()->getId(),
-            'has_csrf_token' => !empty(session()->token()),
-            'csrf_token' => substr(session()->token() ?? '', 0, 10) . '...',
-        ]);
 
         $syaratKetentuan = SyaratKetentuan::getUntukPengguna();
         $kebijakanPrivasi = KebijakanPrivasi::getAktif();
@@ -1654,8 +1567,7 @@ public function login(Request $request)
         $riwayat = Pemesanan::with([
             'jadwal.shuttle',
             'jadwal.rutes',
-            'detailPenumpang',
-            'pembayaran' // Eager load pembayaran untuk status dinamis
+            'detailPenumpang'
         ])
         ->where('customer_id', $user->id)
         ->orderBy('created_at', 'desc')
@@ -2265,6 +2177,13 @@ public function login(Request $request)
     public function processMembershipPayment(Request $request)
     {
         if (!Auth::check()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Silakan login terlebih dahulu',
+                    'redirect' => route('customer.login')
+                ], 401);
+            }
             return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
         }
 
@@ -2281,6 +2200,12 @@ public function login(Request $request)
         ]);
 
         if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput();
@@ -2308,6 +2233,7 @@ public function login(Request $request)
             // Handle different payment methods
             $paymentStatus = 'pending'; // Default for manual transfer
             $paylabsResponse = null;
+            $paymentData = [];
 
             // For Paylabs payments (QRIS and VA), create payment with Paylabs
             if (in_array($request->payment_method, ['qris', 'bca_va', 'mandiri_va', 'bni_va', 'bri_va'])) {
@@ -2322,19 +2248,29 @@ public function login(Request $request)
                     ];
 
                     $channelCode = $channelMap[$request->payment_method] ?? 'QRIS';
+                    $channelName = ucfirst(str_replace('_', ' ', $request->payment_method));
 
-                    // Create Paylabs payment
-                    $paylabsResponse = $this->paylabsService->createPayment($payment, $channelCode, ucfirst(str_replace('_', ' ', $request->payment_method)));
+                    // Create Paylabs payment using membership-specific method
+                    $paylabsResponse = $this->paylabsService->createMembershipPayment($payment, $channelCode, $channelName);
 
                     if ($paylabsResponse['success']) {
-                        // For online payments, mark as success immediately (simulated)
-                        // In production, this would wait for webhook callback
-                        $paymentStatus = 'success';
+                        // For online payments, DO NOT mark as success immediately
+                        // Wait for webhook callback from Paylabs instead
+                        $paymentStatus = 'pending';
+                        $paymentData = $paylabsResponse['payment_data'] ?? [];
+
+                        Log::info('Paylabs membership payment created successfully', [
+                            'transaction_id' => $payment->transaction_id,
+                            'platform_trade_no' => $paylabsResponse['payment_data']['platformTradeNo'] ?? null,
+                        ]);
                     } else {
-                        throw new \Exception('Gagal membuat pembayaran Paylabs: ' . $paylabsResponse['error']);
+                        throw new \Exception('Gagal membuat pembayaran Paylabs: ' . ($paylabsResponse['error'] ?? 'Unknown error'));
                     }
                 } catch (\Exception $e) {
-                    Log::error('Paylabs payment creation failed: ' . $e->getMessage());
+                    Log::error('Paylabs membership payment creation failed: ' . $e->getMessage(), [
+                        'transaction_id' => $payment->transaction_id,
+                        'trace' => $e->getTraceAsString(),
+                    ]);
                     throw new \Exception('Gagal memproses pembayaran online. Silakan coba lagi.');
                 }
             } elseif ($request->payment_method === 'manual_transfer') {
@@ -2351,12 +2287,14 @@ public function login(Request $request)
                 'paid_at' => $paymentStatus === 'success' ? now() : null,
                 // Add Paylabs fields if available
                 'paylabs_transaction_id' => $paylabsResponse['transaction_id'] ?? null,
-                'qr_code' => $paylabsResponse['payment_data']['qrCode'] ?? null,
-                'qris_url' => $paylabsResponse['payment_data']['qrisUrl'] ?? null,
-                'no_virtual_account' => $paylabsResponse['payment_data']['vaCode'] ?? $paylabsResponse['payment_data']['vaNumber'] ?? null,
+                'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
+                'qr_code' => $paymentData['qrCode'] ?? null,
+                'qris_url' => $paymentData['qrisUrl'] ?? null,
+                'no_virtual_account' => $paymentData['vaCode'] ?? $paymentData['vaNumber'] ?? null,
             ]);
 
-            // Only activate membership for successful online payments or approved manual transfers
+            // Only activate membership for successful payments
+            // Online payments will be activated via webhook callback
             if ($paymentStatus === 'success') {
                 $user->update([
                     'membership_status' => 'active',
@@ -2382,21 +2320,242 @@ public function login(Request $request)
 
                 DB::commit();
 
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Pembayaran berhasil! Membership Anda sekarang aktif.',
+                        'status' => 'success'
+                    ]);
+                }
+
                 return redirect()->route('customer.membership')
                     ->with('success', 'Pembayaran berhasil! Membership Anda sekarang aktif.');
             } else {
-                // For manual transfer, keep status as pending
-                DB::commit();
+                // For online payments (QRIS/VA), return payment instruction data
+                if (in_array($request->payment_method, ['qris', 'bca_va', 'mandiri_va', 'bni_va', 'bri_va'])) {
+                    DB::commit();
 
-                return redirect()->route('customer.membership')
-                    ->with('info', 'Pembayaran telah dikirim dan menunggu konfirmasi admin. Status membership akan aktif setelah diverifikasi.');
+                    $instructionData = [
+                        'success' => true,
+                        'message' => 'Silakan lakukan pembayaran sesuai dengan instruksi di bawah. Pembayaran akan otomatis diverifikasi.',
+                        'status' => 'pending',
+                        'payment_data' => [
+                            'transaction_id' => $payment->transaction_id,
+                            'payment_method' => $request->payment_method,
+                            'amount' => $payment->total_amount,
+                            'qr_code' => $paymentData['qrCode'] ?? null,
+                            'qris_url' => $paymentData['qrisUrl'] ?? null,
+                            'va_number' => $paymentData['vaNumber'] ?? $paymentData['vaCode'] ?? null,
+                            'va_bank' => match($request->payment_method) {
+                                'bca_va' => 'BCA',
+                                'mandiri_va' => 'Mandiri',
+                                'bni_va' => 'BNI',
+                                'bri_va' => 'BRI',
+                                default => 'Bank'
+                            },
+                            'expiry_time' => $payment->waktu_kadaluarsa,
+                        ]
+                    ];
+
+                    if ($request->expectsJson()) {
+                        return response()->json($instructionData);
+                    }
+
+                    // For non-AJAX requests, redirect with payment data in session
+                    return redirect()->route('customer.membership.pending')
+                        ->with('info', 'Silakan lakukan pembayaran sesuai dengan instruksi yang ditampilkan.')
+                        ->with('payment_data', $instructionData['payment_data']);
+                } else {
+                    // For manual transfer, keep status as pending
+                    DB::commit();
+
+                    if ($request->expectsJson()) {
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Pembayaran telah dikirim dan menunggu konfirmasi admin. Status membership akan aktif setelah diverifikasi.',
+                            'status' => 'pending',
+                            'payment_data' => [
+                                'transaction_id' => $payment->transaction_id,
+                                'payment_method' => $request->payment_method,
+                                'amount' => $payment->total_amount,
+                            ]
+                        ]);
+                    }
+
+                    return redirect()->route('customer.membership')
+                        ->with('info', 'Pembayaran telah dikirim dan menunggu konfirmasi admin. Status membership akan aktif setelah diverifikasi.');
+                }
             }
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Membership payment error: ' . $e->getMessage(), [
+                'transaction_id' => $request->transaction_id ?? null,
+                'user_id' => $user->id ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $e->getMessage(),
+                    'message' => 'Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.'
+                ], 500);
+            }
+
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
                 ->withInput();
+        }
+
+    }
+
+    /**
+     * Simulate membership payment for testing using real Paylabs response (QRIS only)
+     */
+    public function simulateMembershipPayment(Request $request)
+    {
+        if (!Auth::check()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Silakan login terlebih dahulu'
+                ], 401);
+            }
+            return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
+        }
+
+        $validator = Validator::make($request->all(), [
+            'transaction_id' => 'required|exists:membership_payments,transaction_id',
+        ]);
+
+        if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data transaksi tidak valid',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $user = Auth::user();
+
+        DB::beginTransaction();
+
+        try {
+            $payment = MembershipPayment::where('transaction_id', $request->transaction_id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$payment) {
+                throw new \Exception('Transaksi membership tidak ditemukan.');
+            }
+
+            // Create real Paylabs QRIS payment for testing
+            $paylabsResponse = $this->paylabsService->createMembershipPayment($payment, 'QRIS', 'QRIS');
+
+            if (!$paylabsResponse['success']) {
+                throw new \Exception('Gagal membuat pembayaran Paylabs: ' . ($paylabsResponse['error'] ?? 'Unknown error'));
+            }
+
+            $paymentData = $paylabsResponse['payment_data'] ?? [];
+
+            // Update payment with real Paylabs response data AND mark as successful for simulation
+            $payment->update([
+                'payment_method' => 'qris',
+                'payment_status' => 'success', // Mark as success for simulation testing
+                'paid_at' => now(),
+                'paylabs_transaction_id' => $paylabsResponse['transaction_id'] ?? null,
+                'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
+                'qr_code' => $paymentData['qrCode'] ?? null,
+                'qris_url' => $paymentData['qrisUrl'] ?? null,
+                'paylabs_response' => json_encode($paymentData),
+                'paylabs_raw_response' => json_encode($paylabsResponse),
+            ]);
+
+            // Activate membership immediately for simulation
+            $user->update([
+                'membership_status' => 'active',
+                'membership_start_date' => now(),
+                'membership_end_date' => now()->addMonths(12),
+                'membership_fee' => $payment->total_amount,
+                'membership_payment_method' => 'qris',
+                'membership_payment_status' => 'success',
+                'membership_transaction_id' => $payment->transaction_id,
+                'membership_level' => 'Bronze',
+                'member_point' => 0,
+                'loyalty_point' => 0,
+            ]);
+
+            session()->put('user', [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $user->avatar_url,
+                'membership_status' => 'active',
+                'membership_level' => 'Bronze',
+            ]);
+
+            DB::commit();
+
+            Log::info('Membership payment simulated successfully with real Paylabs response', [
+                'user_id' => $user->id,
+                'transaction_id' => $payment->transaction_id,
+                'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
+                'qr_code_available' => !empty($paymentData['qrCode']),
+                'simulation_completed' => true,
+            ]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Simulasi pembayaran berhasil! Response asli Paylabs diterima dan membership diaktifkan.',
+                    'status' => 'success',
+                    'payment_data' => [
+                        'transaction_id' => $payment->transaction_id,
+                        'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
+                        'qr_code' => $paymentData['qrCode'] ?? null,
+                        'qris_url' => $paymentData['qrisUrl'] ?? null,
+                        'amount' => $payment->total_amount,
+                        'simulation' => true,
+                        'real_paylabs_response' => true,
+                    ]
+                ]);
+            }
+
+            return redirect()->route('customer.membership')
+                ->with('success', 'Simulasi pembayaran berhasil! Response asli Paylabs diterima dan membership diaktifkan.')
+                ->with('payment_data', [
+                    'transaction_id' => $payment->transaction_id,
+                    'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
+                    'qr_code' => $paymentData['qrCode'] ?? null,
+                    'qris_url' => $paymentData['qrisUrl'] ?? null,
+                    'amount' => $payment->total_amount,
+                    'simulation' => true,
+                    'real_paylabs_response' => true,
+                ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Membership payment simulation error: ' . $e->getMessage(), [
+                'user_id' => $user->id ?? null,
+                'transaction_id' => $request->transaction_id ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
@@ -3081,4 +3240,5 @@ public function getFilteredReviews(Request $request)
             'days_remaining' => $isActive ? max(0, $now->diffInDays($endDate, false)) : 0
         ];
     }
+
 }

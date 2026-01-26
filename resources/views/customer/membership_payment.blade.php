@@ -569,6 +569,13 @@
                 <button type="submit" class="btn-pay" id="payButton">
                     <span id="buttonText">Bayar & Aktifkan Membership</span>
                 </button>
+
+                <!-- Simulation Button (for testing) -->
+                @if(env('APP_ENV') === 'local' || env('APP_DEBUG') === true)
+                <button type="button" class="btn-pay" id="simulateButton" style="background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%); margin-top: 12px;" onclick="simulateMembershipPayment()">
+                    <span id="simulateButtonText"><i class="fas fa-flask"></i> Simulasi Pembayaran</span>
+                </button>
+                @endif
             </form>
 
             <div style="text-align: center; margin-top: 12px; font-size: 12px; color: #9ca3af;">
@@ -580,6 +587,74 @@
     @endsection
 
     <script>
+        // Simulasi pembayaran untuk testing - GLOBAL SCOPE
+        function simulateMembershipPayment() {
+            const simulateButton = document.getElementById('simulateButton');
+            const simulateButtonText = document.getElementById('simulateButtonText');
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            const successMessage = document.getElementById('successMessage');
+            const transactionId = document.querySelector('input[name="transaction_id"]').value;
+
+            // Hide previous messages
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+
+            if (!transactionId) {
+                errorText.textContent = 'Data transaksi tidak valid!';
+                errorMessage.classList.add('show');
+                return;
+            }
+
+            // Show loading state
+            simulateButtonText.innerHTML = '<span class="loading"></span> Mensimulasi Pembayaran...';
+            simulateButton.disabled = true;
+
+            // Call simulate API
+            fetch('{{ route("customer.membership.payment.simulate") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    transaction_id: transactionId
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || `HTTP ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Simulate response:', data);
+
+                if (data.success) {
+                    // Show success message
+                    successMessage.classList.add('show');
+                    simulateButtonText.innerHTML = '<i class="fas fa-check-circle"></i> Simulasi Berhasil!';
+
+                    setTimeout(() => {
+                        window.location.href = '{{ route("customer.membership") }}';
+                    }, 2000);
+                } else {
+                    throw new Error(data.message || 'Simulasi pembayaran gagal');
+                }
+            })
+            .catch(error => {
+                console.error('Simulate error:', error);
+                simulateButtonText.innerHTML = '<i class="fas fa-flask"></i> Simulasi Pembayaran';
+                simulateButton.disabled = false;
+                errorText.textContent = error.message || 'Gagal mensimulasi pembayaran. Silakan coba lagi.';
+                errorMessage.classList.add('show');
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             // Payment form submission
             const paymentForm = document.getElementById('paymentForm');
@@ -640,6 +715,8 @@
 
             if (paymentForm) {
                 paymentForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
                     // Hide previous messages
                     errorMessage.classList.remove('show');
                     successMessage.classList.remove('show');
@@ -647,7 +724,6 @@
                     // Validate payment method
                     const selectedMethod = document.querySelector('input[name="payment_method"]:checked');
                     if (!selectedMethod) {
-                        e.preventDefault();
                         errorText.textContent = 'Pilih metode pembayaran terlebih dahulu!';
                         errorMessage.classList.add('show');
                         return;
@@ -656,7 +732,6 @@
                     // Validate transaction ID
                     const transactionId = document.querySelector('input[name="transaction_id"]');
                     if (!transactionId || !transactionId.value) {
-                        e.preventDefault();
                         errorText.textContent = 'Data transaksi tidak valid! Silakan refresh halaman.';
                         errorMessage.classList.add('show');
                         return;
@@ -668,23 +743,153 @@
                     buttonText.innerHTML = '<span class="loading"></span> Memproses Pembayaran...';
                     payButton.disabled = true;
 
-                    // Show success message briefly
-                    successMessage.classList.add('show');
+                    // Submit form via AJAX
+                    const formData = new FormData(paymentForm);
 
-                    // Form will submit normally - allow it to proceed
-                    console.log('Form sedang dikirim dengan metode:', selectedMethod.value);
-
-                    // In case form takes too long, re-enable button after 10 seconds
-                    setTimeout(() => {
-                        if (payButton.disabled) {
-                            buttonText.innerHTML = originalText;
-                            payButton.disabled = false;
-                            successMessage.classList.remove('show');
-                            errorText.textContent = 'Proses pembayaran timeout. Silakan coba lagi.';
-                            errorMessage.classList.add('show');
+                    fetch(paymentForm.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
                         }
-                    }, 10000);
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(data => {
+                                throw new Error(data.message || `HTTP ${response.status}`);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Payment response:', data);
+
+                        if (data.success) {
+                            if (data.status === 'success') {
+                                // Payment successful - membership immediately active
+                                successMessage.classList.add('show');
+                                buttonText.innerHTML = '<i class="fas fa-check-circle"></i> Pembayaran Berhasil!';
+
+                                setTimeout(() => {
+                                    window.location.href = '{{ route("customer.membership") }}';
+                                }, 2000);
+                            } else if (data.status === 'pending') {
+                                // Payment created - show payment instructions
+                                showPaymentInstructions(data.payment_data, selectedMethod.value);
+                                buttonText.innerHTML = originalText;
+                                payButton.disabled = false;
+                            }
+                        } else {
+                            throw new Error(data.message || data.error || 'Gagal memproses pembayaran');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Payment error:', error);
+                        buttonText.innerHTML = originalText;
+                        payButton.disabled = false;
+                        errorText.textContent = error.message || 'Gagal memproses pembayaran. Silakan coba lagi.';
+                        errorMessage.classList.add('show');
+                    });
                 });
+            }
+
+            // Function to show payment instructions
+            function showPaymentInstructions(paymentData, method) {
+                // Create a modal to show payment instructions
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                `;
+
+                let content = '';
+
+                if (method === 'qris') {
+                    content = `
+                        <div style="background: white; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                            <h2 style="text-align: center; margin-bottom: 20px; color: #111;">Scan QR Code untuk Pembayaran</h2>
+                            <div style="text-align: center; margin: 20px 0;">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(paymentData.qr_code || 'SS-MEMBERSHIP-' + paymentData.transaction_id + '-Rp' + paymentData.amount)}"
+                                     alt="QR Code" style="border: 2px solid #e5e7eb; border-radius: 10px; padding: 10px; background: white; max-width: 250px;">
+                            </div>
+                            <p style="text-align: center; font-size: 14px; color: #6b7280; margin: 15px 0;">
+                                <strong>Jumlah:</strong> Rp ${new Intl.NumberFormat('id-ID').format(paymentData.amount)}<br>
+                                <strong>Referensi:</strong> ${paymentData.transaction_id}<br>
+                                <strong>Berlaku hingga:</strong> ${new Date(paymentData.expiry_time).toLocaleString('id-ID')}
+                            </p>
+                            <p style="font-size: 13px; color: #666; line-height: 1.6;">
+                                Silakan scan QR Code di atas menggunakan aplikasi e-wallet atau mobile banking Anda untuk melakukan pembayaran.
+                            </p>
+                            <button onclick="this.parentElement.parentElement.remove()" style="width: 100%; background: #FF6B2C; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 20px;">
+                                Tutup
+                            </button>
+                        </div>
+                    `;
+                } else if (['bca_va', 'mandiri_va', 'bni_va', 'bri_va'].includes(method)) {
+                    const bankName = paymentData.va_bank;
+                    content = `
+                        <div style="background: white; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                            <h2 style="text-align: center; margin-bottom: 20px; color: #111;">Virtual Account Transfer</h2>
+                            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; margin: 15px 0;">
+                                <p style="font-size: 12px; color: #6b7280; margin-bottom: 5px;">Nomor Virtual Account</p>
+                                <p style="font-size: 20px; font-weight: 700; color: #FF6B2C; text-align: center; word-break: break-all;">
+                                    ${paymentData.va_number}
+                                </p>
+                            </div>
+                            <p style="text-align: center; font-size: 14px; color: #6b7280; margin: 15px 0;">
+                                <strong>Bank:</strong> ${bankName}<br>
+                                <strong>Atas Nama:</strong> SMART SHUTTLE<br>
+                                <strong>Jumlah:</strong> Rp ${new Intl.NumberFormat('id-ID').format(paymentData.amount)}<br>
+                                <strong>Berlaku hingga:</strong> ${new Date(paymentData.expiry_time).toLocaleString('id-ID')}
+                            </p>
+                            <p style="font-size: 13px; color: #666; line-height: 1.6; background: #fff7f3; padding: 12px; border-radius: 6px; border-left: 3px solid #FF6B2C;">
+                                <strong>Instruksi Transfer:</strong><br>
+                                1. Buka aplikasi mobile banking Anda<br>
+                                2. Pilih menu Transfer antar bank<br>
+                                3. Masukkan nomor Virtual Account di atas<br>
+                                4. Masukkan jumlah yang sesuai dengan nominal<br>
+                                5. Selesaikan transaksi
+                            </p>
+                            <button onclick="this.parentElement.parentElement.remove()" style="width: 100%; background: #FF6B2C; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 20px;">
+                                Tutup
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    content = `
+                        <div style="background: white; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                            <h2 style="text-align: center; margin-bottom: 20px; color: #111;">Pembayaran Dikirim</h2>
+                            <p style="text-align: center; font-size: 14px; color: #6b7280; margin: 15px 0;">
+                                <strong>Referensi:</strong> ${paymentData.transaction_id}<br>
+                                <strong>Jumlah:</strong> Rp ${new Intl.NumberFormat('id-ID').format(paymentData.amount)}
+                            </p>
+                            <p style="font-size: 13px; color: #666; line-height: 1.6;">
+                                Pembayaran Anda telah diterima dan sedang menunggu verifikasi dari admin.
+                                Status membership akan otomatis aktif setelah pembayaran diverifikasi.
+                            </p>
+                            <button onclick="this.parentElement.parentElement.remove()" style="width: 100%; background: #FF6B2C; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 20px;">
+                                Tutup
+                            </button>
+                        </div>
+                    `;
+                }
+
+                modal.innerHTML = content;
+                modal.onclick = function(e) {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                };
+                document.body.appendChild(modal);
             }
 
             // Check if there are any validation errors from server

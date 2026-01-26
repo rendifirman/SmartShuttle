@@ -44,7 +44,7 @@ Route::post('/login', [AuthenticatedSessionController::class, 'store'])
 
 Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
     ->middleware('guest')
-    ->name('password.email');
+    ->name('password.email.forgot');
 
 Route::post('/reset-password', [NewPasswordController::class, 'store'])
     ->middleware('guest')
@@ -126,6 +126,16 @@ Route::post('/customer/cek-reservasi', [CekReservasiController::class, 'proses']
 Route::get('/customer/cek-reservasi/hasil/{kode}', [CekReservasiController::class, 'hasil'])
     ->name('customer.cek-reservasi.hasil');
 
+// Google OAuth Routes - minimal middleware for proper OAuth flow
+Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])
+    ->name('login.google');
+
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
+    ->withoutMiddleware('Illuminate\Http\Middleware\ValidatePathEncoding')
+    ->name('login.google.callback');
+
+
+
 // ★★★ AUTH ROUTES - HANYA UNTUK TAMU ★★★
 Route::middleware(['ensure.session', 'guest.customer'])->group(function () {
     // Login/Register tradisional
@@ -134,16 +144,11 @@ Route::middleware(['ensure.session', 'guest.customer'])->group(function () {
     Route::get('/customer/register', [CustomerController::class, 'showRegister'])->name('customer.register');
     Route::post('/customer/register', [CustomerController::class, 'register'])->name('customer.register.post');
 
-    // Google OAuth
-    Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])
-        ->name('login.google');
-    Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
-        ->name('login.google.callback');
 
     // Password reset
     Route::prefix('password')->group(function () {
         Route::get('/forgot', [AuthController::class, 'showForgotForm'])->name('password.request');
-        Route::post('/email', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
+        Route::post('/email', [AuthController::class, 'sendResetLinkEmail'])->name('password.email.custom');
         Route::get('/token', [AuthController::class, 'showTokenForm'])->name('password.token');
         Route::post('/token/verify', [AuthController::class, 'verifyToken'])->name('password.token.verify');
         Route::get('/reset', [AuthController::class, 'showResetForm'])->name('password.reset');
@@ -178,7 +183,8 @@ Route::delete('/customer/avatar/delete', [CustomerController::class, 'deleteAvat
 // ============================================================
 
 // ★★★ ROUTES YANG BUTUH LOGIN ★★★
-Route::middleware(['auth.customer'])->group(function () {
+Route::middleware(['auth:customer'])->group(function () {
+
 
     // ★★★ PROFIL & DASHBOARD ★★★
     Route::get('/customer/dashboardprofile', [CustomerController::class, 'profil'])->name('customer.dashboardprofile');
