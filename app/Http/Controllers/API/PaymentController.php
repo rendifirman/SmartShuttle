@@ -488,7 +488,7 @@ class PaymentController extends Controller
     }
 
     /**
-     * Protected route: simulate payment success.
+     * Protected route: simulate payment success with real Paylabs response.
      */
     public function simulatePayment(Request $request)
     {
@@ -505,15 +505,154 @@ class PaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'Payment not found'], 404);
         }
 
-        $pembayaran->update([
-            'status' => 'berhasil',
-            'paylabs_status' => 'PAID',
-            'waktu_pembayaran' => now(),
-        ]);
+        // Check if payment is already successful
+        if ($pembayaran->status === 'berhasil') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pembayaran sudah berhasil diproses sebelumnya'
+            ], 400);
+        }
 
-        $this->updatePemesananAfterPayment($pembayaran);
+        DB::beginTransaction();
 
-        return response()->json(['success' => true, 'data' => $pembayaran->fresh()]);
+        try {
+            // Get payment method details - fallback to QRIS if not set
+            $paymentMethod = $pembayaran->metode ?: 'qris';
+            $method = MetodePembayaran::where('kode', $paymentMethod)->first();
+
+            if (!$method) {
+                // If method not found, try to get any active Paylabs method
+                $method = MetodePembayaran::where('aktif', true)->where('is_paylabs', true)->first();
+                if (!$method) {
+                    throw new \Exception('Tidak ada metode pembayaran Paylabs yang aktif. Pastikan setidaknya satu metode pembayaran Paylabs aktif.');
+                }
+                // Update payment method to the found method
+                $paymentMethod = $method->kode;
+                $pembayaran->metode = $paymentMethod;
+                $pembayaran->save(); // Save the updated method
+            }
+
+            Log::info('Payment simulation method check', [
+                'kode_pembayaran' => $request->kode_pembayaran,
+                'original_method' => $pembayaran->getOriginal('metode'),
+                'current_method' => $paymentMethod,
+                'method_found' => $method ? 'yes' : 'no',
+                'method_name' => $method ? $method->nama : 'N/A',
+                'is_paylabs' => $method ? $method->is_paylabs : 'N/A'
+            ]);
+
+            // Create real Paylabs payment request for testing
+            $paylabsResponse = $this->paylabsService->createPayment(
+                $pembayaran,
+                $method->paylabs_channel_code,
+                $method->paylabs_channel_name
+            );
+
+            if (!$paylabsResponse['success']) {
+                throw new \Exception('Gagal membuat pembayaran Paylabs: ' . ($paylabsResponse['error'] ?? 'Unknown error'));
+            }
+
+            $paymentData = $paylabsResponse['payment_data'] ?? [];
+
+            // Update pembayaran dengan response asli dari Paylabs DAN mark as successful for simulation
+            $updateData = [
+                'status' => 'berhasil', // Mark as success for simulation testing
+                'paylabs_status' => 'PAID',
+                'waktu_pembayaran' => now(),
+                'paylabs_transaction_id' => $paylabsResponse['transaction_id'] ?? null,
+                'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
+                'qr_code' => $paymentData['qrCode'] ?? null,
+                'qris_url' => $paymentData['qrisUrl'] ?? null,
+                'no_virtual_account' => $paymentData['vaCode'] ?? $paymentData['vaNumber'] ?? null,
+                'nama_bank' => $paymentData['bankName'] ?? null,
+                'paylabs_response' => json_encode($paymentData),
+                'paylabs_raw_response' => json_encode($paylabsResponse),
+            ];
+
+            Log::info('Updating payment to berhasil', [
+                'kode_pembayaran' => $request->kode_pembayaran,
+                'update_data' => $updateData
+            ]);
+
+            $result = $pembayaran->update($updateData);
+
+            // Force refresh and verify
+            $pembayaran->refresh();
+
+            Log::info('Payment status after update', [
+                'kode_pembayaran' => $request->kode_pembayaran,
+                'status' => $pembayaran->status,
+                'paylabs_status' => $pembayaran->paylabs_status,
+                'update_result' => $result
+            ]);
+
+            // Double-check: if status is still not berhasil, force it
+            if ($pembayaran->status !== 'berhasil') {
+                Log::warning('Status not updated correctly, forcing update', [
+                    'kode_pembayaran' => $request->kode_pembayaran,
+                    'current_status' => $pembayaran->status
+                ]);
+
+                DB::table('pembayaran')
+                    ->where('kode_pembayaran', $request->kode_pembayaran)
+                    ->update([
+                        'status' => 'berhasil',
+                        'paylabs_status' => 'PAID',
+                        'waktu_pembayaran' => now()
+                    ]);
+
+                $pembayaran->refresh();
+                Log::info('Forced status update result', [
+                    'kode_pembayaran' => $request->kode_pembayaran,
+                    'final_status' => $pembayaran->status
+                ]);
+            }
+
+            // Update pemesanan setelah pembayaran berhasil (for simulation)
+            $this->updatePemesananAfterPayment($pembayaran);
+
+            DB::commit();
+
+            Log::info('Payment simulation completed successfully with real Paylabs response', [
+                'kode_pembayaran' => $request->kode_pembayaran,
+                'paylabs_transaction_id' => $paylabsResponse['transaction_id'] ?? null,
+                'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
+                'payment_method' => $pembayaran->metode,
+                'qr_code_available' => !empty($paymentData['qrCode']),
+                'va_available' => !empty($paymentData['vaCode'] ?? $paymentData['vaNumber']),
+                'simulation_completed' => true,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Simulasi pembayaran berhasil! Response asli Paylabs diterima dan pembayaran diselesaikan.',
+                'data' => [
+                    'kode_pembayaran' => $request->kode_pembayaran,
+                    'payment_method' => $pembayaran->metode,
+                    'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
+                    'qr_code' => $paymentData['qrCode'] ?? null,
+                    'qris_url' => $paymentData['qrisUrl'] ?? null,
+                    'virtual_account' => $paymentData['vaCode'] ?? $paymentData['vaNumber'] ?? null,
+                    'bank_name' => $paymentData['bankName'] ?? null,
+                    'amount' => $pembayaran->jumlah,
+                    'simulation' => true,
+                    'real_paylabs_response' => true,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Payment simulation failed: ' . $e->getMessage(), [
+                'kode_pembayaran' => $request->kode_pembayaran,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat pembayaran dengan Paylabs: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

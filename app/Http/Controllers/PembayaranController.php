@@ -561,6 +561,7 @@ class PembayaranController extends Controller
 
     /**
      * Simulasi pembayaran dengan response asli dari Paylabs (untuk testing)
+     * Sekarang menggunakan callback yang sama dengan membership untuk konsistensi
      */
     public function simulasiPembayaran($kodePembayaran, $status = 'berhasil')
     {
@@ -616,11 +617,9 @@ class PembayaranController extends Controller
 
             $paymentData = $paylabsResponse['payment_data'] ?? [];
 
-            // Update pembayaran dengan response asli dari Paylabs DAN mark as successful for simulation
-            $pembayaran->update([
-                'status' => 'berhasil', // Mark as success for simulation testing
-                'paylabs_status' => 'PAID',
-                'waktu_pembayaran' => now(),
+            // Update pembayaran dengan response asli dari Paylabs DAN force success untuk simulasi testing
+            // (seperti yang dilakukan membership simulation)
+            $updateData = [
                 'paylabs_transaction_id' => $paylabsResponse['transaction_id'] ?? null,
                 'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
                 'qr_code' => $paymentData['qrCode'] ?? null,
@@ -629,20 +628,45 @@ class PembayaranController extends Controller
                 'nama_bank' => $paymentData['bankName'] ?? null,
                 'paylabs_response' => json_encode($paymentData),
                 'paylabs_raw_response' => json_encode($paylabsResponse),
+                // Selalu force success untuk simulasi testing (seperti membership)
+                'status' => 'berhasil',
+                'paylabs_status' => 'PAID',
+                'waktu_pembayaran' => now(),
+            ];
+
+            Log::info('Updating payment with real Paylabs response', [
+                'kode_pembayaran' => $kodePembayaran,
+                'update_data' => $updateData,
+                'forced_success' => $status === 'berhasil'
             ]);
 
-            // Update pemesanan setelah pembayaran berhasil (for simulation)
-            $this->updatePemesananAfterPayment($pembayaran);
+            $result = $pembayaran->update($updateData);
 
-            // Add loyalty points
-            $user = User::find($pembayaran->pemesanan->customer_id);
-            if ($user) {
-                $this->addLoyaltyPoints($user);
+            // Force refresh and verify
+            $pembayaran->refresh();
+
+            Log::info('Payment status after update', [
+                'kode_pembayaran' => $kodePembayaran,
+                'status' => $pembayaran->status,
+                'paylabs_status' => $pembayaran->paylabs_status,
+                'update_result' => $result
+            ]);
+
+            // Jika diminta untuk force berhasil (untuk testing), update pemesanan
+            if ($status === 'berhasil' && $pembayaran->status === 'berhasil') {
+                // Update pemesanan setelah pembayaran berhasil (for simulation)
+                $this->updatePemesananAfterPayment($pembayaran);
+
+                // Add loyalty points
+                $user = User::find($pembayaran->pemesanan->customer_id);
+                if ($user) {
+                    $this->addLoyaltyPoints($user);
+                }
             }
 
             DB::commit();
 
-            Log::info('Payment simulation completed successfully with real Paylabs response', [
+            Log::info('Payment simulation completed with real Paylabs response', [
                 'kode_pembayaran' => $kodePembayaran,
                 'paylabs_transaction_id' => $paylabsResponse['transaction_id'] ?? null,
                 'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
@@ -650,12 +674,15 @@ class PembayaranController extends Controller
                 'qr_code_available' => !empty($paymentData['qrCode']),
                 'va_available' => !empty($paymentData['vaCode'] ?? $paymentData['vaNumber']),
                 'simulation_completed' => true,
+                'forced_success' => $status === 'berhasil'
             ]);
 
-            return response()->json([
+            // Return view for web route instead of JSON
+            return view('customer.pembayaran-simulasi', [
                 'success' => true,
-                'message' => 'Simulasi pembayaran berhasil! Response asli Paylabs diterima dan pembayaran diselesaikan.',
-                'data' => [
+                'message' => 'Simulasi pembayaran berhasil! Response asli Paylabs diterima.',
+                'pembayaran' => $pembayaran,
+                'payment_data' => [
                     'kode_pembayaran' => $kodePembayaran,
                     'payment_method' => $pembayaran->metode,
                     'platform_trade_no' => $paymentData['platformTradeNo'] ?? null,
@@ -666,8 +693,9 @@ class PembayaranController extends Controller
                     'amount' => $pembayaran->jumlah,
                     'simulation' => true,
                     'real_paylabs_response' => true,
-                    'points_added' => $user ? 100 : 0,
-                    'loyalty_points_added' => $user ? $this->calculateLoyaltyPoints($user->membership_level) : 0,
+                    'status_forced' => $status === 'berhasil',
+                    'points_added' => ($status === 'berhasil' && $user) ? 100 : 0,
+                    'loyalty_points_added' => ($status === 'berhasil' && $user) ? $this->calculateLoyaltyPoints($user->membership_level) : 0,
                     'membership_level' => $user ? $user->membership_level : null
                 ]
             ]);
@@ -680,10 +708,13 @@ class PembayaranController extends Controller
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
+            // Return error view for web route
+            return view('customer.pembayaran-simulasi', [
                 'success' => false,
-                'message' => 'Gagal membuat pembayaran dengan Paylabs: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Gagal membuat pembayaran dengan Paylabs: ' . $e->getMessage(),
+                'pembayaran' => $pembayaran ?? null,
+                'payment_data' => null
+            ]);
         }
     }
 }
