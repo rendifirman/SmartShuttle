@@ -56,7 +56,6 @@ class GoogleAuthController extends Controller
     public function handleGoogleCallback(Request $request)
     {
         try {
-
             // Decode query string to handle URL encoded parameters
             $code = $request->input('code');
             $state = $request->input('state');
@@ -66,7 +65,6 @@ class GoogleAuthController extends Controller
             }
 
             $googleUser = Socialite::driver('google')->user();
-
 
             \Log::info('Google OAuth Response:', [
                 'id' => $googleUser->getId(),
@@ -78,12 +76,13 @@ class GoogleAuthController extends Controller
             $user = User::where('google_id', $googleUser->getId())->first();
 
             if (!$user) {
-                // Cek apakah email sudah terdaftar (untuk menghindari duplikat)
+                // Validasi format email
                 $userEmail = filter_var($googleUser->getEmail(), FILTER_VALIDATE_EMAIL);
                 if (!$userEmail) {
                     throw new \Exception('Invalid email format from Google');
                 }
 
+                // Cek apakah email sudah terdaftar (untuk menghindari duplikat)
                 $user = User::where('email', $userEmail)->first();
 
                 if ($user) {
@@ -134,9 +133,7 @@ class GoogleAuthController extends Controller
                         DB::rollBack();
                         \Log::error('Failed to create user via Google:', ['error' => $e->getMessage()]);
                         throw $e;
-
                     }
-
                 }
             }
 
@@ -147,10 +144,10 @@ class GoogleAuthController extends Controller
                     ->withErrors('Akun Anda dinonaktifkan. Silakan hubungi administrator.');
             }
 
-            // Login user using Auth::guard('web') dan session storage
+            // Login user using Auth::guard('customer') dan session storage
             Auth::guard('customer')->login($user, true);
 
-            // Store user data di session seperti CustomerController
+            // Store user data di session
             session()->put('user', [
                 'id' => $user->id,
                 'name' => $user->name,

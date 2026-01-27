@@ -192,11 +192,44 @@ class User extends Authenticatable implements MustVerifyEmail
         return $pointsNeeded > 0 ? $pointsNeeded : 0;
     }
 
-     public function getAvatarUrlAttribute()
+    /**
+     * Get avatar URL dengan fallback ke default
+     * PASTIKAN METHOD INI ADA DI MODEL USER
+     */
+    public function getAvatarUrlAttribute()
     {
         // Jika avatar kosong, return null (akan ditangani di view)
-        if (empty($this->avatar)) {
+        if (empty($this->attributes['avatar'] ?? null)) {
             return null;
+        }
+
+        // Jika avatar sudah berupa URL eksternal (Google), return langsung
+        if (filter_var($this->attributes['avatar'], FILTER_VALIDATE_URL)) {
+            return $this->attributes['avatar'];
+        }
+
+        // Cek file avatar di storage
+        $disk = Storage::disk('public');
+        $avatarPath = $this->attributes['avatar'];
+        
+        if ($disk->exists($avatarPath)) {
+            return $disk->url($avatarPath);
+        }
+
+        // File tidak ditemukan, return null
+        return null;
+    }
+
+    /**
+     * Method untuk mendapatkan URL avatar dengan fallback ke default
+     * Digunakan di view untuk menghindari broken image
+     * (PERTAHANKAN METHOD INI - HAPUS YANG LAIN)
+     */
+    public function getSafeAvatarUrl()
+    {
+        // Jika avatar kosong, return default
+        if (empty($this->avatar)) {
+            return asset('images/default-avatar.png');
         }
 
         // Jika avatar sudah berupa URL eksternal (Google), return langsung
@@ -204,18 +237,21 @@ class User extends Authenticatable implements MustVerifyEmail
             return $this->avatar;
         }
 
-        // Cek file avatar di storage
-        $disk = Storage::disk('public');
-        if ($disk->exists($this->avatar)) {
-            return $disk->url($this->avatar);
+        // Cek file di storage
+        try {
+            if (Storage::disk('public')->exists($this->avatar)) {
+                return Storage::disk('public')->url($this->avatar);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error getting avatar URL: ' . $e->getMessage());
         }
 
-        // File tidak ditemukan, return null
-        return null;
+        // Fallback ke default
+        return asset('images/default-avatar.png');
     }
 
     // Method untuk mendapatkan inisial nama
-      public function getInitialsAttribute()
+    public function getInitialsAttribute()
     {
         $words = explode(' ', $this->name);
         $initials = '';
@@ -250,29 +286,13 @@ class User extends Authenticatable implements MustVerifyEmail
         }
     }
 
-     /**
-     * Method untuk mendapatkan URL avatar dengan fallback
-     * Digunakan di view untuk menghindari broken image
-     */
-    public function getSafeAvatarUrl()
-    {
-        $url = $this->avatar_url;
-        
-        // Jika URL tidak valid atau file tidak ditemukan, return default avatar
-        if (!$url || !filter_var($url, FILTER_VALIDATE_URL)) {
-            return asset('images/default-avatar.png');
-        }
-        
-        return $url;
-    }
-
     /**
      * Method untuk mendapatkan URL avatar atau inisial untuk tampilan
      */
     public function getAvatarOrInitials()
     {
         return [
-            'has_avatar' => !empty($this->avatar_url),
+            'has_avatar' => !empty($this->avatar),
             'avatar_url' => $this->getSafeAvatarUrl(),
             'initials' => $this->initials
         ];

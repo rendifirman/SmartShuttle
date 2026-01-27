@@ -14,8 +14,7 @@ return new class extends Migration
         Schema::create('riwayat_cek_harga', function (Blueprint $table) {
             $table->id();
             $table->string('session_id')->nullable();
-            $table->integer('user_id')->nullable();
-            $table->string('kota_asal');
+            $table->unsignedBigInteger('user_id')->nullable();            $table->string('kota_asal');
             $table->string('kota_tujuan');
             $table->decimal('berat', 8, 2);
             $table->decimal('panjang', 8, 2)->nullable();

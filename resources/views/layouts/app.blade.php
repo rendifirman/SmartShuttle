@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'Smart Shuttle' }}</title>
-
+    
     <!-- CSS OFFLINE -->
     <link rel="stylesheet" href="{{ asset('css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
+    
     <style>
         :root {
             --primary-color: #00215E;
@@ -21,14 +21,14 @@
             --whatsapp-green: #25D366;
             --phone-blue: #3498DB;
         }
-
+        
         /* RESET UTAMA */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--light-bg);
@@ -39,13 +39,16 @@
             flex-direction: column;
         }
 
-        /* NAVBAR - TIDAK STICKY LAGI */
+        /* FIX NAVBAR - PASTIKAN DI TENGAH */
         .navbar-main-wrapper {
             width: 100%;
             background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(0, 0, 0, 0.1);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            position: relative; /* Diubah dari 'sticky' menjadi 'relative' */
+            position: sticky;
+            top: 0;
             z-index: 1000;
             display: flex;
             justify-content: center;
@@ -126,7 +129,7 @@
         .modal-backdrop {
             z-index: 1040;
         }
-
+        
         .modal {
             z-index: 1050;
         }
@@ -222,7 +225,7 @@
                 text-align: center;
                 padding: 1rem 0;
             }
-
+            
             .navbar-collapse {
                 background: white;
                 border-radius: 8px;
@@ -235,7 +238,7 @@
             .navbar-main-container {
                 padding: 0 15px !important;
             }
-
+            
             .floating-cs-container {
                 bottom: 20px;
                 right: 20px;
@@ -255,11 +258,11 @@
             .navbar-main-container {
                 padding: 0 10px !important;
             }
-
+            
             .navbar-brand {
                 font-size: 1.2rem;
             }
-
+            
             .floating-cs-container {
                 bottom: 15px;
                 right: 15px;
@@ -275,7 +278,7 @@
             }
         }
     </style>
-
+    
     @stack('styles')
 </head>
 <body>
@@ -304,33 +307,33 @@
         @php
             // Tentukan apakah halaman saat ini adalah Beranda atau Contact
             $showFloatingCs = false;
-
+            
             // Dapatkan current route name
             $routeName = Route::currentRouteName();
-
+            
             // Dapatkan current path/URL
             $currentPath = request()->path();
             $currentUrl = url()->current();
-
+            
             // Cek apakah halaman beranda
-            $isBeranda = $routeName === 'customer.beranda' ||
-                         $currentPath === 'customer/beranda' ||
+            $isBeranda = $routeName === 'customer.beranda' || 
+                         $currentPath === 'customer/beranda' || 
                          $currentPath === 'beranda' ||
                          $currentPath === '/' ||
                          str_contains($currentUrl, 'beranda');
-
+            
             // Cek apakah halaman contact
-            $isContact = $routeName === 'customer.contact' ||
-                         $currentPath === 'customer/contact' ||
+            $isContact = $routeName === 'customer.contact' || 
+                         $currentPath === 'customer/contact' || 
                          $currentPath === 'contact' ||
                          str_contains($currentUrl, 'contact');
-
+            
             // Jika salah satu kondisi terpenuhi, tampilkan floating button
             if ($isBeranda || $isContact) {
                 $showFloatingCs = true;
             }
         @endphp
-
+        
         @if($showFloatingCs)
             @if(isset($masterKontak) && $masterKontak)
                 <div class="floating-cs-container">
@@ -385,7 +388,7 @@
 
     <!-- JavaScript OFFLINE -->
     <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
-
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Inisialisasi modal Bootstrap
@@ -401,7 +404,7 @@
             // Highlight menu aktif
             const currentPath = window.location.pathname;
             const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
-
+            
             navLinks.forEach(link => {
                 if (link.getAttribute('href') === currentPath) {
                     link.classList.add('active');
@@ -410,6 +413,20 @@
                 }
             });
 
+            // Debug: Cek posisi navbar
+            const navbar = document.querySelector('.navbar-main-wrapper');
+            if (navbar) {
+                console.log('Navbar position:', navbar.getBoundingClientRect());
+                console.log('Navbar width:', navbar.offsetWidth);
+                console.log('Viewport width:', window.innerWidth);
+                
+                // Force centering
+                navbar.style.left = '0';
+                navbar.style.right = '0';
+                navbar.style.marginLeft = 'auto';
+                navbar.style.marginRight = 'auto';
+            }
+            
             // Debug: Cek apakah floating button ditampilkan
             const floatingContainer = document.querySelector('.floating-cs-container');
             if (floatingContainer) {
@@ -419,7 +436,7 @@
             }
         });
     </script>
-
+    
     @stack('scripts')
 </body>
 </html>
