@@ -79,41 +79,74 @@ class AdminController extends Controller
 
     public function kontakPerusahaan()
     {
-        $kontak = \App\Models\MMasterKontak::getDataKontak();
+        $kontak = \App\Models\MMasterKontak::getFirstOrCreate();
         return view('admin.kontakperusahaan', compact('kontak'));
     }
 
     public function updateKontakPerusahaan(Request $request, $id)
     {
-        $kontak = \App\Models\MMasterKontak::findOrFail($id);
+        try {
+            $kontak = \App\Models\MMasterKontak::findOrFail($id);
+            
+            $validated = $request->validate([
+                'nama_perusahaan' => 'required|string|max:255',
+                'deskripsi_singkat' => 'required|string|max:500',
+                'email_utama' => 'required|email|max:255',
+                'email_dukungan' => 'nullable|email|max:255',
+                'telepon_utama' => 'required|string|max:20',
+                'telepon_dukungan' => 'nullable|string|max:20',
+                'alamat_kantor_pusat' => 'required|string|max:500',
+                'facebook_url' => 'nullable|url|max:255',
+                'instagram_url' => 'nullable|url|max:255',
+                'twitter_url' => 'nullable|url|max:255',
+                'jam_operasional' => 'required|string',
+                'link_kebijakan_privasi' => 'nullable|url|max:255',
+                'link_syarat_ketentuan' => 'nullable|url|max:255',
+                'status' => 'required|in:active,inactive',
+            ]);
 
-        $request->validate([
-            'nama_perusahaan' => 'required|string|max:255',
-            'deskripsi_singkat' => 'required|string|max:500',
-            'email_utama' => 'required|email|max:255',
-            'email_dukungan' => 'nullable|email|max:255',
-            'telepon_utama' => 'required|string|max:20',
-            'telepon_dukungan' => 'nullable|string|max:20',
-            'alamat_kantor_pusat' => 'required|string|max:500',
-            'facebook_url' => 'nullable|url|max:255',
-            'instagram_url' => 'nullable|url|max:255',
-            'twitter_url' => 'nullable|url|max:255',
-            'jam_operasional' => 'nullable|array',
-            'link_kebijakan_privasi' => 'nullable|url|max:255',
-            'link_syarat_ketentuan' => 'nullable|url|max:255',
-            'status' => 'required|in:active,inactive',
-        ]);
+            // Parse jam_operasional jika dalam format JSON string
+            if (isset($validated['jam_operasional'])) {
+                // Jika sudah string JSON, langsung gunakan
+                if (!is_array($validated['jam_operasional'])) {
+                    // Coba decode untuk validasi
+                    $decoded = json_decode($validated['jam_operasional'], true);
+                    if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
+                        // Jika bukan JSON valid, buat format default
+                        $validated['jam_operasional'] = json_encode([
+                            ['hari' => 'Senin - Jumat', 'jam' => '08:00 - 17:00'],
+                            ['hari' => 'Sabtu', 'jam' => '08:00 - 15:00'],
+                            ['hari' => 'Minggu', 'jam' => 'Tutup']
+                        ]);
+                    }
+                }
+            }
 
-        $data = $request->all();
+            $kontak->update($validated);
 
-        // Handle jam_operasional array
-        if ($request->has('jam_operasional') && is_array($request->jam_operasional)) {
-            $data['jam_operasional'] = json_encode($request->jam_operasional);
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Kontak perusahaan berhasil diperbarui.',
+                    'data' => $kontak
+                ]);
+            }
+
+            return redirect()->route('admin.kontakperusahaan')
+                ->with('success', 'Kontak perusahaan berhasil diperbarui.');
+
+        } catch (\Exception $e) {
+            \Log::error('Error updating kontak perusahaan: ' . $e->getMessage());
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
-
-        $kontak->update($data);
-
-        return redirect()->route('admin.kontakperusahaan')->with('success', 'Kontak perusahaan berhasil diperbarui.');
     }
 
     public function pusat()
@@ -434,7 +467,7 @@ class AdminController extends Controller
 
     // ========================= END OUTLET CRUD =========================
 
-   public function promo(Request $request)
+    public function promo(Request $request)
     {
         // Get promos with filtering
         $query = Promo::query();
@@ -516,7 +549,8 @@ class AdminController extends Controller
             'promoTypes'
         ));
     }
-      public function createPromo()
+
+    public function createPromo()
     {
         return view('admin.promo-create');
     }
@@ -667,7 +701,6 @@ class AdminController extends Controller
 
         return redirect()->route('admin.promo')->with('success', 'Promo berhasil dihapus.');
     }
-    // Promo CRUD Methods
 
     public function armada(Request $request)
     {
@@ -834,7 +867,7 @@ class AdminController extends Controller
         $shuttle = Shuttle::findOrFail($id);
 
         // Check if shuttle has active bookings
-        if ($shuttle->jadwals()->whereHas('pemesanan', function($query) {
+        if ($shuttle->jadwals()->whereHas('kursiTerpesan.pemesanan', function($query) {
             $query->whereNotIn('status', ['dibatalkan', 'expired']);
         })->exists()) {
             return redirect()->route('admin.armada')->with('error', 'Armada tidak dapat dihapus karena masih memiliki pemesanan aktif.');
@@ -992,16 +1025,29 @@ class AdminController extends Controller
 
     public function destroyRute($id)
     {
-        $rute = Rute::findOrFail($id);
+        try {
+            $rute = Rute::findOrFail($id);
 
-        // Check if rute has active schedules
-        if ($rute->jadwals()->count() > 0) {
-            return redirect()->route('admin.rute')->with('error', 'Rute tidak dapat dihapus karena masih memiliki jadwal aktif.');
+            // Check if rute has active schedules
+            if ($rute->jadwals()->count() > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Rute tidak dapat dihapus karena masih memiliki jadwal aktif.'
+                ], 400);
+            }
+
+            $rute->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Rute berhasil dihapus.'
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
-
-        $rute->delete();
-
-        return redirect()->route('admin.rute')->with('success', 'Rute berhasil dihapus.');
     }
 
     public function showRute($id)

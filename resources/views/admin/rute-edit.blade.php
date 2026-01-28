@@ -356,6 +356,8 @@ textarea {
 document.addEventListener('DOMContentLoaded', function() {
     // Format harga input
     const hargaInput = document.getElementById('harga_dasar');
+    const jarakInput = document.getElementById('jarak');
+    const formElement = document.querySelector('form');
 
     // Format harga saat load halaman
     if (hargaInput.value) {
@@ -378,6 +380,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Hapus format saat input mendapatkan fokus
     hargaInput.addEventListener('focus', function() {
         this.value = this.value.replace(/[^\d]/g, '');
+    });
+
+    // Handle form submission to clean up formatted values
+    formElement.addEventListener('submit', function(e) {
+        // Remove formatting from harga_dasar
+        const hargaValue = hargaInput.value.replace(/[^\d]/g, '');
+        hargaInput.value = hargaValue || '0';
+        
+        // Remove formatting from jarak
+        const jarakValue = jarakInput.value.replace(/[^\d.,]/g, '');
+        jarakInput.value = jarakValue || '0';
     });
 
     // Validasi durasi format

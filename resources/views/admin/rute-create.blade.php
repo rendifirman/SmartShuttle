@@ -356,6 +356,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const kotaAsalInput = document.getElementById('kota_asal');
     const kotaTujuanInput = document.getElementById('kota_tujuan');
     const kodeRuteInput = document.getElementById('kode_rute');
+    const formElement = document.querySelector('form');
 
     function generateKodeRute() {
         if (kotaAsalInput.value && kotaTujuanInput.value) {
@@ -373,6 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Format harga input
     const hargaInput = document.getElementById('harga_dasar');
+    const jarakInput = document.getElementById('jarak');
 
     // Format saat input kehilangan fokus
     hargaInput.addEventListener('blur', function() {
@@ -387,6 +389,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Hapus format saat input mendapatkan fokus
     hargaInput.addEventListener('focus', function() {
         this.value = this.value.replace(/[^\d]/g, '');
+    });
+
+    // Handle form submission to clean up formatted values
+    formElement.addEventListener('submit', function(e) {
+        // Remove formatting from harga_dasar
+        const hargaValue = hargaInput.value.replace(/[^\d]/g, '');
+        hargaInput.value = hargaValue || '0';
+        
+        // Remove formatting from jarak
+        const jarakValue = jarakInput.value.replace(/[^\d.,]/g, '');
+        jarakInput.value = jarakValue || '0';
     });
 
     // Validasi durasi format

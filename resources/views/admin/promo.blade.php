@@ -43,11 +43,13 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
 }
 
 .btn-add:hover {
     background: #0d74d1;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(30, 136, 229, 0.2);
 }
 
 /* ================= SUMMARY ================= */
@@ -64,6 +66,11 @@ body {
     padding: 20px;
     text-align: center;
     box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    transition: transform 0.3s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-2px);
 }
 
 .summary-card h3 {
@@ -101,11 +108,20 @@ body {
     border: 1px solid #ddd;
     font-size: 14px;
     width: 100%;
+    transition: border-color 0.3s;
+}
+
+.filter-box select:focus,
+.filter-box input:focus {
+    outline: none;
+    border-color: #1e88e5;
+    box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
 }
 
 .filter-action {
     display: flex;
     gap: 15px;
+    align-items: center;
 }
 
 .filter-action input {
@@ -114,6 +130,13 @@ body {
     border-radius: 10px;
     border: 1px solid #ddd;
     font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.filter-action input:focus {
+    outline: none;
+    border-color: #1e88e5;
+    box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
 }
 
 .btn-filter {
@@ -124,11 +147,16 @@ body {
     border-radius: 25px;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .btn-filter:hover {
     background: #e55c00;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 106, 0, 0.2);
 }
 
 /* ================= TABLE ================= */
@@ -137,6 +165,11 @@ body {
     border-radius: 14px;
     padding: 20px;
     box-shadow: 0 4px 14px rgba(0,0,0,.08);
+    margin-bottom: 20px;
+    /* Hapus overflow-x: auto dari sini */
+}
+
+.table-content-wrapper {
     overflow-x: auto;
     margin-bottom: 20px;
 }
@@ -145,34 +178,56 @@ body {
     display: flex;
     gap: 10px;
     margin-bottom: 15px;
+    flex-wrap: wrap;
 }
 
 .btn-excel {
     background: #12b600;
     color: #fff;
     border-radius: 20px;
-    padding: 8px 18px;
+    padding: 10px 20px;
     border: none;
     font-weight: 600;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-excel:hover {
+    background: #0fa000;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(18, 182, 0, 0.2);
 }
 
 .btn-pdf {
     background: #ddd;
     color: #333;
     border-radius: 20px;
-    padding: 8px 18px;
+    padding: 10px 20px;
     border: none;
     font-weight: 600;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-pdf:hover {
+    background: #ccc;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
     font-size: 13px;
+    min-width: 1000px;
 }
 
 thead {
@@ -186,12 +241,18 @@ th {
     color: #333;
     border-bottom: 2px solid #ddd;
     font-size: 13px;
+    white-space: nowrap;
 }
 
 td {
     padding: 15px;
     border-bottom: 1px solid #eee;
     font-size: 13px;
+    vertical-align: middle;
+}
+
+tbody tr {
+    transition: background-color 0.2s ease;
 }
 
 tbody tr:hover {
@@ -207,21 +268,25 @@ tbody tr:hover {
     display: inline-block;
     min-width: 80px;
     text-align: center;
+    line-height: 1.2;
 }
 
 .status-aktif {
     background: #b8f0a3;
     color: #1e7e34;
+    border: 1px solid #a3e891;
 }
 
 .status-nonaktif {
     background: #ff9a9a;
     color: #8b0000;
+    border: 1px solid #ff8080;
 }
 
 .status-expired {
     background: #ffd8a3;
     color: #8b5700;
+    border: 1px solid #ffc880;
 }
 
 /* Kategori Badges */
@@ -233,21 +298,25 @@ tbody tr:hover {
     display: inline-block;
     min-width: 80px;
     text-align: center;
+    line-height: 1.2;
 }
 
 .kategori-umum {
     background: #a3d8ff;
     color: #0056b3;
+    border: 1px solid #80c6ff;
 }
 
 .kategori-keluarga {
     background: #ffa3d1;
     color: #8b0053;
+    border: 1px solid #ff80c0;
 }
 
 .kategori-membership {
     background: #d8a3ff;
     color: #5e008b;
+    border: 1px solid #c980ff;
 }
 
 /* Tipe Badges */
@@ -259,106 +328,267 @@ tbody tr:hover {
     display: inline-block;
     min-width: 80px;
     text-align: center;
+    line-height: 1.2;
 }
 
 .tipe-all {
     background: #a3ffb8;
     color: #008b1e;
+    border: 1px solid #80ff9e;
 }
 
 .tipe-shuttle {
     background: #a3e0ff;
     color: #00608b;
+    border: 1px solid #80d0ff;
 }
 
 .tipe-paket {
     background: #ffd8a3;
     color: #8b5e00;
+    border: 1px solid #ffc880;
 }
 
 .tipe-sewa {
     background: #ffa3a3;
     color: #8b0000;
+    border: 1px solid #ff8080;
 }
 
 /* Discount Display */
 .discount-value {
     font-weight: 600;
     color: #0b2a4a;
+    display: block;
+    font-size: 14px;
 }
 
 .discount-type {
     font-size: 11px;
     color: #777;
     display: block;
+    margin-top: 2px;
 }
 
-/* Action Buttons */
+/* ================= ACTION BUTTONS IMPROVED ================= */
+.action-container {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
 .btn-action {
-    padding: 6px 14px;
+    padding: 8px 16px;
     border-radius: 8px;
     border: none;
     cursor: pointer;
-    font-size: 12px;
-    margin-right: 5px;
-    transition: all 0.3s;
+    font-size: 13px;
     font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 80px;
+    text-decoration: none;
+    text-align: center;
 }
 
+.btn-action i {
+    font-size: 12px;
+}
+
+/* View Button */
 .btn-view {
-    background: #888;
+    background: linear-gradient(135deg, #6c757d, #5a6268);
     color: #fff;
+    border: 1px solid #5a6268;
 }
 
 .btn-view:hover {
-    background: #777;
+    background: linear-gradient(135deg, #5a6268, #495057);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
 }
 
+/* Edit Button */
 .btn-edit {
-    background: #f9b000;
+    background: linear-gradient(135deg, #f9b000, #e09b00);
     color: #fff;
+    border: 1px solid #e09b00;
 }
 
 .btn-edit:hover {
-    background: #e09b00;
+    background: linear-gradient(135deg, #e09b00, #c78900);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(249, 176, 0, 0.3);
 }
 
+/* Delete Button */
 .btn-delete {
-    background: #dc3545;
+    background: linear-gradient(135deg, #dc3545, #c82333);
     color: #fff;
+    border: 1px solid #c82333;
 }
 
 .btn-delete:hover {
-    background: #c82333;
+    background: linear-gradient(135deg, #c82333, #b21f2d);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }
 
-/* ================= PAGINATION ================= */
-.pagination {
-    margin-top: 20px;
+/* Action Button Group - Desktop */
+.action-group {
     display: flex;
-    justify-content: center;
+    gap: 6px;
+}
+
+/* Mobile Action Menu */
+.mobile-action-menu {
+    display: none;
+    position: relative;
+}
+
+.mobile-action-toggle {
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mobile-action-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    min-width: 150px;
+    z-index: 100;
+    overflow: hidden;
+}
+
+.mobile-action-dropdown.show {
+    display: block;
+}
+
+.mobile-action-item {
+    display: flex;
     align-items: center;
     gap: 10px;
+    padding: 10px 15px;
+    text-decoration: none;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
 }
 
-.pagination button {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    background: white;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 13px;
+.mobile-action-item:last-child {
+    border-bottom: none;
 }
 
-.pagination button.active {
-    background: #0b2a4a;
-    color: white;
-    border-color: #0b2a4a;
+.mobile-action-item:hover {
+    background-color: #f8f9fa;
+}
+
+.mobile-action-item i {
+    width: 16px;
+    text-align: center;
+}
+
+/* Member Only Indicator */
+.member-indicator {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #fff3cd;
+    color: #856404;
+    border-radius: 10px;
+    font-size: 11px;
+    margin-top: 4px;
+    border: 1px solid #ffeaa7;
+}
+
+/* ================= PAGINATION - FIXED POSITION ================= */
+.pagination-wrapper {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    width: 100%;
+    overflow: visible !important;
+}
+
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    width: 100%;
+    position: relative;
+    z-index: 1;
 }
 
 .pagination-info {
     font-size: 13px;
     color: #666;
+    flex-shrink: 0;
+}
+
+.pagination {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    flex-grow: 1;
+    min-width: 0;
+    overflow: visible !important;
+}
+
+.pagination-btn {
+    padding: 8px 14px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+    min-width: 40px;
+    text-align: center;
+    text-decoration: none;
+    color: #333;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.pagination-btn:hover:not(.active):not(:disabled) {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+    text-decoration: none;
+}
+
+.pagination-btn.active {
+    background: #0b2a4a;
+    color: white;
+    border-color: #0b2a4a;
+    cursor: default;
+}
+
+.pagination-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-btn i {
+    font-size: 12px;
 }
 
 /* ================= FORM CARD ================= */
@@ -453,7 +683,7 @@ textarea {
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -461,6 +691,7 @@ textarea {
 
 .btn-save:hover {
     background: #1a3a5f;
+    transform: translateY(-1px);
 }
 
 .btn-reset {
@@ -472,7 +703,7 @@ textarea {
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -480,6 +711,7 @@ textarea {
 
 .btn-reset:hover {
     background: #e55c00;
+    transform: translateY(-1px);
 }
 
 .btn-cancel {
@@ -491,7 +723,7 @@ textarea {
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -499,6 +731,7 @@ textarea {
 
 .btn-cancel:hover {
     background: #5a6268;
+    transform: translateY(-1px);
 }
 
 /* ================= DETAIL CARD ================= */
@@ -573,10 +806,12 @@ textarea {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    transition: all 0.3s ease;
 }
 
 .btn-back:hover {
     background: #5a6268;
+    transform: translateY(-1px);
 }
 
 /* ================= ALERTS ================= */
@@ -585,6 +820,21 @@ textarea {
     border-radius: 10px;
     margin-bottom: 20px;
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .alert-success {
@@ -611,6 +861,8 @@ textarea {
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(2px);
 }
 
 .modal-content {
@@ -618,15 +870,29 @@ textarea {
     padding: 30px;
     border-radius: 10px;
     max-width: 500px;
-    width: 90%;
+    width: 100%;
     max-height: 80vh;
     overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .modal-actions {
     display: flex;
     gap: 10px;
     margin-top: 20px;
+    justify-content: flex-end;
 }
 
 /* ================= RESPONSIVE ================= */
@@ -678,6 +944,32 @@ textarea {
         align-items: flex-start;
         gap: 15px;
     }
+    
+    /* Mobile Action Menu */
+    .action-group {
+        display: none;
+    }
+    
+    .mobile-action-menu {
+        display: block;
+    }
+    
+    .btn-action {
+        width: 100%;
+        justify-content: flex-start;
+        padding: 10px 15px;
+    }
+    
+    /* Pagination Mobile */
+    .pagination-container {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .pagination-info {
+        margin-bottom: 10px;
+    }
 }
 
 @media (max-width: 576px) {
@@ -702,14 +994,61 @@ textarea {
     }
 
     .btn-action {
-        padding: 5px 10px;
-        font-size: 11px;
-        margin-bottom: 5px;
+        padding: 10px 15px;
+        font-size: 13px;
     }
 
     .detail-grid {
         grid-template-columns: 1fr;
     }
+    
+    .action-container {
+        justify-content: flex-start;
+    }
+    
+    /* Pagination Small Mobile */
+    .pagination {
+        gap: 5px;
+    }
+    
+    .pagination-btn {
+        padding: 6px 10px;
+        min-width: 35px;
+        font-size: 12px;
+    }
+}
+
+/* Tablet Landscape */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .action-group {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .btn-action {
+        min-width: 70px;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+}
+
+/* Custom Scrollbar for Table */
+.table-content-wrapper::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-content-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-content-wrapper::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.table-content-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 </style>
 @endpush
@@ -730,12 +1069,14 @@ textarea {
         <!-- Flash Messages -->
         @if(session('success'))
             <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i>
                 {{ session('success') }}
             </div>
         @endif
 
         @if(session('error'))
             <div class="alert alert-error">
+                <i class="fas fa-exclamation-circle"></i>
                 {{ session('error') }}
             </div>
         @endif
@@ -795,8 +1136,10 @@ textarea {
 
                 <div class="filter-action">
                     <input type="text" name="search" id="search-promo" placeholder="Cari Kode, Nama Promo" value="{{ request('search') }}">
-                    <button type="submit" class="btn-filter">Filter</button>
-                    <a href="{{ route('admin.promo') }}" class="btn-cancel" style="padding: 12px 20px; text-decoration: none; display: inline-flex; align-items: center;">
+                    <button type="submit" class="btn-filter">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <a href="{{ route('admin.promo') }}" class="btn-cancel" style="padding: 12px 20px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
                         <i class="fas fa-redo"></i> Reset
                     </a>
                 </div>
@@ -806,134 +1149,237 @@ textarea {
         <!-- TABLE -->
         <div class="table-wrapper">
             <div class="table-actions">
-                <button class="btn-excel" onclick="exportExcel()">X | Excel</button>
-                <button class="btn-pdf" onclick="exportPDF()">M | PDF</button>
+                <button class="btn-excel" onclick="exportExcel()">
+                    <i class="fas fa-file-excel"></i> Excel
+                </button>
+                <button class="btn-pdf" onclick="exportPDF()">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </button>
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Kode Promo</th>
-                        <th>Nama Promo</th>
-                        <th>Diskon</th>
-                        <th>Kategori</th>
-                        <th>Tipe</th>
-                        <th>Tanggal Mulai</th>
-                        <th>Tanggal Berakhir</th>
-                        <th>Kuota</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="promo-table-body">
-                    @forelse($promos as $promo)
-                    <tr>
-                        <td>
-                            <strong>{{ $promo->kode_promo }}</strong>
-                            @if($promo->khusus_member)
-                                <br><small class="discount-type">Hanya Member</small>
-                            @endif
-                        </td>
-                        <td>{{ $promo->nama_promo }}</td>
-                        <td>
-                            <span class="discount-value">
-                                @if($promo->jenis_diskon == 'persentase')
-                                    {{ $promo->nilai_diskon }}%
+            <!-- Scrollable Table Container -->
+            <div class="table-content-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kode Promo</th>
+                            <th>Nama Promo</th>
+                            <th>Diskon</th>
+                            <th>Kategori</th>
+                            <th>Tipe</th>
+                            <th>Tanggal Mulai</th>
+                            <th>Tanggal Berakhir</th>
+                            <th>Kuota</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="promo-table-body">
+                        @forelse($promos as $promo)
+                        <tr>
+                            <td>
+                                <strong>{{ $promo->kode_promo }}</strong>
+                                @if($promo->khusus_member)
+                                    <div class="member-indicator">Member Only</div>
+                                @endif
+                            </td>
+                            <td>{{ $promo->nama_promo }}</td>
+                            <td>
+                                <span class="discount-value">
+                                    @if($promo->jenis_diskon == 'persentase')
+                                        {{ number_format($promo->nilai_diskon, 0) }}%
+                                    @else
+                                        Rp {{ number_format($promo->nilai_diskon, 0, ',', '.') }}
+                                    @endif
+                                </span>
+                                <small class="discount-type">
+                                    @if($promo->jenis_diskon == 'persentase' && $promo->maksimal_diskon)
+                                        Maks: Rp {{ number_format($promo->maksimal_diskon, 0, ',', '.') }}
+                                    @endif
+                                </small>
+                            </td>
+                            <td>
+                                <span class="kategori-badge kategori-{{ $promo->kategori_promo }}">
+                                    {{ ucfirst($promo->kategori_promo) }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="tipe-badge tipe-{{ $promo->tipe_promo }}">
+                                    {{ ucfirst($promo->tipe_promo) }}
+                                </span>
+                            </td>
+                            <td>{{ \Carbon\Carbon::parse($promo->tanggal_mulai)->format('d/m/Y') }}</td>
+                            <td>{{ \Carbon\Carbon::parse($promo->tanggal_berakhir)->format('d/m/Y') }}</td>
+                            <td>
+                                @if($promo->kuota)
+                                    {{ $promo->terpakai }} / {{ $promo->kuota }}
                                 @else
-                                    Rp {{ number_format($promo->nilai_diskon, 0, ',', '.') }}
+                                    Unlimited
                                 @endif
-                            </span>
-                            <small class="discount-type">
-                                @if($promo->jenis_diskon == 'persentase')
-                                    Maks: Rp {{ number_format($promo->maksimal_diskon, 0, ',', '.') }}
-                                @endif
-                            </small>
-                        </td>
-                        <td>
-                            <span class="kategori-badge kategori-{{ $promo->kategori_promo }}">
-                                {{ ucfirst($promo->kategori_promo) }}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="tipe-badge tipe-{{ $promo->tipe_promo }}">
-                                {{ ucfirst($promo->tipe_promo) }}
-                            </span>
-                        </td>
-                        <td>{{ \Carbon\Carbon::parse($promo->tanggal_mulai)->format('d/m/Y') }}</td>
-                        <td>{{ \Carbon\Carbon::parse($promo->tanggal_berakhir)->format('d/m/Y') }}</td>
-                        <td>
-                            @if($promo->kuota)
-                                {{ $promo->terpakai }} / {{ $promo->kuota }}
-                            @else
-                                Unlimited
-                            @endif
-                        </td>
-                        <td>
-                            @php
-                                $statusClass = 'status-nonaktif';
-                                $statusText = 'Nonaktif';
-                                
-                                if($promo->status) {
-                                    $now = now();
-                                    $startDate = \Carbon\Carbon::parse($promo->tanggal_mulai);
-                                    $endDate = \Carbon\Carbon::parse($promo->tanggal_berakhir);
+                            </td>
+                            <td>
+                                @php
+                                    $statusClass = 'status-nonaktif';
+                                    $statusText = 'Nonaktif';
                                     
-                                    if($now->between($startDate, $endDate)) {
-                                        $statusClass = 'status-aktif';
-                                        $statusText = 'Aktif';
-                                    } else if($now->gt($endDate)) {
-                                        $statusClass = 'status-expired';
-                                        $statusText = 'Expired';
+                                    if($promo->status) {
+                                        $now = now();
+                                        $startDate = \Carbon\Carbon::parse($promo->tanggal_mulai);
+                                        $endDate = \Carbon\Carbon::parse($promo->tanggal_berakhir);
+                                        
+                                        if($now->between($startDate, $endDate)) {
+                                            $statusClass = 'status-aktif';
+                                            $statusText = 'Aktif';
+                                        } else if($now->gt($endDate)) {
+                                            $statusClass = 'status-expired';
+                                            $statusText = 'Expired';
+                                        }
                                     }
-                                }
-                            @endphp
-                            <span class="status-badge {{ $statusClass }}">
-                                {{ $statusText }}
-                            </span>
-                        </td>
-                        <td>
-                            <a href="{{ route('admin.promo.show', $promo->id) }}" class="btn-action btn-view">
-                                <i class="fas fa-eye"></i> View
-                            </a>
-                            <a href="{{ route('admin.promo.edit', $promo->id) }}" class="btn-action btn-edit">
-                                <i class="fas fa-edit"></i> Edit
-                            </a>
-                            <form action="{{ route('admin.promo.destroy', $promo->id) }}" method="POST" style="display: inline;">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn-action btn-delete" onclick="return confirm('Apakah Anda yakin ingin menghapus promo ini?')">
-                                    <i class="fas fa-trash"></i> Hapus
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="10" style="text-align: center; padding: 30px;">
-                            <p style="color: #666;">Tidak ada data promo ditemukan.</p>
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                                @endphp
+                                <span class="status-badge {{ $statusClass }}">
+                                    {{ $statusText }}
+                                </span>
+                            </td>
+                            <td>
+                                <!-- Desktop Action Buttons -->
+                                <div class="action-container">
+                                    <div class="action-group">
+                                        <a href="{{ route('admin.promo.show', $promo->id) }}" class="btn-action btn-view">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <a href="{{ route('admin.promo.edit', $promo->id) }}" class="btn-action btn-edit">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <button type="button" class="btn-action btn-delete" onclick="confirmDelete('{{ $promo->id }}', '{{ $promo->kode_promo }}')">
+                                            <i class="fas fa-trash"></i> Hapus
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Mobile Action Menu -->
+                                    <div class="mobile-action-menu">
+                                        <button class="mobile-action-toggle" onclick="toggleMobileMenu(this)">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                            <span>Aksi</span>
+                                        </button>
+                                        <div class="mobile-action-dropdown">
+                                            <a href="{{ route('admin.promo.show', $promo->id) }}" class="mobile-action-item">
+                                                <i class="fas fa-eye"></i>
+                                                <span>Detail</span>
+                                            </a>
+                                            <a href="{{ route('admin.promo.edit', $promo->id) }}" class="mobile-action-item">
+                                                <i class="fas fa-edit"></i>
+                                                <span>Edit</span>
+                                            </a>
+                                            <button type="button" class="mobile-action-item" onclick="confirmDelete('{{ $promo->id }}', '{{ $promo->kode_promo }}')" style="background: none; border: none; width: 100%; text-align: left; font: inherit; cursor: pointer;">
+                                                <i class="fas fa-trash" style="color: #dc3545;"></i>
+                                                <span style="color: #dc3545;">Hapus</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Delete Form (hidden) -->
+                                    <form id="delete-form-{{ $promo->id }}" action="{{ route('admin.promo.destroy', $promo->id) }}" method="POST" style="display: none;">
+                                        @csrf
+                                        @method('DELETE')
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="10" style="text-align: center; padding: 30px;">
+                                <p style="color: #666;">Tidak ada data promo ditemukan.</p>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
 
-            <!-- PAGINATION -->
-            <div class="pagination">
-                {{ $promos->links('vendor.pagination.custom') }}
+            <!-- PAGINATION - DI LUAR SCROLLABLE CONTAINER -->
+            <div class="pagination-wrapper">
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        Menampilkan {{ $promos->firstItem() ?? 0 }} - {{ $promos->lastItem() ?? 0 }} dari {{ $promos->total() }} data
+                    </div>
+                    
+                    <!-- Custom Pagination Links -->
+                    @if($promos->hasPages())
+                    <div class="pagination">
+                        {{-- Previous Page Link --}}
+                        @if($promos->onFirstPage())
+                            <span class="pagination-btn disabled">
+                                <i class="fas fa-chevron-left"></i>
+                            </span>
+                        @else
+                            <a href="{{ $promos->previousPageUrl() }}" class="pagination-btn">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        @endif
+
+                        {{-- Pagination Elements --}}
+                        @php
+                            $current = $promos->currentPage();
+                            $last = $promos->lastPage();
+                            $start = max($current - 2, 1);
+                            $end = min($current + 2, $last);
+                        @endphp
+
+                        @if($start > 1)
+                            <a href="{{ $promos->url(1) }}" class="pagination-btn">1</a>
+                            @if($start > 2)
+                                <span class="pagination-btn disabled">...</span>
+                            @endif
+                        @endif
+
+                        @for($i = $start; $i <= $end; $i++)
+                            @if($i == $current)
+                                <span class="pagination-btn active">{{ $i }}</span>
+                            @else
+                                <a href="{{ $promos->url($i) }}" class="pagination-btn">{{ $i }}</a>
+                            @endif
+                        @endfor
+
+                        @if($end < $last)
+                            @if($end < $last - 1)
+                                <span class="pagination-btn disabled">...</span>
+                            @endif
+                            <a href="{{ $promos->url($last) }}" class="pagination-btn">{{ $last }}</a>
+                        @endif
+
+                        {{-- Next Page Link --}}
+                        @if($promos->hasMorePages())
+                            <a href="{{ $promos->nextPageUrl() }}" class="pagination-btn">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        @else
+                            <span class="pagination-btn disabled">
+                                <i class="fas fa-chevron-right"></i>
+                            </span>
+                        @endif
+                    </div>
+                    @endif
+                </div>
             </div>
         </div>
     </div>
-
 </div>
 
 <!-- Modal Delete Confirmation -->
 <div id="deleteModal" class="modal hidden">
     <div class="modal-content">
-        <h3 style="margin-top: 0; color: #0b2a4a;">Konfirmasi Hapus</h3>
+        <h3 style="margin-top: 0; color: #0b2a4a; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-exclamation-triangle" style="color: #dc3545;"></i>
+            Konfirmasi Hapus
+        </h3>
         <p id="deleteMessage">Apakah Anda yakin ingin menghapus promo ini?</p>
         <div class="modal-actions">
-            <button id="confirmDelete" class="btn-save" style="background: #dc3545;">Ya, Hapus</button>
-            <button onclick="closeDeleteModal()" class="btn-cancel">Batal</button>
+            <button onclick="closeDeleteModal()" class="btn-cancel" style="padding: 10px 20px;">
+                <i class="fas fa-times"></i> Batal
+            </button>
+            <button id="confirmDelete" class="btn-save" style="background: #dc3545; padding: 10px 20px;">
+                <i class="fas fa-trash"></i> Ya, Hapus
+            </button>
         </div>
     </div>
 </div>
@@ -941,44 +1387,66 @@ textarea {
 <script>
 // Variables
 let deleteUrl = '';
+let deleteFormId = '';
+
+// Function to toggle mobile menu
+function toggleMobileMenu(button) {
+    const dropdown = button.nextElementSibling;
+    dropdown.classList.toggle('show');
+    
+    // Close other dropdowns
+    document.querySelectorAll('.mobile-action-dropdown.show').forEach(item => {
+        if (item !== dropdown) {
+            item.classList.remove('show');
+        }
+    });
+}
+
+// Close mobile dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('.mobile-action-menu')) {
+        document.querySelectorAll('.mobile-action-dropdown.show').forEach(item => {
+            item.classList.remove('show');
+        });
+    }
+});
 
 // Function to confirm delete
 function confirmDelete(id, kodePromo) {
-    deleteUrl = `{{ url('admin/promo') }}/${id}`;
+    deleteFormId = `delete-form-${id}`;
     document.getElementById('deleteMessage').textContent = `Apakah Anda yakin ingin menghapus promo "${kodePromo}"?`;
     document.getElementById('deleteModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 }
 
 // Function to close delete modal
 function closeDeleteModal() {
     document.getElementById('deleteModal').classList.add('hidden');
-    deleteUrl = '';
+    document.body.style.overflow = 'auto';
+    deleteFormId = '';
 }
 
 // Function to execute delete
 document.getElementById('confirmDelete').addEventListener('click', function() {
-    if (deleteUrl) {
-        fetch(deleteUrl, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                alert('Promo berhasil dihapus!');
-                location.reload();
-            } else {
-                return response.json().then(data => {
-                    throw new Error(data.message || 'Gagal menghapus promo');
-                });
-            }
-        })
-        .catch(error => {
-            alert(error.message);
-            closeDeleteModal();
-        });
+    if (deleteFormId) {
+        const deleteForm = document.getElementById(deleteFormId);
+        if (deleteForm) {
+            deleteForm.submit();
+        }
+    }
+});
+
+// Close modal when clicking outside
+document.getElementById('deleteModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && !document.getElementById('deleteModal').classList.contains('hidden')) {
+        closeDeleteModal();
     }
 });
 
@@ -996,11 +1464,22 @@ function exportPDF() {
 }
 
 // Search with Enter
-document.getElementById('search-promo').addEventListener('keypress', function(e) {
+document.getElementById('search-promo')?.addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
+        e.preventDefault();
         document.getElementById('filterForm').submit();
     }
 });
+
+// Auto-hide alerts after 5 seconds
+setTimeout(() => {
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(alert => {
+        alert.style.opacity = '0';
+        alert.style.transform = 'translateY(-10px)';
+        setTimeout(() => alert.remove(), 300);
+    });
+}, 5000);
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {

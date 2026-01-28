@@ -10,7 +10,7 @@ class Shuttle extends Model
     use HasFactory;
 
     protected $fillable = [
-        'layanan_id', // TAMBAHKAN INI
+        'layanan_id',
         'nama_shuttle',
         'tipe_shuttle',
         'kapasitas_kursi',
@@ -22,7 +22,25 @@ class Shuttle extends Model
         'gambar_samping',
         'gambar_belakang',
         'gambar_interior',
-        'status'
+        'status',
+        // Fleet/Armada fields
+        'kode',
+        'merk',
+        'model',
+        'tahun',
+        'warna',
+        'no_stnk',
+        'masa_stnk',
+        'no_kir',
+        'masa_kir',
+        'jenis_kepemilikan',
+        'nama_pemilik',
+        'tanggal_masuk',
+        'nilai_asset',
+        'asuransi',
+        'masa_asuransi',
+        'masa_kontrak',
+        'kelengkapan'
     ];
 
     protected $casts = [

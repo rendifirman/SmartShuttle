@@ -797,25 +797,41 @@ function closeDeleteModal() {
 // Function to execute delete
 document.getElementById('confirmDelete').addEventListener('click', function() {
     if (deleteUrl) {
+        console.log('Deleting from URL:', deleteUrl);
         fetch(deleteUrl, {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             }
         })
         .then(response => {
-            if (response.ok) {
-                alert('Rute berhasil dihapus!');
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers.get('content-type'));
+            
+            if (!response.ok) {
+                return response.text().then(text => {
+                    console.error('Error response:', text);
+                    throw new Error('HTTP ' + response.status);
+                });
+            }
+            
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success) {
+                alert(data.message || 'Rute berhasil dihapus!');
                 location.reload();
             } else {
-                return response.json().then(data => {
-                    throw new Error(data.message || 'Gagal menghapus rute');
-                });
+                alert(data.message || 'Gagal menghapus rute');
+                closeDeleteModal();
             }
         })
         .catch(error => {
-            alert(error.message);
+            console.error('Fetch error:', error);
+            alert('Error: ' + error.message);
             closeDeleteModal();
         });
     }

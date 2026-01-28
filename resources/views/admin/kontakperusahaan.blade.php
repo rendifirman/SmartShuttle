@@ -1008,87 +1008,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // ====== SAVE DATA ======
-    document.getElementById('saveBtn').addEventListener('click', async function() {
-        const saveBtn = this;
-        const originalText = saveBtn.innerHTML;
-
-        try {
-            console.log('Save button clicked');
-
-            // Validasi form
-            if (!validateForm()) {
-                return;
-            }
-
-            // Show loading state
-            saveBtn.classList.add('loading');
-            saveBtn.innerHTML = '<i class="fi fi-rr-spinner"></i> Menyimpan...';
-            saveBtn.disabled = true;
-
-            // Create FormData object
-            const formData = new FormData();
-            formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-
-            // Collect form data
-            collectFormDataIntoFormData(formData);
-
-            // Create AbortController untuk timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-            // Send data to server
-            const response = await fetch('/admin/kontakperusahaan/{{ $kontak->id ?? 1 }}', {
-                method: 'PUT',
-                body: formData,
-                signal: controller.signal,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
-            });
-
-            clearTimeout(timeoutId);
-
-            const data = await response.json();
-            console.log('Response data:', data);
-
-            if (data.success) {
-                showNotification(data.message, 'success');
-
-                // Update result view dengan data dari response
-                if (data.data) {
-                    updateResultView(data.data);
-                } else {
-                    updateResultViewFromForm();
-                }
-
-                // Reload page setelah beberapa detik
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            } else {
-                throw new Error(data.message || 'Gagal menyimpan data');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-
-            if (error.name === 'AbortError') {
-                showNotification('Waktu permintaan habis. Silakan coba lagi.', 'error');
-            } else if (error.message) {
-                showNotification(error.message, 'error');
-            } else {
-                showNotification('Terjadi kesalahan jaringan atau server tidak merespon.', 'error');
-            }
-        } finally {
-            // Reset button state
-            saveBtn.classList.remove('loading');
-            saveBtn.innerHTML = originalText;
-            saveBtn.disabled = false;
-        }
-    });
-
-    // Fungsi validasi form
+    // ====== VALIDATION FUNCTIONS ======
     function validateForm() {
         const requiredFields = [
             { id: 'namaPerusahaan', name: 'Nama Perusahaan' },
@@ -1124,81 +1044,167 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
 
+        // Validasi jam operasional
+        const jamInputs = document.querySelectorAll('.jam-waktu');
+        let jamValid = true;
+        jamInputs.forEach(input => {
+            if (!input.value.trim()) {
+                showNotification('Jam operasional harus diisi semua', 'error');
+                input.focus();
+                jamValid = false;
+            }
+        });
+        
+        if (!jamValid) return false;
+
         return true;
     }
 
-    // Fungsi mengumpulkan data ke FormData
-    function collectFormDataIntoFormData(formData) {
-        // Collect jam operasional
+    // ====== COLLECT FORM DATA ======
+    function collectFormData() {
         const jamItems = document.querySelectorAll('.jam-item');
         const jamOperasional = [];
         
         jamItems.forEach(item => {
             const hari = item.querySelector('.jam-hari').value;
-            const waktu = item.querySelector('.jam-waktu').value;
-            jamOperasional.push({ hari, jam: waktu });
+            const waktu = item.querySelector('.jam-waktu').value.trim();
+            if (hari && waktu) {
+                jamOperasional.push({ hari, jam: waktu });
+            }
         });
 
-        const formDataObj = {
-            nama_perusahaan: document.getElementById('namaPerusahaan').value,
-            deskripsi_singkat: document.getElementById('deskripsiSingkat').value,
-            email_utama: document.getElementById('emailUtama').value,
-            email_dukungan: document.getElementById('emailDukungan').value,
-            telepon_utama: document.getElementById('teleponUtama').value,
-            telepon_dukungan: document.getElementById('teleponDukungan').value,
-            alamat_kantor_pusat: document.getElementById('alamatKantorPusat').value,
-            facebook_url: document.getElementById('facebookUrl').value,
-            instagram_url: document.getElementById('instagramUrl').value,
-            twitter_url: document.getElementById('twitterUrl').value,
+        return {
+            nama_perusahaan: document.getElementById('namaPerusahaan').value.trim(),
+            deskripsi_singkat: document.getElementById('deskripsiSingkat').value.trim(),
+            email_utama: document.getElementById('emailUtama').value.trim(),
+            email_dukungan: document.getElementById('emailDukungan').value.trim(),
+            telepon_utama: document.getElementById('teleponUtama').value.trim(),
+            telepon_dukungan: document.getElementById('teleponDukungan').value.trim(),
+            alamat_kantor_pusat: document.getElementById('alamatKantorPusat').value.trim(),
+            facebook_url: document.getElementById('facebookUrl').value.trim(),
+            instagram_url: document.getElementById('instagramUrl').value.trim(),
+            twitter_url: document.getElementById('twitterUrl').value.trim(),
             jam_operasional: JSON.stringify(jamOperasional),
-            link_kebijakan_privasi: document.getElementById('linkKebijakanPrivasi').value,
-            link_syarat_ketentuan: document.getElementById('linkSyaratKetentuan').value
+            link_kebijakan_privasi: document.getElementById('linkKebijakanPrivasi').value.trim(),
+            link_syarat_ketentuan: document.getElementById('linkSyaratKetentuan').value.trim(),
+            status: 'active'
         };
-
-        console.log('Form data being sent:', formDataObj);
-
-        // Add to FormData
-        Object.keys(formDataObj).forEach(key => {
-            formData.append(key, formDataObj[key]);
-        });
     }
 
-    // Fungsi update result view dari form
-    function updateResultViewFromForm() {
-        const data = {
-            nama_perusahaan: document.getElementById('namaPerusahaan').value,
-            deskripsi_singkat: document.getElementById('deskripsiSingkat').value,
-            email_utama: document.getElementById('emailUtama').value,
-            email_dukungan: document.getElementById('emailDukungan').value,
-            telepon_utama: document.getElementById('teleponUtama').value,
-            telepon_dukungan: document.getElementById('teleponDukungan').value,
-            alamat_kantor_pusat: document.getElementById('alamatKantorPusat').value,
-            facebook_url: document.getElementById('facebookUrl').value,
-            instagram_url: document.getElementById('instagramUrl').value,
-            twitter_url: document.getElementById('twitterUrl').value,
-            link_kebijakan_privasi: document.getElementById('linkKebijakanPrivasi').value,
-            link_syarat_ketentuan: document.getElementById('linkSyaratKetentuan').value
-        };
+    // ====== SAVE DATA ======
+    document.getElementById('saveBtn').addEventListener('click', async function() {
+        const saveBtn = this;
+        const originalText = saveBtn.innerHTML;
 
-        // Collect jam operasional
-        const jamItems = document.querySelectorAll('.jam-item');
-        const jamOperasional = [];
-        
-        jamItems.forEach(item => {
-            const hari = item.querySelector('.jam-label').textContent;
-            const waktu = item.querySelector('.jam-waktu').value;
-            jamOperasional.push({ hari, jam: waktu });
-        });
+        try {
+            console.log('Save button clicked');
 
-        data.jam_operasional = jamOperasional;
+            // Validasi form
+            if (!validateForm()) {
+                return;
+            }
 
-        updateResultView(data);
-    }
+            // Show loading state
+            saveBtn.classList.add('loading');
+            saveBtn.innerHTML = '<i class="fi fi-rr-spinner"></i> Menyimpan...';
+            saveBtn.disabled = true;
+
+            // Get the kontak ID
+            const kontakId = {{ $kontak->id ?? 1 }};
+
+            // Collect form data
+            const formDataObject = collectFormData();
+            console.log('Form data:', formDataObject);
+
+            // Create FormData untuk dikirim
+            const formData = new FormData();
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            // Tambahkan semua data ke FormData
+            Object.keys(formDataObject).forEach(key => {
+                formData.append(key, formDataObject[key]);
+            });
+            formData.append('_token', csrfToken);
+            formData.append('_method', 'PUT'); // Laravel membutuhkan ini untuk method PUT
+
+            // Debug: lihat apa yang dikirim
+            for (let [key, value] of formData.entries()) {
+                console.log(key, value);
+            }
+
+            // Create AbortController untuk timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+            // Send data to server menggunakan POST dengan _method=PUT
+            const response = await fetch(`/admin/kontakperusahaan/${kontakId}`, {
+                method: 'POST', // Laravel mendukung PUT via POST dengan _method=PUT
+                body: formData,
+                signal: controller.signal,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            clearTimeout(timeoutId);
+
+            // Periksa status response
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Response data:', data);
+
+            if (data.success) {
+                showNotification(data.message, 'success');
+
+                // Update result view dengan data dari response
+                if (data.data) {
+                    updateResultView(data.data);
+                }
+
+                // Switch to result tab
+                document.querySelector('.tab-btn[data-tab="result"]').click();
+                
+                // Clear preview data
+                sessionStorage.removeItem('preview_kontak_data');
+                
+                // Optionally reload the page after 2 seconds
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                throw new Error(data.message || 'Gagal menyimpan data');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+
+            if (error.name === 'AbortError') {
+                showNotification('Waktu permintaan habis. Silakan coba lagi.', 'error');
+            } else if (error.message) {
+                showNotification(error.message, 'error');
+            } else {
+                showNotification('Terjadi kesalahan jaringan atau server tidak merespon.', 'error');
+            }
+        } finally {
+            // Reset button state
+            saveBtn.classList.remove('loading');
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
+    });
 
     // ====== PREVIEW BUTTON ======
     document.getElementById('previewBtn').addEventListener('click', function() {
-        updateResultViewFromForm();
-        sessionStorage.setItem('preview_kontak_data', JSON.stringify(collectFormData()));
+        if (!validateForm()) {
+            return;
+        }
+        
+        const formData = collectFormData();
+        updateResultView(formData);
+        sessionStorage.setItem('preview_kontak_data', JSON.stringify(formData));
         document.querySelector('.tab-btn[data-tab="result"]').click();
     });
 
@@ -1214,46 +1220,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ====== COLLECT FORM DATA ======
-    function collectFormData() {
-        const jamItems = document.querySelectorAll('.jam-item');
-        const jamOperasional = [];
-        
-        jamItems.forEach(item => {
-            const hari = item.querySelector('.jam-label').textContent;
-            const waktu = item.querySelector('.jam-waktu').value;
-            jamOperasional.push({ hari, jam: waktu });
-        });
-
-        return {
-            nama_perusahaan: document.getElementById('namaPerusahaan').value,
-            deskripsi_singkat: document.getElementById('deskripsiSingkat').value,
-            email_utama: document.getElementById('emailUtama').value,
-            email_dukungan: document.getElementById('emailDukungan').value,
-            telepon_utama: document.getElementById('teleponUtama').value,
-            telepon_dukungan: document.getElementById('teleponDukungan').value,
-            alamat_kantor_pusat: document.getElementById('alamatKantorPusat').value,
-            facebook_url: document.getElementById('facebookUrl').value,
-            instagram_url: document.getElementById('instagramUrl').value,
-            twitter_url: document.getElementById('twitterUrl').value,
-            jam_operasional: jamOperasional,
-            link_kebijakan_privasi: document.getElementById('linkKebijakanPrivasi').value,
-            link_syarat_ketentuan: document.getElementById('linkSyaratKetentuan').value
-        };
-    }
-
     // ====== UPDATE RESULT VIEW ======
     function updateResultView(data = null) {
         if (!data) {
             const previewData = sessionStorage.getItem('preview_kontak_data');
-            const savedData = localStorage.getItem('kontak_perusahaan_data');
-
             if (previewData) {
                 data = JSON.parse(previewData);
-            } else if (savedData) {
-                data = JSON.parse(savedData);
             } else {
-                data = collectFormData();
+                return; // Tidak ada data untuk ditampilkan
             }
         }
 
@@ -1281,20 +1255,41 @@ document.addEventListener('DOMContentLoaded', function() {
         const resultInstagramUrl = document.getElementById('resultInstagramUrl');
         const resultTwitterUrl = document.getElementById('resultTwitterUrl');
 
-        if (resultFacebookUrl) resultFacebookUrl.textContent = data.facebook_url || '';
-        if (resultInstagramUrl) resultInstagramUrl.textContent = data.instagram_url || '';
-        if (resultTwitterUrl) resultTwitterUrl.textContent = data.twitter_url || '';
+        if (resultFacebookUrl) {
+            resultFacebookUrl.textContent = data.facebook_url || '';
+            resultFacebookUrl.href = data.facebook_url || '#';
+        }
+        if (resultInstagramUrl) {
+            resultInstagramUrl.textContent = data.instagram_url || '';
+            resultInstagramUrl.href = data.instagram_url || '#';
+        }
+        if (resultTwitterUrl) {
+            resultTwitterUrl.textContent = data.twitter_url || '';
+            resultTwitterUrl.href = data.twitter_url || '#';
+        }
 
         // Update jam operasional
         const jamOperasionalResult = document.querySelector('.jam-operasional-result');
-        if (jamOperasionalResult && data.jam_operasional) {
+        if (jamOperasionalResult) {
             let html = '';
-            if (Array.isArray(data.jam_operasional)) {
-                data.jam_operasional.forEach(item => {
+            let jamData = data.jam_operasional;
+            
+            // Handle jika jam_operasional adalah string JSON
+            if (typeof jamData === 'string') {
+                try {
+                    jamData = JSON.parse(jamData);
+                } catch (e) {
+                    console.error('Error parsing jam_operasional:', e);
+                    jamData = [];
+                }
+            }
+            
+            if (Array.isArray(jamData)) {
+                jamData.forEach(item => {
                     html += `
                         <div class="jam-item-result">
-                            <span class="jam-day">${item.hari}</span>
-                            <span class="jam-time">${item.jam}</span>
+                            <span class="jam-day">${item.hari || ''}</span>
+                            <span class="jam-time">${item.jam || ''}</span>
                         </div>
                     `;
                 });
@@ -1315,7 +1310,7 @@ document.addEventListener('DOMContentLoaded', function() {
             resultLinkSyaratKetentuan.href = data.link_syarat_ketentuan || '#';
         }
 
-        // Save to localStorage
+        // Save to localStorage untuk cache
         localStorage.setItem('kontak_perusahaan_data', JSON.stringify(data));
     }
 
@@ -1349,19 +1344,30 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ====== INITIALIZATION ======
-    function init() {
-        setupCollapseExpand();
-        
-        // Load saved data if exists
+    // ====== LOAD SAVED DATA ======
+    function loadSavedData() {
         const savedData = localStorage.getItem('kontak_perusahaan_data');
         if (savedData) {
             try {
                 const data = JSON.parse(savedData);
-                // Optional: Auto-fill form with saved data
+                // Optional: Auto-fill form with saved data jika diperlukan
             } catch (e) {
                 console.error('Error parsing saved data:', e);
             }
+        }
+    }
+
+    // ====== INITIALIZATION ======
+    function init() {
+        setupCollapseExpand();
+        loadSavedData();
+        
+        // Event listener untuk CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfToken) {
+            console.error('CSRF token meta tag not found!');
+        } else {
+            console.log('CSRF token found:', csrfToken.getAttribute('content'));
         }
     }
 

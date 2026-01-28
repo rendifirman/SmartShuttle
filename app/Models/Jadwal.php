@@ -40,10 +40,18 @@ class Jadwal extends Model
             ->withTimestamps()
             ->withPivot(['urutan']); // tambahkan jika ada kolom tambahan di pivot
     }
-
+    
     public function shuttle()
     {
         return $this->belongsTo(Shuttle::class, 'shuttle_id');
+    }
+
+    /**
+     * Relasi ke kursi terpesan
+     */
+    public function kursiTerpesan()
+    {
+        return $this->hasMany(KursiTerpesan::class, 'jadwal_id');
     }
     
     /**

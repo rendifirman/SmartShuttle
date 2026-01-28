@@ -332,7 +332,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     
     Route::get('/kontak', [AdminController::class, 'kontak'])->name('admin.kontak');
     Route::get('/kontakperusahaan', [AdminController::class, 'kontakPerusahaan'])->name('admin.kontakperusahaan');
-    Route::put('/kontakperusahaan/{id}', [AdminController::class, 'updateKontakPerusahaan'])->name('admin.kontak.update');
+    Route::put('/kontakperusahaan/{id}', [AdminController::class, 'updateKontakPerusahaan'])->name('admin.kontakperusahaan.update');
 
 
 

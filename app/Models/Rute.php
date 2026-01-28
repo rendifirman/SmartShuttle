@@ -30,6 +30,11 @@ class Rute extends Model
 
     protected $appends = ['formatted_harga'];
 
+    protected $casts = [
+        'harga_dasar' => 'decimal:2',
+        'jarak' => 'decimal:2',
+    ];
+
     // Relasi ke layanan
     public function layanan()
     {
@@ -38,7 +43,9 @@ class Rute extends Model
 
     public function jadwals()
     {
-        return $this->hasMany(Jadwal::class, 'rute_id');
+        return $this->belongsToMany(Jadwal::class, 'rute_jadwals', 'rute_id', 'jadwal_id')
+            ->withTimestamps()
+            ->withPivot('urutan', 'durasi_segment', 'harga_segment');
     }
 
     public function getPemberhentianArrayAttribute()
