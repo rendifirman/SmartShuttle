@@ -54,6 +54,7 @@ class Jadwal extends Model
         return $this->hasMany(KursiTerpesan::class, 'jadwal_id');
     }
     
+    
     /**
      * Relasi ke layanan melalui shuttle
      */

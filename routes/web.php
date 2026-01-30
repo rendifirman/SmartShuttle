@@ -347,6 +347,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
         Route::get('/{id}', [AdminController::class, 'showRute'])->name('admin.rute.show');
     });
 
+    
     // Armada CRUD Routes
     Route::prefix('armada')->group(function () {
         Route::get('/', [AdminController::class, 'armada'])->name('admin.armada');

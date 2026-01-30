@@ -3,6 +3,7 @@
 @section('title', 'Tambah Rute')
 
 @push('styles')
+
 <style>
 /* ================= BASE ================= */
 .page-container {

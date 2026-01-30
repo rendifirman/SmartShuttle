@@ -3,6 +3,7 @@
 @section('title', 'Edit Rute')
 
 @push('styles')
+
 <style>
 /* ================= BASE ================= */
 .page-container {

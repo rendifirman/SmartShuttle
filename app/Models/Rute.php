@@ -28,6 +28,7 @@ class Rute extends Model
         'deleted_by'
     ];
 
+    
     protected $appends = ['formatted_harga'];
 
     protected $casts = [

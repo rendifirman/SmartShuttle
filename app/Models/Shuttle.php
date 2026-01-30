@@ -245,6 +245,7 @@ public function getLayoutWithStatus($jadwalId = null)
         return $query->where('layanan_id', $layananId);
     }
 
+    
     public function scopeMemilikiKapasitas($query)
     {
         return $query->whereNotNull('total_kursi')

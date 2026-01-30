@@ -28,6 +28,7 @@ class MMasterKontak extends Model
         'link_syarat_ketentuan',
         'status'
     ];
+    
 
     protected $casts = [
         'jam_operasional' => 'array'

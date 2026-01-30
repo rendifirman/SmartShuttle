@@ -808,6 +808,7 @@ class AdminController extends Controller
         return view('admin.armada-edit', compact('shuttle', 'layanans'));
     }
 
+    
     public function updateShuttle(Request $request, $id)
     {
         $shuttle = Shuttle::findOrFail($id);

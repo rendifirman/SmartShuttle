@@ -66,6 +66,7 @@ class Promo extends Model
                     ->orWhere('tipe_promo', 'all');
     }
 
+    
     /**
      * Scope untuk promo berdasarkan kategori (keluarga, membership, umum)
      */
