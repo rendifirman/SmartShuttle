@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use App\Models\Branch;
 use App\Models\User;
 use App\Models\Rute;
@@ -13,7 +15,7 @@ use App\Models\MLayanan;
 use App\Models\Promo;
 use App\Models\Outlet;
 use App\Models\Artikel;
-use Illuminate\Support\Facades\Storage;
+use App\Models\MMasterKontak;
 
 class AdminController extends Controller
 {
@@ -42,24 +44,56 @@ class AdminController extends Controller
 
         $credentials = $request->only('email', 'password');
 
+        \Log::info('Admin login attempt', ['email' => $request->email]);
+
         if (Auth::guard('admin')->attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
 
             // Check if user has admin role
             $user = Auth::guard('admin')->user();
-            if (!$user->hasAnyRole(['admin_pusat', 'admin_cabang'])) {
+
+            \Log::info('Admin login - user found', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'roles' => $user->getRoleNames()->toArray(),
+                'status' => $user->status,
+                'branch_id' => $user->branch_id,
+            ]);
+
+            // Check user status
+            if ($user->status !== 'active') {
                 Auth::guard('admin')->logout();
+                \Log::warning('Admin login failed - inactive account', ['email' => $request->email]);
+                return back()->withErrors(['email' => 'Akun Anda tidak aktif.']);
+            }
+
+            // Check if user has admin role
+            if (!$user->hasAnyRole(['admin_pusat', 'admin_cabang', 'operator'])) {
+                Auth::guard('admin')->logout();
+                \Log::warning('Admin login failed - no admin role', [
+                    'email' => $request->email,
+                    'roles' => $user->getRoleNames()->toArray()
+                ]);
                 return back()->withErrors(['email' => 'Anda tidak memiliki akses admin.']);
             }
 
             // Check if branch admin has branch assignment
             if ($user->hasRole('admin_cabang') && !$user->branch_id) {
                 Auth::guard('admin')->logout();
+                \Log::warning('Admin login failed - branch admin without branch', ['email' => $request->email]);
                 return back()->withErrors(['email' => 'Akun admin cabang belum ditugaskan ke cabang manapun.']);
             }
 
+            \Log::info('Admin login successful', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'roles' => $user->getRoleNames()->toArray(),
+            ]);
+
             return redirect()->intended(route('admin.dashboard'));
         }
+
+        \Log::warning('Admin login failed - invalid credentials', ['email' => $request->email]);
 
         return back()->withErrors([
             'email' => 'Email atau password salah.'
@@ -77,15 +111,21 @@ class AdminController extends Controller
         return view('admin.kontak');
     }
 
+    /**
+     * Show contact form (using MMasterKontak model)
+     */
     public function kontakPerusahaan()
     {
-        $kontak = \App\Models\MMasterKontak::getDataKontak();
+        $kontak = MMasterKontak::getDataKontak();
         return view('admin.kontakperusahaan', compact('kontak'));
     }
 
+    /**
+     * Update contact (using MMasterKontak model)
+     */
     public function updateKontakPerusahaan(Request $request, $id)
     {
-        $kontak = \App\Models\MMasterKontak::findOrFail($id);
+        $kontak = MMasterKontak::findOrFail($id);
 
         $request->validate([
             'nama_perusahaan' => 'required|string|max:255',
@@ -319,11 +359,12 @@ class AdminController extends Controller
             'alamat_lengkap' => 'required|string',
             'telepon' => 'required|string|max:20',
             'email' => 'nullable|email|max:255',
-            'tipe_outlet' => 'required|in:regular,premium,express',
+            'tipe_outlet' => 'required|in:mall,pusat_perbelanjaan,perkantoran,stasiun,bandara,jalan_utama,kawasan_komersial,perumahan,kampus,rumah_sakit,hotel,wisata,pusat_kota,lainnya',
             'kapasitas_parkir' => 'nullable|integer|min:0',
             'zona_pelayanan' => 'nullable|string|max:100',
             'jam_operasional' => 'nullable|string|max:50',
             'status' => 'required|in:aktif,nonaktif,maintenance',
+            'foto_outlet' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         // Generate kode outlet otomatis
@@ -335,7 +376,22 @@ class AdminController extends Controller
         $branch = Branch::find($request->branch_id);
 
         // Handle fasilitas array
-        $fasilitas = $request->has('fasilitas') ? implode(',', $request->fasilitas) : null;
+        $fasilitas = $request->has('fasilitas') ? implode(', ', $request->fasilitas) : null;
+
+        // Handle file upload
+        $fotoPath = null;
+        if ($request->hasFile('foto_outlet')) {
+            $file = $request->file('foto_outlet');
+            $filename = time() . '_' . Str::slug($request->nama_outlet) . '.' . $file->getClientOriginalExtension();
+
+            $path = 'images/outlets/';
+            if (!file_exists(public_path($path))) {
+                mkdir(public_path($path), 0777, true);
+            }
+
+            $file->move(public_path($path), $filename);
+            $fotoPath = $path . $filename;
+        }
 
         Outlet::create([
             'branch_id' => $request->branch_id,
@@ -349,6 +405,7 @@ class AdminController extends Controller
             'kapasitas_parkir' => $request->kapasitas_parkir,
             'zona_pelayanan' => $request->zona_pelayanan,
             'jam_operasional' => $request->jam_operasional,
+            'foto_outlet' => $fotoPath,
             'fasilitas' => $fasilitas,
             'status' => $request->status,
         ]);
@@ -358,13 +415,41 @@ class AdminController extends Controller
 
     public function editOutlet($id)
     {
-        $outlet = Outlet::findOrFail($id);
+        $outlet = Outlet::with('branch')->findOrFail($id);
         $branches = Branch::where('status', 'aktif')->get();
 
-        // Parse fasilitas string ke array
-        $fasilitasArray = $outlet->fasilitas ? explode(',', $outlet->fasilitas) : [];
+        // Parse fasilitas string ke array dengan benar
+        $selectedFacilities = [];
 
-        return view('admin.outletperusahaan-edit', compact('outlet', 'branches', 'fasilitasArray'));
+        if ($outlet->fasilitas) {
+            // Bersihkan string
+            $cleanString = trim($outlet->fasilitas, ' "[]\'');
+            if (!empty($cleanString)) {
+                $facilitiesArray = explode(',', $cleanString);
+                foreach ($facilitiesArray as $facility) {
+                    $trimmed = trim($facility, ' "[]\'');
+                    if (!empty($trimmed) && strtolower($trimmed) !== 'null') {
+                        $selectedFacilities[] = $trimmed;
+                    }
+                }
+            }
+        }
+
+        // Tambahkan dari boolean fields jika ada
+        if ($outlet->tersedia_toilet && !in_array('Toilet', $selectedFacilities)) {
+            $selectedFacilities[] = 'Toilet';
+        }
+        if ($outlet->tersedia_musholla && !in_array('Musholla', $selectedFacilities)) {
+            $selectedFacilities[] = 'Musholla';
+        }
+        if ($outlet->tersedia_atm && !in_array('ATM', $selectedFacilities)) {
+            $selectedFacilities[] = 'ATM';
+        }
+        if ($outlet->tersedia_wifi && !in_array('WiFi', $selectedFacilities)) {
+            $selectedFacilities[] = 'WiFi';
+        }
+
+        return view('admin.outletperusahaan-edit', compact('outlet', 'branches', 'selectedFacilities'));
     }
 
     public function updateOutlet(Request $request, $id)
@@ -372,36 +457,65 @@ class AdminController extends Controller
         $outlet = Outlet::findOrFail($id);
 
         $request->validate([
-            'branch_id' => 'required|exists:branches,id',
             'nama_outlet' => 'required|string|max:255',
+            'branch_id' => 'required|exists:branches,id',
             'alamat_lengkap' => 'required|string',
             'telepon' => 'required|string|max:20',
             'email' => 'nullable|email|max:255',
-            'tipe_outlet' => 'required|in:regular,premium,express',
+            'tipe_outlet' => 'required|in:mall,pusat_perbelanjaan,perkantoran,stasiun,bandara,jalan_utama,kawasan_komersial,perumahan,kampus,rumah_sakit,hotel,wisata,pusat_kota,lainnya',
             'kapasitas_parkir' => 'nullable|integer|min:0',
             'zona_pelayanan' => 'nullable|string|max:100',
             'jam_operasional' => 'nullable|string|max:50',
             'status' => 'required|in:aktif,nonaktif,maintenance',
+            'foto_outlet' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // Get branch data for kota
-        $branch = Branch::find($request->branch_id);
+        // 1. Handle upload foto
+        if ($request->hasFile('foto_outlet')) {
+            if ($outlet->foto_outlet && file_exists(public_path($outlet->foto_outlet))) {
+                unlink(public_path($outlet->foto_outlet));
+            }
 
-        // Handle fasilitas array
-        $fasilitas = $request->has('fasilitas') ? implode(',', $request->fasilitas) : null;
+            $file = $request->file('foto_outlet');
+            $filename = time() . '_' . Str::slug($outlet->nama_outlet) . '.' . $file->getClientOriginalExtension();
 
+            $path = 'images/outlets/';
+            if (!file_exists(public_path($path))) {
+                mkdir(public_path($path), 0777, true);
+            }
+
+            $file->move(public_path($path), $filename);
+            $outlet->foto_outlet = $path . $filename;
+        }
+
+        // 2. Handle fasilitas
+        if ($request->has('fasilitas')) {
+            $fasilitasArray = $request->fasilitas;
+            $outlet->fasilitas = implode(', ', $fasilitasArray);
+
+            $outlet->tersedia_toilet = in_array('Toilet', $fasilitasArray);
+            $outlet->tersedia_musholla = in_array('Musholla', $fasilitasArray);
+            $outlet->tersedia_atm = in_array('ATM', $fasilitasArray);
+            $outlet->tersedia_wifi = in_array('WiFi', $fasilitasArray);
+        } else {
+            $outlet->fasilitas = null;
+            $outlet->tersedia_toilet = false;
+            $outlet->tersedia_musholla = false;
+            $outlet->tersedia_atm = false;
+            $outlet->tersedia_wifi = false;
+        }
+
+        // 3. Update field lainnya
         $outlet->update([
             'branch_id' => $request->branch_id,
             'nama_outlet' => $request->nama_outlet,
             'alamat_lengkap' => $request->alamat_lengkap,
             'telepon' => $request->telepon,
             'email' => $request->email,
-            'kota' => $branch->kota,
             'tipe_outlet' => $request->tipe_outlet,
             'kapasitas_parkir' => $request->kapasitas_parkir,
             'zona_pelayanan' => $request->zona_pelayanan,
             'jam_operasional' => $request->jam_operasional,
-            'fasilitas' => $fasilitas,
             'status' => $request->status,
         ]);
 
@@ -413,9 +527,10 @@ class AdminController extends Controller
         $outlet = Outlet::findOrFail($id);
 
         // Check if outlet has related data before deleting
-        // Contoh: if ($outlet->transactions()->count() > 0) {
-        //     return redirect()->route('admin.outletperusahaan')->with('error', 'Outlet tidak dapat dihapus karena masih memiliki transaksi.');
-        // }
+        // Hapus foto jika ada
+        if ($outlet->foto_outlet && file_exists(public_path($outlet->foto_outlet))) {
+            unlink(public_path($outlet->foto_outlet));
+        }
 
         $outlet->delete();
 
@@ -427,14 +542,26 @@ class AdminController extends Controller
         $outlet = Outlet::with('branch')->findOrFail($id);
 
         // Parse fasilitas string ke array
-        $fasilitasArray = $outlet->fasilitas ? explode(',', $outlet->fasilitas) : [];
+        $selectedFacilities = [];
+        if ($outlet->fasilitas) {
+            $cleanString = trim($outlet->fasilitas, ' "[]\'');
+            if (!empty($cleanString)) {
+                $facilitiesArray = explode(',', $cleanString);
+                foreach ($facilitiesArray as $facility) {
+                    $trimmed = trim($facility, ' "[]\'');
+                    if (!empty($trimmed)) {
+                        $selectedFacilities[] = $trimmed;
+                    }
+                }
+            }
+        }
 
-        return view('admin.outletperusahaan-show', compact('outlet', 'fasilitasArray'));
+        return view('admin.outletperusahaan-show', compact('outlet', 'selectedFacilities'));
     }
 
     // ========================= END OUTLET CRUD =========================
 
-   public function promo(Request $request)
+    public function promo(Request $request)
     {
         // Get promos with filtering
         $query = Promo::query();
@@ -516,7 +643,8 @@ class AdminController extends Controller
             'promoTypes'
         ));
     }
-      public function createPromo()
+
+    public function createPromo()
     {
         return view('admin.promo-create');
     }
@@ -667,7 +795,6 @@ class AdminController extends Controller
 
         return redirect()->route('admin.promo')->with('success', 'Promo berhasil dihapus.');
     }
-    // Promo CRUD Methods
 
     public function armada(Request $request)
     {
@@ -1039,7 +1166,6 @@ class AdminController extends Controller
         return view('admin.transaksi.armada');
     }
 
-
     // SmartSend Methods
     public function smartsendTiket()
     {
@@ -1068,10 +1194,276 @@ class AdminController extends Controller
         return view('admin.laporan');
     }
 
-    // Pengaturan Methods
-    public function user()
+    // Pengaturan Methods - User Management
+    public function user(Request $request)
     {
-        return view('admin.user');
+        // Get users with filtering
+        $query = User::with('roles', 'branch');
+
+        // Apply filters
+        if ($request->filled('role')) {
+            $query->whereHas('roles', function($q) use ($request) {
+                $q->where('name', $request->role);
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('email', 'like', '%' . $request->search . '%')
+                  ->orWhere('phone', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $users = $query->orderBy('created_at', 'desc')->paginate(10);
+
+        // Get summary data
+        $totalUsers = User::count();
+        $activeUsers = User::where('status', 'active')->count();
+        $inactiveUsers = User::where('status', 'inactive')->count();
+
+        // Get data for forms
+        $branches = Branch::where('status', 'aktif')->get();
+        $roles = ['admin_pusat', 'admin_cabang', 'operator', 'driver', 'customer'];
+
+        return view('admin.user', compact(
+            'users',
+            'totalUsers',
+            'activeUsers',
+            'inactiveUsers',
+            'branches',
+            'roles'
+        ));
+    }
+
+    public function storeUser(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+            'phone' => 'nullable|string|max:20',
+            'role' => 'required|in:admin_pusat,admin_cabang,operator,driver,customer',
+            'branch_id' => 'required_if:role,admin_cabang|exists:branches,id',
+            'nik' => 'nullable|string|max:20',
+            'tanggal_lahir' => 'nullable|date',
+            'jenis_kelamin' => 'nullable|in:L,P',
+            'status' => 'required|in:active,inactive',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'string|exists:permissions,name'
+        ]);
+
+        $data = $request->only([
+            'name', 'email', 'phone', 'nik', 'tanggal_lahir', 'jenis_kelamin', 'status'
+        ]);
+
+        $data['password'] = Hash::make($request->password);
+        $data['username'] = $request->email; // Use email as username
+
+        // Set branch_id only for admin_cabang
+        if ($request->role === 'admin_cabang') {
+            $data['branch_id'] = $request->branch_id;
+        }
+
+        $user = User::create($data);
+        $user->syncRoles([$request->role]);
+
+        // Assign permissions if provided
+        if ($request->has('permissions') && is_array($request->permissions)) {
+            $user->syncPermissions($request->permissions);
+        } else {
+            // If no permissions provided, assign default permissions based on role
+            $defaultPermissions = $this->getDefaultPermissionsForRole($request->role);
+            $user->syncPermissions($defaultPermissions);
+        }
+
+        return redirect()->route('admin.user')->with('success', 'User berhasil ditambahkan.');
+    }
+
+    /**
+     * Get default permissions for a role
+     */
+    private function getDefaultPermissionsForRole($role)
+    {
+        $rolePermissions = [
+            'admin_pusat' => [
+                // Dashboard
+                'view_dashboard',
+
+                // Master Data - Full access
+                'view_master_data',
+                'view_profile_perusahaan',
+                'manage_profile_perusahaan',
+                'view_cabang',
+                'manage_cabang',
+                'view_outlet',
+                'manage_outlet',
+                'view_promo',
+                'manage_promo',
+                'view_kontak',
+                'manage_kontak',
+                'view_artikel',
+                'manage_artikel',
+                'view_armada',
+                'manage_armada',
+                'view_driver',
+                'manage_driver',
+                'view_pegawai',
+                'manage_pegawai',
+                'view_rute',
+                'manage_rute',
+                'view_jadwal',
+                'manage_jadwal',
+
+                // Transaksi - Full access
+                'view_transaksi',
+                'view_smartsend_transaksi',
+                'manage_smartsend_transaksi',
+                'view_perjalanan_transaksi',
+                'manage_perjalanan_transaksi',
+                'view_armada_transaksi',
+                'manage_armada_transaksi',
+
+                // SmartSend - Full access
+                'view_smartsend',
+                'view_smartsend_tiket',
+                'manage_smartsend_tiket',
+                'view_smartsend_perjalanan',
+                'manage_smartsend_perjalanan',
+                'view_smartsend_armada',
+                'manage_smartsend_armada',
+
+                // SmartRent - Full access
+                'view_smartrent',
+                'manage_smartrent',
+
+                // Laporan - Full access
+                'view_laporan',
+                'manage_laporan',
+
+                // Pengaturan - Full access
+                'view_pengaturan',
+                'view_user',
+                'manage_user',
+                'view_menu',
+                'manage_menu',
+            ],
+            'admin_cabang' => [
+                // Dashboard
+                'view_dashboard',
+
+                // Master Data - Limited access
+                'view_master_data',
+                'view_profile_perusahaan',
+                'view_cabang',
+                'view_outlet',
+                'manage_outlet',
+                'view_promo',
+                'manage_promo',
+                'view_kontak',
+                'manage_kontak',
+                'view_artikel',
+                'manage_artikel',
+                'view_armada',
+                'manage_armada',
+                'view_driver',
+                'manage_driver',
+                'view_pegawai',
+                'manage_pegawai',
+                'view_rute',
+                'manage_rute',
+                'view_jadwal',
+                'manage_jadwal',
+
+                // Transaksi - Full access
+                'view_transaksi',
+                'view_smartsend_transaksi',
+                'manage_smartsend_transaksi',
+                'view_perjalanan_transaksi',
+                'manage_perjalanan_transaksi',
+                'view_armada_transaksi',
+                'manage_armada_transaksi',
+
+                // SmartSend - Full access
+                'view_smartsend',
+                'view_smartsend_tiket',
+                'manage_smartsend_tiket',
+                'view_smartsend_perjalanan',
+                'manage_smartsend_perjalanan',
+                'view_smartsend_armada',
+                'manage_smartsend_armada',
+
+                // SmartRent - Full access
+                'view_smartrent',
+                'manage_smartrent',
+
+                // Laporan - View only
+                'view_laporan',
+            ],
+            'operator' => [
+                // Dashboard
+                'view_dashboard',
+
+                // Master Data - Limited access
+                'view_master_data',
+                'view_profile_perusahaan',
+                'view_cabang',
+                'view_outlet',
+                'view_promo',
+                'view_kontak',
+                'view_artikel',
+                'view_armada',
+                'view_driver',
+                'view_pegawai',
+                'view_rute',
+                'view_jadwal',
+
+                // Transaksi - Full access
+                'view_transaksi',
+                'view_smartsend_transaksi',
+                'manage_smartsend_transaksi',
+                'view_perjalanan_transaksi',
+                'manage_perjalanan_transaksi',
+                'view_armada_transaksi',
+                'manage_armada_transaksi',
+
+                // SmartSend - Full access
+                'view_smartsend',
+                'view_smartsend_tiket',
+                'manage_smartsend_tiket',
+                'view_smartsend_perjalanan',
+                'manage_smartsend_perjalanan',
+                'view_smartsend_armada',
+                'manage_smartsend_armada',
+
+                // SmartRent - Full access
+                'view_smartrent',
+                'manage_smartrent',
+
+                // Laporan - View only
+                'view_laporan',
+            ],
+            'driver' => [
+                // Dashboard
+                'view_dashboard',
+
+                // Limited access for driver operations
+                'view_jadwal',
+            ],
+            'customer' => [
+                // Customer has no admin permissions
+            ],
+        ];
+
+        return $rolePermissions[$role] ?? [];
     }
 
     public function menu()
@@ -1089,7 +1481,7 @@ class AdminController extends Controller
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()->route('customer.login');
+            return redirect()->route('admin.login');
 
         } catch (\Exception $e) {
             return redirect()->route('admin.dashboard');

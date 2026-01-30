@@ -21,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin.role' => \App\Http\Middleware\CheckAdminRole::class,
             'branch.access' => \App\Http\Middleware\CheckBranchAccess::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'auth.customer' => \App\Http\Middleware\CheckCustomerSession::class,
             'guest.customer' => \App\Http\Middleware\RedirectIfAuthenticatedCustomer::class,
             'guest.driver' => \App\Http\Middleware\RedirectIfAuthenticatedDriver::class,

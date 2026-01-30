@@ -93,43 +93,52 @@ class Rute extends Model
     public function hitungJarakOutlet($outletAsalNama, $outletTujuanNama)
     {
         $pemberhentian = $this->rute_pemberhentian ?? [];
-        
+
+        // Ensure pemberhentian is an array
+        if (!is_array($pemberhentian)) {
+            $pemberhentian = [];
+        }
+
         $foundAsal = false;
         $foundTujuan = false;
         $jarakKumulatif = 0;
         $jarakAsalKeTujuan = 0;
-        
+
         foreach ($pemberhentian as $stop) {
+            // Ensure stop is an array
+            if (!is_array($stop)) {
+                continue;
+            }
             $outletsInStop = $stop['outlets'] ?? [];
-            
+
             // Cek apakah outlet asal ada di stop ini
             if (in_array($outletAsalNama, $outletsInStop)) {
                 $foundAsal = true;
             }
-            
+
             // Jika sudah menemukan asal, mulai hitung jarak
             if ($foundAsal && !$foundTujuan) {
                 $jarakAsalKeTujuan += $stop['jarak_segment'] ?? 0;
             }
-            
+
             // Cek apakah outlet tujuan ada di stop ini
             if (in_array($outletTujuanNama, $outletsInStop)) {
                 $foundTujuan = true;
                 break; // Berhenti setelah menemukan tujuan
             }
         }
-        
+
         // Jika tidak ditemukan dalam rute pemberhentian, cek kota asal/tujuan utama
         if (!$foundAsal && $this->kota_asal === $outletAsalNama) {
             $foundAsal = true;
         }
-        
+
         if (!$foundTujuan && $this->kota_tujuan === $outletTujuanNama) {
             $foundTujuan = true;
             // Tambahkan jarak total jika tujuan adalah kota tujuan utama
             $jarakAsalKeTujuan = $this->jarak_total ?? 0;
         }
-        
+
         return ($foundAsal && $foundTujuan) ? $jarakAsalKeTujuan : 0;
     }
 
@@ -143,40 +152,55 @@ class Rute extends Model
             if (!$outletAsal) {
                 return collect();
             }
-            
+
             $namaOutletAsal = $outletAsal->nama_outlet;
             $kotaOutletAsal = $outletAsal->branch->kota ?? null;
-            
+
             $semuaRute = self::aktif()->get();
             $outletTujuanList = collect();
-            
+
             foreach ($semuaRute as $rute) {
                 $pemberhentian = $rute->rute_pemberhentian ?? [];
+
+                // Pastikan pemberhentian adalah array
+                if (!is_array($pemberhentian)) {
+                    continue;
+                }
+
                 $foundAsal = false;
-                
+
                 foreach ($pemberhentian as $stop) {
+                    if (!is_array($stop)) {
+                        continue;
+                    }
+
                     $outletsInStop = $stop['outlets'] ?? [];
-                    
+
+                    // Pastikan outlets adalah array
+                    if (!is_array($outletsInStop)) {
+                        $outletsInStop = [];
+                    }
+
                     // Cek apakah outlet asal ada di stop ini
                     if (in_array($namaOutletAsal, $outletsInStop)) {
                         $foundAsal = true;
                     }
-                    
+
                     // Jika ditemukan asal, kumpulkan outlet setelahnya
                     if ($foundAsal) {
                         foreach ($outletsInStop as $outletNama) {
-                            if ($outletNama !== $namaOutletAsal) {
+                            if ($outletNama !== $namaOutletAsal && !empty($outletNama)) {
                                 // Cari outlet berdasarkan nama
                                 $outletTujuan = Outlet::where('nama_outlet', $outletNama)
                                     ->where('status', 'aktif')
                                     ->with('branch')
                                     ->first();
-                                
-                                if ($outletTujuan && 
+
+                                if ($outletTujuan &&
                                     !$outletTujuanList->contains('id', $outletTujuan->id)) {
-                                    
+
                                     $jarak = $rute->hitungJarakOutlet($namaOutletAsal, $outletNama);
-                                    
+
                                     $outletTujuanList->push([
                                         'id' => $outletTujuan->id,
                                         'nama_outlet' => $outletTujuan->nama_outlet,
@@ -190,22 +214,30 @@ class Rute extends Model
                         }
                     }
                 }
-                
+
                 // Cek jika outlet asal adalah kota asal utama
                 if (!$foundAsal && $rute->kota_asal === $kotaOutletAsal) {
                     $foundAsal = true;
                     foreach ($pemberhentian as $stop) {
+                        if (!is_array($stop)) {
+                            continue;
+                        }
+
                         foreach ($stop['outlets'] ?? [] as $outletNama) {
+                            if (empty($outletNama)) {
+                                continue;
+                            }
+
                             $outletTujuan = Outlet::where('nama_outlet', $outletNama)
                                 ->where('status', 'aktif')
                                 ->with('branch')
                                 ->first();
-                            
-                            if ($outletTujuan && 
+
+                            if ($outletTujuan &&
                                 !$outletTujuanList->contains('id', $outletTujuan->id)) {
-                                
-                                $jarak = $rute->jarak_total ?? rand(50, 300);
-                                
+
+                                $jarak = (float) ($rute->jarak ?? rand(50, 300));
+
                                 $outletTujuanList->push([
                                     'id' => $outletTujuan->id,
                                     'nama_outlet' => $outletTujuan->nama_outlet,
@@ -219,12 +251,14 @@ class Rute extends Model
                     }
                 }
             }
-            
+
             // Hapus duplikat berdasarkan ID outlet
             return $outletTujuanList->unique('id')->values();
-            
+
         } catch (\Exception $e) {
-            \Log::error('Error in Rute::getOutletTujuanValid: ' . $e->getMessage());
+            \Log::error('Error in Rute::getOutletTujuanValid: ' . $e->getMessage(), [
+                'outlet_asal_id' => $outletAsalId
+            ]);
             return collect();
         }
     }
@@ -236,16 +270,16 @@ class Rute extends Model
     {
         $outletAsal = Outlet::find($outletAsalId);
         $outletTujuan = Outlet::find($outletTujuanId);
-        
+
         if (!$outletAsal || !$outletTujuan) {
             return null;
         }
-        
+
         $namaOutletAsal = $outletAsal->nama_outlet;
         $namaOutletTujuan = $outletTujuan->nama_outlet;
-        
+
         $rutes = self::aktif()->get();
-        
+
         foreach ($rutes as $rute) {
             $jarak = $rute->hitungJarakOutlet($namaOutletAsal, $namaOutletTujuan);
             if ($jarak > 0) {
@@ -255,7 +289,7 @@ class Rute extends Model
                 ];
             }
         }
-        
+
         return null;
     }
 }

@@ -36,7 +36,17 @@ class InitializeSessionAndCsrf
                     session()->regenerateToken();
                 }
 
-                // 3. Regenerate session ID pada first request untuk security
+                // 3. Force session save to ensure persistence
+                // This is crucial for first-time requests
+                try {
+                    session()->save();
+                } catch (\Exception $e) {
+                    \Log::warning('InitializeSessionAndCsrf: Error saving session during init', [
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                // 4. Regenerate session ID pada first request untuk security
                 // Tapi cek terlebih dahulu untuk menghindari multiple regenerations
                 if (!session()->has('_csrf_initialized')) {
                     session()->put('_csrf_initialized', true);
@@ -51,6 +61,7 @@ class InitializeSessionAndCsrf
                         'session_id' => session()->getId(),
                         'session_token' => substr(session()->token(), 0, 10) . '...',
                         'session_has_user' => session()->has('user'),
+                        'session_saved' => true,
                     ]);
                 }
 

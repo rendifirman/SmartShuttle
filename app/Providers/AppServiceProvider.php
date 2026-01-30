@@ -1,19 +1,42 @@
 <?php
-
+// app/Providers/AppServiceProvider.php
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Models\MMasterKontak; // Ubah ini dari MasterKontak ke MMasterKontak
+use Illuminate\Support\Facades\View;
+use App\Models\MMasterKontak;
+use App\Services\KontakService;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function boot()
+    /**
+     * Register any application services.
+     */
+    public function register(): void
     {
-        // Share masterKontak dengan semua views
-        view()->composer('*', function ($view) {
-            // Ganti MasterKontak dengan MMasterKontak
+        // Register kontak service
+        $this->app->singleton('kontakService', function () {
+            return new KontakService();
+        });
+    }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        // Share kontak data ke semua views dari kontakService
+        View::composer('*', function ($view) {
+            $kontakService = app('kontakService');
+            $globalKontak = $kontakService->getKontak();
+            $view->with('globalKontak', $globalKontak);
+            $view->with('kontakService', $kontakService);
+        });
+
+        // Share masterKontak dengan semua views dari database
+        View::composer('*', function ($view) {
             $masterKontak = MMasterKontak::where('status', 'active')->first();
-            
+
             // Jika tidak ada data, buat data default
             if (!$masterKontak) {
                 $masterKontak = (object) [
@@ -28,7 +51,7 @@ class AppServiceProvider extends ServiceProvider
                     ]
                 ];
             }
-            
+
             $view->with('masterKontak', $masterKontak);
         });
     }

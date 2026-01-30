@@ -10,10 +10,15 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Spatie\Permission\Traits\HasPermissions;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles, HasPermissions;
+
+    protected $guard_name = 'admin';
+
+
 
     protected $fillable = [
         'name',
@@ -38,7 +43,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'two_factor_enabled',
         'status',
         'google_id',
-        'provider'
+        'provider',
+        'branch_id'
     ];
 
     protected $hidden = [
@@ -79,6 +85,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function membershipPayments()
     {
         return $this->hasMany(MembershipPayment::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     // Helper methods untuk Google Auth
@@ -211,7 +222,7 @@ class User extends Authenticatable implements MustVerifyEmail
         // Cek file avatar di storage
         $disk = Storage::disk('public');
         $avatarPath = $this->attributes['avatar'];
-        
+
         if ($disk->exists($avatarPath)) {
             return $disk->url($avatarPath);
         }

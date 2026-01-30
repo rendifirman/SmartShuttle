@@ -10,7 +10,7 @@ class MasterKontakSeeder extends Seeder
     public function run(): void
     {
         MMasterKontak::create([
-            'nama_perusahaan' => 'Citra Solusi Teknologi',
+            'nama_perusahaan' => 'Citra Solusi Komputama',
             'deskripsi_singkat' => 'Menghubungkan kota, menyatukan perjalanan – Solusi cerdas untuk mobilitas Anda',
             'email_utama' => 'rndcitrasolusi@gmail.com',
             'email_dukungan' => 'support@smartshuttle.com',

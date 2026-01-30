@@ -45,11 +45,11 @@ class Jadwal extends Model
         $pemberhentianList = [];
 
         foreach ($this->rutes as $rute) {
-            $stops = json_decode($rute->rute_pemberhentian, true);
+            $stops = $rute->rute_pemberhentian;
             if (is_array($stops)) {
                 foreach ($stops as $stop) {
                     $pemberhentianList[] = [
-                        'kota' => $stop['kota'],
+                        'kota' => $stop['kota'] ?? '',
                         'outlets' => $stop['outlets'] ?? [],
                         'durasi_singgah' => $stop['durasi_singgah'] ?? 0
                     ];

@@ -74,7 +74,7 @@ class CustomerController extends Controller
 {
     protected $paylabsService;
 
-    public function __construct(PaylabsService $paylabsService)
+    public function __construct(PaylabsService $paylabsService = null)
     {
         $this->paylabsService = $paylabsService;
     }
@@ -224,6 +224,22 @@ class CustomerController extends Controller
     public function beranda()
     {
         $user = session()->get('user');
+
+        // Jika user sudah login tapi session user belum ada, set ulang session
+        if (!$user && Auth::check()) {
+            $authUser = Auth::user();
+            session()->put('user', [
+                'id' => $authUser->id,
+                'name' => $authUser->name,
+                'email' => $authUser->email,
+                'phone' => $authUser->phone,
+                'avatar' => $authUser->avatar_url,
+                'membership_status' => $authUser->membership_status,
+                'membership_level' => $authUser->membership_level,
+            ]);
+            session()->save();
+            $user = session()->get('user');
+        }
 
         $outletsGrouped = Outlet::with('branch')
             ->where('status', 'aktif')
@@ -584,17 +600,26 @@ $reviews = Review::with('user')
      */
     public function showLogin()
     {
-        if (session()->has('user')) {
+        // Check if user is already authenticated
+        if (Auth::check()) {
             return redirect()->route('customer.beranda')->with('info', 'Anda sudah login!');
         }
 
-        // Pastikan session dan CSRF token sudah diinisialisasi sebelum render view
+        // Ensure session is properly initialized
         if (!session()->isStarted()) {
             session()->start();
         }
 
+        // Ensure CSRF token is generated
         if (!session()->token()) {
             session()->regenerateToken();
+        }
+
+        // Force session save to ensure persistence
+        try {
+            session()->save();
+        } catch (\Exception $e) {
+            \Log::warning('Failed to save session in showLogin', ['error' => $e->getMessage()]);
         }
 
         // Log untuk debugging first load issues
@@ -604,6 +629,7 @@ $reviews = Review::with('user')
             'csrf_token' => substr(session()->token() ?? '', 0, 10) . '...',
             'session_has_user' => session()->has('user'),
             'auth_check' => Auth::check(),
+            'session_saved' => true,
         ]);
 
         return view('customer.login');
@@ -621,11 +647,34 @@ $reviews = Review::with('user')
 
         try {
             // Log CSRF token validation at start
-            \Log::info('Login request start', [
+            \Log::info('Customer login request start', [
                 'email' => $validated['email'],
                 'has_csrf_token' => !empty($request->session()->token()),
                 'session_id' => session()->getId(),
             ]);
+
+            // First, check if user exists and has customer role
+            $userCheck = User::where('email', $validated['email'])->first();
+            if ($userCheck) {
+                \Log::info('User found', [
+                    'user_id' => $userCheck->id,
+                    'status' => $userCheck->status,
+                    'email_verified_at' => $userCheck->email_verified_at,
+                    'password_hash_exists' => !empty($userCheck->password),
+                    'roles' => $userCheck->getRoleNames()->toArray()
+                ]);
+
+                // Check if user has admin or driver role - reject login
+                if ($userCheck->hasRole('admin_pusat') || $userCheck->hasRole('admin_cabang') || $userCheck->hasRole('driver') || $userCheck->hasRole('operator')) {
+                    \Log::warning('Non-customer role attempted customer login', [
+                        'email' => $validated['email'],
+                        'roles' => $userCheck->getRoleNames()->toArray()
+                    ]);
+                    return back()->withErrors(['message' => 'Login customer hanya untuk pengguna dengan role customer. Silakan gunakan login yang sesuai dengan role Anda.'])->withInput();
+                }
+            } else {
+                \Log::info('User not found for email: ' . $validated['email']);
+            }
 
             $remember = $request->filled('remember');
             $credentials = [
@@ -634,18 +683,7 @@ $reviews = Review::with('user')
             ];
 
             // Debug logging
-            \Log::info('Login attempt', ['email' => $validated['email']]);
-            $userCheck = User::where('email', $validated['email'])->first();
-            if ($userCheck) {
-                \Log::info('User found', [
-                    'user_id' => $userCheck->id,
-                    'status' => $userCheck->status,
-                    'email_verified_at' => $userCheck->email_verified_at,
-                    'password_hash_exists' => !empty($userCheck->password)
-                ]);
-            } else {
-                \Log::info('User not found for email: ' . $validated['email']);
-            }
+            \Log::info('Customer login attempt', ['email' => $validated['email']]);
 
             if (!Auth::attempt($credentials, $remember)) {
                 \Log::info('Auth attempt failed for email: ' . $validated['email']);
@@ -663,26 +701,18 @@ $reviews = Review::with('user')
                 return back()->withErrors(['message' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.'])->withInput();
             }
 
-            // ===== PERBAIKAN DI SINI =====
-            // Check user role and redirect accordingly
-            if ($user->hasRole('admin_pusat') || $user->hasRole('admin_cabang')) {
-                // Log out from web guard and log in with admin guard
+            // Double-check role after login (extra security)
+            if (!$user->hasRole('customer')) {
                 Auth::logout();
-                Auth::guard('admin')->login($user);
-                return redirect()->route('admin.dashboard');
-            } elseif ($user->hasRole('driver')) {
-                // Log out from web guard and log in with driver guard
-                Auth::logout();
-                Auth::guard('driver')->login($user);
-                return redirect()->route('driver.dashboard');
-            } elseif ($user->hasRole('operator')) {
-                // For operator, redirect to appropriate dashboard
-                Auth::logout();
-                Auth::guard('admin')->login($user);
-                return redirect()->route('admin.dashboard');
+                \Log::warning('Non-customer role successfully authenticated in customer login', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'roles' => $user->getRoleNames()->toArray()
+                ]);
+                return back()->withErrors(['message' => 'Login customer hanya untuk pengguna dengan role customer.'])->withInput();
             }
 
-            // For customer and other roles, continue as usual
+            // For customer role, continue as usual
             session()->put('user', [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -700,7 +730,7 @@ $reviews = Review::with('user')
                 \Log::warning('Failed to save session after login', ['error' => $e->getMessage()]);
             }
 
-            \Log::info('Login successful', [
+            \Log::info('Customer login successful', [
                 'user_id' => $user->id,
                 'email' => $user->email,
                 'session_saved' => true,
@@ -709,7 +739,7 @@ $reviews = Review::with('user')
             return redirect()->route('customer.beranda');
 
         } catch (\Exception $e) {
-            \Log::error('Login exception', [
+            \Log::error('Customer login exception', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -723,17 +753,26 @@ $reviews = Review::with('user')
      */
     public function showRegister()
     {
-        if (session()->has('user')) {
+        // Check if user is already authenticated
+        if (Auth::check()) {
             return redirect()->route('customer.beranda')->with('info', 'Anda sudah login!');
         }
 
-        // Pastikan session dan CSRF token sudah diinisialisasi sebelum render view
+        // Ensure session is properly initialized
         if (!session()->isStarted()) {
             session()->start();
         }
 
+        // Ensure CSRF token is generated
         if (!session()->token()) {
             session()->regenerateToken();
+        }
+
+        // Force session save to ensure persistence
+        try {
+            session()->save();
+        } catch (\Exception $e) {
+            \Log::warning('Failed to save session in showRegister', ['error' => $e->getMessage()]);
         }
 
         // Log untuk debugging
@@ -741,6 +780,7 @@ $reviews = Review::with('user')
             'session_id' => session()->getId(),
             'has_csrf_token' => !empty(session()->token()),
             'csrf_token' => substr(session()->token() ?? '', 0, 10) . '...',
+            'session_saved' => true,
         ]);
 
         $syaratKetentuan = SyaratKetentuan::getUntukPengguna();
@@ -1837,11 +1877,11 @@ $reviews = Review::with('user')
                 if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
                     Storage::disk('public')->delete($user->avatar);
                 }
-                
+
                 // ✅ 2. Simpan file fisik ke storage/app/public/avatars
                 $avatarPath = $request->avatar->store('avatars', 'public');
                 // Hasil: "avatars/1738234567.jpg" (file benar-benar tersimpan)
-                
+
                 // ✅ 3. Simpan path ke database
                 $user->avatar = $avatarPath;
             }
@@ -1920,7 +1960,7 @@ $reviews = Review::with('user')
 
             // Simpan file ke storage public
             $path = $file->storeAs('avatars', $filename, 'public');
-            
+
             \Log::info('File saved to:', ['path' => $path]);
 
             // Hapus avatar lama jika ada
@@ -2661,24 +2701,7 @@ $reviews = Review::with('user')
         ]);
     }
 
-    /**
- * Method aman untuk mengambil data dengan fallback
- */
-public static function getAktif()
-{
-    try {
-        // Cek apakah tabel ada
-        if (!Schema::hasTable('master_harga')) {
-            \Log::warning('Tabel master_harga tidak ditemukan di database');
-            return null;
-        }
-        
-        return self::aktif()->first();
-    } catch (\Exception $e) {
-        \Log::warning('Error mengambil master harga aktif: ' . $e->getMessage());
-        return null;
-    }
-}
+
 
     /**
      * Cek harga paket (AJAX)
@@ -3117,9 +3140,9 @@ public static function getAktif()
         // Make status check case-insensitive
         $outlets = Outlet::whereRaw('LOWER(status) = ?', ['aktif'])->get();
         $outletsGrouped = $outlets->groupBy('kota');
-    
+
         $layanan = []; // Tambahkan layanan jika ada
-        
+
         $promos = Promo::where('status', true)
             ->orderBy('created_at', 'desc')
             ->take(3)
@@ -3186,13 +3209,13 @@ public static function getAktif()
         $activeService = 'kirim-paket'; // Set default untuk SmartSend
 
         return view('customer.smartsend', compact(
-            'profile', 
-            'user', 
-            'outlets',     
-            'outletsGrouped', 
-            'layanan', 
-            'promos', 
-            'articles', 
+            'profile',
+            'user',
+            'outlets',
+            'outletsGrouped',
+            'layanan',
+            'promos',
+            'articles',
             'activeService'
         ));
     }
@@ -3204,7 +3227,7 @@ public static function getAktif()
     {
         $user = session()->get('user', null);
         $profile = MProfilePerusahaan::first();
-        
+
         return view('customer.cek_resi', compact('user', 'profile'));
     }
 
@@ -3216,10 +3239,10 @@ public static function getAktif()
         $validated = $request->validate([
             'kode_resi' => 'required|string|max:20'
         ]);
-        
+
         // Cari shipment berdasarkan kode resi (case insensitive)
         $shipment = Shipment::whereRaw('LOWER(kode_resi) = ?', [strtolower(trim($validated['kode_resi']))])->first();
-        
+
         if (!$shipment) {
             return redirect()->route('customer.cek-resi')
                 ->withErrors([
@@ -3227,7 +3250,7 @@ public static function getAktif()
                 ])
                 ->withInput();
         }
-        
+
         // Redirect ke halaman detail paket
         return redirect()->route('customer.detail-paket', ['kode_resi' => $shipment->kode_resi])
             ->with('success', 'Paket ditemukan!');
@@ -3251,16 +3274,16 @@ public static function getAktif()
             'jarak' => 'required|numeric|min:1|max:1000', // max 1000 km
             'catatan' => 'nullable|string|max:500',
         ]);
-        
+
         DB::beginTransaction();
-        
+
         try {
             // Generate kode resi baru dengan format ss-YYYYMMDD-XXXX
             $kodeResi = Shipment::generateKodeResi();
-            
+
             // Hitung harga berdasarkan LOGIC BARU
             $harga = Shipment::hitungHarga($validated['berat'], $validated['jarak']);
-            
+
             // Simpan ke database dengan semua data harga
             $shipment = Shipment::create([
                 'kode_resi' => $kodeResi,
@@ -3281,9 +3304,9 @@ public static function getAktif()
                 'status' => 'diproses',
                 'tanggal_dibuat' => now(),
             ]);
-            
+
             DB::commit();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Paket berhasil dibuat!',
@@ -3292,11 +3315,11 @@ public static function getAktif()
                     'redirect_url' => route('customer.detail-paket', ['kode_resi' => $kodeResi])
                 ]
             ]);
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Gagal membuat pengiriman paket: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat membuat paket: ' . $e->getMessage()
@@ -3313,18 +3336,18 @@ public static function getAktif()
             $validated = $request->validate([
                 'resi' => 'required|string'
             ]);
-            
+
             $shipment = Shipment::whereRaw('LOWER(kode_resi) = ?', [strtolower($validated['resi'])])->first();
-            
+
             if (!$shipment) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Nomor resi tidak ditemukan'
                 ]);
             }
-            
+
             $status = $shipment->statusLabel;
-            
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -3341,7 +3364,7 @@ public static function getAktif()
                     'tanggal_dibuat' => $shipment->tanggal_dibuat->format('d M Y H:i')
                 ]
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -3360,10 +3383,10 @@ public static function getAktif()
                 'berat' => 'required|numeric|min:0.1|max:100',
                 'jarak' => 'required|numeric|min:1|max:1000'
             ]);
-            
+
             // Hitung harga dengan LOGIC BARU
             $harga = Shipment::hitungHarga($validated['berat'], $validated['jarak']);
-            
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -3375,7 +3398,7 @@ public static function getAktif()
                 ],
                 'message' => 'Harga berhasil dihitung!'
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -3390,7 +3413,7 @@ public static function getAktif()
     private function formatPerhitungan($berat, $jarak, $harga)
     {
         $text = "Perhitungan Harga:\n";
-        
+
         // Bagian berat
         if ($berat <= 5) {
             $text .= "• Berat {$berat} kg (≤5 kg) = Rp 7.000\n";
@@ -3398,14 +3421,14 @@ public static function getAktif()
             $text .= "• Berat {$berat} kg = 5 kg pertama (Rp 7.000) + ";
             $text .= ($berat - 5) . " kg × Rp 2.000 = Rp " . number_format($harga['harga_berat'], 0, ',', '.') . "\n";
         }
-        
+
         // Bagian jarak
         $kelipatan = ceil($jarak / 10);
         $text .= "• Jarak {$jarak} km = {$kelipatan} × 10 km × Rp 2.000 = Rp " . number_format($harga['harga_jarak'], 0, ',', '.') . "\n";
-        
+
         // Total
         $text .= "• Total = Rp " . number_format($harga['harga_berat'], 0, ',', '.') . " + Rp " . number_format($harga['harga_jarak'], 0, ',', '.') . " = Rp " . number_format($harga['harga_total'], 0, ',', '.');
-        
+
         return $text;
     }
 
@@ -3464,7 +3487,7 @@ public static function getAktif()
                 'trace' => $e->getTraceAsString(),
                 'request' => $request->all()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memuat rute. Silakan coba lagi.',
@@ -3501,7 +3524,7 @@ public function kalkulatorHargaSmartSend(Request $request)
 
         // 1. Validasi: Apakah rute valid?
         $jarak = \App\Models\RuteSegment::hitungJarak($outletAsalId, $outletTujuanId);
-        
+
         if ($jarak <= 0) {
             \Log::warning('Rute tidak valid dari outlet ' . $outletAsalId . ' ke ' . $outletTujuanId);
             return response()->json([
@@ -3512,8 +3535,8 @@ public function kalkulatorHargaSmartSend(Request $request)
 
         // 2. Hitung berat volumetric
         $beratAktual = floatval($request->berat);
-        $volume = floatval($request->panjang ?? 0) * 
-                 floatval($request->lebar ?? 0) * 
+        $volume = floatval($request->panjang ?? 0) *
+                 floatval($request->lebar ?? 0) *
                  floatval($request->tinggi ?? 0);
         $beratVolumetric = $volume > 0 ? $volume / 6000 : 0;
         $beratTerpakai = max($beratAktual, $beratVolumetric);
@@ -3538,11 +3561,11 @@ public function kalkulatorHargaSmartSend(Request $request)
         // 4. Hitung harga dengan fallback ke default jika master_harga tidak ada
         $resultBerat = $this->hitungHargaBerat($beratTerpakai, $masterHarga ?? $defaultHarga);
         $resultJarak = $this->hitungHargaJarak($jarak, $masterHarga ?? $defaultHarga);
-        
+
         $hargaBerat = $resultBerat['total'];
         $hargaJarak = $resultJarak['total'];
         $hargaTotal = $hargaBerat + $hargaJarak;
-        
+
         // Build calculation breakdown
         $breakdownText = $this->buatCalculationBreakdown($beratTerpakai, $jarak, $resultBerat, $resultJarak);
 
@@ -3583,8 +3606,8 @@ public function kalkulatorHargaSmartSend(Request $request)
                 ],
                 'perhitungan' => $breakdownText,
                 'estimasi_waktu' => $this->hitungEstimasiWaktu($jarak),
-                'note' => $masterHarga ? 
-                    'Harga dihitung berdasarkan data master_harga' : 
+                'note' => $masterHarga ?
+                    'Harga dihitung berdasarkan data master_harga' :
                     '⚠️ Harga dihitung menggunakan nilai default (master_harga belum tersedia)'
             ]
         ]);
@@ -3594,7 +3617,7 @@ public function kalkulatorHargaSmartSend(Request $request)
             'trace' => $e->getTraceAsString(),
             'request' => $request->all()
         ]);
-        
+
         return response()->json([
             'success' => false,
             'message' => 'Terjadi kesalahan sistem. Silakan hubungi administrator.'
@@ -3612,7 +3635,7 @@ public function kalkulatorHargaSmartSend(Request $request)
             'harga_berat_pertama' => 7000,
             'harga_berat_berikutnya' => 2000
         ];
-        
+
         // Gunakan nilai dari masterHarga jika tersedia
         if ($masterHarga) {
             $beratPertama = $masterHarga->berat_pertama ?? $default['berat_pertama'];
@@ -3623,7 +3646,7 @@ public function kalkulatorHargaSmartSend(Request $request)
             $hargaBeratPertama = $default['harga_berat_pertama'];
             $hargaBeratBerikutnya = $default['harga_berat_berikutnya'];
         }
-        
+
         // Calculate total price
         if ($berat <= $beratPertama) {
             $hargaTotal = $hargaBeratPertama;
@@ -3634,7 +3657,7 @@ public function kalkulatorHargaSmartSend(Request $request)
             $hargaTambahan = ceil($beratTambahan) * $hargaBeratBerikutnya;
             $hargaTotal = $hargaBeratPertama + $hargaTambahan;
         }
-        
+
         // Return dengan breakdown untuk calculator
         return [
             'total' => $hargaTotal,
@@ -3658,7 +3681,7 @@ public function kalkulatorHargaSmartSend(Request $request)
             'kelipatan_jarak' => 10,
             'harga_per_kelipatan' => 2000
         ];
-        
+
         // Gunakan nilai dari masterHarga jika tersedia
         if ($masterHarga) {
             $kelipatanJarak = $masterHarga->kelipatan_jarak ?? $default['kelipatan_jarak'];
@@ -3667,10 +3690,10 @@ public function kalkulatorHargaSmartSend(Request $request)
             $kelipatanJarak = $default['kelipatan_jarak'];
             $hargaPerKelipatan = $default['harga_per_kelipatan'];
         }
-        
+
         $kelipatan = ceil($jarak / $kelipatanJarak);
         $hargaTotal = $kelipatan * $hargaPerKelipatan;
-        
+
         // Return dengan breakdown untuk calculator
         return [
             'total' => $hargaTotal,
@@ -3691,31 +3714,31 @@ public function kalkulatorHargaSmartSend(Request $request)
     {
         $beratBreakdown = $resultBerat['breakdown'];
         $jarakBreakdown = $resultJarak['breakdown'];
-        
+
         $text = "INFORMASI HARGA PENGIRIMAN\n";
         $text .= str_repeat("─", 40) . "\n\n";
-        
+
         // INFORMASI BERAT
         $text .= "INFORMASI BERAT:\n";
         $text .= "• 5 kg pertama: Rp " . number_format($beratBreakdown['harga_berat_pertama'], 0, ',', '.') . "\n";
-        
+
         if ($berat > $beratBreakdown['berat_pertama']) {
             $text .= "• Tambahan " . $beratBreakdown['berat_tambahan'] . " kg × Rp " . number_format($beratBreakdown['harga_berat_berikutnya'], 0, ',', '.') . "\n";
         }
-        
+
         $text .= "  Subtotal Berat: Rp " . number_format($resultBerat['total'], 0, ',', '.') . "\n\n";
-        
+
         // INFORMASI JARAK
         $text .= "INFORMASI JARAK:\n";
         $text .= "• Total jarak: " . round($jarakBreakdown['jarak_total'], 1) . " km\n";
         $text .= "• Biaya per 10 km: Rp " . number_format($jarakBreakdown['harga_per_kelipatan'], 0, ',', '.') . "\n";
         $text .= "  Subtotal Jarak: Rp " . number_format($resultJarak['total'], 0, ',', '.') . "\n\n";
-        
+
         // TOTAL
         $text .= str_repeat("─", 40) . "\n";
         $text .= "TOTAL BIAYA: Rp " . number_format($resultBerat['total'] + $resultJarak['total'], 0, ',', '.') . "\n";
         $text .= str_repeat("─", 40);
-        
+
         return $text;
     }
 
@@ -3726,11 +3749,11 @@ public function kalkulatorHargaSmartSend(Request $request)
     {
         $jam = $jarak / 60; // asumsi 60 km/jam
         $totalJam = ceil($jam) + 2; // +2 jam untuk proses
-        
+
         if ($totalJam >= 24) {
             return ceil($totalJam / 24) . ' hari';
         }
-        
+
         return $totalJam . ' jam';
     }
 
@@ -3754,7 +3777,7 @@ public function kalkulatorHargaSmartSend(Request $request)
 
             $outletAsal = Outlet::with('branch')->find($request->outlet_asal_id);
             $kotaAsal = $outletAsal->branch->kota ?? null;
-            
+
             if (!$kotaAsal) {
                 return response()->json([
                     'success' => false,
@@ -3778,15 +3801,15 @@ public function kalkulatorHargaSmartSend(Request $request)
             }
 
             $outletTujuanList = [];
-            
+
             foreach ($rutes as $rute) {
                 // Decode rute_pemberhentian
                 $pemberhentian = json_decode($rute->rute_pemberhentian, true) ?? [];
-                
+
                 // Cari posisi kota asal dalam rute
                 $foundAsal = false;
                 $startCollecting = false;
-                
+
                 foreach ($pemberhentian as $stop) {
                     // Jika menemukan kota asal, mulai kumpulkan outlet tujuan setelahnya
                     if (($stop['kota'] ?? '') === $kotaAsal) {
@@ -3794,7 +3817,7 @@ public function kalkulatorHargaSmartSend(Request $request)
                         $startCollecting = true;
                         continue;
                     }
-                    
+
                     // Jika sudah melewati kota asal, kumpulkan outlet tujuan
                     if ($startCollecting && isset($stop['outlets']) && is_array($stop['outlets'])) {
                         foreach ($stop['outlets'] as $outletName) {
@@ -3805,7 +3828,7 @@ public function kalkulatorHargaSmartSend(Request $request)
                                 })
                                 ->where('status', 'aktif')
                                 ->first();
-                            
+
                             if ($outlet && !in_array($outlet->id, array_column($outletTujuanList, 'id'))) {
                                 $outletTujuanList[] = [
                                     'id' => $outlet->id,
@@ -3819,7 +3842,7 @@ public function kalkulatorHargaSmartSend(Request $request)
                         }
                     }
                 }
-                
+
                 // Jika kota asal adalah kota_asal utama dari rute
                 if (!$foundAsal && $rute->kota_asal === $kotaAsal) {
                     // Ambil semua outlet dari semua pemberhentian setelah kota asal
@@ -3832,7 +3855,7 @@ public function kalkulatorHargaSmartSend(Request $request)
                                     })
                                     ->where('status', 'aktif')
                                     ->first();
-                                
+
                                 if ($outlet && !in_array($outlet->id, array_column($outletTujuanList, 'id'))) {
                                     $outletTujuanList[] = [
                                         'id' => $outlet->id,
@@ -3861,7 +3884,7 @@ public function kalkulatorHargaSmartSend(Request $request)
                     'total_tersedia' => count($outletTujuanList)
                 ]
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -3912,18 +3935,18 @@ public function kalkulatorHargaSmartSend(Request $request)
     {
         // Cari rute yang memiliki kedua kota dalam urutan yang benar
         $rutes = Rute::where('status', 'aktif')->get();
-        
+
         foreach ($rutes as $rute) {
             $pemberhentian = json_decode($rute->rute_pemberhentian, true) ?? [];
-            
+
             $foundAsal = false;
             $foundTujuan = false;
-            
+
             foreach ($pemberhentian as $stop) {
                 if (($stop['kota'] ?? '') === $kotaAsal) {
                     $foundAsal = true;
                 }
-                
+
                 if (($stop['kota'] ?? '') === $kotaTujuan) {
                     if ($foundAsal) {
                         $foundTujuan = true;
@@ -3931,7 +3954,7 @@ public function kalkulatorHargaSmartSend(Request $request)
                     }
                 }
             }
-            
+
             // Juga cek jika kota asal adalah kota_asal utama
             if ($rute->kota_asal === $kotaAsal) {
                 $foundAsal = true;
@@ -3943,12 +3966,12 @@ public function kalkulatorHargaSmartSend(Request $request)
                     }
                 }
             }
-            
+
             if ($foundAsal && $foundTujuan) {
                 return $rute;
             }
         }
-        
+
         return null;
     }
 
@@ -3960,26 +3983,26 @@ public function kalkulatorHargaSmartSend(Request $request)
         // Jika rute memiliki jarak total
         if ($rute->jarak) {
             $pemberhentian = json_decode($rute->rute_pemberhentian, true) ?? [];
-            
+
             // Hitung jumlah segment antara kedua kota
             $count = 0;
             $startCounting = false;
-            
+
             foreach ($pemberhentian as $stop) {
                 if (($stop['kota'] ?? '') === $kotaAsal) {
                     $startCounting = true;
                     continue;
                 }
-                
+
                 if ($startCounting) {
                     $count++;
-                    
+
                     if (($stop['kota'] ?? '') === $kotaTujuan) {
                         break;
                     }
                 }
             }
-            
+
             // Jika kota asal adalah kota_asal utama
             if ($rute->kota_asal === $kotaAsal && $count === 0) {
                 $startCounting = false;
@@ -3990,14 +4013,14 @@ public function kalkulatorHargaSmartSend(Request $request)
                     }
                 }
             }
-            
+
             // Jika ditemukan, bagi jarak total secara proporsional
             if ($count > 0) {
                 $totalSegments = count($pemberhentian);
                 return ($count / $totalSegments) * $rute->jarak;
             }
         }
-        
+
         // Fallback: gunakan jarak default jika tidak bisa dihitung
         return 100; // Default 100 km
     }
@@ -4008,16 +4031,16 @@ public function kalkulatorHargaSmartSend(Request $request)
     private function formatPerhitunganDetail($berat, $beratVolumetric, $beratTerpakai, $jarak, $hargaBerat, $hargaJarak, $hargaTotal, $tarifBerat, $tarifJarak)
     {
         $text = "**Detail Perhitungan:**\n\n";
-        
+
         // Bagian berat
         $text .= "**1. Perhitungan Berat**\n";
         $text .= "- Berat aktual: " . number_format($berat, 2) . " kg\n";
-        
+
         if ($beratVolumetric > 0) {
             $text .= "- Berat volumetric: " . number_format($beratVolumetric, 2) . " kg (P×L×T÷6000)\n";
             $text .= "- Berat terpakai: " . number_format($beratTerpakai, 2) . " kg (berat terbesar)\n";
         }
-        
+
         if ($beratTerpakai <= $tarifBerat->berat_pertama) {
             $text .= "- Harga berat: " . $tarifBerat->berat_pertama . " kg pertama = Rp " . number_format($tarifBerat->harga_berat_pertama, 0, ',', '.') . "\n";
         } else {
@@ -4025,22 +4048,22 @@ public function kalkulatorHargaSmartSend(Request $request)
             $text .= ceil($beratTerpakai - $tarifBerat->berat_pertama) . " kg × Rp " . number_format($tarifBerat->harga_berat_berikutnya, 0, ',', '.') . "\n";
         }
         $text .= "- **Total harga berat: Rp " . number_format($hargaBerat, 0, ',', '.') . "**\n\n";
-        
+
         // Bagian jarak
         $text .= "**2. Perhitungan Jarak**\n";
         $text .= "- Jarak tempuh: " . number_format($jarak, 2) . " km\n";
         $text .= "- Kelipatan: " . ceil($jarak / $tarifJarak->kelipatan_jarak) . " × " . $tarifJarak->kelipatan_jarak . " km\n";
         $text .= "- Harga jarak: " . ceil($jarak / $tarifJarak->kelipatan_jarak) . " × Rp " . number_format($tarifJarak->harga_per_kelipatan, 0, ',', '.') . "\n";
         $text .= "- **Total harga jarak: Rp " . number_format($hargaJarak, 0, ',', '.') . "**\n\n";
-        
+
         // Total
         $text .= "**3. Total Biaya Pengiriman**\n";
         $text .= "- Harga berat: Rp " . number_format($hargaBerat, 0, ',', '.') . "\n";
         $text .= "- Harga jarak: Rp " . number_format($hargaJarak, 0, ',', '.') . "\n";
         $text .= "- **TOTAL: Rp " . number_format($hargaTotal, 0, ',', '.') . "**\n\n";
-        
+
         $text .= "*Catatan: Jarak dihitung otomatis berdasarkan rute yang dipilih*";
-        
+
         return $text;
     }
 
@@ -4056,7 +4079,7 @@ public function kalkulatorHargaSmartSend(Request $request)
             'terkirim' => 'Terkirim',
             'dibatalkan' => 'Dibatalkan'
         ];
-        
+
         return $statuses[$status] ?? 'Tidak Diketahui';
     }
 
@@ -4072,7 +4095,7 @@ public function kalkulatorHargaSmartSend(Request $request)
             'terkirim' => 'success',
             'dibatalkan' => 'danger'
         ];
-        
+
         return $colors[$status] ?? 'secondary';
     }
 
@@ -4082,7 +4105,7 @@ public function kalkulatorHargaSmartSend(Request $request)
     public function detailPaket($kode_resi)
     {
         $user = session()->get('user', null);
-        
+
         // Cari shipment dengan relasi lengkap
         $shipment = Shipment::with([
             'rute',
@@ -4096,24 +4119,24 @@ public function kalkulatorHargaSmartSend(Request $request)
             },
             'user'
         ])->where('kode_resi', $kode_resi)->first();
-        
+
         if (!$shipment) {
             return redirect()->route('customer.cek-resi')
                 ->with('error', 'Kode resi tidak ditemukan');
         }
-        
+
         // Cek apakah user memiliki akses (pengirim atau admin)
         $isOwner = false;
         if ($user && $shipment->user_id) {
             $isOwner = $shipment->user_id == $user['id'];
         }
-        
+
         // Get timeline
         $timeline = $shipment->timeline;
-        
+
         // Get status label
         $statusLabel = $shipment->statusLabel;
-        
+
         return view('customer.detail_paket', compact(
             'user',
             'shipment',
@@ -4134,7 +4157,7 @@ public function kalkulatorHargaSmartSend(Request $request)
                 'message' => 'Unauthorized'
             ], 401);
         }
-        
+
         $validator = Validator::make($request->all(), [
             'kode_resi' => 'required|exists:shipments,kode_resi',
             'status' => 'required|in:diproses,dalam_perjalanan,sampai_tujuan,terkirim,dibatalkan',
@@ -4142,7 +4165,7 @@ public function kalkulatorHargaSmartSend(Request $request)
             'outlet_id' => 'nullable|exists:outlets,id',
             'segment_id' => 'nullable|exists:rute_segments,id',
         ]);
-        
+
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
@@ -4150,16 +4173,16 @@ public function kalkulatorHargaSmartSend(Request $request)
                 'errors' => $validator->errors()
             ], 422);
         }
-        
+
         DB::beginTransaction();
-        
+
         try {
             $shipment = Shipment::where('kode_resi', $request->kode_resi)->first();
             $user = Auth::user();
-            
+
             // Update status shipment
             $shipment->status_pengiriman = $request->status;
-            
+
             // Set timestamp berdasarkan status
             switch ($request->status) {
                 case 'diterima_outlet_asal':
@@ -4178,9 +4201,9 @@ public function kalkulatorHargaSmartSend(Request $request)
                     $shipment->waktu_terkirim = now();
                     break;
             }
-            
+
             $shipment->save();
-            
+
             // Buat tracking history
             $tracking = ShipmentTracking::create([
                 'shipment_id' => $shipment->id,
@@ -4193,9 +4216,9 @@ public function kalkulatorHargaSmartSend(Request $request)
                 'updated_by_role' => 'admin',
                 'waktu_status' => now(),
             ]);
-            
+
             DB::commit();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Status berhasil diperbarui',
@@ -4205,11 +4228,11 @@ public function kalkulatorHargaSmartSend(Request $request)
                     'status_label' => $shipment->statusLabel,
                 ]
             ]);
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Update status shipment error: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memperbarui status: ' . $e->getMessage()
@@ -4231,7 +4254,7 @@ public function kalkulatorHargaSmartSend(Request $request)
             'terkirim' => 'paket_terkirim',
             'dibatalkan' => 'paket_batal',
         ];
-        
+
         return $mapping[$status] ?? 'paket_diproses';
     }
 
@@ -4242,7 +4265,7 @@ public function kalkulatorHargaSmartSend(Request $request)
     {
         $outlet = $outletId ? Outlet::find($outletId) : null;
         $outletName = $outlet ? $outlet->nama_outlet : 'outlet';
-        
+
         $deskripsi = [
             'diproses' => 'Paket sedang diproses',
             'diterima_outlet_asal' => "Paket diterima di {$outletName}",
@@ -4252,7 +4275,7 @@ public function kalkulatorHargaSmartSend(Request $request)
             'terkirim' => 'Paket telah terkirim ke penerima',
             'dibatalkan' => 'Pengiriman dibatalkan',
         ];
-        
+
         return $deskripsi[$status] ?? 'Status diperbarui';
     }
 }
