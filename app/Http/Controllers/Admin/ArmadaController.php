@@ -18,10 +18,28 @@ class ArmadaController extends Controller
     {
         $shuttles = Shuttle::with('layanan')->paginate(10);
 
-        return view('admin.armada.index', [
+        // Get summary data
+        $totalShuttles = Shuttle::count();
+        $activeShuttles = Shuttle::where('status', 'aktif')->count();
+        $inactiveShuttles = Shuttle::where('status', 'tidak_aktif')->count();
+        $serviceShuttles = Shuttle::where('status', 'perbaikan')->count();
+
+        // Get unique brands/types/colors for filter dropdown
+        $brands = Shuttle::distinct()->pluck('merk')->filter()->sort()->values();
+        $types = Shuttle::distinct()->pluck('tipe_shuttle')->filter()->sort()->values();
+        $colors = Shuttle::distinct()->pluck('warna')->filter()->sort()->values();
+
+        return view('admin.armada', [
             'title' => 'Master Data - Armada',
             'pageTitle' => 'Armada',
-            'shuttles' => $shuttles
+            'shuttles' => $shuttles,
+            'totalShuttles' => $totalShuttles,
+            'activeShuttles' => $activeShuttles,
+            'inactiveShuttles' => $inactiveShuttles,
+            'serviceShuttles' => $serviceShuttles,
+            'brands' => $brands,
+            'types' => $types,
+            'colors' => $colors
         ]);
     }
 
@@ -93,7 +111,7 @@ class ArmadaController extends Controller
     {
         $shuttle = Shuttle::with('layanan')->findOrFail($id);
 
-        return view('admin.armada.show', [
+        return view('admin.armada-detail', [
             'title' => 'Detail Armada',
             'pageTitle' => 'Detail Armada',
             'shuttle' => $shuttle

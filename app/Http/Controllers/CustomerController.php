@@ -2352,14 +2352,14 @@ $reviews = Review::with('user')
                 $buktiPembayaran = $path;
             }
 
-            // Handle different payment methods
+            // Handle different payment methods using Paylabs integration
             $paymentStatus = 'pending'; // Default for manual transfer
             $paylabsResponse = null;
 
             // For Paylabs payments (QRIS and VA), create payment with Paylabs
             if (in_array($request->payment_method, ['qris', 'bca_va', 'mandiri_va', 'bni_va', 'bri_va'])) {
                 try {
-                    // Map payment method to Paylabs channel code
+                    // Map payment method to Paylabs channel code (same as regular payments)
                     $channelMap = [
                         'qris' => 'QRIS',
                         'bca_va' => 'VA_BCA',
@@ -2370,18 +2370,22 @@ $reviews = Review::with('user')
 
                     $channelCode = $channelMap[$request->payment_method] ?? 'QRIS';
 
-                    // Create Paylabs payment
+                    // Create Paylabs payment using the same service as regular payments
                     $paylabsResponse = $this->paylabsService->createPayment($payment, $channelCode, ucfirst(str_replace('_', ' ', $request->payment_method)));
 
                     if ($paylabsResponse['success']) {
-                        // For online payments, mark as success immediately (simulated)
+                        // For online payments, mark as success immediately (simulated for testing)
                         // In production, this would wait for webhook callback
                         $paymentStatus = 'success';
+                        Log::info('Paylabs payment created successfully for membership', [
+                            'transaction_id' => $paylabsResponse['transaction_id'] ?? null,
+                            'payment_method' => $request->payment_method
+                        ]);
                     } else {
-                        throw new \Exception('Gagal membuat pembayaran Paylabs: ' . $paylabsResponse['error']);
+                        throw new \Exception('Gagal membuat pembayaran Paylabs: ' . ($paylabsResponse['error'] ?? 'Unknown error'));
                     }
                 } catch (\Exception $e) {
-                    Log::error('Paylabs payment creation failed: ' . $e->getMessage());
+                    Log::error('Paylabs payment creation failed for membership: ' . $e->getMessage());
                     throw new \Exception('Gagal memproses pembayaran online. Silakan coba lagi.');
                 }
             } elseif ($request->payment_method === 'manual_transfer') {
@@ -2444,6 +2448,94 @@ $reviews = Review::with('user')
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
                 ->withInput();
+        }
+    }
+
+    /**
+     * Simulate membership payment (for testing purposes)
+     */
+    public function simulateMembershipPayment(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $user = Auth::user();
+
+        $validator = Validator::make($request->all(), [
+            'transaction_id' => 'required|exists:membership_payments,transaction_id',
+            'payment_method' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal: ' . implode(', ', $validator->errors()->all())
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $payment = MembershipPayment::where('transaction_id', $request->transaction_id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$payment || $payment->payment_status !== 'pending' || $payment->isExpired()) {
+                throw new \Exception('Transaksi tidak valid atau sudah kadaluarsa.');
+            }
+
+            // Simulate successful payment
+            $payment->update([
+                'payment_method' => $request->payment_method,
+                'payment_status' => 'success',
+                'paid_at' => now(),
+                // Add simulated Paylabs data
+                'paylabs_transaction_id' => 'SIM-' . time() . '-' . strtoupper(substr(md5(uniqid()), 0, 8)),
+                'qr_code' => 'SIM-QR-' . time(),
+                'qris_url' => 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=SIMULATED',
+                'no_virtual_account' => $request->payment_method === 'bca_va' ? '8888123456789012' : null,
+            ]);
+
+            // Activate membership
+            $user->update([
+                'membership_status' => 'active',
+                'membership_start_date' => now(),
+                'membership_end_date' => now()->addMonths(12),
+                'membership_fee' => $payment->total_amount,
+                'membership_payment_method' => $request->payment_method,
+                'membership_payment_status' => 'success',
+                'membership_transaction_id' => $payment->transaction_id,
+                'membership_level' => 'Bronze',
+                'member_point' => 0,
+                'loyalty_point' => 0,
+            ]);
+
+            // Update session
+            session()->put('user', [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $user->avatar_url,
+                'membership_status' => 'active',
+                'membership_level' => 'Bronze',
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Simulasi pembayaran berhasil! Membership telah diaktifkan.'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Simulate membership payment error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Simulasi gagal: ' . $e->getMessage()
+            ], 500);
         }
     }
 

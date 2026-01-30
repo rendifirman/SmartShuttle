@@ -566,9 +566,15 @@
                     Pembayaran berhasil! Membership Anda akan segera aktif.
                 </div>
 
-                <button type="submit" class="btn-pay" id="payButton">
-                    <span id="buttonText">Bayar & Aktifkan Membership</span>
-                </button>
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="button" class="btn-pay" id="simulateButton" style="flex: 1; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                        <span>Simulasi Bayar</span>
+                    </button>
+
+                    <button type="submit" class="btn-pay" id="payButton" style="flex: 1;">
+                        <span id="buttonText">Bayar & Aktifkan Membership</span>
+                    </button>
+                </div>
             </form>
 
             <div style="text-align: center; margin-top: 12px; font-size: 12px; color: #9ca3af;">
@@ -637,6 +643,79 @@
                     showPaymentDetails(this.value);
                 });
             });
+
+            // Simulate payment button handler
+            const simulateButton = document.getElementById('simulateButton');
+            if (simulateButton) {
+                simulateButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    // Hide previous messages
+                    errorMessage.classList.remove('show');
+                    successMessage.classList.remove('show');
+
+                    // Validate payment method
+                    const selectedMethod = document.querySelector('input[name="payment_method"]:checked');
+                    if (!selectedMethod) {
+                        errorText.textContent = 'Pilih metode pembayaran terlebih dahulu!';
+                        errorMessage.classList.add('show');
+                        return;
+                    }
+
+                    // Validate transaction ID
+                    const transactionId = document.querySelector('input[name="transaction_id"]');
+                    if (!transactionId || !transactionId.value) {
+                        errorText.textContent = 'Data transaksi tidak valid! Silakan refresh halaman.';
+                        errorMessage.classList.add('show');
+                        return;
+                    }
+
+                    // Show loading state
+                    const originalText = simulateButton.innerHTML;
+                    simulateButton.innerHTML = '<span class="loading"></span> Memproses Simulasi...';
+                    simulateButton.disabled = true;
+
+                    // Prepare form data
+                    const formData = new FormData();
+                    formData.append('transaction_id', transactionId.value);
+                    formData.append('payment_method', selectedMethod.value);
+                    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+                    // Make AJAX request
+                    fetch('{{ route("customer.membership.payment.simulate") }}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            successMessage.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
+                            successMessage.classList.add('show');
+
+                            // Redirect after success
+                            setTimeout(() => {
+                                window.location.href = '{{ route("customer.membership") }}';
+                            }, 2000);
+                        } else {
+                            errorText.textContent = data.message || 'Terjadi kesalahan saat memproses simulasi pembayaran.';
+                            errorMessage.classList.add('show');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        errorText.textContent = 'Terjadi kesalahan sistem. Silakan coba lagi.';
+                        errorMessage.classList.add('show');
+                    })
+                    .finally(() => {
+                        // Reset button state
+                        simulateButton.innerHTML = originalText;
+                        simulateButton.disabled = false;
+                    });
+                });
+            }
 
             if (paymentForm) {
                 paymentForm.addEventListener('submit', function(e) {

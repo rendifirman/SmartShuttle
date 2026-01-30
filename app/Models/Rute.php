@@ -292,4 +292,22 @@ class Rute extends Model
 
         return null;
     }
+
+    /**
+     * Relasi ke rute_jadwals (pivot table untuk many-to-many dengan jadwal)
+     */
+    public function ruteJadwals()
+    {
+        return $this->hasMany(RuteJadwal::class, 'rute_id');
+    }
+
+    /**
+     * Relasi many-to-many ke jadwals melalui rute_jadwals
+     */
+    public function jadwals()
+    {
+        return $this->belongsToMany(Jadwal::class, 'rute_jadwals', 'rute_id', 'jadwal_id')
+                    ->withPivot('urutan', 'durasi_segment', 'harga_segment')
+                    ->withTimestamps();
+    }
 }

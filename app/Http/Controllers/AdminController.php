@@ -15,13 +15,20 @@ use App\Models\MLayanan;
 use App\Models\Promo;
 use App\Models\Outlet;
 use App\Models\Artikel;
-use App\Models\MMasterKontak;
 
 class AdminController extends Controller
 {
     public function dashboard()
     {
         return view('admin.dashboard');
+    }
+
+    /**
+     * Show admin login form
+     */
+    public function showLogin()
+    {
+        return $this->showLoginForm();
     }
 
     /**
@@ -796,190 +803,7 @@ class AdminController extends Controller
         return redirect()->route('admin.promo')->with('success', 'Promo berhasil dihapus.');
     }
 
-    public function armada(Request $request)
-    {
-        // Get shuttles with filtering
-        $query = Shuttle::with('layanan');
 
-        // Apply filters
-        if ($request->filled('merk')) {
-            $query->where('merk', 'like', '%' . $request->merk . '%');
-        }
-
-        if ($request->filled('tipe')) {
-            $query->where('tipe_shuttle', $request->tipe);
-        }
-
-        if ($request->filled('warna')) {
-            $query->where('warna', $request->warna);
-        }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->filled('search')) {
-            $query->where(function($q) use ($request) {
-                $q->where('kode', 'like', '%' . $request->search . '%')
-                  ->orWhere('merk', 'like', '%' . $request->search . '%')
-                  ->orWhere('model', 'like', '%' . $request->search . '%')
-                  ->orWhere('nomor_polisi', 'like', '%' . $request->search . '%');
-            });
-        }
-
-        $shuttles = $query->paginate(10);
-
-        // Get summary data
-        $totalShuttles = Shuttle::count();
-        $activeShuttles = Shuttle::where('status', 'aktif')->count();
-        $inactiveShuttles = Shuttle::where('status', 'tidak-aktif')->count();
-        $serviceShuttles = Shuttle::where('status', 'perbaikan')->count();
-
-        // Get unique brands/types/colors for filter dropdown
-        $brands = Shuttle::distinct()->pluck('merk')->filter()->sort()->values();
-        $types = Shuttle::distinct()->pluck('tipe_shuttle')->filter()->sort()->values();
-        $colors = Shuttle::distinct()->pluck('warna')->filter()->sort()->values();
-
-        return view('admin.armada', compact(
-            'shuttles',
-            'totalShuttles',
-            'activeShuttles',
-            'inactiveShuttles',
-            'serviceShuttles',
-            'brands',
-            'types',
-            'colors'
-        ));
-    }
-
-    // Shuttle CRUD Methods
-    public function createShuttle()
-    {
-        $layanans = \App\Models\MLayanan::all();
-        return view('admin.armada-create', compact('layanans'));
-    }
-
-    public function storeShuttle(Request $request)
-    {
-        $request->validate([
-            'layanan_id' => 'required|exists:m_layanan,id_layanan',
-            'kode' => 'required|string|max:20|unique:shuttles,kode',
-            'nama_shuttle' => 'required|string|max:255',
-            'merk' => 'required|string|max:100',
-            'model' => 'required|string|max:100',
-            'tipe_shuttle' => 'required|string|max:50',
-            'tahun' => 'required|integer|min:2000|max:' . (date('Y') + 1),
-            'warna' => 'required|string|max:50',
-            'kapasitas_kursi' => 'required|integer|min:1|max:50',
-            'nomor_polisi' => 'required|string|max:20|unique:shuttles,nomor_polisi',
-            'status' => 'required|in:aktif,tidak-aktif,perbaikan',
-            'jenis_kepemilikan' => 'required|in:milik-perusahaan,sewa,vendor',
-            'tanggal_masuk' => 'required|date',
-        ]);
-
-        $data = $request->all();
-
-        // Set defaults
-        $data['total_kursi'] = $request->kapasitas_kursi;
-        $data['fasilitas'] = $request->fasilitas ?? 'AC Double,WiFi High Speed,Charger USB-C';
-        $data['layout_kursi'] = \App\Models\KursiTerpesan::generateLayoutKursi($request->kapasitas_kursi);
-        $data['created_by'] = auth()->id();
-
-        // Handle kelengkapan array
-        if ($request->has('kelengkapan') && is_array($request->kelengkapan)) {
-            $data['kelengkapan'] = $request->kelengkapan;
-        }
-
-        Shuttle::create($data);
-
-        return redirect()->route('admin.armada')->with('success', 'Armada berhasil ditambahkan.');
-    }
-
-    public function editShuttle($id)
-    {
-        $shuttle = Shuttle::findOrFail($id);
-        $layanans = \App\Models\MLayanan::all();
-        return view('admin.armada-edit', compact('shuttle', 'layanans'));
-    }
-
-    public function updateShuttle(Request $request, $id)
-    {
-        $shuttle = Shuttle::findOrFail($id);
-
-        $request->validate([
-            'layanan_id' => 'required|exists:m_layanan,id_layanan',
-            'kode' => 'required|string|max:20|unique:shuttles,kode,' . $id,
-            'nama_shuttle' => 'required|string|max:255',
-            'merk' => 'required|string|max:100',
-            'model' => 'required|string|max:100',
-            'tipe_shuttle' => 'required|string|max:50',
-            'tahun' => 'required|integer|min:2000|max:' . (date('Y') + 1),
-            'warna' => 'required|string|max:50',
-            'kapasitas_kursi' => 'required|integer|min:1|max:50',
-            'nomor_polisi' => 'required|string|max:20|unique:shuttles,nomor_polisi,' . $id,
-            'status' => 'required|in:aktif,tidak-aktif,perbaikan',
-            'jenis_kepemilikan' => 'required|in:milik-perusahaan,sewa,vendor',
-            'tanggal_masuk' => 'required|date',
-            'nilai_asset' => 'nullable|numeric',
-            'fasilitas' => 'nullable|string',
-            'no_stnk' => 'nullable|string|max:50',
-            'masa_stnk' => 'nullable|date',
-            'no_kir' => 'nullable|string|max:50',
-            'masa_kir' => 'nullable|date',
-            'kelengkapan' => 'nullable|array',
-        ]);
-
-        $data = $request->all();
-
-        // Update total_kursi jika kapasitas berubah
-        if ($request->kapasitas_kursi != $shuttle->kapasitas_kursi) {
-            $data['total_kursi'] = $request->kapasitas_kursi;
-            $data['layout_kursi'] = \App\Models\KursiTerpesan::generateLayoutKursi($request->kapasitas_kursi);
-        }
-
-        // Handle kelengkapan array
-        if ($request->has('kelengkapan')) {
-            $kelengkapanArray = [];
-            foreach ($request->kelengkapan as $item) {
-                if (isset($item['name']) && !empty($item['name'])) {
-                    $kelengkapanArray[] = [
-                        'name' => $item['name'],
-                        'checked' => isset($item['checked']) ? true : false
-                    ];
-                }
-            }
-            $data['kelengkapan'] = $kelengkapanArray;
-        }
-
-        $shuttle->update($data);
-
-        return redirect()->route('admin.armada')->with('success', 'Armada berhasil diperbarui.');
-    }
-
-    public function destroyShuttle($id)
-    {
-        $shuttle = Shuttle::findOrFail($id);
-
-        // Check if shuttle has active bookings
-        if ($shuttle->jadwals()->whereHas('pemesanan', function($query) {
-            $query->whereNotIn('status', ['dibatalkan', 'expired']);
-        })->exists()) {
-            return redirect()->route('admin.armada')->with('error', 'Armada tidak dapat dihapus karena masih memiliki pemesanan aktif.');
-        }
-
-        $shuttle->deleted_by = auth()->id();
-        $shuttle->save();
-
-        $shuttle->delete();
-
-        return redirect()->route('admin.armada')->with('success', 'Armada berhasil dihapus.');
-    }
-
-    public function showShuttle($id)
-    {
-        $shuttle = Shuttle::with('layanan')->findOrFail($id);
-        return view('admin.armada-detail', compact('shuttle'));
-    }
 
     public function driver()
     {
@@ -1186,6 +1010,12 @@ class AdminController extends Controller
     public function smartrent()
     {
         return view('admin.smartrent');
+    }
+
+    // Tiket Perjalanan Method
+    public function tiketPerjalanan()
+    {
+        return view('admin.tiket-perjalanan');
     }
 
     // Laporan Method
@@ -1655,4 +1485,5 @@ class AdminController extends Controller
 
         return redirect()->route('admin.artikel.index')->with('success', 'Artikel berhasil dihapus.');
     }
-}
+
+    }

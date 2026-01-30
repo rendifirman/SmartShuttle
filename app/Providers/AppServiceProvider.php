@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use App\Models\MMasterKontak;
 use App\Services\KontakService;
+use App\Services\PaylabsService;
 
 class AppServiceProvider extends ServiceProvider
 {

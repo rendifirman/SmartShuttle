@@ -312,41 +312,34 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     Route::get('/kursi/peta/{jadwalId}', [KursiController::class, 'petaKursi'])
         ->name('admin.kursi.peta');
 
-    // Master Data Routes - GANTI ROUTE ARMADA (dari kode prompt)
-    // Master Data Armada - CRUD Routes (REVISI)
-    Route::get('/armada', [ArmadaController::class, 'index'])
+    // Master Data Routes - Armada routes using Admin\ArmadaController
+    Route::get('/armada', [App\Http\Controllers\Admin\ArmadaController::class, 'index'])
         ->middleware('permission:view_armada')
         ->name('admin.armada');
-    Route::get('/armada/create', [ArmadaController::class, 'create'])
+    Route::get('/armada/create', [App\Http\Controllers\Admin\ArmadaController::class, 'create'])
         ->middleware('permission:manage_armada')
         ->name('admin.armada.create');
-    Route::post('/armada', [ArmadaController::class, 'store'])
+    Route::post('/armada', [App\Http\Controllers\Admin\ArmadaController::class, 'store'])
         ->middleware('permission:manage_armada')
         ->name('admin.armada.store');
-    Route::get('/armada/{id}/edit', [ArmadaController::class, 'edit'])
+    Route::get('/armada/{id}', [App\Http\Controllers\Admin\ArmadaController::class, 'show'])
+        ->middleware('permission:view_armada')
+        ->name('admin.armada.show');
+    Route::get('/armada/{id}/edit', [App\Http\Controllers\Admin\ArmadaController::class, 'edit'])
         ->middleware('permission:manage_armada')
         ->name('admin.armada.edit');
-    Route::put('/armada/{id}', [ArmadaController::class, 'update'])
+    Route::put('/armada/{id}', [App\Http\Controllers\Admin\ArmadaController::class, 'update'])
         ->middleware('permission:manage_armada')
         ->name('admin.armada.update');
-    Route::delete('/armada/{id}', [ArmadaController::class, 'destroy'])
+    Route::delete('/armada/{id}', [App\Http\Controllers\Admin\ArmadaController::class, 'destroy'])
         ->middleware('permission:manage_armada')
         ->name('admin.armada.destroy');
-    Route::post('/armada/{id}/update-images', [ArmadaController::class, 'updateImages'])
+    Route::post('/armada/{id}/update-images', [App\Http\Controllers\Admin\ArmadaController::class, 'updateImages'])
         ->middleware('permission:manage_armada')
         ->name('admin.armada.updateImages');
-    Route::get('/armada/{id}/get-images', [ArmadaController::class, 'getImages'])
+    Route::get('/armada/{id}/get-images', [App\Http\Controllers\Admin\ArmadaController::class, 'getImages'])
         ->middleware('permission:view_armada')
         ->name('admin.armada.getImages');
-
-    // Route CRUD Armada (dari kode prompt)
-    Route::prefix('armada')->name('admin.armada.')->group(function () {
-        Route::post('/store', [ArmadaController::class, 'store'])->name('store');
-        Route::get('/{id}/edit', [ArmadaController::class, 'edit'])->name('edit');
-        Route::post('/{id}/update', [ArmadaController::class, 'update'])->name('update');
-        Route::delete('/{id}/destroy', [ArmadaController::class, 'destroy'])->name('destroy');
-        Route::get('/{id}/detail', [ArmadaController::class, 'show'])->name('show');
-    });
 
     // Jadwal Routes
     Route::get('/jadwal', [JadwalController::class, 'index'])->name('admin.jadwal');
@@ -421,8 +414,8 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
 
     // Kontak Perusahaan Routes
-    Route::get('/kontakperusahaan', [AdminController::class, 'kontakPerusahaan'])->name('admin.kontakperusahaan');
-    Route::put('/kontakperusahaan/{id}', [AdminController::class, 'updateKontakPerusahaan'])->name('admin.kontakperusahaan.update');
+    Route::get('/kontakperusahaan', [App\Http\Controllers\Admin\KontakPerusahaanController::class, 'index'])->name('admin.kontakperusahaan');
+    Route::put('/kontakperusahaan/{id}', [App\Http\Controllers\Admin\KontakPerusahaanController::class, 'update'])->name('admin.kontakperusahaan.update');
 
     // Artikel Management Routes
     Route::get('/artikel', [AdminController::class, 'artikel'])->name('admin.artikel.index');

@@ -13,7 +13,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // ✅ URUTAN YANG BENAR:
-        $this->call([
+        $seeders = [
             PermissionSeeder::class,     // 1. Permissions HARUS PERTAMA
             RoleSeeder::class,           // 2. Roles (butuh Permissions)
             BranchSeeder::class,         // 3. Infrastruktur
@@ -30,15 +30,33 @@ class DatabaseSeeder extends Seeder
             MetodePembayaranSeeder::class,
             JadwalSeeder::class,
             ArtikelSeeder::class,
-        ]);
+        ];
 
-        User::firstOrCreate(
-            ['email' => 'test@example.com'],
-            [
-                'name' => 'Test User',
-                'password' => bcrypt('password'),
-                'email_verified_at' => now(),
-            ]
-        );
+        // Jalankan setiap seeder dengan try-catch agar jika gagal, yang lain tetap berjalan
+        foreach ($seeders as $seeder) {
+            try {
+                $this->command->info("Running seeder: {$seeder}");
+                $this->call($seeder);
+                $this->command->info("Seeder {$seeder} completed successfully.");
+            } catch (\Exception $e) {
+                $this->command->error("Seeder {$seeder} failed: " . $e->getMessage());
+                // Lanjutkan ke seeder berikutnya
+            }
+        }
+
+        // Buat test user
+        try {
+            User::firstOrCreate(
+                ['email' => 'test@example.com'],
+                [
+                    'name' => 'Test User',
+                    'password' => bcrypt('password'),
+                    'email_verified_at' => now(),
+                ]
+            );
+            $this->command->info("Test user created successfully.");
+        } catch (\Exception $e) {
+            $this->command->error("Failed to create test user: " . $e->getMessage());
+        }
     }
 }

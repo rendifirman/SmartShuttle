@@ -1275,7 +1275,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Saving data:', fields);
 
         // ✅ GUNAKAN POST METHOD
-        const response = await fetch("{{ route('admin.kontak.update', ['id' => $kontak['id'] ?? 1]) }}", {
+        const response = await fetch("{{ route('admin.kontakperusahaan.update', ['id' => $kontak['id'] ?? 1]) }}", {
             method: 'POST', // ✅ INI HARUS POST
             body: formData,
             headers: {

@@ -1,13 +1,17 @@
-php# Migration and Route/Schedule Issues Fix
+# TODO: Membership Payment Integration with Paylabs
 
-## Issues Identified
-- Migration order problem: `rutes` table references `m_layanan` before it's created
-- Duplicate migration: `add_layanan_id_to_rutes_table.php` is redundant
-- Foreign key constraint failure during `php artisan migrate:fresh --seed`
+## Current Status
+- Membership payment currently uses manual transfer and basic online payment
+- Regular payments use Paylabs integration
+- Need to align membership payment with regular payment system
 
-## Tasks to Complete
-- [ ] Rename `create_m_layanan_table.php` to run before `create_rutes_table.php`
-- [ ] Remove duplicate `add_layanan_id_to_rutes_table.php` migration
-- [ ] Fix foreign key reference in rutes migration (use correct column name)
-- [ ] Test migration execution
-- [ ] Verify route/schedule relationships work correctly
+## Tasks
+- [ ] Add "Simulasi Bayar" button to membership payment view
+- [ ] Create simulateMembershipPayment method in CustomerController
+- [ ] Modify processMembershipPayment to use Paylabs like regular payments
+- [ ] Ensure Paylabs integration matches regular payment system
+- [ ] Test the integration
+
+## Files to Modify
+- resources/views/customer/membership_payment.blade.php
+- app/Http/Controllers/CustomerController.php

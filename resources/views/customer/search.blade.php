@@ -2837,9 +2837,9 @@
                                                                                     <img src="{{ asset('images/shuttle/' . $image['gambar']) }}"
                                                                                          alt="{{ $image['caption'] }}"
                                                                                          class="slide-img"
-                                                                                         onerror="this.src='https://via.placeholder.com/400x225?text={{ urlencode($image['caption']) }}'">
+                                                                                         onerror="this.src='{{ asset('images/placeholder-shuttle.jpg') }}'">
                                                                                 @else
-                                                                                    <img src="https://via.placeholder.com/400x225?text={{ urlencode($image['caption']) }}"
+                                                                                    <img src="{{ asset('images/placeholder-shuttle.jpg') }}"
                                                                                          alt="{{ $image['caption'] }}"
                                                                                          class="slide-img">
                                                                                 @endif
