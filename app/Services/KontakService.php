@@ -4,6 +4,8 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
+use App\Models\MMasterKontak;
 
 class KontakService
 {
@@ -23,27 +25,47 @@ class KontakService
     }
 
     /**
-     * Save kontak data - tanpa database
+     * Save kontak data to database and JSON file
      */
     public function saveKontak($data)
     {
         try {
+            // Prepare data for database
+            $dbData = $data;
+            $dbData['status'] = 'active';
+
+            // Save to database - find first active record or create new one
+            $existingKontak = MMasterKontak::where('status', 'active')->first();
+
+            if ($existingKontak) {
+                // Update existing record
+                $existingKontak->update($dbData);
+                $kontak = $existingKontak;
+            } else {
+                // Create new record
+                $dbData['status'] = 'active';
+                $kontak = MMasterKontak::create($dbData);
+            }
+
+            // Prepare data for JSON file
             $dataToSave = [
                 'kontak' => $data,
                 'updated_at' => now()->toDateTimeString(),
-                'updated_by' => auth()->id() ?? 'admin'
+                'updated_by' => Auth::id() ?? 'admin'
             ];
 
             // Simpan ke file
             File::put($this->jsonPath, json_encode($dataToSave, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
-            // Clear cache
+            // Clear cache untuk memastikan data terbaru
             Cache::forget('kontak_perusahaan');
+            Cache::forget('master_kontak_data');
 
             return [
                 'success' => true,
                 'message' => 'Data berhasil disimpan',
-                'file_path' => $this->jsonPath
+                'file_path' => $this->jsonPath,
+                'database_id' => $kontak->id
             ];
 
         } catch (\Exception $e) {
@@ -56,7 +78,7 @@ class KontakService
     }
 
     /**
-     * Get kontak data from file or cache
+     * Get kontak data from database, cache, or file
      */
     private function getKontakData()
     {
@@ -66,7 +88,16 @@ class KontakService
             return $data;
         }
 
-        // Cek file JSON
+        // Prioritas pertama: Database
+        $kontak = MMasterKontak::where('status', 'active')->first();
+        if ($kontak) {
+            $data = $kontak->toArray();
+            // Cache hasilnya
+            Cache::put('kontak_perusahaan', $data, now()->addDays(30));
+            return $data;
+        }
+
+        // Jika tidak ada di database, cek file JSON
         if (File::exists($this->jsonPath)) {
             try {
                 $data = json_decode(File::get($this->jsonPath), true);
@@ -77,7 +108,7 @@ class KontakService
                 }
             } catch (\Exception $e) {
                 \Log::error('Error reading kontak file: ' . $e->getMessage());
-            }
+             }
         }
 
         // Return default data

@@ -7,17 +7,17 @@
     use App\Models\Artikel;
     use App\Models\MProfilePerusahaan;
     use App\Models\Outlet;
-    
+
     $profile = MProfilePerusahaan::first();
     $user = session()->get('user', null);
     $activeService = 'kirim-paket';
-    
+
     // Ambil 3 artikel terbaru dengan status aktif
     $articles = Artikel::where('status', true)
         ->orderBy('created_at', 'desc')
         ->take(3)
         ->get();
-    
+
     // Ambil kota unik dari outlet yang aktif
     $kotaList = Outlet::where('status', 'aktif')
         ->with('branch')
@@ -31,7 +31,7 @@
         ->unique()
         ->sort()
         ->values();
-    
+
     // Ambil semua outlet aktif untuk kalkulator
     $outlets = Outlet::where('status', 'aktif')->with('branch')->get();
 @endphp
@@ -75,7 +75,7 @@
                         </div>
                     </div>
                 </button>
-                
+
                 <!-- ========== MODAL CEK PAKET ========== -->
                 <div class="modal-cek-paket" id="modal-cek-paket">
                     <div class="modal-content-cek">
@@ -100,7 +100,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Tombol Kirim Paket (Dengan Kalkulator Berdasarkan Rute) -->
             <div class="search-field">
                 <button type="button" class="search-btn vertical-btn" id="btn-kirim-paket">
@@ -111,7 +111,7 @@
                         </div>
                     </div>
                 </button>
-                
+
                 <!-- ========== MODAL KIRIM PAKET (CEK HARGA BERDASARKAN RUTE) ========== -->
                 <div class="modal-kirim-paket" id="modal-kirim-paket">
                     <div class="modal-content-kirim">
@@ -133,10 +133,10 @@
                                 <i class="fas fa-info-circle me-2"></i>
                                 <small>Harga dihitung otomatis berdasarkan rute dari outlet asal ke outlet tujuan</small>
                             </div>
-                            
+
                             <form class="kirim-paket-form" id="form-cek-harga">
                                 @csrf
-                                
+
                                 <div class="form-group-vertical">
                                     <label class="form-label" for="outlet_asal">Outlet Asal <span class="required-text">*</span></label>
                                     <div class="select-wrapper">
@@ -167,7 +167,7 @@
                                         </div>
                                     </div>
                                     <small class="form-text text-info">
-                                        <i class="fas fa-filter"></i> 
+                                        <i class="fas fa-filter"></i>
                                         Outlet tujuan akan otomatis difilter berdasarkan rute dari outlet asal
                                     </small>
                                     <div class="error-message" id="error-outlet-tujuan" style="display: none;"></div>
@@ -178,7 +178,7 @@
                                     <div class="col-md-6">
                                         <div class="form-group-vertical">
                                             <label class="form-label" for="berat">Berat (kg) <span class="required-text">*</span></label>
-                                            <input type="number" class="form-control" id="berat" name="berat" 
+                                            <input type="number" class="form-control" id="berat" name="berat"
                                                    placeholder="Contoh: 3.5" min="0.1" step="0.1" max="100" required>
                                             <small class="form-text">Minimal 0.1 kg</small>
                                             <div class="error-message" id="error-berat" style="display: none;"></div>
@@ -189,15 +189,15 @@
                                             <label class="form-label">Dimensi (cm) - Opsional</label>
                                             <div class="row g-1">
                                                 <div class="col-4">
-                                                    <input type="number" class="form-control" placeholder="P" 
+                                                    <input type="number" class="form-control" placeholder="P"
                                                            id="panjang" name="panjang" min="0" step="0.1">
                                                 </div>
                                                 <div class="col-4">
-                                                    <input type="number" class="form-control" placeholder="L" 
+                                                    <input type="number" class="form-control" placeholder="L"
                                                            id="lebar" name="lebar" min="0" step="0.1">
                                                 </div>
                                                 <div class="col-4">
-                                                    <input type="number" class="form-control" placeholder="T" 
+                                                    <input type="number" class="form-control" placeholder="T"
                                                            id="tinggi" name="tinggi" min="0" step="0.1">
                                                 </div>
                                             </div>
@@ -231,7 +231,7 @@
                                     <i class="fas fa-calculator"></i>
                                     <h4>Hasil Perhitungan Harga (Kalkulator)</h4>
                                 </div>
-                                
+
                                 <!-- INPUT SUMMARY -->
                                 <div class="harga-detail">
                                     <div class="detail-row">
@@ -259,7 +259,7 @@
                                         <span class="detail-value" id="detail-jarak">0 km <small>(otomatis)</small></span>
                                     </div>
                                 </div>
-                                
+
                                 <!-- CALCULATION BREAKDOWN -->
                                 <div class="harga-note" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-left: 4px solid #3498db; border-radius: 4px;">
                                     <strong style="display: block; margin-bottom: 10px; color: #2c3e50;">
@@ -269,7 +269,7 @@
                                         Perhitungan akan ditampilkan di sini
                                     </div>
                                 </div>
-                                
+
                                 <!-- PRICE BREAKDOWN -->
                                 <div class="harga-detail" style="margin-top: 20px;">
                                     <div class="detail-row">
@@ -286,7 +286,7 @@
                                         <span class="total-value" id="harga-total-realtime">Rp 0</span>
                                     </div>
                                 </div>
-                                
+
                                 <!-- SOURCE INFORMATION -->
                                 <div class="harga-note" style="margin-top: 15px; padding: 10px; background: #e8f8f5; border-left: 4px solid #1abc9c;">
                                     <i class="fas fa-info-circle" style="color: #1abc9c;"></i>
@@ -296,7 +296,7 @@
                                         ✓ Kalkulator ini hanya untuk cek harga (read-only)
                                     </small>
                                 </div>
-                                
+
                                 <!-- Tombol Tutup -->
                                 <div class="mt-3 text-center">
                                     <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-tutup-hasil">
@@ -328,15 +328,15 @@
             <div class="article-card">
                 <!-- Gambar artikel -->
                 @php
-                    $imageUrl = $article->gambar && Storage::exists($article->gambar) 
-                        ? asset('storage/' . $article->gambar) 
+                    $imageUrl = $article->gambar && Storage::exists($article->gambar)
+                        ? asset('storage/' . $article->gambar)
                         : asset('images/default-article.jpg');
                 @endphp
-                
-                <img src="{{ $imageUrl }}" 
+
+                <img src="{{ $imageUrl }}"
                      alt="{{ $article->judul }}" class="article-image"
                      onerror="this.onerror=null; this.src='{{ asset('images/default-article.jpg') }}';">
-                
+
                 <div class="article-content">
                     <span class="article-category">{{ $article->kategori ?? 'Artikel' }}</span>
                     <h3 class="article-title">{{ $article->judul }}</h3>
@@ -459,7 +459,7 @@
         right: 0;
         bottom: 0;
         background: linear-gradient(
-            90deg, 
+            90deg,
             rgba(255, 255, 255, 0.08) 0%,   /* Overlay sangat transparan */
             rgba(255, 255, 255, 0.03) 50%,
             transparent 100%
@@ -483,7 +483,7 @@
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         letter-spacing: -0.5px;
         line-height: 1.1;
-        text-shadow: 
+        text-shadow:
             0 2px 10px rgba(0, 0, 0, 0.5),    /* Shadow gelap untuk kontras */
             0 4px 20px rgba(0, 0, 0, 0.3);    /* Shadow kedua untuk depth */
     }
@@ -495,7 +495,7 @@
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         font-weight: 400;
         margin-bottom: 20px;
-        text-shadow: 
+        text-shadow:
             0 1px 6px rgba(0, 0, 0, 0.4),
             0 2px 12px rgba(0, 0, 0, 0.2);
     }
@@ -572,18 +572,18 @@
     @media (max-width: 768px) {
         .hero-section::before {
             background: linear-gradient(
-                to bottom, 
+                to bottom,
                 rgba(0, 0, 0, 0.15) 0%,
                 transparent 30%,
                 transparent 70%,
                 rgba(0, 0, 0, 0.1) 100%
             );
         }
-        
+
         .hero-title {
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
         }
-        
+
         .hero-desc {
             text-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
         }
@@ -1550,7 +1550,7 @@
             font-size: 12px;
             padding: 6px 8px;
         }
-        
+
         .total-value {
             font-size: 20px;
         }
@@ -1859,107 +1859,212 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+// ========== CSRF TOKEN MANAGEMENT ==========
+function getCsrfToken() {
+    // Try to get from meta tag first
+    let token = document.querySelector('meta[name="csrf-token"]');
+    if (token) {
+        return token.getAttribute('content');
+    }
+
+    // Fallback to Laravel's csrf_token() helper
+    return '{{ csrf_token() }}';
+}
+
+function refreshCsrfToken() {
+    return fetch('/refresh-csrf', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.csrf_token) {
+            // Update meta tag
+            let metaTag = document.querySelector('meta[name="csrf-token"]');
+            if (metaTag) {
+                metaTag.setAttribute('content', data.csrf_token);
+            }
+            return data.csrf_token;
+        }
+        throw new Error('No CSRF token in response');
+    });
+}
+
+// ========== AJAX ERROR HANDLER ==========
+function handleAjaxError(xhr, status, error, retryCallback) {
+    console.error('AJAX Error:', {
+        status: xhr.status,
+        statusText: xhr.statusText,
+        responseText: xhr.responseText,
+        error: error
+    });
+
+    if (xhr.status === 419) {
+        // CSRF token expired, try to refresh
+        console.log('CSRF token expired, attempting to refresh...');
+
+        return refreshCsrfToken()
+            .then(newToken => {
+                console.log('CSRF token refreshed, retrying request...');
+                if (retryCallback) {
+                    return retryCallback();
+                }
+            })
+            .catch(refreshError => {
+                console.error('Failed to refresh CSRF token:', refreshError);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Sesi Berakhir',
+                    text: 'Sesi Anda telah berakhir. Silakan refresh halaman dan coba lagi.',
+                    confirmButtonText: 'Refresh Halaman'
+                }).then(() => {
+                    window.location.reload();
+                });
+            });
+    } else if (xhr.status === 401) {
+        // Unauthorized
+        Swal.fire({
+            icon: 'warning',
+            title: 'Sesi Login Berakhir',
+            text: 'Silakan login kembali.',
+            confirmButtonText: 'Login'
+        }).then(() => {
+            window.location.href = '{{ route("customer.login") }}';
+        });
+    } else {
+        // Other errors
+        let errorMessage = 'Terjadi kesalahan sistem.';
+
+        if (xhr.status === 422) {
+            errorMessage = 'Data yang dikirim tidak valid.';
+        } else if (xhr.status === 404) {
+            errorMessage = 'Endpoint tidak ditemukan.';
+        } else if (xhr.status === 500) {
+            errorMessage = 'Terjadi kesalahan server internal.';
+        }
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: errorMessage,
+            confirmButtonText: 'Tutup'
+        });
+    }
+}
+
 // ========== LOGIKA CEK HARGA PAKET BERDASARKAN RUTE ==========
 
 // 1. Event change untuk outlet asal - VERSI PERBAIKAN
 $(document).on('change', '#outlet_asal', function() {
     const outletAsalId = $(this).val();
     const outletTujuanSelect = $('#outlet_tujuan');
-    
+
     if (!outletAsalId) {
         outletTujuanSelect.prop('disabled', true).html('<option value="">Pilih Outlet Asal terlebih dahulu</option>');
         $('#jarak-container').hide();
         return;
     }
-    
+
     console.log('Mengambil outlet tujuan untuk outlet asal:', outletAsalId);
-    
+
     // Reset dulu
     outletTujuanSelect.prop('disabled', true).html('<option value="">Loading outlet tujuan...</option>');
-    
-    // AJAX call untuk get outlet tujuan
-    $.ajax({
-        url: '{{ route("customer.getOutletTujuanByRute") }}', // Pastikan route ini benar
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        },
-        data: {
-            outlet_asal_id: outletAsalId
-        },
-        success: function(response) {
-            console.log('Response get outlet tujuan:', response);
-            
-            if (response.success && response.data && response.data.length > 0) {
-                let options = '<option value="">Pilih Outlet Tujuan</option>';
-                
-                // GROUP BY KOTA untuk tampilan yang lebih rapi
-                const kotaGroups = {};
-                
-                response.data.forEach(function(outlet) {
-                    const kota = outlet.kota || 'Unknown';
-                    if (!kotaGroups[kota]) {
-                        kotaGroups[kota] = [];
-                    }
-                    kotaGroups[kota].push(outlet);
-                });
-                
-                // Urutkan kota secara alfabet
-                const sortedKota = Object.keys(kotaGroups).sort();
-                
-                sortedKota.forEach(function(kota) {
-                    options += `<optgroup label="${kota}">`;
-                    kotaGroups[kota].forEach(function(outlet) {
-                        options += `<option value="${outlet.id}" 
-                                   data-jarak="${outlet.jarak_dari_asal || 0}" 
-                                   data-kota="${kota}">
-                            ${outlet.nama_outlet} - ${outlet.alamat ? outlet.alamat.substring(0, 30) + '...' : kota}
-                            ${outlet.jarak_dari_asal ? ` (${outlet.jarak_dari_asal} km)` : ''}
-                        </option>`;
+
+    // AJAX call untuk get outlet tujuan dengan error handling yang lebih baik
+    function fetchOutletTujuan() {
+        return $.ajax({
+            url: '{{ route("customer.smartsend.get-outlet-tujuan") }}', // Route yang benar
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            data: {
+                outlet_asal_id: outletAsalId,
+                _token: getCsrfToken()
+            },
+            success: function(response) {
+                console.log('Response get outlet tujuan:', response);
+
+                if (response.success && response.data && response.data.length > 0) {
+                    let options = '<option value="">Pilih Outlet Tujuan</option>';
+
+                    // GROUP BY KOTA untuk tampilan yang lebih rapi
+                    const kotaGroups = {};
+
+                    response.data.forEach(function(outlet) {
+                        const kota = outlet.kota || 'Unknown';
+                        if (!kotaGroups[kota]) {
+                            kotaGroups[kota] = [];
+                        }
+                        kotaGroups[kota].push(outlet);
                     });
-                    options += `</optgroup>`;
+
+                    // Urutkan kota secara alfabet
+                    const sortedKota = Object.keys(kotaGroups).sort();
+
+                    sortedKota.forEach(function(kota) {
+                        options += `<optgroup label="${kota}">`;
+                        kotaGroups[kota].forEach(function(outlet) {
+                            options += `<option value="${outlet.id}"
+                                       data-jarak="${outlet.jarak_dari_asal || 0}"
+                                       data-kota="${kota}">
+                                ${outlet.nama_outlet} - ${outlet.alamat ? outlet.alamat.substring(0, 30) + '...' : kota}
+                                ${outlet.jarak_dari_asal ? ` (${outlet.jarak_dari_asal} km)` : ''}
+                            </option>`;
+                        });
+                        options += `</optgroup>`;
+                    });
+
+                    outletTujuanSelect.html(options).prop('disabled', false);
+                    $('#jarak-container').show();
+
+                    // Reset jarak display
+                    $('#jarak_display').val('');
+
+                    console.log('Outlet tujuan loaded:', response.data.length, 'options');
+
+                } else {
+                    let errorMsg = 'Tidak ada outlet tujuan dalam rute yang sama';
+                    if (!response.success && response.message) {
+                        errorMsg = response.message;
+                    }
+
+                    outletTujuanSelect.html(`<option value="">${errorMsg}</option>`);
+                    $('#jarak-container').hide();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error get outlet tujuan:', {
+                    status: status,
+                    error: error,
+                    response: xhr.responseText,
+                    statusCode: xhr.status
                 });
-                
-                outletTujuanSelect.html(options).prop('disabled', false);
-                $('#jarak-container').show();
-                
-                // Reset jarak display
-                $('#jarak_display').val('');
-                
-                console.log('Outlet tujuan loaded:', response.data.length, 'options');
-                
-            } else {
-                let errorMsg = 'Tidak ada outlet tujuan dalam rute yang sama';
-                if (!response.success && response.message) {
-                    errorMsg = response.message;
+
+                let errorMessage = 'Gagal memuat data rute';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.message) {
+                        errorMessage = response.message;
+                    }
+                } catch(e) {
+                    // Response bukan JSON
                 }
-                
-                outletTujuanSelect.html(`<option value="">${errorMsg}</option>`);
+
+                outletTujuanSelect.html(`<option value="">${errorMessage}</option>`);
                 $('#jarak-container').hide();
+
+                // Use the new error handler
+                handleAjaxError(xhr, status, error, fetchOutletTujuan);
             }
-        },
-        error: function(xhr, status, error) {
-            console.error('AJAX Error get outlet tujuan:', {
-                status: status,
-                error: error,
-                response: xhr.responseText,
-                statusCode: xhr.status
-            });
-            
-            let errorMessage = 'Gagal memuat data rute';
-            try {
-                const response = JSON.parse(xhr.responseText);
-                if (response.message) {
-                    errorMessage = response.message;
-                }
-            } catch(e) {
-                // Response bukan JSON
-            }
-            
-            outletTujuanSelect.html(`<option value="">${errorMessage}</option>`);
-            $('#jarak-container').hide();
-        }
-    });
+        });
+    }
+
+    // Call the function
+    fetchOutletTujuan();
 });
 
 // 2. Event change untuk outlet tujuan - untuk update jarak
@@ -1978,11 +2083,11 @@ $(document).on('click', '#btn-hitung-harga', function() {
 function validasiFormCekHarga() {
     let isValid = true;
     const errors = [];
-    
+
     // Reset error
     $('.error-message').hide();
     $('.form-control').removeClass('error');
-    
+
     // Validasi outlet asal
     if (!$('#outlet_asal').val()) {
         $('#error-outlet-asal').text('Pilih outlet asal terlebih dahulu').show();
@@ -1990,7 +2095,7 @@ function validasiFormCekHarga() {
         isValid = false;
         errors.push('Outlet asal harus dipilih');
     }
-    
+
     // Validasi outlet tujuan
     if (!$('#outlet_tujuan').val() || $('#outlet_tujuan').prop('disabled')) {
         $('#error-outlet-tujuan').text('Pilih outlet tujuan terlebih dahulu').show();
@@ -1998,7 +2103,7 @@ function validasiFormCekHarga() {
         isValid = false;
         errors.push('Outlet tujuan harus dipilih');
     }
-    
+
     // Validasi berat
     const berat = parseFloat($('#berat').val());
     if (!berat || berat < 0.1 || berat > 100) {
@@ -2007,7 +2112,7 @@ function validasiFormCekHarga() {
         isValid = false;
         errors.push('Berat harus antara 0.1 - 100 kg');
     }
-    
+
     if (!isValid) {
         Swal.fire({
             icon: 'error',
@@ -2016,7 +2121,7 @@ function validasiFormCekHarga() {
             confirmButtonText: 'Tutup'
         });
     }
-    
+
     return isValid;
 }
 
@@ -2026,7 +2131,7 @@ function hitungHargaBerdasarkanRute() {
     if (!validasiFormCekHarga()) {
         return;
     }
-    
+
     // Ambil data dari form
     const outletAsalId = $('#outlet_asal').val();
     const outletTujuanId = $('#outlet_tujuan').val();
@@ -2034,68 +2139,52 @@ function hitungHargaBerdasarkanRute() {
     const panjang = $('#panjang').val() || 0;
     const lebar = $('#lebar').val() || 0;
     const tinggi = $('#tinggi').val() || 0;
-    
+
     // Tampilkan loading
     const btnHitung = $('#btn-hitung-harga');
     const originalText = btnHitung.html();
     btnHitung.html('<i class="fas fa-spinner fa-spin"></i> Menghitung...').prop('disabled', true);
-    
-    // Kirim data ke server
-    $.ajax({
-        url: '{{ route("customer.smartsend.kalkulator-harga") }}',
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        },
-        data: {
-            outlet_asal_id: outletAsalId,
-            outlet_tujuan_id: outletTujuanId,
-            berat: berat,
-            panjang: panjang,
-            lebar: lebar,
-            tinggi: tinggi
-        },
-        success: function(response) {
-            btnHitung.html(originalText).prop('disabled', false);
-            
-            if (response.success) {
-                tampilkanHasilPerhitungan(response.data);
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal Menghitung Harga',
-                    html: response.message + '<br><br>' +
-                          '<small>Silakan cek kembali data yang dimasukkan.</small>',
-                    confirmButtonText: 'Tutup'
-                });
-            }
-        },
-        error: function(xhr) {
-            btnHitung.html(originalText).prop('disabled', false);
-            
-            let errorMsg = 'Terjadi kesalahan saat menghitung harga.';
-            let errorDetail = '';
-            
-            if (xhr.status === 422) {
-                errorMsg = 'Validasi gagal: ';
-                if (xhr.responseJSON && xhr.responseJSON.errors) {
-                    errorMsg += Object.values(xhr.responseJSON.errors).flat().join(', ');
+
+    // Kirim data ke server dengan error handling yang lebih baik
+    function calculatePrice() {
+        return $.ajax({
+            url: '{{ route("customer.smartsend.kalkulator-harga") }}',
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': getCsrfToken()
+            },
+            data: {
+                outlet_asal_id: outletAsalId,
+                outlet_tujuan_id: outletTujuanId,
+                berat: berat,
+                panjang: panjang,
+                lebar: lebar,
+                tinggi: tinggi
+            },
+            success: function(response) {
+                btnHitung.html(originalText).prop('disabled', false);
+
+                if (response.success) {
+                    tampilkanHasilPerhitungan(response.data);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Menghitung Harga',
+                        html: response.message + '<br><br>' +
+                              '<small>Silakan cek kembali data yang dimasukkan.</small>',
+                        confirmButtonText: 'Tutup'
+                    });
                 }
-            } else if (xhr.status === 404) {
-                errorMsg = 'Tidak ada rute yang tersedia antara outlet yang dipilih';
-            } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                errorMsg = xhr.responseJSON.message;
+            },
+            error: function(xhr, status, error) {
+                btnHitung.html(originalText).prop('disabled', false);
+                handleAjaxError(xhr, status, error, calculatePrice);
             }
-            
-            Swal.fire({
-                icon: 'error',
-                title: 'Gagal Menghitung Harga',
-                html: errorMsg + '<br><br>' +
-                      '<small>Error: ' + xhr.status + ' - ' + xhr.statusText + '</small>',
-                confirmButtonText: 'Tutup'
-            });
-        }
-    });
+        });
+    }
+
+    // Call the function
+    calculatePrice();
 }
 
 // 5. Display calculation results
@@ -2104,7 +2193,7 @@ function tampilkanHasilPerhitungan(data) {
     $('#detail-asal').text(data.outlet_asal.nama + ' - ' + data.outlet_asal.kota);
     $('#detail-tujuan').text(data.outlet_tujuan.nama + ' - ' + data.outlet_tujuan.kota);
     $('#detail-berat').text(data.berat.aktual + ' kg');
-    
+
     // Tampilkan berat volumetric jika ada
     if (data.berat.volumetric > 0) {
         $('#row-volumetric').show();
@@ -2112,13 +2201,13 @@ function tampilkanHasilPerhitungan(data) {
     } else {
         $('#row-volumetric').hide();
     }
-    
+
     $('#detail-berat-terpakai').text(data.berat.terpakai + ' kg');
     $('#detail-jarak').text(data.jarak + ' km');
     $('#harga-berat').text(data.harga.formatted.berat);
     $('#harga-jarak').text(data.harga.formatted.jarak);
     $('#harga-total-realtime').text(data.harga.formatted.total);
-    
+
     // Display calculation breakdown like a calculator
     if (data.perhitungan) {
         let perhitunganHtml = data.perhitungan
@@ -2128,16 +2217,16 @@ function tampilkanHasilPerhitungan(data) {
             .replace(/^  /gm, '<span style="margin-left: 20px; display: block;">') // indentation
             .replace(/\n\n/g, '</span></p><p class="mb-3" style="white-space: pre-wrap; font-family: monospace; line-height: 1.6; font-size: 0.95em;">')
             .replace(/\n/g, '<br>');
-        
+
         $('#detail-perhitungan').html('<p class="mb-3" style="white-space: pre-wrap; font-family: monospace; line-height: 1.6; font-size: 0.95em;">' + perhitunganHtml + '</span></p>');
     }
-    
+
     // Update jarak display (otomatis dari rute)
     $('#jarak_display').val(data.jarak + ' km (otomatis dari rute)');
-    
+
     // Tampilkan hasil perhitungan
     $('#hasil-perhitungan').show().addClass('show');
-    
+
     // Scroll ke hasil
     setTimeout(() => {
         $('#hasil-perhitungan')[0].scrollIntoView({ behavior: 'smooth' });
@@ -2152,7 +2241,7 @@ $('#btn-tutup-hasil').click(function() {
 // 7. Fungsi reset form
 window.resetFormCekHarga = function() {
     console.log('Resetting form cek harga');
-    
+
     $('#outlet_asal').val('').trigger('change');
     $('#outlet_tujuan').val('').prop('disabled', true).html('<option value="">Pilih Outlet Asal terlebih dahulu</option>');
     $('#berat').val('');
@@ -2161,14 +2250,14 @@ window.resetFormCekHarga = function() {
     $('#tinggi').val('');
     $('#jarak_display').val('');
     $('#jarak-container').hide();
-    
+
     // Hide hasil perhitungan
     const hasilElement = document.getElementById('hasil-perhitungan');
     if (hasilElement) {
         hasilElement.style.display = 'none';
         hasilElement.classList.remove('show');
     }
-    
+
     // Reset error states
     $('.error-message').hide();
     $('.form-control').removeClass('error valid');
@@ -2176,12 +2265,12 @@ window.resetFormCekHarga = function() {
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('SmartSend page loaded - Event handlers initialized');
-    
+
     /* ========== MODAL KIRIM PAKET ========== */
     const btnKirimPaket = document.getElementById('btn-kirim-paket');
     const modalKirimPaket = document.getElementById('modal-kirim-paket');
     const closeModalKirimPaket = document.getElementById('close-modal-kirim-paket');
-    
+
     // Fungsi untuk menutup modal kirim paket
     function closeModalKirim() {
         if (modalKirimPaket) {
@@ -2190,22 +2279,22 @@ document.addEventListener('DOMContentLoaded', function() {
             resetFormCekHarga();
         }
     }
-    
+
     // Buka modal kirim paket
     if (btnKirimPaket) {
         btnKirimPaket.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            
+
             console.log('Opening modal kirim paket');
-            
+
             // Tutup modal lain jika ada
             const modalCekPaket = document.getElementById('modal-cek-paket');
             if (modalCekPaket) modalCekPaket.classList.remove('show');
-            
+
             // Buka modal kirim paket
             modalKirimPaket.classList.add('show');
-            
+
             // Fokus ke input pertama setelah modal terbuka
             setTimeout(() => {
                 const outletAsal = document.getElementById('outlet_asal');
@@ -2213,7 +2302,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 100);
         });
     }
-    
+
     // Tutup modal kirim paket
     if (closeModalKirimPaket) {
         closeModalKirimPaket.addEventListener('click', function(e) {
@@ -2222,7 +2311,7 @@ document.addEventListener('DOMContentLoaded', function() {
             closeModalKirim();
         });
     }
-    
+
     // Tutup modal saat klik di luar
     document.addEventListener('click', function(e) {
         if (modalKirimPaket && modalKirimPaket.classList.contains('show')) {
@@ -2232,7 +2321,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-    
+
     /* ========== MODAL CEK PAKET ========== */
     const btnCekPaket = document.getElementById('btn-cek-paket');
     const modalCekPaket = document.getElementById('modal-cek-paket');
@@ -2249,10 +2338,10 @@ document.addEventListener('DOMContentLoaded', function() {
         btnCekPaket.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            
+
             const isOpen = modalCekPaket.classList.contains('show');
             closeAllModals();
-            
+
             if (!isOpen) {
                 modalCekPaket.classList.add('show');
                 setTimeout(() => {
@@ -2292,20 +2381,20 @@ document.addEventListener('DOMContentLoaded', function() {
 /* ========== CEK STATUS PAKET (AJAX) ========== */
 function cekStatusPaket(event) {
     event.preventDefault();
-    
+
     const resi = document.getElementById('kode-resi').value.trim();
     const btnCekResi = document.getElementById('btn-cek-resi');
-    
+
     if (!resi) {
         alert('Silakan masukkan nomor resi!');
         return;
     }
-    
+
     // Tampilkan loading
     const originalText = btnCekResi.innerHTML;
     btnCekResi.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari...';
     btnCekResi.disabled = true;
-    
+
     // Kirim AJAX request
     fetch('{{ route("customer.cek-status-paket") }}', {
         method: 'POST',
@@ -2319,7 +2408,7 @@ function cekStatusPaket(event) {
     .then(data => {
         btnCekResi.innerHTML = originalText;
         btnCekResi.disabled = false;
-        
+
         if (data.success) {
             // Tampilkan hasil dalam modal
             showTrackingResult(data.data);
@@ -2339,24 +2428,24 @@ function cekStatusPaket(event) {
 function showTrackingResult(data) {
     // Buat modal untuk menampilkan hasil
     const modalHtml = `
-        <div class="tracking-result-modal" id="tracking-result-modal" 
-             style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-                    background: rgba(0,0,0,0.7); z-index: 9999; display: flex; 
+        <div class="tracking-result-modal" id="tracking-result-modal"
+             style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0,0,0,0.7); z-index: 9999; display: flex;
                     align-items: center; justify-content: center; padding: 20px;">
-            <div style="background: white; border-radius: 10px; max-width: 500px; 
+            <div style="background: white; border-radius: 10px; max-width: 500px;
                         width: 100%; max-height: 90vh; overflow-y: auto;">
                 <div style="padding: 20px; position: relative;">
-                    <button onclick="closeTrackingModal()" 
-                            style="position: absolute; top: 10px; right: 10px; 
-                                   background: none; border: none; font-size: 20px; 
+                    <button onclick="closeTrackingModal()"
+                            style="position: absolute; top: 10px; right: 10px;
+                                   background: none; border: none; font-size: 20px;
                                    cursor: pointer; color: #666;">
                         <i class="fas fa-times"></i>
                     </button>
-                    
+
                     <h3 style="color: #123352; margin-bottom: 20px; font-size: 22px;">
                         <i class="fas fa-box"></i> Status Pengiriman
                     </h3>
-                    
+
                     <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                             <div>
@@ -2365,24 +2454,24 @@ function showTrackingResult(data) {
                             </div>
                             <div style="text-align: right;">
                                 <strong>Status:</strong><br>
-                                <span style="padding: 5px 10px; border-radius: 5px; 
-                                      background: ${data.status_color === 'success' ? '#d4edda' : 
-                                                   data.status_color === 'warning' ? '#fff3cd' : 
-                                                   data.status_color === 'danger' ? '#f8d7da' : '#cce5ff'}; 
-                                      color: ${data.status_color === 'success' ? '#155724' : 
-                                              data.status_color === 'warning' ? '#856404' : 
+                                <span style="padding: 5px 10px; border-radius: 5px;
+                                      background: ${data.status_color === 'success' ? '#d4edda' :
+                                                   data.status_color === 'warning' ? '#fff3cd' :
+                                                   data.status_color === 'danger' ? '#f8d7da' : '#cce5ff'};
+                                      color: ${data.status_color === 'success' ? '#155724' :
+                                              data.status_color === 'warning' ? '#856404' :
                                               data.status_color === 'danger' ? '#721c24' : '#004085'};">
                                     ${data.status_text}
                                 </span>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div style="margin-bottom: 20px;">
                         <h4 style="color: #123352; margin-bottom: 10px; font-size: 16px;">
                             <i class="fas fa-route"></i> Rute Pengiriman
                         </h4>
-                        <div style="display: flex; align-items: center; justify-content: space-between; 
+                        <div style="display: flex; align-items: center; justify-content: space-between;
                                     padding: 10px; background: #f8f9fa; border-radius: 5px;">
                             <div style="text-align: center;">
                                 <div style="font-weight: bold; color: #123352;">${data.kota_asal}</div>
@@ -2397,7 +2486,7 @@ function showTrackingResult(data) {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div style="margin-bottom: 20px;">
                         <h4 style="color: #123352; margin-bottom: 10px; font-size: 16px;">
                             <i class="fas fa-info-circle"></i> Informasi Penerima
@@ -2406,7 +2495,7 @@ function showTrackingResult(data) {
                             <div><strong>Nama Penerima:</strong> ${data.nama_penerima}</div>
                         </div>
                     </div>
-                    
+
                     <div style="margin-bottom: 20px;">
                         <h4 style="color: #123352; margin-bottom: 10px; font-size: 16px;">
                             <i class="fas fa-calendar-alt"></i> Timeline
@@ -2416,11 +2505,11 @@ function showTrackingResult(data) {
                             <div><strong>Estimasi Sampai:</strong> ${data.estimasi_sampai || '-'}</div>
                         </div>
                     </div>
-                    
+
                     <div style="text-align: center; margin-top: 20px;">
-                        <button onclick="closeTrackingModal()" 
-                                style="padding: 10px 20px; background: #FF581E; color: white; 
-                                       border: none; border-radius: 5px; cursor: pointer; 
+                        <button onclick="closeTrackingModal()"
+                                style="padding: 10px 20px; background: #FF581E; color: white;
+                                       border: none; border-radius: 5px; cursor: pointer;
                                        font-weight: bold;">
                             <i class="fas fa-check"></i> Tutup
                         </button>
@@ -2429,7 +2518,7 @@ function showTrackingResult(data) {
             </div>
         </div>
     `;
-    
+
     // Tambahkan modal ke body
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 }

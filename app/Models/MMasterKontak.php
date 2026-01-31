@@ -36,17 +36,25 @@ class MMasterKontak extends Model
 
     /**
      * Static method untuk mendapatkan data kontak
-     * Pertama cek cache, lalu file JSON, lalu database
+     * Prioritas: Database -> Cache -> JSON -> Default
      */
     public static function getDataKontak()
     {
-        // Cek cache dulu
+        // Prioritas pertama: Database
+        $kontak = self::where('status', 'active')->first();
+        if ($kontak) {
+            // Cache hasilnya
+            Cache::put('kontak_perusahaan', $kontak->toArray(), now()->addDays(30));
+            return $kontak;
+        }
+
+        // Jika tidak ada di database, cek cache
         if (Cache::has('kontak_perusahaan')) {
             $cachedData = Cache::get('kontak_perusahaan');
             return (object) $cachedData;
         }
 
-        // Cek file JSON
+        // Jika tidak ada di cache, cek file JSON
         $jsonPath = storage_path('app/kontak_perusahaan.json');
         if (File::exists($jsonPath)) {
             try {
@@ -57,14 +65,8 @@ class MMasterKontak extends Model
                     return (object) $jsonData['kontak'];
                 }
             } catch (\Exception $e) {
-                // Jika error baca file, lanjut ke database
+                // Jika error baca file, lanjut ke default
             }
-        }
-
-        // Fallback ke database
-        $kontak = self::first();
-        if ($kontak) {
-            return $kontak;
         }
 
         // Data default jika semua kosong

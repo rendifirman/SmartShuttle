@@ -701,7 +701,7 @@
     <div id="inputTab" class="tab-content">
         <form id="kontakForm">
             @csrf
-            <input type="hidden" name="_method" value="POST">
+            <input type="hidden" name="_method" value="PUT">
             <div class="profile">
                 {{-- Informasi Perusahaan --}}
                 <div class="card">
@@ -1247,10 +1247,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Buat FormData
         const formData = new FormData();
 
-        // Tambahkan CSRF token saja
+        // Tambahkan CSRF token dan method spoofing
         formData.append('_token', '{{ csrf_token() }}');
-
-        // Tambahkan data lainnya (JANGAN tambahkan _method)
+        formData.append('_method', 'PUT');
         const fields = {
             nama_perusahaan: document.getElementById('namaPerusahaan').value,
             deskripsi_singkat: document.getElementById('deskripsiSingkat').value,

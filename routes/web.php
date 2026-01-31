@@ -37,6 +37,38 @@ use App\Http\Middleware\UpdateAvatarSession;
 |--------------------------------------------------------------------------
 */
 
+// ★★★ SMARTSEND - KIRIM & CEK PAKET (ACCESSIBLE WITHOUT LOGIN) ★★★
+Route::middleware(['web'])->prefix('smartsend')->name('customer.')->group(function () {
+    // Halaman utama SmartSend
+    Route::get('/', [CustomerController::class, 'smartsend'])->name('smartsend');
+
+    // API untuk SmartSend (gunakan method baru di CustomerController)
+    Route::post('/get-outlet-tujuan', [CustomerController::class, 'getOutletTujuanByRute'])
+        ->name('smartsend.get-outlet-tujuan');
+
+    Route::post('/kalkulator-harga', [CustomerController::class, 'kalkulatorHargaSmartSend'])
+        ->name('smartsend.kalkulator-harga');
+
+    // Cek status paket (AJAX)
+    Route::post('/cek-status', [CustomerController::class, 'cekStatusPaket'])
+        ->name('cek-status-paket');
+
+    // Halaman cek resi (form input)
+    Route::get('/cek-resi', [CustomerController::class, 'cekResi'])->name('cek-resi');
+
+    // Proses validasi resi
+    Route::post('/cek-resi', [CustomerController::class, 'prosesCekResi'])
+        ->name('proses-cek-resi');
+
+    // Halaman detail paket
+    Route::get('/detail-paket/{kode_resi}', [CustomerController::class, 'detailPaket'])
+        ->name('detail-paket');
+
+    // Tracking paket
+    Route::get('/tracking/{kode_resi}', [CustomerController::class, 'trackingPaket'])
+        ->name('tracking-paket');
+});
+
 // ★★★ BUNGKUS SEMUA ROUTE YANG BUTUH AVATAR UPDATE DENGAN MIDDLEWARE ★★★
 Route::middleware([UpdateAvatarSession::class])->group(function () {
 
@@ -90,39 +122,6 @@ Route::middleware([UpdateAvatarSession::class])->group(function () {
     // Route untuk hasil reservasi (bisa diakses tanpa login)
     Route::get('/customer/cek-reservasi/hasil/{kode}', [CekReservasiController::class, 'hasil'])
         ->name('customer.cek-reservasi.hasil');
-
-    // ★★★ SMARTSEND - KIRIM & CEK PAKET ★★★
-    // Bisa diakses tanpa login
-    Route::prefix('smartsend')->group(function () {
-        // Halaman utama SmartSend
-        Route::get('/', [CustomerController::class, 'smartsend'])->name('customer.smartsend');
-
-        // API untuk SmartSend (gunakan method baru di CustomerController)
-        Route::post('/get-outlet-tujuan', [CustomerController::class, 'getOutletTujuanByRute'])
-            ->name('customer.smartsend.get-outlet-tujuan');
-
-        Route::post('/kalkulator-harga', [CustomerController::class, 'kalkulatorHargaSmartSend'])
-            ->name('customer.smartsend.kalkulator-harga');
-
-        // Cek status paket (AJAX)
-        Route::post('/cek-status', [CustomerController::class, 'cekStatusPaket'])
-            ->name('customer.cek-status-paket');
-
-        // Halaman cek resi (form input)
-        Route::get('/cek-resi', [CustomerController::class, 'cekResi'])->name('customer.cek-resi');
-
-        // Proses validasi resi
-        Route::post('/cek-resi', [CustomerController::class, 'prosesCekResi'])
-            ->name('customer.proses-cek-resi');
-
-        // Halaman detail paket
-        Route::get('/detail-paket/{kode_resi}', [CustomerController::class, 'detailPaket'])
-            ->name('customer.detail-paket');
-
-        // Tracking paket
-        Route::get('/tracking/{kode_resi}', [CustomerController::class, 'trackingPaket'])
-            ->name('customer.tracking-paket');
-    });
 
     // ★★★ AUTH ROUTES - HANYA UNTUK TAMU ★★★
     Route::middleware(['guest.customer'])->group(function () {
@@ -937,7 +936,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
 
     // API untuk dropdown outlet tujuan
     Route::post('/smartsend/get-outlet-tujuan', [CustomerController::class, 'getOutletTujuanByRute'])
-        ->name('getOutletTujuanByRute');
+        ->name('smartsend.get-outlet-tujuan');
 
     // API untuk kalkulator harga
     Route::post('/smartsend/kalkulator-harga', [CustomerController::class, 'kalkulatorHargaSmartSend'])
@@ -951,3 +950,10 @@ Route::prefix('customer')->name('customer.')->group(function () {
     // API untuk cek status paket (AJAX)
     Route::post('/cek-status-paket', [CustomerController::class, 'cekStatusPaket'])->name('cek-status-paket');
 });
+
+// CSRF Token refresh route
+Route::get('/refresh-csrf', function () {
+    return response()->json([
+        'csrf_token' => csrf_token()
+    ]);
+})->middleware('web');

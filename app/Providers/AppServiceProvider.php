@@ -34,25 +34,9 @@ class AppServiceProvider extends ServiceProvider
             $view->with('kontakService', $kontakService);
         });
 
-        // Share masterKontak dengan semua views dari database
+        // Share masterKontak dengan semua views menggunakan method yang sudah ada caching
         View::composer('*', function ($view) {
-            $masterKontak = MMasterKontak::where('status', 'active')->first();
-
-            // Jika tidak ada data, buat data default
-            if (!$masterKontak) {
-                $masterKontak = (object) [
-                    'nama_perusahaan' => 'Smart Shuttle',
-                    'telepon_utama' => '0858-1122-4321',
-                    'email_utama' => 'mdcitrasolusi@gmail.com',
-                    'alamat_kantor_pusat' => 'Ruko Citra Grand CBD, Jl. Alternatif Cibubur – Cileungsi No.KM. 5 ER 01 No 02, Jatirangga, Kec. Jatisampurna, Kota Bks, Jawa Barat 17434',
-                    'jam_operasional' => [
-                        ['hari' => 'Senin - Jumat', 'jam' => '08:00 - 17:00'],
-                        ['hari' => 'Sabtu', 'jam' => '08:00 - 15:00'],
-                        ['hari' => 'Minggu', 'jam' => '09:00 - 12:00']
-                    ]
-                ];
-            }
-
+            $masterKontak = MMasterKontak::getDataKontak();
             $view->with('masterKontak', $masterKontak);
         });
     }
