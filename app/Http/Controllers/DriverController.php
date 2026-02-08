@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Models\DriverSchedule; // Tambahkan ini
 
 class DriverController extends Controller
 {
@@ -97,11 +98,20 @@ class DriverController extends Controller
     }
 
     /**
-     * Show driver schedule
+     * Show driver schedule - PERBAIKAN: Tambahkan data schedules
      */
     public function jadwal()
     {
-        return view('driver.jadwal');
+        $driver = Auth::guard('driver')->user();
+        
+        // Ambil semua jadwal driver yang login
+        $schedules = DriverSchedule::with('rute.bus')
+            ->where('driver_id', $driver->id)
+            ->orderBy('tanggal_berangkat', 'desc')
+            ->orderBy('jam_berangkat', 'desc')
+            ->get();
+
+        return view('driver.jadwal', compact('schedules', 'driver'));
     }
 
     /**
@@ -133,7 +143,11 @@ class DriverController extends Controller
      */
     public function profileEdit()
     {
-        return view('driver.profile-edit');
+        // Ambil data driver yang sedang login
+        $driver = Auth::guard('driver')->user();
+        
+        // Kirim data driver ke view
+        return view('driver.profile-edit', compact('driver'));
     }
 
     /**

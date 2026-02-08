@@ -881,37 +881,37 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label class="required">Nama Perusahaan</label>
-                        <input type="text" id="namaPerusahaan" value="{{ $profile->nama_perusahaan ?? 'PT. Smart Shuttle Indonesia' }}">
+                        <input type="text" id="namaPerusahaan" value="{{ $profile->nama_perusahaan ?? '' }}">
                         <div class="info-text">Nama resmi sesuai akta pendirian</div>
                     </div>
                     <div class="form-group">
                         <label>Nama Dagang</label>
-                        <input type="text" id="namaDagang" value="{{ $profile->nama_dagang ?? 'Smart Shuttle Group' }}">
+                        <input type="text" id="namaDagang" value="{{ $profile->nama_dagang ?? '' }}">
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label class="required">Deskripsi Singkat</label>
-                    <textarea id="deskripsi" rows="3">{{ $profile->deskripsi_singkat ?? 'Smart Shuttle adalah solusi transportasi cerdas yang menghubungkan berbagai kota dan mempermudah mobilitas masyarakat dengan layanan yang cepat dan terpercaya.' }}</textarea>
+                    <textarea id="deskripsi" rows="3">{{ $profile->deskripsi_singkat ?? '' }}</textarea>
                 </div>
 
                 <div class="form-group">
                     <label class="required">Alamat</label>
-                    <textarea id="alamat" rows="2">{{ $profile->alamat_kantor_pusat ?? 'Jl. Sudirman No. 45, Jakarta Selatan' }}</textarea>
+                    <textarea id="alamat" rows="2">{{ $profile->alamat_kantor_pusat ?? '' }}</textarea>
                 </div>
 
                 <div class="form-row three">
                     <div class="form-group">
                         <label class="required">Telepon</label>
-                        <input type="tel" id="telepon" value="{{ $profile->telepon ?? '(021) 555-1234' }}">
+                        <input type="tel" id="telepon" value="{{ $profile->telepon ?? '' }}">
                     </div>
                     <div class="form-group">
                         <label class="required">Email</label>
-                        <input type="email" id="email" value="{{ $profile->email ?? 'info@smartshuttle.co.id' }}">
+                        <input type="email" id="email" value="{{ $profile->email ?? '' }}">
                     </div>
                     <div class="form-group">
                         <label>Website</label>
-                        <input type="url" id="website" value="{{ $profile->website ?? 'www.smartshuttle.co.id' }}">
+                        <input type="url" id="website" value="{{ $profile->website ?? '' }}">
                     </div>
                 </div>
 
@@ -1010,14 +1010,11 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label class="required">Visi Perusahaan</label>
-                        <textarea id="visi" rows="4">{{ $profile->visi ?? 'Menjadi perusahaan terdepan di Indonesia dalam menyediakan solusi mobilitas dan logistik yang inovatif dan berkelanjutan demi kemudahan masyarakat.' }}</textarea>
+                    <textarea id="visi" rows="4">{{ $profile->visi ?? '' }}</textarea>
                     </div>
                     <div class="form-group">
                         <label class="required">Misi Perusahaan</label>
-                        <textarea id="misi" rows="4">{{ $profile->misi ?? '• Menyediakan layanan transportasi dan logistik yang cepat, aman, dan ramah lingkungan.
-• Mengoptimalkan penggunaan teknologi untuk meningkatkan efisiensi dan kepuasan pelanggan.
-• Membangun jaringan luas untuk mendukung mobilitas masyarakat di seluruh Indonesia.
-• Mengedepankan keselamatan dan kenyamanan dalam setiap layanan.' }}</textarea>
+                        <textarea id="misi" rows="4">{{ $profile->misi ?? '' }}</textarea>
                     </div>
                 </div>
 
@@ -1037,33 +1034,33 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label class="required">NPWP</label>
-                        <input type="text" id="npwp" value="{{ $profile->npwp ?? '01.234.567.8-901.000' }}">
+                    <input type="text" id="npwp" value="{{ $profile->npwp ?? '' }}">
                     </div>
                     <div class="form-group">
                         <label>Kode Izin Penyelenggaraan</label>
-                        <input type="text" id="kodeIzin" value="{{ $profile->kode_izin_penyelenggaraan ?? 'KIP-56789-XYZ' }}">
+                        <input type="text" id="kodeIzin" value="{{ $profile->kode_izin_penyelenggaraan ?? '' }}">
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label>SIUP</label>
-                        <input type="text" id="siup" value="{{ $profile->siup ?? 'SIUP-2024-12345' }}">
+                        <input type="text" id="siup" value="{{ $profile->siup ?? '' }}">
                     </div>
                     <div class="form-group">
                         <label>NIB</label>
-                        <input type="text" id="nib" value="{{ $profile->nib ?? '1234567890123' }}">
+                        <input type="text" id="nib" value="{{ $profile->nib ?? '' }}">
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label>Nomor Sertifikat Transportasi</label>
-                        <input type="text" id="sertifikat" value="{{ $profile->nomor_sertifikat_transportasi ?? 'TRNS-00012345' }}">
+                        <input type="text" id="sertifikat" value="{{ $profile->nomor_sertifikat_transportasi ?? '' }}">
                     </div>
                     <div class="form-group">
                         <label>TDP</label>
-                        <input type="text" id="tdp" value="{{ $profile->tdp ?? 'TDP-2024-98765' }}">
+                        <input type="text" id="tdp" value="{{ $profile->tdp ?? '' }}">
                     </div>
                 </div>
 
@@ -1088,15 +1085,15 @@
                 <div class="form-row three">
                     <div class="form-group">
                         <label class="required">Tanggal Berdiri</label>
-                        <input type="date" id="tanggalBerdiri" value="{{ $profile->tanggal_berdiri ? $profile->tanggal_berdiri->format('Y-m-d') : '2025-11-10' }}">
+                        <input type="date" id="tanggalBerdiri" value="{{ $profile->tanggal_berdiri ? $profile->tanggal_berdiri->format('Y-m-d') : '' }}">
                     </div>
                     <div class="form-group">
                         <label class="required">Penanggung Jawab Utama</label>
-                        <input type="text" id="penanggungJawab" value="{{ $profile->penanggung_jawab_utama ?? 'Dr. Rina Dewi' }}">
+                        <input type="text" id="penanggungJawab" value="{{ $profile->penanggung_jawab_utama ?? '' }}">
                     </div>
                     <div class="form-group">
                         <label class="required">Nama Pendiri</label>
-                        <input type="text" id="namaPendiri" value="{{ $profile->nama_pendiri ?? 'Ir. Agus Santoso' }}">
+                        <input type="text" id="namaPendiri" value="{{ $profile->nama_pendiri ?? '' }}">
                     </div>
                 </div>
 
@@ -1176,12 +1173,12 @@
                         <div class="company-left">
                             <div class="info-field">
                                 <div class="field-label">Nama Perusahaan</div>
-                                <div class="field-value" id="resultNamaPerusahaan">{{ $profile->nama_perusahaan ?? 'PT. Smart Shuttle Indonesia' }}</div>
+                                <div class="field-value" id="resultNamaPerusahaan">{{ $profile->nama_perusahaan ?? '' }}</div>
                             </div>
 
                             <div class="info-field">
                                 <div class="field-label">Deskripsi Singkat</div>
-                                <div class="field-value" id="resultDeskripsi">{{ $profile->deskripsi_singkat ?? 'Smart Shuttle adalah solusi transportasi cerdas yang menghubungkan berbagai kota dan mempermudah mobilitas masyarakat dengan layanan yang cepat dan terpercaya.' }}</div>
+                                <div class="field-value" id="resultDeskripsi">{{ $profile->deskripsi_singkat ?? '' }}</div>
                             </div>
                         </div>
 
@@ -1189,7 +1186,7 @@
                         <div class="company-right">
                             <div class="info-field">
                                 <div class="field-label">Nama Dagang</div>
-                                <div class="field-value" id="resultNamaDagang">{{ $profile->nama_dagang ?? 'Smart Shuttle Group' }}</div>
+                                <div class="field-value" id="resultNamaDagang">{{ $profile->nama_dagang ?? '' }}</div>
                             </div>
 
                             <div class="contact-field">

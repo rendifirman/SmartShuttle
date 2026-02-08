@@ -803,7 +803,14 @@ class AdminController extends Controller
         return redirect()->route('admin.promo')->with('success', 'Promo berhasil dihapus.');
     }
 
-
+    // ★★★ TAMBAHKAN METHOD jadwal() INI ★★★
+    public function jadwal()
+    {
+        // Redirect ke JadwalController index method
+        return redirect()->route('admin.jadwal.index');
+        // Atau jika ingin langsung menampilkan view:
+        // return view('admin.jadwal.index');
+    }
 
     public function driver()
     {
@@ -1485,5 +1492,4 @@ class AdminController extends Controller
 
         return redirect()->route('admin.artikel.index')->with('success', 'Artikel berhasil dihapus.');
     }
-
-    }
+}

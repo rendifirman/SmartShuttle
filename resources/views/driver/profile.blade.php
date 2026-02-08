@@ -1,4 +1,4 @@
-profile
+profile 
 
 @extends('layouts.app-driver')
 
@@ -203,7 +203,7 @@ profile
         .form-grid {
             gap: 30px;
         }
-
+        
         .form-group {
             width: 90%;
         }
@@ -213,22 +213,22 @@ profile
         .profile-card {
             padding: 25px;
         }
-
+        
         .profile-header {
             flex-direction: column;
             text-align: center;
             gap: 20px;
         }
-
+        
         .form-grid {
             grid-template-columns: 1fr;
             gap: 20px;
         }
-
+        
         .form-group {
             width: 100%;
         }
-
+        
         .profile-id-section {
             justify-content: center;
         }
@@ -238,12 +238,12 @@ profile
         .profile-card {
             padding: 20px;
         }
-
+        
         .profile-photo img {
             width: 100px;
             height: 100px;
         }
-
+        
         .profile-info h2 {
             font-size: 20px;
         }
@@ -267,7 +267,7 @@ profile
             <h2>Dimas Mahendra</h2>
             <div class="profile-id-section">
                 <div class="profile-id">ID Pengemudi: DRV-2023-001</div>
-                <a href="{{ route('driver.profile.edit') }}" class="edit-profile-btn">Edit Profile</a>
+                <a href="{{ route('driver.profile-edit') }}" class="edit-profile-btn">Edit Profile</a>
             </div>
             <div class="profile-status">Aktif</div>
         </div>
@@ -350,7 +350,7 @@ profile
     function handleFileUpload(input, fileNameId) {
             const file = input.files[0];
             const fileNameElement = document.getElementById(fileNameId);
-
+            
             if (file) {
                 // Validasi ukuran file (max 5MB)
                 if (file.size > 5 * 1024 * 1024) {
@@ -358,7 +358,7 @@ profile
                     input.value = '';
                     return;
                 }
-
+                
                 // Validasi tipe file
                 const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
                 if (!validTypes.includes(file.type)) {
@@ -366,11 +366,11 @@ profile
                     input.value = '';
                     return;
                 }
-
+                
                 // Tampilkan nama file
                 fileNameElement.textContent = File terpilih: ${file.name};
                 fileNameElement.style.display = 'block';
-
+                
                 // Ubah tampilan upload box
                 const uploadBox = input.parentElement;
                 uploadBox.style.backgroundColor = '#e8f5e8';
@@ -383,19 +383,19 @@ profile
     function saveChanges() {
         const ktpFile = document.getElementById('ktpInput').files[0];
         const simFile = document.getElementById('simInput').files[0];
-
+        
         // Validasi jika file sudah dipilih
         if (ktpFile || simFile) {
             alert('Perubahan berhasil disimpan!');
-
+            
             // Reset form (opsional)
             document.getElementById('ktpInput').value = '';
             document.getElementById('simInput').value = '';
-
+            
             // Reset tampilan upload box
             resetUploadBox('ktpUploadBox');
             resetUploadBox('simUploadBox');
-
+            
             // Sembunyikan nama file
             document.getElementById('ktpFileName').style.display = 'none';
             document.getElementById('simFileName').style.display = 'none';
@@ -419,13 +419,13 @@ profile
             this.style.backgroundColor = '#f0f8ff';
             this.style.borderColor = '#0d3559';
         });
-
+        
         box.addEventListener('dragleave', function(e) {
             e.preventDefault();
             this.style.backgroundColor = 'white';
             this.style.borderColor = '#ddd';
         });
-
+        
         box.addEventListener('drop', function(e) {
             e.preventDefault();
             const input = this.querySelector('.file-input');

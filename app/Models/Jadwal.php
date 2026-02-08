@@ -9,6 +9,8 @@ class Jadwal extends Model
 {
     use HasFactory;
 
+    protected $table = 'jadwals';
+    
     protected $fillable = [
         'shuttle_id',
         'tanggal_keberangkatan',
@@ -16,13 +18,25 @@ class Jadwal extends Model
         'waktu_kedatangan',
         'harga_total',
         'kursi_tersedia',
-        'status'
+        'status',
+        'status_admin'
+        // Jangan sertakan created_by, updated_by, deleted_by jika tidak ingin diisi
     ];
+
+    protected $casts = [
+        'tanggal_keberangkatan' => 'date',
+    ];
+
+    // Accessor untuk id_jadwal (agar kompatibel dengan view yang menggunakan $jadwal->id_jadwal)
+    public function getIdJadwalAttribute()
+    {
+        return $this->id;
+    }
 
     // Relasi ke shuttle
     public function shuttle()
     {
-        return $this->belongsTo(Shuttle::class);
+        return $this->belongsTo(Shuttle::class, 'shuttle_id');
     }
 
     // Relasi ke rutes (many-to-many)
@@ -31,6 +45,41 @@ class Jadwal extends Model
         return $this->belongsToMany(Rute::class, 'rute_jadwals', 'jadwal_id', 'rute_id')
                     ->withPivot('urutan', 'durasi_segment', 'harga_segment')
                     ->withTimestamps();
+    }
+
+    // ★★★ RELASI BARU: Relasi ke DriverJadwal (one-to-one) ★★★
+    public function driverJadwal()
+    {
+        return $this->hasOne(DriverJadwal::class, 'id_jadwal');
+    }
+
+    // ★★★ Scope untuk jadwal yang tersedia (belum diambil driver) ★★★
+    public function scopeTersedia($query)
+    {
+        return $query->where(function($q) {
+            $q->whereNull('status_admin')
+              ->orWhere('status_admin', '!=', 'diambil');
+        })
+        ->where('status', 'tersedia')
+        ->where('kursi_tersedia', '>', 0)
+        ->whereDate('tanggal_keberangkatan', '>=', now()->toDateString());
+    }
+
+    // ★★★ Method untuk cek apakah sudah diambil ★★★
+    public function sudahDiambil()
+    {
+        return !empty($this->status_admin) && $this->status_admin === 'diambil';
+    }
+
+    // ★★★ Method untuk diambil driver ★★★
+    public function diambilOlehDriver($driverId)
+    {
+        // Update status admin
+        $this->status_admin = 'diambil';
+        $this->save();
+        
+        // Buat jadwal driver
+        return DriverJadwal::createFromJadwalAdmin($this, $driverId);
     }
 
     // Relasi ke rute_jadwals
@@ -76,31 +125,5 @@ class Jadwal extends Model
         return $query->where('status', 'tersedia')
                     ->where('kursi_tersedia', '>', 0)
                     ->whereDate('tanggal_keberangkatan', '>=', now());
-    }
-
-    // ================ AUDIT RELATIONSHIPS ================
-
-    /**
-     * User who created this schedule
-     */
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    /**
-     * User who last updated this schedule
-     */
-    public function updater()
-    {
-        return $this->belongsTo(User::class, 'updated_by');
-    }
-
-    /**
-     * User who deleted this schedule
-     */
-    public function deleter()
-    {
-        return $this->belongsTo(User::class, 'deleted_by');
     }
 }

@@ -630,7 +630,8 @@
             </a>
             @endif
             @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_jadwal'))
-            <a href="{{ route('admin.jadwal') }}" class="submenu-item" id="jadwal-link">
+            <!-- ★★★ PERBAIKAN DI SINI: Ubah route('admin.jadwal') menjadi route('admin.jadwal.index') ★★★ -->
+            <a href="{{ route('admin.jadwal.index') }}" class="submenu-item" id="jadwal-link">
                 <i class="fas fa-calendar-alt submenu-icon"></i>
                 <span>Jadwal</span>
             </a>

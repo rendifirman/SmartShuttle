@@ -43,6 +43,8 @@ use App\Models\RuteSegment;
 use App\Models\MasterHarga;
 use App\Models\ShipmentTracking;
 use App\Services\PaylabsService;
+use App\Models\DriverSchedule;
+use App\Models\DriverJadwal;
 
 // Helper function untuk mendapatkan inisial nama
 if (!function_exists('getInitials')) {
@@ -218,168 +220,452 @@ class CustomerController extends Controller
         ];
     }
 
+    // ★★★ TAMBAHKAN METHOD INI DI CustomerController ★★★
+    
     /**
-     * Halaman beranda
+     * Ambil jadwal driver untuk customer (dipakai di beranda dan search)
      */
-    public function beranda()
+    private function getJadwalDriverTersedia($request = null)
     {
-        $user = session()->get('user');
+        $query = DriverJadwal::with(['driver', 'jadwal.rutes', 'jadwal.shuttle'])
+            ->tersediaUntukCustomer();
 
-        // Jika user sudah login tapi session user belum ada, set ulang session
-        if (!$user && Auth::check()) {
-            $authUser = Auth::user();
-            session()->put('user', [
-                'id' => $authUser->id,
-                'name' => $authUser->name,
-                'email' => $authUser->email,
-                'phone' => $authUser->phone,
-                'avatar' => $authUser->avatar_url,
-                'membership_status' => $authUser->membership_status,
-                'membership_level' => $authUser->membership_level,
-            ]);
-            session()->save();
-            $user = session()->get('user');
+        // Filter berdasarkan kota asal/tujuan jika ada
+        if ($request && ($request->filled('asal') || $request->filled('tujuan'))) {
+            $query->whereHas('jadwal.rutes', function($q) use ($request) {
+                if ($request->filled('asal')) {
+                    $q->where('kota_asal', 'like', '%' . $request->asal . '%');
+                }
+                if ($request->filled('tujuan')) {
+                    $q->where('kota_tujuan', 'like', '%' . $request->tujuan . '%');
+                }
+            });
         }
 
-        $outletsGrouped = Outlet::with('branch')
-            ->where('status', 'aktif')
-            ->orderBy('nama_outlet')
-            ->get()
-            ->groupBy(function ($outlet) {
-                return $outlet->branch ? $outlet->branch->kota : 'Lainnya';
+        // Filter tanggal jika ada
+        if ($request && $request->filled('tanggal')) {
+            $query->where('tanggal', $request->tanggal);
+        }
+
+        return $query->orderBy('tanggal', 'asc')
+                    ->orderBy('waktu_keberangkatan', 'asc');
+    }
+
+    /**
+     * Halaman beranda customer dengan filter dan search
+     */
+    public function berandaCustomer(Request $request)
+    {
+        try {
+            // Get user data
+            $user = $this->getUserData();
+            
+            // Query dasar dari DriverJadwal
+            $query = DriverJadwal::with(['driver', 'jadwal'])
+                ->tersediaUntukCustomer()
+                ->orderBy('tanggal', 'asc')
+                ->orderBy('waktu_keberangkatan', 'asc');
+            
+            // Apply search filters
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $query->where(function($q) use ($search) {
+                    $q->where('rute', 'like', '%' . $search . '%')
+                      ->orWhere('armada', 'like', '%' . $search . '%');
+                });
+            }
+            
+            // Filter by rute
+            if ($request->filled('rute')) {
+                $query->where('rute', 'like', '%' . $request->input('rute') . '%');
+            }
+            
+            // Filter by tanggal
+            if ($request->filled('tanggal')) {
+                $query->where('tanggal', $request->input('tanggal'));
+            }
+            
+            // Filter by harga range
+            if ($request->filled('harga_min')) {
+                $query->where('harga', '>=', $request->input('harga_min'));
+            }
+            if ($request->filled('harga_max')) {
+                $query->where('harga', '<=', $request->input('harga_max'));
+            }
+            
+            // Filter by waktu keberangkatan
+            if ($request->filled('waktu_keberangkatan')) {
+                $query->whereTime('waktu_keberangkatan', '>=', $request->input('waktu_keberangkatan'));
+            }
+            
+            // Pagination
+            $jadwals = $query->paginate(10);
+            
+            // Get unique rute list for dropdown
+            $ruteList = DriverJadwal::select('rute')
+                ->distinct()
+                ->tersediaUntukCustomer()
+                ->pluck('rute')
+                ->filter()
+                ->values();
+            
+            // Get date range for filter
+            $dateRange = DriverJadwal::selectRaw('MIN(tanggal) as min_date, MAX(tanggal) as max_date')
+                ->tersediaUntukCustomer()
+                ->first();
+            
+            // Get price range
+            $priceRange = DriverJadwal::selectRaw('MIN(harga) as min_harga, MAX(harga) as max_harga')
+                ->tersediaUntukCustomer()
+                ->first();
+            
+            return view('customer.beranda_customer', compact(
+                'user',
+                'jadwals',
+                'ruteList',
+                'dateRange',
+                'priceRange'
+            ));
+            
+        } catch (\Exception $e) {
+            \Log::error('Error in berandaCustomer: ' . $e->getMessage());
+            return redirect()->route('customer.beranda')
+                ->with('error', 'Terjadi kesalahan saat memuat data jadwal.');
+        }
+    }
+
+    /**
+     * API untuk search jadwal (AJAX)
+     */
+    public function searchJadwalDriver(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'rute' => 'nullable|string|max:255',
+                'tanggal' => 'nullable|date',
+                'harga_min' => 'nullable|numeric|min:0',
+                'harga_max' => 'nullable|numeric|min:0',
+                'waktu_keberangkatan' => 'nullable|date_format:H:i',
+            ]);
+            
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            
+            $query = DriverJadwal::with(['driver', 'jadwal'])
+                ->tersediaUntukCustomer();
+            
+            // Apply filters
+            if ($request->filled('rute')) {
+                $query->where('rute', 'like', '%' . $request->rute . '%');
+            }
+            
+            if ($request->filled('tanggal')) {
+                $query->where('tanggal', $request->tanggal);
+            }
+            
+            if ($request->filled('harga_min')) {
+                $query->where('harga', '>=', $request->harga_min);
+            }
+            
+            if ($request->filled('harga_max')) {
+                $query->where('harga', '<=', $request->harga_max);
+            }
+            
+            if ($request->filled('waktu_keberangkatan')) {
+                $query->whereTime('waktu_keberangkatan', '>=', $request->waktu_keberangkatan);
+            }
+            
+            $jadwals = $query->orderBy('tanggal', 'asc')
+                ->orderBy('waktu_keberangkatan', 'asc')
+                ->paginate(10);
+            
+            // Format response
+            $formattedJadwals = $jadwals->map(function($jadwal) {
+                $detailRute = $jadwal->getDetailRute();
+                
+                return [
+                    'id_jadwal_driver' => $jadwal->id_jadwal_driver,
+                    'rute' => $jadwal->rute,
+                    'kota_asal' => $detailRute['kota_asal'] ?? '-',
+                    'kota_tujuan' => $detailRute['kota_tujuan'] ?? '-',
+                    'tanggal' => $jadwal->tanggal->format('d-m-Y'),
+                    'armada' => $jadwal->armada,
+                    'waktu_keberangkatan' => $jadwal->waktu_keberangkatan,
+                    'waktu_kedatangan' => $jadwal->waktu_kedatangan,
+                    'harga' => 'Rp ' . number_format($jadwal->harga, 0, ',', '.'),
+                    'harga_raw' => $jadwal->harga,
+                    'sisa_kursi' => $jadwal->sisa_kursi,
+                    'total_kursi' => $jadwal->total_kursi,
+                    'kursi_terisi' => $jadwal->kursi_terisi,
+                    'status' => $jadwal->status,
+                    'driver' => $jadwal->driver ? $jadwal->driver->name : 'Driver',
+                    'is_available' => $jadwal->isAvailableForCustomer()
+                ];
             });
-
-        $layanan = MLayanan::where('status_aktif', true)
-            ->orderBy('urutan_tampilan', 'asc')
-            ->take(3)
-            ->get();
-
-        $profile = MProfilePerusahaan::where('status', 'active')->first();
-
-       // Ambil data review dari database yang sudah approved
-$reviews = Review::with('user')
-    ->where('status', 'approved')
-    ->orderBy('created_at', 'desc')
-    ->limit(3)
-    ->get()
-    ->map(function($review) {
-        return [
-            'name' => $review->user->name ?? 'User',
-            'avatar' => $review->user?->avatar_url ?? null,
-            'stars' => $review->rating,
-            'text' => $review->review,
-            'date' => $review->created_at->format('d M Y')
-        ];
-    });
-
-        // Jika tidak ada review dari database, gunakan default
-        if ($reviews->isEmpty()) {
-            $reviews = collect([
-                [
-                    'name' => 'Luna Ayna',
-                    'avatar' => 'https://randomuser.me/api/portraits/women/32.jpg',
-                    'stars' => 5,
-                    'text' => 'Servisnya bagus, drivernya sopan dan nyetirnya halus jadi bisa tidur selama perjalanan. Tracking lokasinya juga akurat. Bakal jadi langganan.'
-                ],
-                [
-                    'name' => 'Rizky Pratama',
-                    'avatar' => 'https://randomuser.me/api/portraits/men/54.jpg',
-                    'stars' => 4,
-                    'text' => 'Pertama kali coba SmartShuttle dan langsung puas. Mobilnya bersih, AC dingin, kursinya empuk. Berangkat juga sesuai jadwal. Recommended banget buat yang sering PP Jakarta–Bandung!'
-                ],
-                [
-                    'name' => 'Sari Dewi',
-                    'avatar' => 'https://randomuser.me/api/portraits/women/68.jpg',
-                    'stars' => 5,
-                    'text' => 'Harganya menurut saya cukup murah dibanding shuttle lain, tapi kualitas layanannya tetap bagus. Pemesanan lewat aplikasi juga gampang.'
+            
+            return response()->json([
+                'success' => true,
+                'jadwals' => $formattedJadwals,
+                'pagination' => [
+                    'current_page' => $jadwals->currentPage(),
+                    'last_page' => $jadwals->lastPage(),
+                    'total' => $jadwals->total(),
+                    'per_page' => $jadwals->perPage()
                 ]
             ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error in searchJadwalDriver: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem'
+            ], 500);
         }
+    }
 
-        // Ambil data promo yang aktif dan dalam periode
-        $promos = Promo::where('status', true)
-            ->where('tanggal_mulai', '<=', now())
-            ->where('tanggal_berakhir', '>=', now())
-            ->where(function ($q) {
-                $q->whereNull('kuota')
-                  ->orWhereColumn('terpakai', '<', 'kuota');
-            })
-            ->orderBy('tanggal_mulai', 'desc')
-            ->limit(6)
-            ->get()
-            ->map(function ($p) {
-                return [
-                    'id' => $p->id,
-                    'kode' => $p->kode_promo ?? null,
-                    'nama' => $p->nama_promo ?? $p->nama ?? '',
-                    'deskripsi' => $p->deskripsi ?? '',
-                    'gambar' => asset($p->gambar ?? 'images/default-promo.jpg'),
-                    'periode' => ($p->tanggal_mulai ? $p->tanggal_mulai->format('d M Y') : '') . ' - ' . ($p->tanggal_berakhir ? $p->tanggal_berakhir->format('d M Y') : ''),
-                ];
-            });
+    /**
+     * Halaman beranda - VERSI YANG DIPERBARUI DENGAN PENYESUAIAN
+     */
+    public function beranda(Request $request)
+    {
+        try {
+            // Get authenticated user data
+            $user = session()->get('user');
 
-        // Ambil artikel terbaru yang aktif (diambil dari ArtikelSeeder)
-        $articles = Artikel::aktif()
-            ->terbaru()
-            ->limit(4)
-            ->get()
-            ->map(function ($a) {
-                return [
-                    'id' => $a->id,
-                    'image' => $a->gambar_url ?? ($a->gambar ? asset('storage/' . $a->gambar) : asset('images/default-article.jpg')),
-                    'title' => $a->judul,
-                    'category' => $a->kategori ?? '',
-                    'excerpt' => $a->excerpt ?? strip_tags(Str::limit($a->konten ?? '', 150)),
-                    'date' => $a->tanggal_publikasi ? $a->tanggal_publikasi->format('d M Y') : '',
-                ];
-            })
-            ->toArray();
+            // Jika user sudah login tapi session user belum ada, set ulang session
+            if (!$user && Auth::check()) {
+                $authUser = Auth::user();
+                session()->put('user', [
+                    'id' => $authUser->id,
+                    'name' => $authUser->name,
+                    'email' => $authUser->email,
+                    'phone' => $authUser->phone,
+                    'avatar' => $authUser->avatar_url,
+                    'membership_status' => $authUser->membership_status,
+                    'membership_level' => $authUser->membership_level,
+                ]);
+                session()->save();
+                $user = session()->get('user');
+            }
 
-        // Jika tidak ada promo aktif, gunakan contoh data (opsional)
-        if ($promos->isEmpty()) {
-            $promos = collect([
-                [
-                    'id' => 1,
-                    'nama' => 'Promo Awal Tahun',
-                    'deskripsi' => 'Diskon 30% untuk semua layanan shuttle selama bulan Januari',
-                    'gambar' => asset('images/promo/bali.jpg'),
-                    'periode' => '1 Jan 2024 - 31 Mar 2024'
-                ],
-                [
-                    'id' => 2,
-                    'nama' => 'Paket Keluarga',
-                    'deskripsi' => 'Diskon 25% untuk pemesanan tiket shuttle minimal 4 orang',
-                    'gambar' => asset('images/promo/promo2.jpg'),
-                    'periode' => '1 Feb 2024 - 31 Mar 2024'
-                ],
-                [
-                    'id' => 3,
-                    'nama' => 'Member Baru',
-                    'deskripsi' => 'Dapatkan 2 tiket gratis untuk pendaftaran member baru',
-                    'gambar' => asset('images/promo/promo3.jpg'),
-                    'periode' => 'Sepanjang Tahun 2024'
-                ],
+            // Extract search parameters from request
+            $asalParam = $request->get('asal', '');
+            $tujuanParam = $request->get('tujuan', '');
+            $tanggalParam = $request->get('tanggal', date('Y-m-d'));
+            $penumpangParam = (int) $request->get('penumpang', 1);
+
+            // ★★★ QUERY DARI DRIVERJADWAL SAJA - TIDAK MENGGUNAKAN ADMINJADWAL ★★★
+            $query = DriverJadwal::with(['driver', 'jadwal.rutes', 'jadwal.shuttle'])
+                ->where('status', 'aktif')
+                ->where('tanggal', '>=', now()->toDateString())
+                ->whereColumn('kursi_terisi', '<', 'total_kursi');
+
+            // Filter berdasarkan kota asal jika ada
+            if ($asalParam) {
+                $query->where(function($q) use ($asalParam) {
+                    $q->where('rute', 'like', '%(' . $asalParam . '%')
+                      ->orWhere('rute', 'like', '% ' . $asalParam . '%');
+                });
+            }
+
+            // Filter berdasarkan kota tujuan jika ada
+            if ($tujuanParam) {
+                $query->where('rute', 'like', '%' . $tujuanParam . '%');
+            }
+
+            // Filter berdasarkan tanggal spesifik jika ada
+            if ($tanggalParam) {
+                $query->whereDate('tanggal', $tanggalParam);
+            }
+
+            // Filter berdasarkan jumlah penumpang
+            if ($penumpangParam > 1) {
+                $query->whereRaw('(total_kursi - kursi_terisi) >= ?', [$penumpangParam]);
+            }
+
+            // Pagination: 12 jadwal per halaman (untuk beranda grid)
+            $jadwals = $query->orderBy('tanggal', 'asc')
+                ->orderBy('waktu_keberangkatan', 'asc')
+                ->take(12)
+                ->get();
+
+            // Get list unik kota asal dari DriverJadwal (menggunakan getDetailRute)
+            $kotaAsalList = DriverJadwal::with(['jadwal.rutes'])
+                ->where('status', 'aktif')
+                ->where('tanggal', '>=', now()->toDateString())
+                ->whereColumn('kursi_terisi', '<', 'total_kursi')
+                ->get()
+                ->map(function($item) {
+                    $detail = $item->getDetailRute();
+                    return $detail['kota_asal'] ?? null;
+                })
+                ->filter()
+                ->unique()
+                ->values();
+
+            // Get list unik kota tujuan dari DriverJadwal
+            $kotaTujuanList = DriverJadwal::with(['jadwal.rutes'])
+                ->where('status', 'aktif')
+                ->where('tanggal', '>=', now()->toDateString())
+                ->whereColumn('kursi_terisi', '<', 'total_kursi')
+                ->get()
+                ->map(function($item) {
+                    $detail = $item->getDetailRute();
+                    return $detail['kota_tujuan'] ?? null;
+                })
+                ->filter()
+                ->unique()
+                ->values();
+
+            // Get outlets for sidebar display
+            $outletsGrouped = Outlet::with('branch')
+                ->where('status', 'aktif')
+                ->orderBy('nama_outlet')
+                ->get()
+                ->groupBy(function ($outlet) {
+                    return $outlet->branch ? $outlet->branch->kota : 'Lainnya';
+                });
+
+            $layanan = MLayanan::where('status_aktif', true)
+                ->orderBy('urutan_tampilan', 'asc')
+                ->take(3)
+                ->get();
+
+            $profile = MProfilePerusahaan::where('status', 'active')->first();
+
+            // Ambil data review dari database yang sudah approved
+            $reviews = Review::with('user')
+                ->where('status', 'approved')
+                ->orderBy('created_at', 'desc')
+                ->limit(3)
+                ->get()
+                ->map(function($review) {
+                    return [
+                        'name' => $review->user->name ?? 'User',
+                        'avatar' => $review->user?->avatar_url ?? null,
+                        'stars' => $review->rating,
+                        'text' => $review->review,
+                        'date' => $review->created_at->format('d M Y')
+                    ];
+                });
+
+            // Jika tidak ada review dari database, gunakan default
+            if ($reviews->isEmpty()) {
+                $reviews = collect([
+                    [
+                        'name' => 'Luna Ayna',
+                        'avatar' => 'https://randomuser.me/api/portraits/women/32.jpg',
+                        'stars' => 5,
+                        'text' => 'Servisnya bagus, drivernya sopan dan nyetirnya halus jadi bisa tidur selama perjalanan. Tracking lokasinya juga akurat. Bakal jadi langganan.'
+                    ],
+                    [
+                        'name' => 'Rizky Pratama',
+                        'avatar' => 'https://randomuser.me/api/portraits/men/54.jpg',
+                        'stars' => 4,
+                        'text' => 'Pertama kali coba SmartShuttle dan langsung puas. Mobilnya bersih, AC dingin, kursinya empuk. Berangkat juga sesuai jadwal. Recommended banget buat yang sering PP Jakarta–Bandung!'
+                    ],
+                    [
+                        'name' => 'Sari Dewi',
+                        'avatar' => 'https://randomuser.me/api/portraits/women/68.jpg',
+                        'stars' => 5,
+                        'text' => 'Harganya menurut saya cukup murah dibanding shuttle lain, tapi kualitas layanannya tetap bagus. Pemesanan lewat aplikasi juga gampang.'
+                    ]
+                ]);
+            }
+
+            // Ambil data promo yang aktif dan dalam periode
+            $promos = Promo::where('status', true)
+                ->where('tanggal_mulai', '<=', now())
+                ->where('tanggal_berakhir', '>=', now())
+                ->where(function ($q) {
+                    $q->whereNull('kuota')
+                    ->orWhereColumn('terpakai', '<', 'kuota');
+                })
+                ->orderBy('tanggal_mulai', 'desc')
+                ->limit(6)
+                ->get()
+                ->map(function ($p) {
+                    return [
+                        'id' => $p->id,
+                        'kode' => $p->kode_promo ?? null,
+                        'nama' => $p->nama_promo ?? $p->nama ?? '',
+                        'deskripsi' => $p->deskripsi ?? '',
+                        'gambar' => asset($p->gambar ?? 'images/default-promo.jpg'),
+                        'periode' => ($p->tanggal_mulai ? $p->tanggal_mulai->format('d M Y') : '') . ' - ' . ($p->tanggal_berakhir ? $p->tanggal_berakhir->format('d M Y') : ''),
+                    ];
+                });
+
+            // Ambil artikel terbaru yang aktif
+            $articles = Artikel::aktif()
+                ->terbaru()
+                ->get()
+                ->map(function ($artikel) {
+                    return [
+                        'id' => $artikel->id,
+                        'title' => $artikel->judul,
+                        'excerpt' => $artikel->excerpt,
+                        'full_content' => $artikel->konten,
+                        'category' => $artikel->kategori,
+                        'image' => $artikel->gambar_url,
+                        'date' => $artikel->tanggal_format,
+                        'read_time' => $artikel->waktu_baca,
+                        'tags' => explode(',', $artikel->meta_keywords ?? ''),
+                        'slug' => $artikel->slug
+                    ];
+                });
+
+            return view('customer.beranda', compact(
+                'user', 
+                'outletsGrouped', 
+                'layanan', 
+                'profile', 
+                'reviews', 
+                'promos', 
+                'articles',
+                'jadwals',
+                'kotaAsalList',
+                'kotaTujuanList',
+                'asalParam',
+                'tujuanParam',
+                'tanggalParam',
+                'penumpangParam'
+            ));
+
+        } catch (\Exception $e) {
+            \Log::error('Error in beranda: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Fallback to simplified beranda without filters
+            return view('customer.beranda', [
+                'user' => session()->get('user') ?? null,
+                'outletsGrouped' => Outlet::with('branch')
+                    ->where('status', 'aktif')
+                    ->orderBy('nama_outlet')
+                    ->get()
+                    ->groupBy(function ($outlet) {
+                        return $outlet->branch ? $outlet->branch->kota : 'Lainnya';
+                    }),
+                'jadwals' => [],
+                'kotaAsalList' => [],
+                'kotaTujuanList' => [],
+                'layanan' => MLayanan::where('status_aktif', true)->take(3)->get(),
+                'profile' => MProfilePerusahaan::where('status', 'active')->first(),
+                'reviews' => [],
+                'promos' => [],
+                'articles' => [],
+                'asalParam' => '',
+                'tujuanParam' => '',
+                'tanggalParam' => date('Y-m-d'),
+                'penumpangParam' => 1,
+                'error' => 'Terjadi kesalahan saat memuat data jadwal.'
             ]);
         }
-        $articles = Artikel::aktif()
-        ->terbaru()
-        ->get()
-        ->map(function ($artikel) {
-            return [
-                'id' => $artikel->id,
-                'title' => $artikel->judul,
-                'excerpt' => $artikel->excerpt,
-                'full_content' => $artikel->konten,
-                'category' => $artikel->kategori,
-                'image' => $artikel->gambar_url,
-                'date' => $artikel->tanggal_format,
-                'read_time' => $artikel->waktu_baca,
-                'tags' => explode(',', $artikel->meta_keywords ?? ''),
-                'slug' => $artikel->slug
-            ];
-        });
-
-        return view('customer.beranda', compact('user', 'outletsGrouped', 'layanan', 'profile', 'reviews', 'promos', 'articles'));
     }
 
     /**
@@ -557,6 +843,7 @@ $reviews = Review::with('user')
             ]);
 
         } catch (\Exception $e) {
+            DB::rollBack();
             \Log::error('Load more outlets error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'request' => $request->all()
@@ -857,53 +1144,330 @@ $reviews = Review::with('user')
     }
 
     /**
-     * Halaman pencarian shuttle
-     */
-    public function showSearch(Request $request)
-    {
-        $outlets = Outlet::with('branch')
-            ->where('status', 'aktif')
-            ->get()
-            ->map(function ($outlet) {
-                return [
-                    'id' => $outlet->id,
-                    'nama_outlet' => $outlet->nama_outlet,
-                    'alamat' => $outlet->alamat_lengkap,
-                    'kota' => $outlet->branch->kota ?? 'Unknown',
-                    'branch_id' => $outlet->branch_id
-                ];
-            })
-            ->toArray();
-
-        $outletsGrouped = [];
-        foreach ($outlets as $outlet) {
-            $kota = $outlet['kota'];
-            if (!isset($outletsGrouped[$kota])) {
-                $outletsGrouped[$kota] = [];
-            }
-            $outletsGrouped[$kota][] = $outlet;
-        }
-
-        $data = ['outletsGrouped' => $outletsGrouped];
-
-        if ($request->has('departure_outlet') && $request->has('destination_outlet')) {
-            $searchData = $this->processSearch($request);
-            $data = array_merge($data, $searchData);
-        }
-
-        return view('customer.search', $data);
-    }
-
-    /**
-     * API endpoint untuk pencarian (AJAX)
+     * Update method search untuk pencarian jadwal driver
      */
     public function search(Request $request)
     {
-        return $this->showSearch($request);
+        try {
+            // Log request parameters untuk debugging
+            \Log::info('CustomerController::search() called', [
+                'method' => $request->method(),
+                'all_params' => $request->all(),
+                'has_asal' => $request->filled('asal'),
+                'has_tujuan' => $request->filled('tujuan'),
+                'has_tanggal' => $request->filled('tanggal'),
+                'has_penumpang' => $request->filled('penumpang'),
+            ]);
+
+            // Validasi input
+            $validated = $request->validate([
+                'asal' => 'nullable|string|max:255',
+                'tujuan' => 'nullable|string|max:255',
+                'tanggal' => 'nullable|date|min_date:today',
+                'penumpang' => 'nullable|integer|min:1|max:10'
+            ]);
+
+            $asal = $validated['asal'] ?? null;
+            $tujuan = $validated['tujuan'] ?? null;
+            $tanggal = $validated['tanggal'] ?? null;
+            $penumpang = (int) ($validated['penumpang'] ?? 1);
+
+            \Log::info('Search parameters extracted', compact('asal', 'tujuan', 'tanggal', 'penumpang'));
+
+            // Get user data
+            $user = session()->get('user');
+            if (!$user && Auth::check()) {
+                $authUser = Auth::user();
+                $user = [
+                    'id' => $authUser->id,
+                    'name' => $authUser->name,
+                    'email' => $authUser->email,
+                    'phone' => $authUser->phone,
+                    'avatar' => $authUser->avatar_url,
+                ];
+            }
+
+            // ★★★ QUERY HANYA DARI DRIVERJADWAL - TIDAK ADA RELATIONSHIP JADWAL ★★★
+            $query = DriverJadwal::query()->with(['jadwal.rutes', 'driver']);
+
+            // Filter: status aktif
+            $query->where('status', 'aktif');
+
+            // Filter: tanggal hari ini atau lebih
+            $query->where('tanggal', '>=', now()->toDateString());
+
+            // Filter berdasarkan kota asal (dari field rute melalui parsing yang tepat)
+            if ($asal) {
+                $query->where(function($q) use ($asal) {
+                    // Match dalam pattern (Kota → Kota) 
+                    $q->where('rute', 'like', '%(' . $asal . '%')
+                      ->orWhere('rute', 'like', '% ' . $asal . '%');
+                });
+            }
+
+            // Filter berdasarkan kota tujuan (dari field rute)
+            if ($tujuan) {
+                $query->where(function($q) use ($tujuan) {
+                    // Match dalam pattern (Kota → Kota)
+                    $q->where('rute', 'like', '%' . $tujuan . '%');
+                });
+            }
+
+            // Filter berdasarkan tanggal keberangkatan spesifik
+            if ($tanggal) {
+                $query->where('tanggal', $tanggal);
+            }
+
+            // Filter berdasarkan kursi tersedia sesuai jumlah penumpang
+            $query->whereRaw('(total_kursi - kursi_terisi) >= ?', [$penumpang]);
+
+            // Pagination: 10 jadwal per halaman
+            $jadwals = $query->orderBy('tanggal', 'asc')
+                ->orderBy('waktu_keberangkatan', 'asc')
+                ->paginate(10);
+
+            \Log::info('Search query executed', [
+                'total_results' => $jadwals->total(),
+                'current_page_count' => $jadwals->count(),
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings()
+            ]);
+
+            // Get dropdown data untuk filter (HANYA dari driver_jadwals)
+            // GUNAKAN getDetailRute() untuk parsing yang konsisten dengan beranda
+            $kotaAsalList = DriverJadwal::where('status', 'aktif')
+                ->where('tanggal', '>=', now()->toDateString())
+                ->whereRaw('total_kursi > kursi_terisi')
+                ->get()
+                ->map(function($item) {
+                    $detail = $item->getDetailRute();
+                    return $detail['kota_asal'] ?? null;
+                })
+                ->filter()
+                ->unique()
+                ->values();
+
+            $kotaTujuanList = DriverJadwal::where('status', 'aktif')
+                ->where('tanggal', '>=', now()->toDateString())
+                ->whereRaw('total_kursi > kursi_terisi')
+                ->get()
+                ->map(function($item) {
+                    $detail = $item->getDetailRute();
+                    return $detail['kota_tujuan'] ?? null;
+                })
+                ->filter()
+                ->unique()
+                ->values();
+
+            // Get price range (HANYA dari driver_jadwals)
+            $priceRange = DriverJadwal::where('status', 'aktif')
+                ->where('tanggal', '>=', now()->toDateString())
+                ->whereRaw('total_kursi > kursi_terisi')
+                ->selectRaw('MIN(harga) as min_harga, MAX(harga) as max_harga')
+                ->first();
+
+            // Get outlets grouped untuk backward compatibility
+            $outletsGrouped = Outlet::with('branch')
+                ->where('status', 'aktif')
+                ->orderBy('nama_outlet')
+                ->get()
+                ->groupBy(function ($outlet) {
+                    return $outlet->branch ? $outlet->branch->kota : 'Lainnya';
+                });
+
+            return view('customer.search', array_merge(
+                $validated,
+                compact(
+                    'user',
+                    'jadwals',
+                    'kotaAsalList',
+                    'kotaTujuanList',
+                    'priceRange',
+                    'outletsGrouped',
+                    'penumpang',
+                    'validated'
+                )
+            ));
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->route('customer.search')
+                ->withErrors($e->errors())
+                ->withInput();
+        } catch (\Exception $e) {
+            \Log::error('Error in search: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->route('customer.search')
+                ->with('error', 'Terjadi kesalahan saat mencari jadwal.');
+        }
     }
 
     /**
-     * Proses pencarian jadwal
+     * Halaman show search (kompatibel dengan parameter baru dan lama) - PERBAIKAN UTAMA
+     */
+    public function showSearch(Request $request)
+    {
+        try {
+            // ★★★ DEBUG: CEK PARAMETER YANG DITERIMA ★★★
+            \Log::info('=== DEBUG SHUTTLE SEARCH ===');
+            \Log::info('CustomerController@showSearch - Request parameters:', $request->all());
+            \Log::info('Request URL:', [$request->fullUrl()]);
+
+            // Get user data
+            $user = session()->get('user');
+            if (!$user && Auth::check()) {
+                $authUser = Auth::user();
+                $user = [
+                    'id' => $authUser->id,
+                    'name' => $authUser->name,
+                    'email' => $authUser->email,
+                    'phone' => $authUser->phone,
+                    'avatar' => $authUser->avatar_url,
+                ];
+            }
+
+            // ★★★ JIKA ADA PARAMETER PENCARIAN (asal, tujuan) ★★★
+            if ($request->filled('asal') && $request->filled('tujuan')) {
+                // Validasi input
+                $validated = $request->validate([
+                    'asal' => 'required|string|max:255',
+                    'tujuan' => 'required|string|max:255|different:asal',
+                    'tanggal' => 'nullable|date|after_or_equal:today',
+                    'penumpang' => 'nullable|integer|min:1|max:10'
+                ]);
+
+                $asal = $validated['asal'];
+                $tujuan = $validated['tujuan'];
+                $tanggal = $validated['tanggal'] ?? date('Y-m-d');
+                $penumpang = (int) ($validated['penumpang'] ?? 1);
+
+                \Log::info('Search parameters:', compact('asal', 'tujuan', 'tanggal', 'penumpang'));
+
+                // ★★★ QUERY UTAMA - SESUAI FORMAT RUTE ★★★
+                $query = DriverJadwal::with(['driver', 'jadwal', 'masterRute'])
+                    ->where('status', 'aktif')
+                    ->where('tanggal', '>=', now()->toDateString())
+                    ->whereRaw('(total_kursi - kursi_terisi) >= ?', [$penumpang]);
+
+                // ★★★ FILTER RUTE DENGAN FORMAT YANG BENAR ★★★
+                // Format rute: "Bandung - Jakarta" atau "Bandung → Jakarta"
+                // Cari dengan LIKE "%Bandung%Jakarta%"
+                $query->where(function($q) use ($asal, $tujuan) {
+                    $q->where('rute', 'LIKE', "%{$asal}%{$tujuan}%") 
+                      ->orWhere('rute', 'LIKE', "%{$asal} %{$tujuan}%") 
+                      ->orWhere('rute', 'LIKE', "%{$asal}→%{$tujuan}%") 
+                      ->orWhere('rute', 'LIKE', "%{$asal}->%{$tujuan}%"); 
+                    });
+                
+                // Filter tanggal spesifik jika ada
+                if ($tanggal) {
+                    $query->whereDate('tanggal', $tanggal);
+                }
+
+                // Pagination
+                $jadwals = $query->orderBy('tanggal', 'asc')
+                    ->orderBy('waktu_keberangkatan', 'asc')
+                    ->paginate(10);
+
+                \Log::info('Search results count:', ['count' => $jadwals->count()]);
+
+                // Get dropdown data
+                $kotaAsalList = DriverJadwal::where('status', 'aktif')
+                    ->where('tanggal', '>=', now()->toDateString())
+                    ->get()
+                    ->map(function($item) {
+                        $detail = $item->getDetailRute();
+                        return $detail['kota_asal'] ?? null;
+                    })
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                $kotaTujuanList = DriverJadwal::where('status', 'aktif')
+                    ->where('tanggal', '>=', now()->toDateString())
+                    ->get()
+                    ->map(function($item) {
+                        $detail = $item->getDetailRute();
+                        return $detail['kota_tujuan'] ?? null;
+                    })
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                // Get outlets grouped untuk backward compatibility
+                $outletsGrouped = Outlet::with('branch')
+                    ->where('status', 'aktif')
+                    ->orderBy('nama_outlet')
+                    ->get()
+                    ->groupBy(function ($outlet) {
+                        return $outlet->branch ? $outlet->branch->kota : 'Lainnya';
+                    });
+
+                return view('customer.search', array_merge(
+                    $validated,
+                    compact(
+                        'user',
+                        'jadwals',
+                        'kotaAsalList',
+                        'kotaTujuanList',
+                        'outletsGrouped',
+                        'penumpang',
+                        'validated'
+                    )
+                ));
+            }
+
+            // ★★★ DEFAULT VIEW TANPA HASIL SEARCH ★★★
+            $kotaAsalList = DriverJadwal::where('status', 'aktif')
+                ->where('tanggal', '>=', now()->toDateString())
+                ->get()
+                ->map(function($item) {
+                    $detail = $item->getDetailRute();
+                    return $detail['kota_asal'] ?? null;
+                })
+                ->filter()
+                ->unique()
+                ->values();
+
+            $kotaTujuanList = DriverJadwal::where('status', 'aktif')
+                ->where('tanggal', '>=', now()->toDateString())
+                ->get()
+                ->map(function($item) {
+                    $detail = $item->getDetailRute();
+                    return $detail['kota_tujuan'] ?? null;
+                })
+                ->filter()
+                ->unique()
+                ->values();
+
+            $outletsGrouped = Outlet::with('branch')
+                ->where('status', 'aktif')
+                ->orderBy('nama_outlet')
+                ->get()
+                ->groupBy(function ($outlet) {
+                    return $outlet->branch ? $outlet->branch->kota : 'Lainnya';
+                });
+
+            return view('customer.search', compact(
+                'user',
+                'kotaAsalList',
+                'kotaTujuanList',
+                'outletsGrouped'
+            ));
+
+        } catch (\Exception $e) {
+            \Log::error('Error in showSearch: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->route('customer.beranda')
+                ->with('error', 'Terjadi kesalahan saat membuka halaman pencarian.');
+        }
+    }
+
+    /**
+     * Proses pencarian jadwal (versi lama)
      */
     private function processSearch(Request $request)
     {
@@ -938,7 +1502,7 @@ $reviews = Review::with('user')
     }
 
     /**
-     * Mencari jadwal yang tersedia
+     * Mencari jadwal yang tersedia (versi lama)
      */
     private function findAvailableSchedules($departureCity, $destinationCity, $departureOutlet, $destinationOutlet, $departureDate, $passengerCount)
     {
@@ -975,7 +1539,7 @@ $reviews = Review::with('user')
     }
 
     /**
-     * Cek apakah rute valid untuk pencarian
+     * Cek apakah rute valid untuk pencarian (versi lama)
      */
     private function isRouteValid($rute, $departureCity, $destinationCity, $departureOutlet, $destinationOutlet)
     {
@@ -1018,7 +1582,7 @@ $reviews = Review::with('user')
     }
 
     /**
-     * Cek apakah outlet tersedia dalam rute
+     * Cek apakah outlet tersedia dalam rute (versi lama)
      */
     private function checkOutletsInRoute($rute, $departureOutlet, $destinationOutlet, $destCityInStop = null, $depCityInStop = null)
     {
@@ -1060,7 +1624,7 @@ $reviews = Review::with('user')
     }
 
     /**
-     * Hitung harga berdasarkan segment rute
+     * Hitung harga berdasarkan segment rute (versi lama)
      */
     private function calculatePriceForRoute($jadwal, $departureCity, $destinationCity)
     {
@@ -1181,6 +1745,108 @@ $reviews = Review::with('user')
             'eligiblePromos' => $eligiblePromos,
             'userData' => $userData,
         ]);
+    }
+
+    /**
+     * Booking dari driver_jadwals (id_jadwal_driver) - NEW METHOD
+     */
+    public function pesan(Request $request, $id_jadwal_driver)
+    {
+        try {
+            // Check authentication
+            if (!Auth::check()) {
+                return redirect()->route('customer.login')
+                    ->with('error', 'Silakan login terlebih dahulu untuk melakukan pemesanan.');
+            }
+
+            $penumpang = (int) ($request->query('penumpang', 1));
+
+            // Fetch selected schedule from driver_jadwals table
+            $driverJadwal = DriverJadwal::findOrFail($id_jadwal_driver);
+
+            // Validate: status = 'aktif'
+            if ($driverJadwal->status !== 'aktif') {
+                return redirect()->route('customer.search')
+                    ->with('error', 'Jadwal tidak tersedia.');
+            }
+
+            // Calculate remaining_seats
+            $remaining_seats = $driverJadwal->total_kursi - $driverJadwal->kursi_terisi;
+
+            // Validate: remaining_seats >= passenger_count
+            if ($remaining_seats < $penumpang) {
+                return redirect()->route('customer.search')
+                    ->with('error', 'Seats not available. Only ' . $remaining_seats . ' seats remaining.');
+            }
+
+            // Calculate total_price
+            $total_price = $driverJadwal->harga * $penumpang;
+
+            // Get user data for promo eligibility
+            $userData = $this->getUserData();
+
+            // Get eligible promos
+            $eligiblePromos = $this->getEligiblePromosWithStatus(
+                $userData,
+                [
+                    'jumlah_tiket' => $penumpang,
+                    'total_pembelian' => $total_price
+                ],
+                'shuttle'
+            );
+
+            // Parse route details
+            $detailRute = $driverJadwal->getDetailRute();
+
+            // Map fields for compatibility with existing view
+            $jadwalView = new \stdClass();
+            $jadwalView->id = $driverJadwal->id_jadwal_driver;
+            $jadwalView->tanggal_keberangkatan = $driverJadwal->tanggal;
+            $jadwalView->waktu_keberangkatan = $driverJadwal->waktu_keberangkatan;
+            $jadwalView->waktu_kedatangan = $driverJadwal->waktu_kedatangan;
+            $jadwalView->harga_total = $driverJadwal->harga;
+            $jadwalView->kursi_tersedia = $remaining_seats;
+            $jadwalView->shuttle = $driverJadwal->shuttle;
+            $jadwalView->rute_pertama = (object) ['kota_asal' => $detailRute['kota_asal'] ?? ''];
+            $jadwalView->rute_terakhir = (object) ['kota_tujuan' => $detailRute['kota_tujuan'] ?? ''];
+
+            // Pass data to pesan.blade.php
+            return view('customer.pesan', [
+                'jadwal' => $jadwalView,
+                'penumpang' => $penumpang,
+                'outletAsal' => null,
+                'outletTujuan' => null,
+                'kotaAsal' => $detailRute['kota_asal'] ?? '',
+                'kotaTujuan' => $detailRute['kota_tujuan'] ?? '',
+                'rute_pertama' => $jadwalView->rute_pertama,
+                'rute_terakhir' => $jadwalView->rute_terakhir,
+                'rute_string' => $driverJadwal->rute,
+                'totalHarga' => $total_price,
+                'diskon' => 0,
+                'diskonLoyalty' => 0,
+                'totalAfterDiscount' => $total_price,
+                'appliedPromo' => null,
+                'availablePromos' => Promo::active()->get(),
+                'promos' => Promo::orderByDesc('status')->get(),
+                'loyaltyDiscount' => null,
+                'user' => session()->get('user', []),
+                'eligiblePromos' => $eligiblePromos,
+                'userData' => $userData,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in pesan method: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return redirect()->route('customer.search')
+                ->with('error', 'Terjadi kesalahan saat membuka halaman pemesanan.');
+        }
+    }
+
+    /**
+     * Booking dari driver_jadwals (id_jadwal_driver) - LEGACY METHOD (kept for compatibility)
+     */
+    public function bookingFromDriver(Request $request, $id_jadwal_driver)
+    {
+        // Redirect to new method for consistency
+        return $this->pesan($request, $id_jadwal_driver);
     }
 
     /**
@@ -2793,8 +3459,6 @@ $reviews = Review::with('user')
         ]);
     }
 
-
-
     /**
      * Cek harga paket (AJAX)
      */
@@ -3525,316 +4189,6 @@ $reviews = Review::with('user')
     }
 
     /**
-     * API: Get outlet tujuan berdasarkan outlet asal
-     */
-    public function getOutletTujuanByRute(Request $request)
-    {
-        try {
-            $validator = Validator::make($request->all(), [
-                'outlet_asal_id' => 'required|integer|exists:outlets,id'
-            ]);
-
-            if ($validator->fails()) {
-                \Log::warning('Validation failed for getOutletTujuanByRute', $validator->errors()->toArray());
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Outlet asal tidak valid',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $outletAsalId = $request->outlet_asal_id;
-
-            // 1. Validasi outlet asal ada
-            $outletAsal = Outlet::with('branch')->find($outletAsalId);
-            if (!$outletAsal) {
-                \Log::warning('Outlet asal not found: ' . $outletAsalId);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Outlet asal tidak ditemukan'
-                ], 404);
-            }
-
-            \Log::info('Getting destinations for: ' . $outletAsal->nama_outlet . ' (ID: ' . $outletAsalId . ')');
-
-            // 2. Gunakan RuteSegment untuk mendapatkan destination outlets
-            $outletTujuan = RuteSegment::getOutletTujuanValid($outletAsalId);
-
-            \Log::info('Found ' . $outletTujuan->count() . ' destination outlets for outlet ' . $outletAsalId);
-
-            // 3. Return success even if empty (user should see "no routes" message)
-            return response()->json([
-                'success' => true,
-                'data' => $outletTujuan->values(),
-                'total' => $outletTujuan->count(),
-                'outlet_asal' => [
-                    'id' => $outletAsal->id,
-                    'nama' => $outletAsal->nama_outlet,
-                    'kota' => $outletAsal->branch->kota ?? 'Unknown'
-                ]
-            ], 200);
-
-        } catch (\Exception $e) {
-            \Log::error('Error in getOutletTujuanByRute: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'request' => $request->all()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memuat rute. Silakan coba lagi.',
-                'error_detail' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
- * API: KALKULATOR HARGA SMARTSEND (Cek Harga Saja - Read Only)
- */
-public function kalkulatorHargaSmartSend(Request $request)
-{
-    try {
-        $validator = Validator::make($request->all(), [
-            'outlet_asal_id' => 'required|integer|exists:outlets,id',
-            'outlet_tujuan_id' => 'required|integer|exists:outlets,id|different:outlet_asal_id',
-            'berat' => 'required|numeric|min:0.1|max:100',
-            'panjang' => 'nullable|numeric|min:0',
-            'lebar' => 'nullable|numeric|min:0',
-            'tinggi' => 'nullable|numeric|min:0',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal: ' . implode(', ', $validator->errors()->all()),
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $outletAsalId = $request->outlet_asal_id;
-        $outletTujuanId = $request->outlet_tujuan_id;
-
-        // 1. Validasi: Apakah rute valid?
-        $jarak = \App\Models\RuteSegment::hitungJarak($outletAsalId, $outletTujuanId);
-
-        if ($jarak <= 0) {
-            \Log::warning('Rute tidak valid dari outlet ' . $outletAsalId . ' ke ' . $outletTujuanId);
-            return response()->json([
-                'success' => false,
-                'message' => 'Tidak ada rute yang tersedia antara kedua outlet yang dipilih'
-            ], 404);
-        }
-
-        // 2. Hitung berat volumetric
-        $beratAktual = floatval($request->berat);
-        $volume = floatval($request->panjang ?? 0) *
-                 floatval($request->lebar ?? 0) *
-                 floatval($request->tinggi ?? 0);
-        $beratVolumetric = $volume > 0 ? $volume / 6000 : 0;
-        $beratTerpakai = max($beratAktual, $beratVolumetric);
-
-        // 3. Coba ambil master harga dari database, jika tidak ada gunakan default
-        try {
-            $masterHarga = \App\Models\MasterHarga::aktif()->first();
-        } catch (\Exception $e) {
-            \Log::warning('Gagal mengambil master harga: ' . $e->getMessage());
-            $masterHarga = null;
-        }
-
-        // Default values jika master_harga tidak ada
-        $defaultHarga = [
-            'berat_pertama' => 5,
-            'harga_berat_pertama' => 7000,
-            'harga_berat_berikutnya' => 2000,
-            'kelipatan_jarak' => 10,
-            'harga_per_kelipatan' => 2000
-        ];
-
-        // 4. Hitung harga dengan fallback ke default jika master_harga tidak ada
-        $resultBerat = $this->hitungHargaBerat($beratTerpakai, $masterHarga ?? $defaultHarga);
-        $resultJarak = $this->hitungHargaJarak($jarak, $masterHarga ?? $defaultHarga);
-
-        $hargaBerat = $resultBerat['total'];
-        $hargaJarak = $resultJarak['total'];
-        $hargaTotal = $hargaBerat + $hargaJarak;
-
-        // Build calculation breakdown
-        $breakdownText = $this->buatCalculationBreakdown($beratTerpakai, $jarak, $resultBerat, $resultJarak);
-
-        // 5. Siapkan data response
-        $outletAsal = \App\Models\Outlet::with('branch')->find($outletAsalId);
-        $outletTujuan = \App\Models\Outlet::with('branch')->find($outletTujuanId);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'outlet_asal' => [
-                    'id' => $outletAsal->id,
-                    'nama' => $outletAsal->nama_outlet,
-                    'kota' => $outletAsal->branch->kota,
-                    'alamat' => $outletAsal->alamat_lengkap
-                ],
-                'outlet_tujuan' => [
-                    'id' => $outletTujuan->id,
-                    'nama' => $outletTujuan->nama_outlet,
-                    'kota' => $outletTujuan->branch->kota,
-                    'alamat' => $outletTujuan->alamat_lengkap
-                ],
-                'jarak' => round($jarak, 2),
-                'berat' => [
-                    'aktual' => round($beratAktual, 2),
-                    'volumetric' => round($beratVolumetric, 2),
-                    'terpakai' => round($beratTerpakai, 2)
-                ],
-                'harga' => [
-                    'berat' => $hargaBerat,
-                    'jarak' => $hargaJarak,
-                    'total' => $hargaTotal,
-                    'formatted' => [
-                        'berat' => 'Rp ' . number_format($hargaBerat, 0, ',', '.'),
-                        'jarak' => 'Rp ' . number_format($hargaJarak, 0, ',', '.'),
-                        'total' => 'Rp ' . number_format($hargaTotal, 0, ',', '.')
-                    ]
-                ],
-                'perhitungan' => $breakdownText,
-                'estimasi_waktu' => $this->hitungEstimasiWaktu($jarak),
-                'note' => $masterHarga ?
-                    'Harga dihitung berdasarkan data master_harga' :
-                    '⚠️ Harga dihitung menggunakan nilai default (master_harga belum tersedia)'
-            ]
-        ]);
-
-    } catch (\Exception $e) {
-        \Log::error('Error kalkulator harga: ' . $e->getMessage(), [
-            'trace' => $e->getTraceAsString(),
-            'request' => $request->all()
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Terjadi kesalahan sistem. Silakan hubungi administrator.'
-        ], 500);
-    }
-}
-
-    /**
-     * Helper: Hitung harga berdasarkan berat
-     */
-    private function hitungHargaBerat($berat, $masterHarga = null)
-    {
-        $default = [
-            'berat_pertama' => 5,
-            'harga_berat_pertama' => 7000,
-            'harga_berat_berikutnya' => 2000
-        ];
-
-        // Gunakan nilai dari masterHarga jika tersedia
-        if ($masterHarga) {
-            $beratPertama = $masterHarga->berat_pertama ?? $default['berat_pertama'];
-            $hargaBeratPertama = $masterHarga->harga_berat_pertama ?? $default['harga_berat_pertama'];
-            $hargaBeratBerikutnya = $masterHarga->harga_berat_berikutnya ?? $default['harga_berat_berikutnya'];
-        } else {
-            $beratPertama = $default['berat_pertama'];
-            $hargaBeratPertama = $default['harga_berat_pertama'];
-            $hargaBeratBerikutnya = $default['harga_berat_berikutnya'];
-        }
-
-        // Calculate total price
-        if ($berat <= $beratPertama) {
-            $hargaTotal = $hargaBeratPertama;
-            $beratTambahan = 0;
-            $hargaTambahan = 0;
-        } else {
-            $beratTambahan = $berat - $beratPertama;
-            $hargaTambahan = ceil($beratTambahan) * $hargaBeratBerikutnya;
-            $hargaTotal = $hargaBeratPertama + $hargaTambahan;
-        }
-
-        // Return dengan breakdown untuk calculator
-        return [
-            'total' => $hargaTotal,
-            'breakdown' => [
-                'berat_pertama' => $beratPertama,
-                'harga_berat_pertama' => $hargaBeratPertama,
-                'berat_tambahan' => round($beratTambahan, 2),
-                'harga_berat_berikutnya' => $hargaBeratBerikutnya,
-                'harga_tambahan' => $hargaTambahan,
-                'rules_source' => 'master_harga'
-            ]
-        ];
-    }
-
-    /**
-     * Helper: Hitung harga berdasarkan jarak
-     */
-    private function hitungHargaJarak($jarak, $masterHarga = null)
-    {
-        $default = [
-            'kelipatan_jarak' => 10,
-            'harga_per_kelipatan' => 2000
-        ];
-
-        // Gunakan nilai dari masterHarga jika tersedia
-        if ($masterHarga) {
-            $kelipatanJarak = $masterHarga->kelipatan_jarak ?? $default['kelipatan_jarak'];
-            $hargaPerKelipatan = $masterHarga->harga_per_kelipatan ?? $default['harga_per_kelipatan'];
-        } else {
-            $kelipatanJarak = $default['kelipatan_jarak'];
-            $hargaPerKelipatan = $default['harga_per_kelipatan'];
-        }
-
-        $kelipatan = ceil($jarak / $kelipatanJarak);
-        $hargaTotal = $kelipatan * $hargaPerKelipatan;
-
-        // Return dengan breakdown untuk calculator
-        return [
-            'total' => $hargaTotal,
-            'breakdown' => [
-                'jarak_total' => round($jarak, 2),
-                'kelipatan_jarak' => $kelipatanJarak,
-                'jumlah_kelipatan' => $kelipatan,
-                'harga_per_kelipatan' => $hargaPerKelipatan,
-                'rules_source' => 'master_harga'
-            ]
-        ];
-    }
-
-    /**
-     * Helper: Build calculation breakdown text for UI display
-     */
-    private function buatCalculationBreakdown($berat, $jarak, $resultBerat, $resultJarak)
-    {
-        $beratBreakdown = $resultBerat['breakdown'];
-        $jarakBreakdown = $resultJarak['breakdown'];
-
-        $text = "INFORMASI HARGA PENGIRIMAN\n";
-        $text .= str_repeat("─", 40) . "\n\n";
-
-        // INFORMASI BERAT
-        $text .= "INFORMASI BERAT:\n";
-        $text .= "• 5 kg pertama: Rp " . number_format($beratBreakdown['harga_berat_pertama'], 0, ',', '.') . "\n";
-
-        if ($berat > $beratBreakdown['berat_pertama']) {
-            $text .= "• Tambahan " . $beratBreakdown['berat_tambahan'] . " kg × Rp " . number_format($beratBreakdown['harga_berat_berikutnya'], 0, ',', '.') . "\n";
-        }
-
-        $text .= "  Subtotal Berat: Rp " . number_format($resultBerat['total'], 0, ',', '.') . "\n\n";
-
-        // INFORMASI JARAK
-        $text .= "INFORMASI JARAK:\n";
-        $text .= "• Total jarak: " . round($jarakBreakdown['jarak_total'], 1) . " km\n";
-        $text .= "• Biaya per 10 km: Rp " . number_format($jarakBreakdown['harga_per_kelipatan'], 0, ',', '.') . "\n";
-        $text .= "  Subtotal Jarak: Rp " . number_format($resultJarak['total'], 0, ',', '.') . "\n\n";
-
-        // TOTAL
-        $text .= str_repeat("─", 40) . "\n";
-        $text .= "TOTAL BIAYA: Rp " . number_format($resultBerat['total'] + $resultJarak['total'], 0, ',', '.') . "\n";
-        $text .= str_repeat("─", 40);
-
-        return $text;
-    }
-
-    /**
      * Helper: Hitung estimasi waktu
      */
     private function hitungEstimasiWaktu($jarak)
@@ -3881,7 +4235,7 @@ public function kalkulatorHargaSmartSend(Request $request)
             $rutes = Rute::where('status', 'aktif')
                 ->where(function($query) use ($kotaAsal) {
                     $query->where('kota_asal', $kotaAsal)
-                          ->orWhereJsonContains('rute_pemberhentian', [['kota' => $kotaAsal]]);
+                        ->orWhereJsonContains('rute_pemberhentian', [['kota' => $kotaAsal]]);
                 })
                 ->get();
 
