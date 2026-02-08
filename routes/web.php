@@ -40,6 +40,19 @@ use App\Http\Controllers\Admin\KontakPerusahaanController;
 |--------------------------------------------------------------------------
 */
 
+// ★★★ DRIVER AUTH ROUTES - TAMBAHKAN DI SINI SEBELUM MIDDLEWARE LAIN ★★★
+Route::prefix('driver')->group(function () {
+    // Show driver login page - GUEST ONLY
+    Route::get('/login', [DriverController::class, 'showLogin'])
+        ->name('driver.login')
+        ->middleware('guest:driver');
+    
+    // Process driver login - GUEST ONLY
+    Route::post('/login', [DriverController::class, 'login'])
+        ->name('driver.login.post')
+        ->middleware('guest:driver');
+});
+
 // ★★★ SMARTSEND - KIRIM & CEK PAKET (ACCESSIBLE WITHOUT LOGIN) ★★★
 Route::middleware(['web'])->prefix('smartsend')->name('customer.')->group(function () {
     // Halaman utama SmartSend
@@ -267,53 +280,6 @@ Route::get('/login', function() {
     return redirect()->route('customer.login');
 })->name('login');
 
-// ★★★ API ROUTES (UNTUK AJAX) ★★★
-Route::prefix('api')->group(function () {
-    // Kursi API
-    Route::get('/kursi-tersedia/{jadwalId}', [KursiController::class, 'getKursiTersediaAPI'])
-        ->name('api.kursi.tersedia');
-    Route::post('/validasi-kursi', [KursiController::class, 'validasiKursiAPI'])
-        ->name('api.kursi.validasi');
-
-    // Review routes
-    Route::get('/reviews', [CustomerController::class, 'getReviews'])->name('api.reviews.get');
-    Route::post('/reviews', [CustomerController::class, 'storeReview'])->name('api.reviews.store');
-    Route::get('/reviews/filter', [CustomerController::class, 'getFilteredReviews'])->name('api.reviews.filter');
-    Route::get('/reviews/stats', [CustomerController::class, 'getReviewStats'])->name('api.reviews.stats');
-
-    // Promo API
-    Route::post('/customer/pesan/validasi-promo', [CustomerController::class, 'validatePromo'])->name('customer.pesan.validasi_promo');
-
-    // Loyalty Points API
-    Route::post('/api/loyalty-points/use', [CustomerController::class, 'useLoyaltyPoints'])->name('api.loyalty-points.use');
-    Route::post('/api/loyalty-points/remove', [CustomerController::class, 'removeLoyaltyDiscount'])->name('api.loyalty-points.remove');
-
-    // Payment API
-    Route::post('/payment/callback', [PembayaranController::class, 'webhook'])->name('api.payment.callback');
-
-    // Policy content API (terms / privacy) for AJAX modals
-    Route::get('/policy/{type}', [CustomerController::class, 'getPolicy'])->name('api.policy.get');
-
-    // Kalkulator Estimasi API
-    Route::post('/estimasi/get-outlet-tujuan', [KalkulatorEstimasiController::class, 'getOutletTujuan'])
-        ->name('api.estimasi.get-outlet-tujuan');
-    Route::post('/estimasi/hitung', [KalkulatorEstimasiController::class, 'hitungEstimasi'])
-        ->name('api.estimasi.hitung');
-
-    // Promo routes
-    Route::prefix('promo')->group(function () {
-        Route::post('/eligible', [CustomerController::class, 'getEligiblePromos'])
-            ->name('api.promo.eligible');
-        Route::post('/validate', [CustomerController::class, 'validatePromo'])
-            ->name('api.promo.validate');
-    });
-
-    // Kursi validation API
-    Route::post('/validasi-kursi', [KursiController::class, 'validasiKursiAPI']);
-    Route::get('/kursi-tersedia/{jadwalId}', [KursiController::class, 'getKursiTersediaAPI']);
-    Route::post('/kursi-validate', [KursiController::class, 'validateSeatsAPI']);
-});
-
 // ★★★ ADMIN AUTH ROUTES ★★★
 Route::middleware(['guest:admin'])->prefix('admin')->group(function () {
     Route::get('/login', [AdminController::class, 'showLogin'])->name('admin.login');
@@ -445,12 +411,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
 }); // Close auth:admin middleware group
 
-// ★★★ DRIVER AUTH ROUTES ★★★
-Route::middleware(['guest:driver'])->prefix('driver')->group(function () {
-    Route::get('/login', [DriverController::class, 'showLogin'])->name('driver.login');
-    Route::post('/login', [DriverController::class, 'login'])->name('driver.login.post');
-});
-
 // ★★★ DRIVER ROUTES ★★★
 Route::middleware(['auth:driver'])->prefix('driver')->name('driver.')->group(function () {
     Route::get('/dashboard', [DriverController::class, 'dashboard'])->name('dashboard');
@@ -508,6 +468,53 @@ Route::middleware(['auth:driver'])->prefix('driver')->name('driver.')->group(fun
 
     Route::put('/schedule/{id}/status', [DriverJadwalController::class, 'updateStatus'])
         ->name('schedule.update-status');
+});
+
+// ★★★ API ROUTES (UNTUK AJAX) ★★★
+Route::prefix('api')->group(function () {
+    // Kursi API
+    Route::get('/kursi-tersedia/{jadwalId}', [KursiController::class, 'getKursiTersediaAPI'])
+        ->name('api.kursi.tersedia');
+    Route::post('/validasi-kursi', [KursiController::class, 'validasiKursiAPI'])
+        ->name('api.kursi.validasi');
+
+    // Review routes
+    Route::get('/reviews', [CustomerController::class, 'getReviews'])->name('api.reviews.get');
+    Route::post('/reviews', [CustomerController::class, 'storeReview'])->name('api.reviews.store');
+    Route::get('/reviews/filter', [CustomerController::class, 'getFilteredReviews'])->name('api.reviews.filter');
+    Route::get('/reviews/stats', [CustomerController::class, 'getReviewStats'])->name('api.reviews.stats');
+
+    // Promo API
+    Route::post('/customer/pesan/validasi-promo', [CustomerController::class, 'validatePromo'])->name('customer.pesan.validasi_promo');
+
+    // Loyalty Points API
+    Route::post('/api/loyalty-points/use', [CustomerController::class, 'useLoyaltyPoints'])->name('api.loyalty-points.use');
+    Route::post('/api/loyalty-points/remove', [CustomerController::class, 'removeLoyaltyDiscount'])->name('api.loyalty-points.remove');
+
+    // Payment API
+    Route::post('/payment/callback', [PembayaranController::class, 'webhook'])->name('api.payment.callback');
+
+    // Policy content API (terms / privacy) for AJAX modals
+    Route::get('/policy/{type}', [CustomerController::class, 'getPolicy'])->name('api.policy.get');
+
+    // Kalkulator Estimasi API
+    Route::post('/estimasi/get-outlet-tujuan', [KalkulatorEstimasiController::class, 'getOutletTujuan'])
+        ->name('api.estimasi.get-outlet-tujuan');
+    Route::post('/estimasi/hitung', [KalkulatorEstimasiController::class, 'hitungEstimasi'])
+        ->name('api.estimasi.hitung');
+
+    // Promo routes
+    Route::prefix('promo')->group(function () {
+        Route::post('/eligible', [CustomerController::class, 'getEligiblePromos'])
+            ->name('api.promo.eligible');
+        Route::post('/validate', [CustomerController::class, 'validatePromo'])
+            ->name('api.promo.validate');
+    });
+
+    // Kursi validation API
+    Route::post('/validasi-kursi', [KursiController::class, 'validasiKursiAPI']);
+    Route::get('/kursi-tersedia/{jadwalId}', [KursiController::class, 'getKursiTersediaAPI']);
+    Route::post('/kursi-validate', [KursiController::class, 'validateSeatsAPI']);
 });
 
 // ★★★ ROUTE DEBUG (UNTUK TESTING) ★★★
