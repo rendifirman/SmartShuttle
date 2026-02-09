@@ -465,17 +465,13 @@ class CustomerController extends Controller
                 ->where('tanggal', '>=', now()->toDateString())
                 ->whereColumn('kursi_terisi', '<', 'total_kursi');
 
-            // Filter berdasarkan kota asal jika ada
+            // Filter rute: require substrings in rute for origin and destination
             if ($asalParam) {
-                $query->where(function($q) use ($asalParam) {
-                    $q->where('rute', 'like', '%(' . $asalParam . '%')
-                      ->orWhere('rute', 'like', '% ' . $asalParam . '%');
-                });
+                $query->where('rute', 'like', "%{$asalParam}%");
             }
 
-            // Filter berdasarkan kota tujuan jika ada
             if ($tujuanParam) {
-                $query->where('rute', 'like', '%' . $tujuanParam . '%');
+                $query->where('rute', 'like', "%{$tujuanParam}%");
             }
 
             // Filter berdasarkan tanggal spesifik jika ada
@@ -494,33 +490,18 @@ class CustomerController extends Controller
                 ->take(12)
                 ->get();
 
-            // Get list unik kota asal dari DriverJadwal (menggunakan getDetailRute)
-            $kotaAsalList = DriverJadwal::with(['jadwal.rutes'])
+            // Dropdown data: use Outlet table (only for filling dropdowns)
+            $kotaAsalList = Outlet::with('branch')
                 ->where('status', 'aktif')
-                ->where('tanggal', '>=', now()->toDateString())
-                ->whereColumn('kursi_terisi', '<', 'total_kursi')
                 ->get()
-                ->map(function($item) {
-                    $detail = $item->getDetailRute();
-                    return $detail['kota_asal'] ?? null;
+                ->map(function($outlet) {
+                    return $outlet->branch->kota ?? $outlet->kota ?? null;
                 })
                 ->filter()
                 ->unique()
                 ->values();
 
-            // Get list unik kota tujuan dari DriverJadwal
-            $kotaTujuanList = DriverJadwal::with(['jadwal.rutes'])
-                ->where('status', 'aktif')
-                ->where('tanggal', '>=', now()->toDateString())
-                ->whereColumn('kursi_terisi', '<', 'total_kursi')
-                ->get()
-                ->map(function($item) {
-                    $detail = $item->getDetailRute();
-                    return $detail['kota_tujuan'] ?? null;
-                })
-                ->filter()
-                ->unique()
-                ->values();
+            $kotaTujuanList = $kotaAsalList; // same source for origin/destination dropdowns
 
             // Get outlets for sidebar display
             $outletsGrouped = Outlet::with('branch')
@@ -1233,31 +1214,19 @@ class CustomerController extends Controller
                 'bindings' => $query->getBindings()
             ]);
 
-            // Get dropdown data untuk filter (HANYA dari driver_jadwals)
-            // GUNAKAN getDetailRute() untuk parsing yang konsisten dengan beranda
-            $kotaAsalList = DriverJadwal::where('status', 'aktif')
-                ->where('tanggal', '>=', now()->toDateString())
-                ->whereRaw('total_kursi > kursi_terisi')
+            // Dropdown data: use Outlet table only for origin/destination dropdowns
+            $kotaAsalList = Outlet::with('branch')
+                ->where('status', 'aktif')
+                ->orderBy('nama_outlet')
                 ->get()
-                ->map(function($item) {
-                    $detail = $item->getDetailRute();
-                    return $detail['kota_asal'] ?? null;
+                ->map(function($outlet) {
+                    return $outlet->branch->kota ?? $outlet->kota ?? null;
                 })
                 ->filter()
                 ->unique()
                 ->values();
 
-            $kotaTujuanList = DriverJadwal::where('status', 'aktif')
-                ->where('tanggal', '>=', now()->toDateString())
-                ->whereRaw('total_kursi > kursi_terisi')
-                ->get()
-                ->map(function($item) {
-                    $detail = $item->getDetailRute();
-                    return $detail['kota_tujuan'] ?? null;
-                })
-                ->filter()
-                ->unique()
-                ->values();
+            $kotaTujuanList = $kotaAsalList;
 
             // Get price range (HANYA dari driver_jadwals)
             $priceRange = DriverJadwal::where('status', 'aktif')
@@ -1350,15 +1319,10 @@ class CustomerController extends Controller
                     ->where('tanggal', '>=', now()->toDateString())
                     ->whereRaw('(total_kursi - kursi_terisi) >= ?', [$penumpang]);
 
-                // ★★★ FILTER RUTE DENGAN FORMAT YANG BENAR ★★★
-                // Format rute: "Bandung - Jakarta" atau "Bandung → Jakarta"
-                // Cari dengan LIKE "%Bandung%Jakarta%"
-                $query->where(function($q) use ($asal, $tujuan) {
-                    $q->where('rute', 'LIKE', "%{$asal}%{$tujuan}%") 
-                      ->orWhere('rute', 'LIKE', "%{$asal} %{$tujuan}%") 
-                      ->orWhere('rute', 'LIKE', "%{$asal}→%{$tujuan}%") 
-                      ->orWhere('rute', 'LIKE', "%{$asal}->%{$tujuan}%"); 
-                    });
+                // ★★★ FILTER RUTE: cari rute yang mengandung asal DAN tujuan ★★★
+                // Contoh: rute LIKE "%Bandung%" AND rute LIKE "%Jakarta%"
+                $query->where('rute', 'LIKE', "%{$asal}%")
+                      ->where('rute', 'LIKE', "%{$tujuan}%");
                 
                 // Filter tanggal spesifik jika ada
                 if ($tanggal) {
@@ -1419,27 +1383,19 @@ class CustomerController extends Controller
             }
 
             // ★★★ DEFAULT VIEW TANPA HASIL SEARCH ★★★
-            $kotaAsalList = DriverJadwal::where('status', 'aktif')
-                ->where('tanggal', '>=', now()->toDateString())
+            // Use Outlet table only for dropdowns (origin/destination)
+            $kotaAsalList = Outlet::with('branch')
+                ->where('status', 'aktif')
+                ->orderBy('nama_outlet')
                 ->get()
-                ->map(function($item) {
-                    $detail = $item->getDetailRute();
-                    return $detail['kota_asal'] ?? null;
+                ->map(function($outlet) {
+                    return $outlet->branch->kota ?? $outlet->kota ?? null;
                 })
                 ->filter()
                 ->unique()
                 ->values();
 
-            $kotaTujuanList = DriverJadwal::where('status', 'aktif')
-                ->where('tanggal', '>=', now()->toDateString())
-                ->get()
-                ->map(function($item) {
-                    $detail = $item->getDetailRute();
-                    return $detail['kota_tujuan'] ?? null;
-                })
-                ->filter()
-                ->unique()
-                ->values();
+            $kotaTujuanList = $kotaAsalList;
 
             $outletsGrouped = Outlet::with('branch')
                 ->where('status', 'aktif')

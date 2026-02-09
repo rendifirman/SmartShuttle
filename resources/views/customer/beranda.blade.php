@@ -2709,21 +2709,47 @@
                 <div class="search-field">
                     <select class="search-input" id="departure-outlet" name="asal" required>
                         <option value="">Pilih Kota Asal</option>
-                        @foreach($kotaAsalList as $kota)
-                            <option value="{{ $kota }}" {{ $asalParam == $kota ? 'selected' : '' }}>
-                                {{ $kota }}
-                            </option>
-                        @endforeach
+                        @if(isset($outletsGrouped) && $outletsGrouped->isNotEmpty())
+                            @foreach($outletsGrouped as $city => $outlets)
+                                <optgroup label="{{ $city }}">
+                                    @foreach($outlets as $outlet)
+                                        @php $cityVal = $outlet->branch->kota ?? $outlet->kota ?? ''; @endphp
+                                        <option value="{{ $cityVal }}" {{ $asalParam == $cityVal ? 'selected' : '' }}>
+                                            {{ $outlet->nama_outlet }} @if($outlet->branch) - {{ $outlet->branch->kota }} @endif
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
+                        @else
+                            @foreach($kotaAsalList as $kota)
+                                <option value="{{ $kota }}" {{ $asalParam == $kota ? 'selected' : '' }}>
+                                    {{ $kota }}
+                                </option>
+                            @endforeach
+                        @endif
                     </select>
                 </div>
                 <div class="search-field">
                     <select class="search-input" id="destination-outlet" name="tujuan" required>
                         <option value="">Pilih Kota Tujuan</option>
-                        @foreach($kotaTujuanList as $kota)
-                            <option value="{{ $kota }}" {{ $tujuanParam == $kota ? 'selected' : '' }}>
-                                {{ $kota }}
-                            </option>
-                        @endforeach
+                        @if(isset($outletsGrouped) && $outletsGrouped->isNotEmpty())
+                            @foreach($outletsGrouped as $city => $outlets)
+                                <optgroup label="{{ $city }}">
+                                    @foreach($outlets as $outlet)
+                                        @php $cityVal = $outlet->branch->kota ?? $outlet->kota ?? ''; @endphp
+                                        <option value="{{ $cityVal }}" {{ $tujuanParam == $cityVal ? 'selected' : '' }}>
+                                            {{ $outlet->nama_outlet }} @if($outlet->branch) - {{ $outlet->branch->kota }} @endif
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
+                        @else
+                            @foreach($kotaTujuanList as $kota)
+                                <option value="{{ $kota }}" {{ $tujuanParam == $kota ? 'selected' : '' }}>
+                                    {{ $kota }}
+                                </option>
+                            @endforeach
+                        @endif
                     </select>
                 </div>
                 <div class="search-field">

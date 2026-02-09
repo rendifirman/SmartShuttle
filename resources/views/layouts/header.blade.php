@@ -923,11 +923,11 @@
                        </a>
                     </li>
                     
-                    <li><a href="#" onclick="alert('Fitur Sewa Armada akan segera hadir!'); return false;" 
-                           class="{{ $currentRoute == 'customer.sewa-armada' ? 'active' : '' }}">
-                           Sewa Armada
-                       </a>
-                    </li>
+                <li><a href="{{ route('customer.smartrent') }}" 
+                            class="{{ $currentRoute == 'customer.smartrent' || str_contains($currentPath, 'smartrent') ? 'active' : '' }}">
+                            Sewa Armada
+                        </a>
+                        </li>
                     
                     <li><a href="{{ route('customer.contact') }}" 
                            class="{{ $currentRoute == 'customer.contact' || str_contains($currentPath, 'contact') ? 'active' : '' }}">

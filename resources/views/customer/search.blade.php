@@ -2341,13 +2341,28 @@
                             <label class="form-label">Kota Asal</label>
                             <select class="form-control form-control-select" id="departure-city" name="asal" required>
                                 <option value="">Pilih Kota Asal</option>
-                                @foreach($kotaAsalList as $kota)
-                                    <option value="{{ $kota }}" 
-                                        {{ (isset($validated['asal']) && $validated['asal'] == $kota) || 
-                                           (isset($validated['departure_city']) && $validated['departure_city'] == $kota) ? 'selected' : '' }}>
-                                        {{ $kota }}
-                                    </option>
-                                @endforeach
+                                @if(isset($outletsGrouped) && $outletsGrouped->isNotEmpty())
+                                    @foreach($outletsGrouped as $city => $outlets)
+                                        <optgroup label="{{ $city }}">
+                                            @foreach($outlets as $outlet)
+                                                @php $cityVal = $outlet->branch->kota ?? $outlet->kota ?? ''; @endphp
+                                                <option value="{{ $cityVal }}" 
+                                                    {{ (isset($validated['asal']) && $validated['asal'] == $cityVal) || 
+                                                       (isset($validated['departure_city']) && $validated['departure_city'] == $cityVal) ? 'selected' : '' }}>
+                                                    {{ $outlet->nama_outlet }} @if($outlet->branch) - {{ $outlet->branch->kota }} @endif
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
+                                @else
+                                    @foreach($kotaAsalList as $kota)
+                                        <option value="{{ $kota }}" 
+                                            {{ (isset($validated['asal']) && $validated['asal'] == $kota) || 
+                                               (isset($validated['departure_city']) && $validated['departure_city'] == $kota) ? 'selected' : '' }}>
+                                            {{ $kota }}
+                                        </option>
+                                    @endforeach
+                                @endif
                             </select>
                         </div>
 
@@ -2356,13 +2371,28 @@
                             <label class="form-label">Kota Tujuan</label>
                             <select class="form-control form-control-select" id="destination-city" name="tujuan" required>
                                 <option value="">Pilih Kota Tujuan</option>
-                                @foreach($kotaTujuanList as $kota)
-                                    <option value="{{ $kota }}"
-                                        {{ (isset($validated['tujuan']) && $validated['tujuan'] == $kota) || 
-                                           (isset($validated['destination_city']) && $validated['destination_city'] == $kota) ? 'selected' : '' }}>
-                                        {{ $kota }}
-                                    </option>
-                                @endforeach
+                                @if(isset($outletsGrouped) && $outletsGrouped->isNotEmpty())
+                                    @foreach($outletsGrouped as $city => $outlets)
+                                        <optgroup label="{{ $city }}">
+                                            @foreach($outlets as $outlet)
+                                                @php $cityVal = $outlet->branch->kota ?? $outlet->kota ?? ''; @endphp
+                                                <option value="{{ $cityVal }}"
+                                                    {{ (isset($validated['tujuan']) && $validated['tujuan'] == $cityVal) || 
+                                                       (isset($validated['destination_city']) && $validated['destination_city'] == $cityVal) ? 'selected' : '' }}>
+                                                    {{ $outlet->nama_outlet }} @if($outlet->branch) - {{ $outlet->branch->kota }} @endif
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
+                                @else
+                                    @foreach($kotaTujuanList as $kota)
+                                        <option value="{{ $kota }}"
+                                            {{ (isset($validated['tujuan']) && $validated['tujuan'] == $kota) || 
+                                               (isset($validated['destination_city']) && $validated['destination_city'] == $kota) ? 'selected' : '' }}>
+                                            {{ $kota }}
+                                        </option>
+                                    @endforeach
+                                @endif
                             </select>
                         </div>
 
@@ -2477,17 +2507,7 @@
                                         @if(!isset($jadwals) || $jadwals->isEmpty())
                                             <div class="empty-state" id="no-results-state">
                                                 <i class="fas fa-times-circle"></i>
-                                                <h3>Jadwal Tidak Tersedia</h3>
-                                                @if(isset($validated) && isset($validated['asal']) && isset($validated['tujuan']))
-                                                    <p>Maaf, tidak ada jadwal shuttle yang tersedia dari
-                                                        {{ $validated['asal'] }} ke
-                                                        {{ $validated['tujuan'] }}
-                                                        pada tanggal {{ \Carbon\Carbon::parse($validated['tanggal'] ?? $validated['departure_date'])->isoFormat('D MMM YYYY') }}.</p>
-                                                @endif
-                                                <p style="font-size: 13px; margin-top: 8px;">Silakan pilih kota lain atau tanggal lain.</p>
-                                                <button onclick="window.location.reload()" style="margin-top: 16px; background: var(--secondary-color); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
-                                                    <i class="fas fa-redo"></i> Cari Ulang
-                                                </button>
+                                                <h3>No schedule available</h3>
                                             </div>
                                         @else
                                             <!-- Results Counter -->

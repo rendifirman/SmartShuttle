@@ -40,17 +40,15 @@ use App\Http\Controllers\Admin\KontakPerusahaanController;
 |--------------------------------------------------------------------------
 */
 
-// ★★★ DRIVER AUTH ROUTES - TAMBAHKAN DI SINI SEBELUM MIDDLEWARE LAIN ★★★
+// ★★★ DRIVER AUTH ROUTES - ACCESSIBLE TO ANYONE (GUESTS & LOGGED-IN CUSTOMERS) ★★★
 Route::prefix('driver')->group(function () {
-    // Show driver login page - GUEST ONLY
+    // Show driver login page - accessible to anyone (customers can log in as driver)
     Route::get('/login', [DriverController::class, 'showLogin'])
-        ->name('driver.login')
-        ->middleware('guest:driver');
+        ->name('driver.login');
     
-    // Process driver login - GUEST ONLY
+    // Process driver login - accessible to anyone
     Route::post('/login', [DriverController::class, 'login'])
-        ->name('driver.login.post')
-        ->middleware('guest:driver');
+        ->name('driver.login.post');
 });
 
 // ★★★ SMARTSEND - KIRIM & CEK PAKET (ACCESSIBLE WITHOUT LOGIN) ★★★
