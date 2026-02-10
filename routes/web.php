@@ -20,6 +20,7 @@ use App\Http\Controllers\KalkulatorEstimasiController;
 use App\Http\Controllers\Admin\JadwalController;
 use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\BookingController;
 use App\Http\Controllers\PaylabsTestController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -253,6 +254,7 @@ Route::get('/beranda', [CustomerController::class, 'beranda'])->name('customer.b
         // ★★★ RIWAYAT ★★★
         Route::get('/customer/riwayat', [CustomerController::class, 'showRiwayat'])->name('customer.riwayat');
         Route::get('/customer/detail-pemesanan/{kode_booking}', [CustomerController::class, 'showDetailPemesanan'])->name('customer.detail_pemesanan');
+        Route::post('/customer/detail-pemesanan/{kode_booking}/konfirmasi', [CustomerController::class, 'konfirmasiDetail'])->name('customer.detail_pemesanan.konfirmasi');
         Route::post('/customer/batalkan-pemesanan/{kode_booking}', [CustomerController::class, 'batalkanPemesanan'])->name('customer.batalkan_pemesanan');
 
         // ★★★ E-TICKET ★★★
