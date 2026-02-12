@@ -79,11 +79,24 @@ class KursiController extends Controller
                 ->pluck('nomor_kursi')
                 ->toArray();
 
+            // Determine selected tariff for display
+            $selectedTarif = null;
+            try {
+                if ($pemesanan->jadwal && $pemesanan->jadwal->rutes && $pemesanan->jadwal->rutes->isNotEmpty()) {
+                    $ruteObj = $pemesanan->jadwal->rutes->first();
+                    $mt = $ruteObj->getActiveMasterTarif();
+                    $selectedTarif = $mt ? $mt->formatTarif() : ['harga_dasar' => $ruteObj->harga_dasar ?? null];
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to get selected tariff in KursiController: ' . $e->getMessage());
+            }
+
             return view('customer.kursi', compact(
                 'pemesanan',
                 'kursiTerpesan',
                 'layoutKursi',
-                'shuttle'
+                'shuttle',
+                'selectedTarif'
             ));
 
         } catch (\Exception $e) {
@@ -225,28 +238,97 @@ class KursiController extends Controller
                 'detailPenumpang'
             ])->where('kode_booking', $kode)->firstOrFail();
 
-            // Siapkan data untuk view
-            $rutePertama = $pemesanan->jadwal->rutes->first();
-            $ruteTerakhir = $pemesanan->jadwal->rutes->last();
+            // Siapkan data untuk view; handle driver_jadwals flow if jadwal is null
+            if ($pemesanan->jadwal && $pemesanan->jadwal->rutes && $pemesanan->jadwal->rutes->isNotEmpty()) {
+                $rutePertama = $pemesanan->jadwal->rutes->first();
+                $ruteTerakhir = $pemesanan->jadwal->rutes->last();
 
-            $data = [
-                'pemesanan' => $pemesanan,
-                'from' => $rutePertama->kota_asal ?? 'Kota Asal',
-                'to' => $ruteTerakhir->kota_tujuan ?? 'Kota Tujuan',
-                'date' => Carbon::parse($pemesanan->jadwal->tanggal_keberangkatan)->isoFormat('dddd, D MMMM YYYY'),
-                'time' => Carbon::parse($pemesanan->jadwal->waktu_keberangkatan)->format('H:i'),
-                'customer_name' => $pemesanan->nama_pemesan ?? 'Nama Pemesan',
-                'customer_phone' => $pemesanan->telepon_pemesan ?? 'Nomor Telepon',
-                'customer_email' => $pemesanan->email_pemesan ?? 'Email',
-                'price' => $pemesanan->harga_total,
-                'qty' => $pemesanan->jumlah_penumpang,
-                'subtotal' => $pemesanan->harga_total * $pemesanan->jumlah_penumpang,
-                'discount' => $pemesanan->diskon ?? 0,
-                'total' => $pemesanan->total_bayar,
-                'penumpang' => $pemesanan->detailPenumpang,
-                'shuttle' => $pemesanan->jadwal->shuttle,
-                'kode_booking' => $pemesanan->kode_booking
-            ];
+                $data = [
+                    'pemesanan' => $pemesanan,
+                    'from' => $rutePertama->kota_asal ?? 'Kota Asal',
+                    'to' => $ruteTerakhir->kota_tujuan ?? 'Kota Tujuan',
+                    'date' => Carbon::parse($pemesanan->jadwal->tanggal_keberangkatan)->isoFormat('dddd, D MMMM YYYY'),
+                    'time' => Carbon::parse($pemesanan->jadwal->waktu_keberangkatan)->format('H:i'),
+                    'customer_name' => $pemesanan->nama_pemesan ?? 'Nama Pemesan',
+                    'customer_phone' => $pemesanan->telepon_pemesan ?? 'Nomor Telepon',
+                    'customer_email' => $pemesanan->email_pemesan ?? 'Email',
+                    'price' => $pemesanan->harga_total,
+                    'qty' => $pemesanan->jumlah_penumpang,
+                    'subtotal' => $pemesanan->harga_total * $pemesanan->jumlah_penumpang,
+                    'discount' => $pemesanan->diskon ?? 0,
+                    'total' => $pemesanan->total_bayar,
+                    'penumpang' => $pemesanan->detailPenumpang,
+                    'shuttle' => $pemesanan->jadwal->shuttle,
+                    'kode_booking' => $pemesanan->kode_booking
+                ];
+            } elseif ($pemesanan->driverJadwal) {
+                // driver_jadwals-based booking
+                $dj = $pemesanan->driverJadwal;
+                $detailRute = $dj->getDetailRute();
+
+                $data = [
+                    'pemesanan' => $pemesanan,
+                    'from' => $detailRute['kota_asal'] ?? 'Kota Asal',
+                    'to' => $detailRute['kota_tujuan'] ?? 'Kota Tujuan',
+                    'date' => Carbon::parse($dj->tanggal)->isoFormat('dddd, D MMMM YYYY'),
+                    'time' => Carbon::parse($dj->waktu_keberangkatan)->format('H:i'),
+                    'customer_name' => $pemesanan->nama_pemesan ?? 'Nama Pemesan',
+                    'customer_phone' => $pemesanan->telepon_pemesan ?? 'Nomor Telepon',
+                    'customer_email' => $pemesanan->email_pemesan ?? 'Email',
+                    'price' => $pemesanan->harga_total,
+                    'qty' => $pemesanan->jumlah_penumpang,
+                    'subtotal' => $pemesanan->harga_total * $pemesanan->jumlah_penumpang,
+                    'discount' => $pemesanan->diskon ?? 0,
+                    'total' => $pemesanan->total_bayar,
+                    'penumpang' => $pemesanan->detailPenumpang,
+                    'shuttle' => $dj->shuttle,
+                    'kode_booking' => $pemesanan->kode_booking
+                ];
+            } else {
+                throw new \Exception('Data jadwal/rute tidak lengkap pada pemesanan.');
+            }
+
+            // Attach selected tariff info (support jadwal or driver_jadwals)
+            $selectedTarif = null;
+            try {
+                if ($pemesanan->jadwal && $pemesanan->jadwal->rutes && $pemesanan->jadwal->rutes->isNotEmpty()) {
+                    $ruteObj = $pemesanan->jadwal->rutes->first();
+                    $mt = $ruteObj->getActiveMasterTarif();
+                    $selectedTarif = $mt ? $mt->formatTarif() : ['harga_dasar' => $ruteObj->harga_dasar ?? null];
+                } elseif ($pemesanan->driverJadwal) {
+                    $dj = $pemesanan->driverJadwal;
+                    if ($dj->masterTarif) {
+                        $mt = $dj->masterTarif;
+                        if ($mt && ($mt->status ?? null) === 'aktif') $selectedTarif = $mt->formatTarif();
+                    }
+
+                    if (!$selectedTarif) {
+                        $ruteObj = $dj->masterRute ?? null;
+                        if (!$ruteObj) {
+                            $parsed = $dj->getDetailRute();
+                            if (!empty($parsed['kota_asal']) && !empty($parsed['kota_tujuan'])) {
+                                $ka = trim(strtolower($parsed['kota_asal']));
+                                $kt = trim(strtolower($parsed['kota_tujuan']));
+                                $ruteObj = Rute::whereRaw('LOWER(kota_asal) = ?', [$ka])
+                                    ->whereRaw('LOWER(kota_tujuan) = ?', [$kt])
+                                    ->aktif()
+                                    ->first();
+                            }
+                        }
+
+                        if ($ruteObj) {
+                            $mt = $ruteObj->getActiveMasterTarif();
+                            $selectedTarif = $mt ? $mt->formatTarif() : ['harga_dasar' => $ruteObj->harga_dasar ?? null];
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to get selected tariff for detail_pesanan: ' . $e->getMessage());
+            }
+
+            $data['selectedTarif'] = $selectedTarif;
+            // also provide available tarifs when possible
+            $data['availableTarifs'] = $selectedTarif ? ($selectedTarif ? [$selectedTarif] : []) : [];
 
             // Cek jika view ada, jika tidak gunakan view sederhana
             if (!view()->exists('customer.detail_pesanan')) {

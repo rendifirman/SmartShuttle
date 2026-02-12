@@ -15,7 +15,7 @@
         --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         --dark-gradient: linear-gradient(135deg, #141e30 0%, #243b55 100%);
         --light-gradient: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
-        
+
         --primary-color: #667eea;
         --primary-hover: #5a67d8;
         --secondary-color: #764ba2;
@@ -25,7 +25,7 @@
         --info-color: #4facfe;
         --dark-color: #2d3748;
         --light-color: #f7fafc;
-        
+
         --text-primary: #2d3748;
         --text-secondary: #4a5568;
         --text-muted: #718096;
@@ -476,36 +476,36 @@
         .page-wrapper {
             padding: 15px;
         }
-        
+
         .page-header {
             flex-direction: column;
             align-items: flex-start;
             gap: 20px;
         }
-        
+
         .form-grid {
             grid-template-columns: 1fr;
             gap: 20px;
         }
-        
+
         .time-group {
             grid-template-columns: 1fr;
             gap: 15px;
         }
-        
+
         .time-separator {
             display: none;
         }
-        
+
         .form-actions {
             flex-direction: column;
         }
-        
+
         .form-actions .btn {
             width: 100%;
             justify-content: center;
         }
-        
+
         .info-section {
             grid-template-columns: 1fr;
         }
@@ -515,17 +515,17 @@
         .page-title h1 {
             font-size: 24px;
         }
-        
+
         .page-title .icon-wrapper {
             width: 40px;
             height: 40px;
             font-size: 18px;
         }
-        
+
         .form-card {
             padding: 20px;
         }
-        
+
         .form-header h3 {
             font-size: 18px;
         }
@@ -569,7 +569,7 @@
         <div class="form-header">
             <i class="fas fa-edit"></i>
             <h3>
-                Edit Jadwal 
+                Edit Jadwal
                 @php
                     $persentase = $totalKursi > 0 ? ($jadwal->kursi_tersedia / $totalKursi) * 100 : 0;
                     if ($jadwal->status == 'penuh' || $jadwal->kursi_tersedia <= 0) {
@@ -588,11 +588,11 @@
                 </span>
             </h3>
         </div>
-        
+
         <form method="POST" action="{{ route('admin.jadwal.update', $jadwal->id) }}" id="jadwalForm">
             @csrf
             @method('PUT')
-            
+
             <div class="form-grid">
                 <!-- Armada -->
                 <div class="form-group">
@@ -604,40 +604,42 @@
                                 @php
                                     $kapasitas = $shuttle->kapasitas_kursi ?? $shuttle->total_kursi ?? 0;
                                 @endphp
-                                <option value="{{ $shuttle->id }}" 
+                                <option value="{{ $shuttle->id }}"
                                         data-kapasitas="{{ $kapasitas }}"
                                         {{ old('shuttle_id', $jadwal->shuttle_id) == $shuttle->id ? 'selected' : '' }}>
-                                    {{ $shuttle->nama_shuttle }} ({{ $shuttle->plat_nomor }}) - 
+                                    {{ $shuttle->nama_shuttle }} ({{ $shuttle->plat_nomor }}) -
                                     {{ $kapasitas }} kursi
                                 </option>
                             @endforeach
                         </select>
                     </div>
                 </div>
-                
+
                 <!-- Rute -->
                 <div class="form-group">
                     <label class="form-label">Rute <span>*</span></label>
                     <div class="select-wrapper">
-                        <select name="rute_id" class="form-control" required>
+                        <select name="rute_id" id="rute_select" class="form-control" required>
                             <option value="">Pilih Rute</option>
                             @foreach($rutes as $rute)
-                                <option value="{{ $rute->id }}" 
-                                        {{ old('rute_id', $jadwal->rutes->first()->id ?? '') == $rute->id ? 'selected' : '' }}>
+                                <option value="{{ $rute->id }}"
+                                    data-harga="{{ $rute->harga_dasar }}"
+                                    data-durasi="{{ $rute->durasi }}"
+                                    {{ old('rute_id', $jadwal->rutes->first()->id ?? '') == $rute->id ? 'selected' : '' }}>
                                     {{ $rute->nama_rute }} ({{ $rute->kota_asal }} → {{ $rute->kota_tujuan }})
                                 </option>
                             @endforeach
                         </select>
                     </div>
                 </div>
-                
+
                 <!-- Tanggal Keberangkatan -->
                 <div class="form-group">
                     <label class="form-label">Tanggal Keberangkatan <span>*</span></label>
-                    <input type="date" name="tanggal_keberangkatan" class="form-control" 
+                    <input type="date" name="tanggal_keberangkatan" class="form-control"
                            value="{{ old('tanggal_keberangkatan', $jadwal->tanggal_keberangkatan) }}" required>
                 </div>
-                
+
                 <!-- Waktu -->
                 <div class="form-group" style="grid-column: span 2;">
                     <label class="form-label">Waktu Perjalanan <span>*</span></label>
@@ -646,7 +648,7 @@
                             @php
                                 $waktuBerangkat = \Carbon\Carbon::parse($jadwal->waktu_keberangkatan)->format('H:i');
                             @endphp
-                            <input type="time" name="waktu_keberangkatan" class="form-control" 
+                            <input type="time" name="waktu_keberangkatan" class="form-control"
                                    value="{{ old('waktu_keberangkatan', $waktuBerangkat) }}" required>
                             <small style="display: block; margin-top: 5px; color: var(--text-muted); font-size: 12px;">
                                 Waktu Keberangkatan (bisa melewati tengah malam)
@@ -659,7 +661,7 @@
                             @php
                                 $waktuKedatangan = \Carbon\Carbon::parse($jadwal->waktu_kedatangan)->format('H:i');
                             @endphp
-                            <input type="time" name="waktu_kedatangan" class="form-control" 
+                            <input type="time" name="waktu_kedatangan" class="form-control"
                                    value="{{ old('waktu_kedatangan', $waktuKedatangan) }}" required>
                             <small style="display: block; margin-top: 5px; color: var(--text-muted); font-size: 12px;">
                                 Waktu Kedatangan (contoh: 21:00 → 03:30)
@@ -667,52 +669,42 @@
                         </div>
                     </div>
                 </div>
-                
-                <!-- Harga dengan slider -->
+
+                <!-- Harga dari Rute (Readonly) -->
                 <div class="form-group">
-                    <label class="form-label">Harga Total <span>*</span></label>
+                    <label class="form-label">Harga <span>*</span></label>
                     <div class="price-container">
                         <div class="input-group">
                             <div class="input-group-prepend">Rp</div>
-                            <input type="number" name="harga_total" id="harga_input" class="form-control" 
-                                   value="{{ old('harga_total', $jadwal->harga_total) }}" min="1000" step="1000" required>
+                            <input type="text" id="harga_display" class="form-control"
+                                   readonly placeholder="Harga akan otomatis terisi sesuai rute">
                         </div>
-                        <div class="price-display" id="price_display">
-                            Rp {{ number_format(old('harga_total', $jadwal->harga_total), 0, ',', '.') }}
-                        </div>
-                    </div>
-                    
-                    <div class="slider-container">
-                        <input type="range" class="slider" id="harga_slider" 
-                               min="1000" max="1000000" step="1000" value="{{ old('harga_total', $jadwal->harga_total) }}">
-                        <div class="slider-info">
-                            <span>Rp 1.000</span>
-                            <span>Rp 500.000</span>
-                            <span>Rp 1.000.000</span>
-                        </div>
+                        <small style="display: block; margin-top: 8px; color: var(--text-muted); font-size: 12px;">
+                            <i class="fas fa-info-circle"></i> Harga diambil otomatis dari harga dasar rute yang dipilih
+                        </small>
                     </div>
                 </div>
-                
+
                 <!-- Kursi Tersedia -->
                 <div class="form-group">
                     <label class="form-label">Kursi Tersedia <span>*</span></label>
-                    <input type="number" name="kursi_tersedia" class="form-control" 
+                    <input type="number" name="kursi_tersedia" class="form-control"
                            value="{{ old('kursi_tersedia', $jadwal->kursi_tersedia) }}" min="0" required
                            id="kursiTersedia">
-                    
+
                     <div class="progress-container">
                         <div class="progress-label">
                             <span>Terisi: {{ $totalKursi - $jadwal->kursi_tersedia }} / {{ $totalKursi }}</span>
                             <span>{{ number_format(100 - $persentase, 0) }}%</span>
                         </div>
                         <div class="progress-bar">
-                            <div class="progress-fill {{ $persentase <= 20 ? 'progress-danger' : ($persentase <= 50 ? 'progress-warning' : 'progress-success') }}" 
+                            <div class="progress-fill {{ $persentase <= 20 ? 'progress-danger' : ($persentase <= 50 ? 'progress-warning' : 'progress-success') }}"
                                  style="width: {{ 100 - $persentase }}%"></div>
                         </div>
                     </div>
                 </div>
             </div>
-            
+
             <!-- Info Section -->
             <div class="info-section">
                 <div class="info-box">
@@ -723,7 +715,7 @@
                         <strong>Kapasitas:</strong> {{ $totalKursi }} kursi
                     </p>
                 </div>
-                
+
                 <div class="info-box">
                     <h4><i class="fas fa-route"></i> Informasi Rute</h4>
                     <p>
@@ -736,7 +728,7 @@
                     </p>
                 </div>
             </div>
-            
+
             <!-- Form Actions -->
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">
@@ -756,12 +748,11 @@
     // Set minimum date to today
     const today = new Date().toISOString().split('T')[0];
     document.querySelector('input[name="tanggal_keberangkatan"]').min = today;
-    
+
     // Format harga display
-    const hargaInput = document.getElementById('harga_input');
-    const hargaSlider = document.getElementById('harga_slider');
-    const priceDisplay = document.getElementById('price_display');
-    
+    const hargaDisplay = document.getElementById('harga_display');
+    const ruteSelect = document.getElementById('rute_select');
+
     function formatPrice(value) {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -769,66 +760,56 @@
             minimumFractionDigits: 0
         }).format(value);
     }
-    
-    function updatePriceDisplay() {
-        const value = hargaInput.value;
-        if (value) {
-            const formatted = formatPrice(value);
-            priceDisplay.textContent = formatted;
+
+    function updateHargaDisplay() {
+        const selectedOption = ruteSelect.options[ruteSelect.selectedIndex];
+        if (selectedOption.value && selectedOption.dataset.harga) {
+            const harga = parseFloat(selectedOption.dataset.harga);
+            hargaDisplay.value = formatPrice(harga);
         } else {
-            priceDisplay.textContent = 'Rp 0';
+            hargaDisplay.value = '';
         }
     }
-    
-    // Sync slider with input
-    hargaInput.addEventListener('input', function() {
-        hargaSlider.value = this.value;
-        updatePriceDisplay();
-    });
-    
-    hargaSlider.addEventListener('input', function() {
-        hargaInput.value = this.value;
-        updatePriceDisplay();
-    });
-    
-    updatePriceDisplay(); // Initial call
-    
+
+    ruteSelect.addEventListener('change', updateHargaDisplay);
+    updateHargaDisplay(); // Initial call
+
     // Kapasitas validation
     const shuttleSelect = document.querySelector('select[name="shuttle_id"]');
     const kursiTersediaInput = document.getElementById('kursiTersedia');
     const totalKursi = {{ $totalKursi }};
-    
+
     function updateMaxKursi() {
         const selectedOption = shuttleSelect.options[shuttleSelect.selectedIndex];
         const kapasitas = selectedOption.getAttribute('data-kapasitas');
         kursiTersediaInput.max = kapasitas;
-        
+
         if (parseInt(kursiTersediaInput.value) > parseInt(kapasitas)) {
             kursiTersediaInput.value = kapasitas;
             updateProgressBar();
         }
     }
-    
+
     shuttleSelect.addEventListener('change', updateMaxKursi);
-    
+
     // Update progress bar in real-time
     function updateProgressBar() {
         const kursiTersedia = parseInt(kursiTersediaInput.value) || 0;
         const kapasitasOption = shuttleSelect.options[shuttleSelect.selectedIndex];
         const kapasitas = kapasitasOption.getAttribute('data-kapasitas') || totalKursi;
-        
+
         const kursiTerisi = kapasitas - kursiTersedia;
         const persentase = (kursiTerisi / kapasitas) * 100;
-        
+
         // Update progress bar
         const progressFill = document.querySelector('.progress-fill');
         const progressLabel = document.querySelector('.progress-label span:first-child');
         const progressPercent = document.querySelector('.progress-label span:last-child');
-        
+
         progressFill.style.width = persentase + '%';
         progressLabel.textContent = `Terisi: ${kursiTerisi} / ${kapasitas}`;
         progressPercent.textContent = Math.round(persentase) + '%';
-        
+
         // Update progress bar color
         progressFill.className = 'progress-fill ';
         if (persentase >= 80) {
@@ -838,10 +819,10 @@
         } else {
             progressFill.classList.add('progress-success');
         }
-        
+
         // Update status badge
         const statusBadge = document.querySelector('.current-status');
-        
+
         if (kursiTersedia <= 0) {
             statusBadge.className = 'current-status status-penuh';
             statusBadge.innerHTML = '<i class="fas fa-circle" style="font-size: 8px;"></i> PENUH';
@@ -853,47 +834,93 @@
             statusBadge.innerHTML = '<i class="fas fa-circle" style="font-size: 8px;"></i> TERSEDIA';
         }
     }
-    
+
+    // Auto-fill waktu_kedatangan based on selected rute duration and waktu_keberangkatan
+    const waktuBerangkatInput = document.querySelector('input[name="waktu_keberangkatan"]');
+    const waktuKedatanganInput = document.querySelector('input[name="waktu_kedatangan"]');
+
+    function parseDurationToMinutes(duration) {
+        if (!duration) return 0;
+        duration = duration.toString().trim();
+
+        // HH:MM format
+        const hhmm = duration.match(/^(\d{1,2}):(\d{2})$/);
+        if (hhmm) {
+            return parseInt(hhmm[1], 10) * 60 + parseInt(hhmm[2], 10);
+        }
+
+        // X jam Y menit
+        const jamMatch = duration.match(/(\d+)\s*jam/i);
+        const menitMatch = duration.match(/(\d+)\s*menit/i);
+        let minutes = 0;
+        if (jamMatch) minutes += parseInt(jamMatch[1], 10) * 60;
+        if (menitMatch) minutes += parseInt(menitMatch[1], 10);
+
+        // If still zero and numeric, assume minutes
+        if (minutes === 0 && !isNaN(parseInt(duration, 10))) {
+            minutes = parseInt(duration, 10);
+        }
+
+        return minutes;
+    }
+
+    function computeArrivalTime() {
+        const dep = waktuBerangkatInput.value; // HH:MM
+        if (!dep) return;
+        const selected = ruteSelect.options[ruteSelect.selectedIndex];
+        const dur = selected ? selected.getAttribute('data-durasi') : null;
+        const durMinutes = parseDurationToMinutes(dur);
+
+        const parts = dep.split(':');
+        if (parts.length < 2) return;
+        let h = parseInt(parts[0], 10);
+        let m = parseInt(parts[1], 10);
+        let total = h * 60 + m + durMinutes;
+
+        // wrap around 24h
+        total = total % (24 * 60);
+        const ah = Math.floor(total / 60).toString().padStart(2, '0');
+        const am = (total % 60).toString().padStart(2, '0');
+        waktuKedatanganInput.value = `${ah}:${am}`;
+    }
+
+    waktuBerangkatInput.addEventListener('change', computeArrivalTime);
+    ruteSelect.addEventListener('change', computeArrivalTime);
+    computeArrivalTime();
+
     kursiTersediaInput.addEventListener('input', updateProgressBar);
-    
+
     // Initial call
     updateMaxKursi();
     updateProgressBar();
-    
+
     // Form validation
     const form = document.getElementById('jadwalForm');
     form.addEventListener('submit', function(e) {
         const kursiTersedia = parseInt(kursiTersediaInput.value);
-        const harga = hargaInput.value;
         const kapasitasOption = shuttleSelect.options[shuttleSelect.selectedIndex];
         const kapasitas = parseInt(kapasitasOption.getAttribute('data-kapasitas'));
-        
-        if (!harga || parseFloat(harga) < 1000) {
-            e.preventDefault();
-            alert('Harga minimal Rp 1.000!');
-            return false;
-        }
-        
+
         if (kursiTersedia > kapasitas) {
             e.preventDefault();
             alert(`Kursi tersedia (${kursiTersedia}) tidak boleh melebihi kapasitas armada (${kapasitas})!`);
             return false;
         }
-        
+
         if (kursiTersedia < 0) {
             e.preventDefault();
             alert('Kursi tersedia tidak boleh kurang dari 0!');
             return false;
         }
-        
+
         // Show loading state
         const submitBtn = form.querySelector('button[type="submit"]');
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memperbarui...';
         submitBtn.disabled = true;
-        
+
         return true;
     });
-    
+
     // Real-time validation
     const inputs = form.querySelectorAll('input[required], select[required]');
     inputs.forEach(input => {
@@ -905,7 +932,7 @@
                 this.classList.add('is-valid');
             }
         });
-        
+
         input.addEventListener('input', function() {
             if (this.value.trim()) {
                 this.classList.remove('is-invalid');

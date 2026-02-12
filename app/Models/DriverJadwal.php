@@ -14,7 +14,7 @@ class DriverJadwal extends Model
 
     protected $table = 'driver_jadwals';
     protected $primaryKey = 'id_jadwal_driver';
-    
+
     protected $fillable = [
         'id_jadwal',
         'rute_id',
@@ -25,6 +25,7 @@ class DriverJadwal extends Model
         'waktu_keberangkatan',
         'waktu_kedatangan',
         'harga',
+        'master_tarif_id',
         'total_kursi',
         'kursi_terisi',
         'status',
@@ -63,6 +64,14 @@ class DriverJadwal extends Model
     public function masterRute(): BelongsTo
     {
         return $this->belongsTo(Rute::class, 'rute_id', 'id');
+    }
+
+    /**
+     * Relasi ke Master Tarif
+     */
+    public function masterTarif(): BelongsTo
+    {
+        return $this->belongsTo(MasterTarif::class, 'master_tarif_id', 'id');
     }
 
     /**
@@ -144,7 +153,7 @@ class DriverJadwal extends Model
     public function getStatusKursiAttribute()
     {
         $persentase = $this->persentase_terisi;
-        
+
         if ($persentase >= 100) {
             return 'penuh';
         } elseif ($persentase >= 80) {
@@ -301,23 +310,23 @@ class DriverJadwal extends Model
         if (isset($params['rute'])) {
             $query->where('rute', 'like', '%' . $params['rute'] . '%');
         }
-        
+
         if (isset($params['tanggal'])) {
             $query->where('tanggal', $params['tanggal']);
         }
-        
+
         if (isset($params['harga_min'])) {
             $query->where('harga', '>=', $params['harga_min']);
         }
-        
+
         if (isset($params['harga_max'])) {
             $query->where('harga', '<=', $params['harga_max']);
         }
-        
+
         if (isset($params['waktu_keberangkatan'])) {
             $query->whereTime('waktu_keberangkatan', '>=', $params['waktu_keberangkatan']);
         }
-        
+
         return $query;
     }
 
@@ -344,7 +353,7 @@ class DriverJadwal extends Model
                     ];
                 }
             }
-            
+
             // Fallback: Parse dari kolom rute string
             $ruteString = $this->rute;
             if (strpos($ruteString, '→') !== false) {
@@ -355,7 +364,7 @@ class DriverJadwal extends Model
                     'nama_rute' => $ruteString
                 ];
             }
-            
+
             // Fallback: Parsing format: "Rute Name (Kota Asal → Kota Tujuan)"
             if (preg_match('/\(([^→]+)→([^)]+)\)/', $this->rute, $matches)) {
                 return [
@@ -364,7 +373,7 @@ class DriverJadwal extends Model
                     'kota_tujuan' => trim($matches[2])
                 ];
             }
-            
+
             return [
                 'kota_asal' => $this->kota_asal,
                 'kota_tujuan' => $this->kota_tujuan,
@@ -384,8 +393,8 @@ class DriverJadwal extends Model
      */
     public function isAvailableForCustomer()
     {
-        return $this->status === 'aktif' && 
-               $this->tanggal >= now()->toDateString() && 
+        return $this->status === 'aktif' &&
+               $this->tanggal >= now()->toDateString() &&
                $this->sisa_kursi > 0;
     }
 
@@ -395,23 +404,23 @@ class DriverJadwal extends Model
     public function updateKursiTerisi($jumlah)
     {
         $this->kursi_terisi += $jumlah;
-        
+
         if ($this->kursi_terisi >= $this->total_kursi) {
             $this->status = 'selesai';
         }
-        
+
         $this->save();
-        
+
         if ($this->jadwal) {
             $this->jadwal->kursi_tersedia = $this->total_kursi - $this->kursi_terisi;
-            
+
             if ($this->jadwal->kursi_tersedia <= 0) {
                 $this->jadwal->status = 'penuh';
             }
-            
+
             $this->jadwal->save();
         }
-        
+
         return $this;
     }
 
@@ -429,13 +438,13 @@ class DriverJadwal extends Model
     public function updateStatus($status)
     {
         $validStatuses = ['aktif', 'selesai', 'dibatalkan'];
-        
+
         if (in_array($status, $validStatuses)) {
             $this->status = $status;
             $this->save();
             return true;
         }
-        
+
         return false;
     }
 

@@ -28,8 +28,8 @@ class DatabaseSeeder extends Seeder
             PromoSeeder::class,
             MasterKontakSeeder::class,
             MetodePembayaranSeeder::class,
-            JadwalSeeder::class,
             ArtikelSeeder::class,
+            MasterTarifSeeder::class,
         ];
 
         // Jalankan setiap seeder dengan try-catch agar jika gagal, yang lain tetap berjalan

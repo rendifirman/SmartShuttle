@@ -117,6 +117,20 @@ class PembayaranController extends Controller
             'instruksi' => $instruksi,
         ];
 
+        // Add selected tariff info
+        $selectedTarif = null;
+        try {
+            if ($pemesanan->jadwal && $pemesanan->jadwal->rutes && $pemesanan->jadwal->rutes->isNotEmpty()) {
+                $ruteObj = $pemesanan->jadwal->rutes->first();
+                $mt = $ruteObj->getActiveMasterTarif();
+                $selectedTarif = $mt ? $mt->formatTarif() : ['harga_dasar' => $ruteObj->harga_dasar ?? null];
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to get selected tariff in PembayaranController: ' . $e->getMessage());
+        }
+
+        $data['selectedTarif'] = $selectedTarif;
+
         return view('customer.pembayaran', $data);
     }
 

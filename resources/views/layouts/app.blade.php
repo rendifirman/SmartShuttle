@@ -385,6 +385,9 @@
         });
     </script>
 
+    <!-- Global Scripts for Route Outlets Helper -->
+    <script src="{{ asset('js/route-outlets-helper.js') }}"></script>
+
     @stack('scripts')
 </body>
 </html>

@@ -16,6 +16,8 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ArtikelController;
 use App\Http\Controllers\Admin\ProfilePerusahaanController;
 use App\Http\Controllers\Admin\ArmadaController;
+use App\Http\Controllers\Admin\MasterTarifController;
+use App\Http\Controllers\Admin\RuteController;
 use App\Http\Controllers\KalkulatorEstimasiController;
 use App\Http\Controllers\Admin\JadwalController;
 use App\Http\Controllers\API\PaymentController;
@@ -46,7 +48,7 @@ Route::prefix('driver')->group(function () {
     // Show driver login page - accessible to anyone (customers can log in as driver)
     Route::get('/login', [DriverController::class, 'showLogin'])
         ->name('driver.login');
-    
+
     // Process driver login - accessible to anyone
     Route::post('/login', [DriverController::class, 'login'])
         ->name('driver.login.post');
@@ -124,15 +126,15 @@ Route::get('/beranda', [CustomerController::class, 'beranda'])->name('customer.b
     // Hanya menampilkan jadwal dari DriverJadwal (jadwal yang sudah diklaim driver)
     Route::get('/cari-shuttle', [CustomerController::class, 'showSearch'])->name('customer.search');
     Route::post('/cari-shuttle', [CustomerController::class, 'search'])->name('customer.search.post');
-    
+
     // ★★★ ROUTE UNTUK FORM PENCARIAN (PERLU UNTUK route('customer.showSearch')) ★★★
     // Halaman form pencarian dan menampilkan hasil
     Route::get('/customer/search', [CustomerController::class, 'showSearch'])
         ->name('customer.showSearch');
     Route::post('/customer/search', [CustomerController::class, 'search']);
-    
+
     // Alias untuk kompatibilitas
-    Route::get('/search', [CustomerController::class, 'showSearch'])->name('customer.search.alt');   
+    Route::get('/search', [CustomerController::class, 'showSearch'])->name('customer.search.alt');
 
     // ★★★ CEK RESERVASI - BISA DIAKSES TANPA LOGIN ★★★
     Route::get('/customer/cek-reservasi', function() {
@@ -201,10 +203,10 @@ Route::get('/beranda', [CustomerController::class, 'beranda'])->name('customer.b
         Route::middleware(['role:customer'])->prefix('customer')->name('customer.')->group(function () {
             // Beranda customer
             Route::get('/beranda-jadwal', [CustomerController::class, 'berandaCustomer'])->name('beranda.jadwal');
-            
+
             // Search jadwal driver
             Route::get('/search-jadwal', [CustomerController::class, 'searchJadwalDriver'])->name('search.jadwal');
-            
+
             // Booking dari driver jadwal
             Route::get('/booking-driver/{id_jadwal_driver}', [CustomerController::class, 'bookingFromDriver'])->name('booking.driver');
         });
@@ -332,7 +334,29 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/jadwal/{id}/edit', [JadwalController::class, 'edit'])->name('jadwal.edit');
         Route::put('/jadwal/{id}', [JadwalController::class, 'update'])->name('jadwal.update');
         Route::delete('/jadwal/{id}', [JadwalController::class, 'destroy'])->name('jadwal.destroy');
-            
+
+        // ★★★ MASTER TARIF ROUTES ★★★
+        Route::get('/master-tarif', [MasterTarifController::class, 'index'])
+            ->name('master-tarif.index');
+        Route::get('/master-tarif/create', [MasterTarifController::class, 'create'])
+            ->name('master-tarif.create');
+        Route::post('/master-tarif', [MasterTarifController::class, 'store'])
+            ->name('master-tarif.store');
+        Route::get('/master-tarif/{id}', [MasterTarifController::class, 'show'])
+            ->name('master-tarif.show');
+        Route::get('/master-tarif/{id}/edit', [MasterTarifController::class, 'edit'])
+            ->name('master-tarif.edit');
+        Route::put('/master-tarif/{id}', [MasterTarifController::class, 'update'])
+            ->name('master-tarif.update');
+        Route::delete('/master-tarif/{id}', [MasterTarifController::class, 'destroy'])
+            ->name('master-tarif.destroy');
+        Route::post('/master-tarif/{id}/deactivate', [MasterTarifController::class, 'deactivate'])
+            ->name('master-tarif.deactivate');
+        Route::post('/master-tarif/{id}/activate', [MasterTarifController::class, 'activate'])
+            ->name('master-tarif.activate');
+        Route::get('/master-tarif/export/csv', [MasterTarifController::class, 'export'])
+            ->name('master-tarif.export');
+
         Route::get('/pusat', [AdminController::class, 'pusat'])
             ->middleware('permission:view_profile_perusahaan')
             ->name('pusat');
@@ -369,7 +393,14 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::delete('/promo/{id}', [AdminController::class, 'destroyPromo'])->name('promo.destroy');
         Route::get('/driver', [AdminController::class, 'driver'])->name('driver');
         Route::get('/pegawai', [AdminController::class, 'pegawai'])->name('pegawai');
-        Route::get('/rute', [AdminController::class, 'rute'])->name('rute');
+        // Rute Routes
+        Route::get('/rute', [RuteController::class, 'index'])->name('rute.index');
+        Route::get('/rute/create', [RuteController::class, 'create'])->name('rute.create');
+        Route::post('/rute', [RuteController::class, 'store'])->name('rute.store');
+        Route::get('/rute/{id}', [RuteController::class, 'show'])->name('rute.show');
+        Route::get('/rute/{id}/edit', [RuteController::class, 'edit'])->name('rute.edit');
+        Route::put('/rute/{id}', [RuteController::class, 'update'])->name('rute.update');
+        Route::delete('/rute/{id}', [RuteController::class, 'destroy'])->name('rute.destroy');
 
         // Transaksi Routes
         Route::get('/smartsend-transaksi', [AdminController::class, 'smartsendTransaksi'])->name('smartsend-transaksi');
@@ -427,31 +458,31 @@ Route::middleware(['auth:driver'])->prefix('driver')->name('driver.')->group(fun
 
     // ★★★ ROUTES DRIVER JADWAL (FROM PROMPT) - Menggunakan DriverJadwalController ★★★
     Route::get('/dashboard', [DriverJadwalController::class, 'dashboard'])->name('dashboard');
-    
+
     // Jadwal tersedia dari admin
     Route::get('/jadwal-tersedia', [DriverJadwalController::class, 'daftarJadwalTersedia'])
         ->name('jadwal.tersedia');
-    
+
     // Ambil jadwal
     Route::post('/ambil-jadwal/{idJadwal}', [DriverJadwalController::class, 'ambilJadwal'])
         ->name('jadwal.ambil');
-    
+
     // Jadwal saya
     Route::get('/jadwal-saya', [DriverJadwalController::class, 'jadwalSaya'])
         ->name('jadwal.saya');
-    
+
     // Detail jadwal
     Route::get('/jadwal/{idJadwalDriver}', [DriverJadwalController::class, 'detailJadwal'])
         ->name('jadwal.detail');
-    
+
     // Update status
     Route::put('/jadwal/{idJadwalDriver}/status', [DriverJadwalController::class, 'updateStatus'])
         ->name('jadwal.update-status');
-    
+
     // Batalkan jadwal
     Route::delete('/jadwal/{idJadwalDriver}/batalkan', [DriverJadwalController::class, 'batalkanJadwal'])
         ->name('jadwal.batalkan');
-    
+
     // ★★★ ROUTE UNTUK BACKWARD COMPATIBILITY ★★★
     Route::get('/jadwal', [DriverJadwalController::class, 'jadwalSaya'])->name('jadwal');
     Route::get('/available-schedules', [DriverJadwalController::class, 'daftarJadwalTersedia'])->name('available-schedules');
@@ -976,25 +1007,25 @@ use App\Http\Controllers\Customer\SmartRentController;
 // SmartRent routes (accessible without login)
 Route::middleware(['web'])->prefix('smartrent')->name('smartrent.')->group(function () {
     Route::get('/', [SmartRentController::class, 'index'])->name('index');
-    
+
     // Halaman booking dengan filter
     Route::get('/booking', [SmartRentController::class, 'booking'])->name('booking');
-    
+
     // Halaman checkout/pesanan
     Route::match(['get', 'post'], '/checkout', [SmartRentController::class, 'checkout'])->name('checkout');
-    
+
     // Halaman detail kendaraan
     Route::get('/vehicle/{id}', [SmartRentController::class, 'vehicleDetail'])->name('vehicle.detail');
-    
+
     // Proses order langsung
     Route::post('/order', [SmartRentController::class, 'order'])->name('order');
-    
+
     // Halaman pembayaran
     Route::get('/payment', [SmartRentController::class, 'payment'])->name('payment');
-    
+
     // Proses pembayaran
     Route::post('/process-payment', [SmartRentController::class, 'processPayment'])->name('process.payment');
-    
+
     // Halaman konfirmasi
     Route::get('/confirmation', [SmartRentController::class, 'confirmation'])->name('confirmation');
 
@@ -1006,7 +1037,7 @@ Route::middleware(['web'])->prefix('smartrent')->name('smartrent.')->group(funct
 
     // Halaman pembayaran (GET)
     Route::get('/smartrent/payment', [SmartRentController::class, 'showPayment'])->name('payment.show');
-    
+
     // API Routes
     Route::get('/api/vehicle/{id}', [SmartRentController::class, 'getVehicle']);
     Route::post('/api/check-availability', [SmartRentController::class, 'checkAvailability']);
@@ -1014,3 +1045,63 @@ Route::middleware(['web'])->prefix('smartrent')->name('smartrent.')->group(funct
 
 // SmartRent alias routes
 Route::get('/smartrent', [SmartRentController::class, 'index'])->name('customer.smartrent');
+// Test routes - untuk development/debugging saja
+if (app()->isLocal()) {
+    Route::get('/test-tarif-relationship', function () {
+        try {
+            $output = "<h1>Testing Rute and MasterTarif Many-to-Many Relationship</h1>";
+
+            // Test 1: Get all tarifs for a specific route
+            $output .= "<h2>Test 1: Get all tarifs for routes</h2>";
+            $rutes = \App\Models\Rute::limit(3)->get();
+            foreach ($rutes as $rute) {
+                $output .= "<p><strong>Route: " . $rute->nama_rute . "</strong><br>";
+                $tarifs = $rute->masterTarifs;
+                $output .= "Number of tarifs: " . $tarifs->count() . "<br>";
+                if ($tarifs->count() > 0) {
+                    $output .= "Tarifs: ";
+                    foreach ($tarifs as $tarif) {
+                        $output .= $tarif->nama_tarif . " (" . $tarif->kode_tarif . "), ";
+                    }
+                }
+                $output .= "</p>";
+            }
+
+            // Test 2: Get all routes for a specific tarif
+            $output .= "<h2>Test 2: Get all routes for tarifs</h2>";
+            $tarifs = \App\Models\MasterTarif::limit(3)->get();
+            foreach ($tarifs as $tarif) {
+                $output .= "<p><strong>Tarif: " . $tarif->nama_tarif . "</strong><br>";
+                $rutes = $tarif->rutes;
+                $output .= "Number of routes: " . $rutes->count() . "<br>";
+                if ($rutes->count() > 0) {
+                    $output .= "Routes: ";
+                    foreach ($rutes as $rute) {
+                        $output .= $rute->nama_rute . " (" . $rute->kode_rute . "), ";
+                    }
+                }
+                $output .= "</p>";
+            }
+
+            // Test 3: Check the pivot table
+            $output .= "<h2>Test 3: Pivot Table Data</h2>";
+            $pivotData = \Illuminate\Support\Facades\DB::table('rute_master_tarif')->get();
+            $output .= "Total records in pivot table: " . count($pivotData) . "<br>";
+            if (count($pivotData) > 0) {
+                $output .= "<table border='1' style='margin-top: 10px;'><tr><th>Rute ID</th><th>Tarif ID</th><th>Created At</th></tr>";
+                foreach ($pivotData->take(10) as $record) {
+                    $output .= "<tr><td>" . $record->rute_id . "</td><td>" . $record->master_tarif_id . "</td><td>" . $record->created_at . "</td></tr>";
+                }
+                $output .= "</table>";
+            }
+
+            $output .= "<h2>✓ All tests completed successfully!</h2>";
+            return $output;
+        } catch (Exception $e) {
+            return "<h1 style='color: red;'>ERROR</h1>" .
+                   "<p>Message: " . $e->getMessage() . "</p>" .
+                   "<p>File: " . $e->getFile() . ":" . $e->getLine() . "</p>" .
+                   "<pre>" . $e->getTraceAsString() . "</pre>";
+        }
+    })->name('test.tarif.relationship');
+}

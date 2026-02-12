@@ -341,6 +341,17 @@
     <div class="dotted-line" style="margin-top:30px;"></div>
 
     <!-- RINCIAN HARGA -->
+    @if(isset($selectedTarif) && $selectedTarif)
+    <div style="margin-bottom:10px;">
+        <div style="font-weight:600; color:#0b2a4a;">Tarif yang berlaku</div>
+        @if(isset($selectedTarif['nama']))
+            <div>{{ $selectedTarif['nama'] }} @if(isset($selectedTarif['kode'])) ({{ $selectedTarif['kode'] }}) @endif</div>
+        @endif
+        @if(isset($selectedTarif['harga_dasar']))
+            <div>Harga dasar: Rp {{ number_format($selectedTarif['harga_dasar'],0,',','.') }}</div>
+        @endif
+    </div>
+    @endif
     <div style="margin-top:20px;">
         <h2 style="font-weight:600; font-size: 24px; margin-bottom: 15px; color: #333;">RINCIAN HARGA</h2>
 

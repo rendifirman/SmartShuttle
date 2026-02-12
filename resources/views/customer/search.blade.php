@@ -2346,8 +2346,8 @@
                                         <optgroup label="{{ $city }}">
                                             @foreach($outlets as $outlet)
                                                 @php $cityVal = $outlet->branch->kota ?? $outlet->kota ?? ''; @endphp
-                                                <option value="{{ $cityVal }}" 
-                                                    {{ (isset($validated['asal']) && $validated['asal'] == $cityVal) || 
+                                                <option value="{{ $cityVal }}"
+                                                    {{ (isset($validated['asal']) && $validated['asal'] == $cityVal) ||
                                                        (isset($validated['departure_city']) && $validated['departure_city'] == $cityVal) ? 'selected' : '' }}>
                                                     {{ $outlet->nama_outlet }} @if($outlet->branch) - {{ $outlet->branch->kota }} @endif
                                                 </option>
@@ -2356,8 +2356,8 @@
                                     @endforeach
                                 @else
                                     @foreach($kotaAsalList as $kota)
-                                        <option value="{{ $kota }}" 
-                                            {{ (isset($validated['asal']) && $validated['asal'] == $kota) || 
+                                        <option value="{{ $kota }}"
+                                            {{ (isset($validated['asal']) && $validated['asal'] == $kota) ||
                                                (isset($validated['departure_city']) && $validated['departure_city'] == $kota) ? 'selected' : '' }}>
                                             {{ $kota }}
                                         </option>
@@ -2377,7 +2377,7 @@
                                             @foreach($outlets as $outlet)
                                                 @php $cityVal = $outlet->branch->kota ?? $outlet->kota ?? ''; @endphp
                                                 <option value="{{ $cityVal }}"
-                                                    {{ (isset($validated['tujuan']) && $validated['tujuan'] == $cityVal) || 
+                                                    {{ (isset($validated['tujuan']) && $validated['tujuan'] == $cityVal) ||
                                                        (isset($validated['destination_city']) && $validated['destination_city'] == $cityVal) ? 'selected' : '' }}>
                                                     {{ $outlet->nama_outlet }} @if($outlet->branch) - {{ $outlet->branch->kota }} @endif
                                                 </option>
@@ -2387,7 +2387,7 @@
                                 @else
                                     @foreach($kotaTujuanList as $kota)
                                         <option value="{{ $kota }}"
-                                            {{ (isset($validated['tujuan']) && $validated['tujuan'] == $kota) || 
+                                            {{ (isset($validated['tujuan']) && $validated['tujuan'] == $kota) ||
                                                (isset($validated['destination_city']) && $validated['destination_city'] == $kota) ? 'selected' : '' }}>
                                             {{ $kota }}
                                         </option>
@@ -2400,7 +2400,7 @@
                             <label class="form-label">Tanggal</label>
                             <input type="date" class="form-control" id="departure-date" name="tanggal"
                                    value="{{ isset($validated['tanggal']) ? $validated['tanggal'] :
-                                           (isset($validated['departure_date']) ? $validated['departure_date'] : 
+                                           (isset($validated['departure_date']) ? $validated['departure_date'] :
                                            (request('tanggal') ? request('tanggal') : \Carbon\Carbon::today()->format('Y-m-d'))) }}"
                                    min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" required>
                         </div>
@@ -2504,22 +2504,28 @@
                                 <h3 class="info-title spacing-top">Shuttle Tersedia</h3>
                                 <div id="search-results">
                                     @if(isset($validated))
-                                        @if(!isset($jadwals) || $jadwals->isEmpty())
+                                        @if(!isset($driverJadwals) || $driverJadwals->isEmpty())
                                             <div class="empty-state" id="no-results-state">
                                                 <i class="fas fa-times-circle"></i>
-                                                <h3>No schedule available</h3>
+                                                <h3>Tidak ada jadwal tersedia</h3>
+                                                <p>Coba ubah parameter pencarian atau pilih tanggal yang berbeda.</p>
                                             </div>
                                         @else
                                             <!-- Results Counter -->
                                             <div style="margin-bottom: 16px; color: var(--muted-text); font-size: 14px;">
-                                                {{ $jadwals->count() }} jadwal tersedia
+                                                {{ $driverJadwals->count() }} jadwal tersedia
                                             </div>
 
-                                            @foreach($jadwals as $jadwal)
+                                            @foreach($driverJadwals as $jadwal)
                                             @php
-                                                $shuttle = $jadwal->shuttle;
+                                                $shuttle = $jadwal->jadwal->shuttle ?? null;
                                                 $fasilitasArray = $shuttle->fasilitas_array ?? [];
+                                                $detailRute = $jadwal->getDetailRute();
+                                                $kotaAsalJadwal = $detailRute['kota_asal'] ?? $validated['asal'] ?? '';
+                                                $kotaTujuanJadwal = $detailRute['kota_tujuan'] ?? $validated['tujuan'] ?? '';
+                                                $sisaKursi = $jadwal->total_kursi - $jadwal->kursi_terisi;
                                             @endphp
+
                                             <div class="result-card" data-departure-time="{{ \Carbon\Carbon::parse($jadwal->waktu_keberangkatan)->format('H:i') }}">
                                                 <div class="shuttle-header">
                                                     <div class="shuttle-info">
@@ -2528,9 +2534,9 @@
                                                         <!-- Route Tags -->
                                                         <div style="margin-bottom: 8px;">
                                                             <span class="route-tag direct">
-                                                                <i class="fas fa-bus"></i> {{ $jadwal->rute_string ?? 'Rute Tidak Diketahui' }}
+                                                                <i class="fas fa-bus"></i> {{ $jadwal->rute ?? 'Rute Tidak Diketahui' }}
                                                             </span>
-                                                            @if($shuttle->tipe_shuttle)
+                                                            @if($shuttle && $shuttle->tipe_shuttle)
                                                             <span class="route-tag">
                                                                 <i class="fas fa-star"></i> {{ $shuttle->tipe_shuttle }}
                                                             </span>
@@ -2541,7 +2547,7 @@
                                                             <div class="time-info" style="font-size: 16px;">
                                                                 {{ \Carbon\Carbon::parse($jadwal->waktu_keberangkatan)->format('H:i') }}
                                                                 <span style="font-size: 12px; color: var(--muted-text); margin-left: 4px;">
-                                                                    {{ $validated['asal'] ?? $validated['departure_city'] }}
+                                                                    {{ $kotaAsalJadwal }}
                                                                 </span>
                                                             </div>
                                                             <div class="route-arrow" style="margin: 0 12px;">
@@ -2550,7 +2556,7 @@
                                                             <div class="time-info" style="font-size: 16px;">
                                                                 {{ \Carbon\Carbon::parse($jadwal->waktu_kedatangan)->format('H:i') }}
                                                                 <span style="font-size: 12px; color: var(--muted-text); margin-left: 4px;">
-                                                                    {{ $validated['tujuan'] ?? $validated['destination_city'] }}
+                                                                    {{ $kotaTujuanJadwal }}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -2566,7 +2572,7 @@
                                                         <!-- Shuttle Status -->
                                                         <div class="shuttle-status">
                                                             @php
-                                                                $seatPercentage = ($jadwal->kursi_tersedia / ($shuttle->kapasitas_kursi ?? 12)) * 100;
+                                                                $seatPercentage = ($sisaKursi / ($shuttle->kapasitas_kursi ?? 12)) * 100;
                                                                 if ($seatPercentage > 50) {
                                                                     $statusClass = 'status-available';
                                                                     $statusText = 'Tersedia';
@@ -2582,7 +2588,7 @@
                                                                 {{ $statusText }}
                                                             </span>
                                                             <span class="seat-count">
-                                                                <i class="fas fa-chair"></i> {{ $jadwal->kursi_tersedia }} kursi tersedia
+                                                                <i class="fas fa-chair"></i> {{ $sisaKursi }} kursi tersedia
                                                             </span>
                                                         </div>
 
@@ -2610,27 +2616,57 @@
                                                     </div>
 
                                                     <div class="right-section">
+                                                        @php
+                                                            // Ambil tarif dari driver jadwal jika ada
+                                                            $masterTarif = $jadwal->masterTarif;
+                                                            $hargaPerKursi = $jadwal->harga;
+                                                            $hargaDenganTarif = $hargaPerKursi;
+                                                            $diskonApli = 0;
+
+                                                            // Hitung tarif jika ada master tarif
+                                                            if ($masterTarif) {
+                                                                $hargaDenganTarif = $masterTarif->hitungTarif($hargaPerKursi);
+                                                                $diskonApli = $hargaPerKursi - $hargaDenganTarif;
+                                                            }
+
+                                                            $totalHarga = $hargaDenganTarif * $penumpang;
+                                                        @endphp
                                                         <div class="price-info">
-                                                            <div class="price">Rp {{ number_format($jadwal->harga, 0, ',', '.') }}</div>
+                                                            @if($masterTarif)
+                                                                <div style="font-size: 10px; color: #ff6a00; margin-bottom: 4px; font-weight: 600;">
+                                                                    <i class="fas fa-tag"></i> {{ $masterTarif->nama_tarif }}
+                                                                </div>
+                                                                <div style="font-size: 11px; color: var(--muted-text); margin-bottom: 6px; text-decoration: line-through;">
+                                                                    Rp {{ number_format($hargaPerKursi, 0, ',', '.') }}/kursi
+                                                                </div>
+                                                                <div class="price">Rp {{ number_format($hargaDenganTarif, 0, ',', '.') }}</div>
+                                                                @if($diskonApli > 0)
+                                                                    <div style="font-size: 10px; color: #4caf50; margin-top: 2px; font-weight: 600;">
+                                                                        Hemat Rp {{ number_format($diskonApli, 0, ',', '.') }}/kursi
+                                                                    </div>
+                                                                @endif
+                                                            @else
+                                                                <div class="price">Rp {{ number_format($hargaPerKursi, 0, ',', '.') }}</div>
+                                                            @endif
                                                             <div class="per-kursi">/kursi</div>
-                                                            <div style="font-size: 11px; color: var(--muted-text); margin-top: 2px;">
-                                                                Total: Rp {{ number_format($jadwal->harga * $validated['penumpang'], 0, ',', '.') }}
+                                                            <div style="font-size: 11px; color: var(--muted-text); margin-top: 6px; padding-top: 6px; border-top: 1px solid #f0f0f0;">
+                                                                <strong>Total: Rp {{ number_format($totalHarga, 0, ',', '.') }}</strong>
                                                             </div>
                                                         </div>
 
-                                                        @if($jadwal->kursi_tersedia >= $validated['penumpang'])
+                                                        @if($sisaKursi >= $penumpang)
                                                             @guest
                                                                 <a href="{{ route('customer.login') }}?redirect={{ urlencode(request()->fullUrl()) }}" class="btn-pilih">
                                                                     <i class="fas fa-ticket-alt"></i> Pesan Sekarang
                                                                 </a>
                                                             @else
-                                                                <a href="{{ route('customer.pesan', ['id_jadwal_driver' => $jadwal->id_jadwal_driver, 'penumpang' => $validated['penumpang'] ?? 1]) }}" class="btn-pilih">
+                                                                <a href="{{ route('customer.pesan', ['id_jadwal_driver' => $jadwal->id_jadwal_driver, 'penumpang' => $penumpang]) }}" class="btn-pilih">
                                                                     <i class="fas fa-ticket-alt"></i> Pesan Sekarang
                                                                 </a>
                                                             @endguest
                                                         @else
                                                             <button class="btn-pilih" disabled>
-                                                                <i class="fas fa-times-circle"></i> Hanya {{ $jadwal->kursi_tersedia }} kursi
+                                                                <i class="fas fa-times-circle"></i> Hanya {{ $sisaKursi }} kursi
                                                             </button>
                                                         @endif
 
@@ -2658,7 +2694,8 @@
                                                 <div class="route-details" id="route-details-{{ $jadwal->id_jadwal_driver }}" style="display: none;">
                                                     <h2>Rincian Perjalanan</h2>
                                                     @php
-                                                        $rute = $jadwal->masterRute ?? null;
+                                                        // Gunakan masterRute (rute spesifik yang dipilih driver), bukan rutes->first()
+                                                        $rute = $jadwal->masterRute ?? ($jadwal->jadwal->rutes->first() ?? null);
                                                     @endphp
                                                     @if($rute)
                                                         <div style="margin-bottom: 16px;">
@@ -2750,249 +2787,253 @@
                                                 <div class="shuttle-details" id="shuttle-details-{{ $jadwal->id_jadwal_driver }}" style="display: none;">
                                                     <h4><i class="fas fa-bus"></i> Informasi Shuttle</h4>
 
-                                                    <!-- Shuttle Specifications -->
-                                                    <div class="shuttle-info-grid">
-                                                        <div class="shuttle-info-item">
-                                                            <i class="fas fa-bus"></i>
-                                                            <strong>Nama Shuttle:</strong> {{ $shuttle->nama_shuttle }}
-                                                        </div>
-                                                        <div class="shuttle-info-item">
-                                                            <i class="fas fa-tag"></i>
-                                                            <strong>Tipe Shuttle:</strong> {{ $shuttle->tipe_shuttle ?? 'Standard' }}
-                                                        </div>
-                                                        <div class="shuttle-info-item">
-                                                            <i class="fas fa-users"></i>
-                                                            <strong>Kapasitas:</strong> {{ $shuttle->kapasitas_kursi }} Penumpang
-                                                        </div>
-                                                        <div class="shuttle-info-item">
-                                                            <i class="fas fa-car"></i>
-                                                            <strong>No. Polisi:</strong> {{ $shuttle->nomor_polisi ?? '-' }}
-                                                        </div>
-                                                        <div class="shuttle-info-item">
-                                                            <i class="fas fa-info-circle"></i>
-                                                            <strong>Status:</strong>
-                                                            <span class="shuttle-status-badge status-{{ $shuttle->status ?? 'aktif' }}">
-                                                                {{ ucfirst($shuttle->status ?? 'aktif') }}
-                                                            </span>
-                                                        </div>
-                                                        @if(isset($shuttle->total_kursi) && $shuttle->total_kursi != $shuttle->kapasitas_kursi)
-                                                        <div class="shuttle-info-item">
-                                                            <i class="fas fa-layer-group"></i>
-                                                            <strong>Layout Kursi:</strong> {{ $shuttle->total_kursi }} Posisi
-                                                        </div>
-                                                        @endif
-                                                    </div>
-
-                                                    <div class="info-divider"></div>
-
-                                                    <!-- Shuttle Facilities -->
-                                                    <div class="fasilitas-section">
-                                                        <h6><i class="fas fa-cogs"></i> Fasilitas Shuttle</h6>
-                                                        @if(!empty($fasilitasArray))
-                                                        <div class="fasilitas-list">
-                                                            @foreach($fasilitasArray as $fasilitasItem)
-                                                            <div class="fasilitas-list-item">
-                                                                <i class="fas fa-check-circle"></i>
-                                                                <span>{{ trim($fasilitasItem) }}</span>
+                                                    @if($shuttle)
+                                                        <!-- Shuttle Specifications -->
+                                                        <div class="shuttle-info-grid">
+                                                            <div class="shuttle-info-item">
+                                                                <i class="fas fa-bus"></i>
+                                                                <strong>Nama Shuttle:</strong> {{ $shuttle->nama_shuttle }}
                                                             </div>
-                                                            @endforeach
+                                                            <div class="shuttle-info-item">
+                                                                <i class="fas fa-tag"></i>
+                                                                <strong>Tipe Shuttle:</strong> {{ $shuttle->tipe_shuttle ?? 'Standard' }}
+                                                            </div>
+                                                            <div class="shuttle-info-item">
+                                                                <i class="fas fa-users"></i>
+                                                                <strong>Kapasitas:</strong> {{ $shuttle->kapasitas_kursi }} Penumpang
+                                                            </div>
+                                                            <div class="shuttle-info-item">
+                                                                <i class="fas fa-car"></i>
+                                                                <strong>No. Polisi:</strong> {{ $shuttle->nomor_polisi ?? '-' }}
+                                                            </div>
+                                                            <div class="shuttle-info-item">
+                                                                <i class="fas fa-info-circle"></i>
+                                                                <strong>Status:</strong>
+                                                                <span class="shuttle-status-badge status-{{ $shuttle->status ?? 'aktif' }}">
+                                                                    {{ ucfirst($shuttle->status ?? 'aktif') }}
+                                                                </span>
+                                                            </div>
+                                                            @if(isset($shuttle->total_kursi) && $shuttle->total_kursi != $shuttle->kapasitas_kursi)
+                                                            <div class="shuttle-info-item">
+                                                                <i class="fas fa-layer-group"></i>
+                                                                <strong>Layout Kursi:</strong> {{ $shuttle->total_kursi }} Posisi
+                                                            </div>
+                                                            @endif
                                                         </div>
-                                                        @else
-                                                        <p style="color: var(--muted-text); font-size: 13px;">Fasilitas tidak tersedia</p>
-                                                        @endif
-                                                    </div>
 
-                                                    <div class="info-divider"></div>
+                                                        <div class="info-divider"></div>
 
-                                                    <!-- COMBINED GALLERY AND SEAT LAYOUT -->
-                                                    <div class="shuttle-media-combined">
-                                                        <!-- Left Column: Gallery -->
-                                                        <div class="shuttle-gallery-side">
-                                                            <h6><i class="fas fa-images"></i> Gallery Shuttle</h6>
-
-                                                            <div class="compact-carousel" id="shuttleCarousel-{{ $jadwal->id }}">
-                                                                <div class="carousel-compact-header">
-                                                                    <div class="carousel-title">Tampak Depan</div>
-                                                                    <div class="carousel-counter">1/4</div>
+                                                        <!-- Shuttle Facilities -->
+                                                        <div class="fasilitas-section">
+                                                            <h6><i class="fas fa-cogs"></i> Fasilitas Shuttle</h6>
+                                                            @if(!empty($fasilitasArray))
+                                                            <div class="fasilitas-list">
+                                                                @foreach($fasilitasArray as $fasilitasItem)
+                                                                <div class="fasilitas-list-item">
+                                                                    <i class="fas fa-check-circle"></i>
+                                                                    <span>{{ trim($fasilitasItem) }}</span>
                                                                 </div>
+                                                                @endforeach
+                                                            </div>
+                                                            @else
+                                                            <p style="color: var(--muted-text); font-size: 13px;">Fasilitas tidak tersedia</p>
+                                                            @endif
+                                                        </div>
 
-                                                                <div class="carousel-compact-container">
-                                                                    <div class="carousel-track" id="carouselTrack-{{ $jadwal->id }}">
-                                                                        @php
-                                                                            $images = [
-                                                                                ['gambar' => $shuttle->gambar_depan, 'caption' => 'Tampak Depan'],
-                                                                                ['gambar' => $shuttle->gambar_samping, 'caption' => 'Tampak Samping'],
-                                                                                ['gambar' => $shuttle->gambar_belakang, 'caption' => 'Tampak Belakang'],
-                                                                                ['gambar' => $shuttle->gambar_interior, 'caption' => 'Interior']
-                                                                            ];
-                                                                        @endphp
+                                                        <div class="info-divider"></div>
 
-                                                                        @foreach($images as $index => $image)
-                                                                        <div class="carousel-slide" data-index="{{ $index }}">
-                                                                            <div class="slide-img-container">
-                                                                                @if($image['gambar'])
-                                                                                    <img src="{{ asset('images/shuttle/' . $image['gambar']) }}"
-                                                                                         alt="{{ $image['caption'] }}"
-                                                                                         class="slide-img"
-                                                                                         onerror="this.src='{{ asset('images/placeholder-shuttle.jpg') }}'">
-                                                                                @else
-                                                                                    <img src="{{ asset('images/placeholder-shuttle.jpg') }}"
-                                                                                         alt="{{ $image['caption'] }}"
-                                                                                         class="slide-img">
-                                                                                @endif
-                                                                            </div>
-                                                                        </div>
-                                                                        @endforeach
+                                                        <!-- COMBINED GALLERY AND SEAT LAYOUT -->
+                                                        <div class="shuttle-media-combined">
+                                                            <!-- Left Column: Gallery -->
+                                                            <div class="shuttle-gallery-side">
+                                                                <h6><i class="fas fa-images"></i> Gallery Shuttle</h6>
+
+                                                                <div class="compact-carousel" id="shuttleCarousel-{{ $jadwal->id_jadwal_driver }}">
+                                                                    <div class="carousel-compact-header">
+                                                                        <div class="carousel-title">Tampak Depan</div>
+                                                                        <div class="carousel-counter">1/4</div>
                                                                     </div>
 
-                                                                    <button class="carousel-btn prev-btn">
-                                                                        <i class="fas fa-chevron-left"></i>
-                                                                    </button>
-                                                                    <button class="carousel-btn next-btn">
-                                                                        <i class="fas fa-chevron-right"></i>
-                                                                    </button>
-                                                                </div>
-
-                                                                <div class="carousel-dots-nav">
-                                                                    @for($i = 0; $i < 4; $i++)
-                                                                        <button class="carousel-dot {{ $i == 0 ? 'active' : '' }}">
-                                                                            {{ $images[$i]['caption'] ?? 'Slide ' . ($i+1) }}
-                                                                        </button>
-                                                                    @endfor
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- Right Column: Seat Layout -->
-                                                        <div class="seat-layout-side">
-                                                            <h6>
-                                                                <i class="fas fa-chair"></i>
-                                                                Layout Kursi ({{ $shuttle->total_kursi ?? 9 }} Kursi)
-                                                                <small style="font-size: 12px; color: #666; margin-left: 8px;">
-                                                                    {{ $shuttle->seat_rows ?? 3 }} Baris × {{ $shuttle->seat_columns ?? 3 }} Kolom
-                                                                </small>
-                                                            </h6>
-
-                                                            <div class="dynamic-seat-layout">
-                                                                @if(isset($shuttle->seat_grid) && !empty($shuttle->seat_grid))
-                                                                    @foreach($shuttle->seat_grid as $rowIndex => $row)
-                                                                    <div class="seat-row-dynamic">
-                                                                        @foreach($row as $seat)
-                                                                        <div class="seat-dynamic
-                                                                            @if(($seat['tipe'] ?? 'reguler') === 'premium') seat-premium @endif
-                                                                            @if(($seat['posisi'] ?? '') === 'tengah') seat-middle @endif">
-
-                                                                            <div class="seat-number">{{ $seat['nomor'] ?? '?' }}</div>
-
-                                                                            @if(($seat['tipe'] ?? 'reguler') === 'premium')
-                                                                            <div class="seat-badge-premium">
-                                                                                <i class="fas fa-crown"></i>
-                                                                            </div>
-                                                                            @endif
-
-                                                                            @if(($seat['harga_tambahan'] ?? 0) > 0)
-                                                                            <div class="seat-price-extra">
-                                                                                +{{ number_format($seat['harga_tambahan'], 0, ',', '.') }}
-                                                                            </div>
-                                                                            @endif
-                                                                        </div>
-                                                                        @endforeach
-                                                                    </div>
-                                                                    @endforeach
-                                                                @else
-                                                                    @php
-                                                                        $totalSeats = $shuttle->total_kursi ?? 9;
-                                                                        $rows = ceil($totalSeats / 3);
-                                                                        $seatCounter = 0;
-                                                                    @endphp
-
-                                                                    @for($row = 1; $row <= $rows; $row++)
-                                                                    <div class="seat-row-dynamic">
-                                                                        @for($col = 1; $col <= 3; $col++)
+                                                                    <div class="carousel-compact-container">
+                                                                        <div class="carousel-track" id="carouselTrack-{{ $jadwal->id_jadwal_driver }}">
                                                                             @php
-                                                                                if($seatCounter >= $totalSeats) break;
-                                                                                $colLetter = chr(64 + $col);
-                                                                                $seatNumber = $row . $colLetter;
-                                                                                $seatCounter++;
+                                                                                $images = [
+                                                                                    ['gambar' => $shuttle->gambar_depan, 'caption' => 'Tampak Depan'],
+                                                                                    ['gambar' => $shuttle->gambar_samping, 'caption' => 'Tampak Samping'],
+                                                                                    ['gambar' => $shuttle->gambar_belakang, 'caption' => 'Tampak Belakang'],
+                                                                                    ['gambar' => $shuttle->gambar_interior, 'caption' => 'Interior']
+                                                                                ];
                                                                             @endphp
 
-                                                                            <div class="seat-dynamic">
-                                                                                <div class="seat-number">{{ $seatNumber }}</div>
+                                                                            @foreach($images as $index => $image)
+                                                                            <div class="carousel-slide" data-index="{{ $index }}">
+                                                                                <div class="slide-img-container">
+                                                                                    @if($image['gambar'])
+                                                                                        <img src="{{ asset('images/shuttle/' . $image['gambar']) }}"
+                                                                                             alt="{{ $image['caption'] }}"
+                                                                                             class="slide-img"
+                                                                                             onerror="this.src='{{ asset('images/placeholder-shuttle.jpg') }}'">
+                                                                                    @else
+                                                                                        <img src="{{ asset('images/placeholder-shuttle.jpg') }}"
+                                                                                             alt="{{ $image['caption'] }}"
+                                                                                             class="slide-img">
+                                                                                    @endif
+                                                                                </div>
                                                                             </div>
+                                                                            @endforeach
+                                                                        </div>
+
+                                                                        <button class="carousel-btn prev-btn">
+                                                                            <i class="fas fa-chevron-left"></i>
+                                                                        </button>
+                                                                        <button class="carousel-btn next-btn">
+                                                                            <i class="fas fa-chevron-right"></i>
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <div class="carousel-dots-nav">
+                                                                        @for($i = 0; $i < 4; $i++)
+                                                                            <button class="carousel-dot {{ $i == 0 ? 'active' : '' }}">
+                                                                                {{ $images[$i]['caption'] ?? 'Slide ' . ($i+1) }}
+                                                                            </button>
                                                                         @endfor
                                                                     </div>
-                                                                    @endfor
-                                                                @endif
+                                                                </div>
                                                             </div>
 
-                                                            <div class="seat-info-panel">
-                                                                <div class="info-row">
-                                                                    <div class="info-item">
-                                                                        <div class="info-icon">
-                                                                            <i class="fas fa-chair"></i>
-                                                                        </div>
-                                                                        <div class="info-text">
-                                                                            <div class="info-label">Total Kapasitas</div>
-                                                                            <div class="info-value">{{ $shuttle->kapasitas_kursi ?? 12 }} kursi</div>
-                                                                        </div>
-                                                                    </div>
+                                                            <!-- Right Column: Seat Layout -->
+                                                            <div class="seat-layout-side">
+                                                                <h6>
+                                                                    <i class="fas fa-chair"></i>
+                                                                    Layout Kursi ({{ $shuttle->total_kursi ?? 9 }} Kursi)
+                                                                    <small style="font-size: 12px; color: #666; margin-left: 8px;">
+                                                                        {{ $shuttle->seat_rows ?? 3 }} Baris × {{ $shuttle->seat_columns ?? 3 }} Kolom
+                                                                    </small>
+                                                                </h6>
 
-                                                                    <div class="info-item">
-                                                                        <div class="info-icon available">
-                                                                            <i class="fas fa-check-circle"></i>
-                                                                        </div>
-                                                                        <div class="info-text">
-                                                                            <div class="info-label">Tersedia</div>
-                                                                            <div class="info-value">{{ $jadwal->kursi_tersedia ?? 0 }} kursi</div>
-                                                                        </div>
-                                                                    </div>
+                                                                <div class="dynamic-seat-layout">
+                                                                    @if(isset($shuttle->seat_grid) && !empty($shuttle->seat_grid))
+                                                                        @foreach($shuttle->seat_grid as $rowIndex => $row)
+                                                                        <div class="seat-row-dynamic">
+                                                                            @foreach($row as $seat)
+                                                                            <div class="seat-dynamic
+                                                                                @if(($seat['tipe'] ?? 'reguler') === 'premium') seat-premium @endif
+                                                                                @if(($seat['posisi'] ?? '') === 'tengah') seat-middle @endif">
 
-                                                                    <div class="info-item">
-                                                                        <div class="info-icon">
-                                                                            <i class="fas fa-layer-group"></i>
-                                                                        </div>
-                                                                        <div class="info-text">
-                                                                            <div class="info-label">Layout</div>
-                                                                            <div class="info-value">
-                                                                                {{ $shuttle->total_kursi ?? 9 }} kursi
-                                                                                ({{ ceil(($shuttle->total_kursi ?? 9) / 3) }}×3)
+                                                                                <div class="seat-number">{{ $seat['nomor'] ?? '?' }}</div>
+
+                                                                                @if(($seat['tipe'] ?? 'reguler') === 'premium')
+                                                                                <div class="seat-badge-premium">
+                                                                                    <i class="fas fa-crown"></i>
+                                                                                </div>
+                                                                                @endif
+
+                                                                                @if(($seat['harga_tambahan'] ?? 0) > 0)
+                                                                                <div class="seat-price-extra">
+                                                                                    +{{ number_format($seat['harga_tambahan'], 0, ',', '.') }}
+                                                                                </div>
+                                                                                @endif
                                                                             </div>
+                                                                            @endforeach
                                                                         </div>
-                                                                    </div>
-
-                                                                    @if(isset($shuttle->dynamic_seat_layout) && is_array($shuttle->dynamic_seat_layout))
+                                                                        @endforeach
+                                                                    @else
                                                                         @php
-                                                                            $premiumCount = collect($shuttle->dynamic_seat_layout)
-                                                                                ->where('tipe', 'premium')
-                                                                                ->count();
+                                                                            $totalSeats = $shuttle->total_kursi ?? 9;
+                                                                            $rows = ceil($totalSeats / 3);
+                                                                            $seatCounter = 0;
                                                                         @endphp
-                                                                        @if($premiumCount > 0)
-                                                                        <div class="info-item">
-                                                                            <div class="info-icon premium">
-                                                                                <i class="fas fa-crown"></i>
-                                                                            </div>
-                                                                            <div class="info-text">
-                                                                                <div class="info-label">Kursi Premium</div>
-                                                                                <div class="info-value">{{ $premiumCount }} kursi</div>
-                                                                            </div>
+
+                                                                        @for($row = 1; $row <= $rows; $row++)
+                                                                        <div class="seat-row-dynamic">
+                                                                            @for($col = 1; $col <= 3; $col++)
+                                                                                @php
+                                                                                    if($seatCounter >= $totalSeats) break;
+                                                                                    $colLetter = chr(64 + $col);
+                                                                                    $seatNumber = $row . $colLetter;
+                                                                                    $seatCounter++;
+                                                                                @endphp
+
+                                                                                <div class="seat-dynamic">
+                                                                                    <div class="seat-number">{{ $seatNumber }}</div>
+                                                                                </div>
+                                                                            @endfor
                                                                         </div>
-                                                                        @endif
+                                                                        @endfor
                                                                     @endif
                                                                 </div>
 
-                                                                <div class="seat-legend">
-                                                                    <div class="legend-item">
-                                                                        <div class="legend-box seat-regular"></div>
-                                                                        <span class="legend-text">Reguler</span>
+                                                                <div class="seat-info-panel">
+                                                                    <div class="info-row">
+                                                                        <div class="info-item">
+                                                                            <div class="info-icon">
+                                                                                <i class="fas fa-chair"></i>
+                                                                            </div>
+                                                                            <div class="info-text">
+                                                                                <div class="info-label">Total Kapasitas</div>
+                                                                                <div class="info-value">{{ $shuttle->kapasitas_kursi ?? 12 }} kursi</div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div class="info-item">
+                                                                            <div class="info-icon available">
+                                                                                <i class="fas fa-check-circle"></i>
+                                                                            </div>
+                                                                            <div class="info-text">
+                                                                                <div class="info-label">Tersedia</div>
+                                                                                <div class="info-value">{{ $sisaKursi }} kursi</div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div class="info-item">
+                                                                            <div class="info-icon">
+                                                                                <i class="fas fa-layer-group"></i>
+                                                                            </div>
+                                                                            <div class="info-text">
+                                                                                <div class="info-label">Layout</div>
+                                                                                <div class="info-value">
+                                                                                    {{ $shuttle->total_kursi ?? 9 }} kursi
+                                                                                    ({{ ceil(($shuttle->total_kursi ?? 9) / 3) }}×3)
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        @if(isset($shuttle->dynamic_seat_layout) && is_array($shuttle->dynamic_seat_layout))
+                                                                            @php
+                                                                                $premiumCount = collect($shuttle->dynamic_seat_layout)
+                                                                                    ->where('tipe', 'premium')
+                                                                                    ->count();
+                                                                            @endphp
+                                                                            @if($premiumCount > 0)
+                                                                            <div class="info-item">
+                                                                                <div class="info-icon premium">
+                                                                                    <i class="fas fa-crown"></i>
+                                                                                </div>
+                                                                                <div class="info-text">
+                                                                                    <div class="info-label">Kursi Premium</div>
+                                                                                    <div class="info-value">{{ $premiumCount }} kursi</div>
+                                                                                </div>
+                                                                            </div>
+                                                                            @endif
+                                                                        @endif
                                                                     </div>
-                                                                    <div class="legend-item">
-                                                                        <div class="legend-box seat-sold"></div>
-                                                                        <span class="legend-text">Terjual</span>
+
+                                                                    <div class="seat-legend">
+                                                                        <div class="legend-item">
+                                                                            <div class="legend-box seat-regular"></div>
+                                                                            <span class="legend-text">Reguler</span>
+                                                                        </div>
+                                                                        <div class="legend-item">
+                                                                            <div class="legend-box seat-sold"></div>
+                                                                            <span class="legend-text">Terjual</span>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
+                                                    @else
+                                                        <p style="color: var(--muted-text); font-size: 13px;">Informasi shuttle tidak tersedia</p>
+                                                    @endif
                                                 </div>
                                             </div>
                                             @endforeach
@@ -3328,10 +3369,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (toggleBtn) {
         toggleBtn.addEventListener('click', function() {
             allShuttleInfoVisible = !allShuttleInfoVisible;
-            
+
             // Find all shuttle details sections
             const allShuttleDetails = document.querySelectorAll('[id^="shuttle-details-"]');
-            
+
             allShuttleDetails.forEach(function(element) {
                 if (allShuttleInfoVisible) {
                     element.style.display = 'block';
@@ -3344,7 +3385,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     element.style.display = 'none';
                 }
             });
-            
+
             // Update button text and style
             if (allShuttleInfoVisible) {
                 toggleBtn.innerHTML = '<i class="fas fa-compress"></i> Sembunyikan Info Shuttle';

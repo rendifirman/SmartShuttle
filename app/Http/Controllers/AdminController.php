@@ -15,6 +15,7 @@ use App\Models\MLayanan;
 use App\Models\Promo;
 use App\Models\Outlet;
 use App\Models\Artikel;
+use App\Models\MasterTarif;
 
 class AdminController extends Controller
 {
@@ -882,7 +883,8 @@ class AdminController extends Controller
     public function createRute()
     {
         $layanans = MLayanan::all();
-        return view('admin.rute-create', compact('layanans'));
+        $tarifs = MasterTarif::aktif()->get();
+        return view('admin.rute-create', compact('layanans', 'tarifs'));
     }
 
     public function storeRute(Request $request)
@@ -898,6 +900,8 @@ class AdminController extends Controller
             'harga_dasar' => 'required|numeric|min:0',
             'status' => 'required|in:aktif,nonaktif',
             'rute_pemberhentian' => 'nullable|string',
+            'master_tarif_ids' => 'nullable|array',
+            'master_tarif_ids.*' => 'exists:master_tarif,id',
         ]);
 
         $data = $request->all();
@@ -907,7 +911,16 @@ class AdminController extends Controller
             $data['durasi'] = $data['durasi'] . ':00';
         }
 
-        Rute::create($data);
+        // Hapus master_tarif_ids dari data sebelum create
+        $tarifIds = $request->input('master_tarif_ids', []);
+        unset($data['master_tarif_ids']);
+
+        $rute = Rute::create($data);
+
+        // Attach tarifs jika ada
+        if (!empty($tarifIds)) {
+            $rute->masterTarifs()->attach($tarifIds);
+        }
 
         return redirect()->route('admin.rute')->with('success', 'Rute berhasil ditambahkan.');
     }
@@ -916,7 +929,8 @@ class AdminController extends Controller
     {
         $rute = Rute::findOrFail($id);
         $layanans = MLayanan::all();
-        return view('admin.rute-edit', compact('rute', 'layanans'));
+        $tarifs = MasterTarif::aktif()->get();
+        return view('admin.rute-edit', compact('rute', 'layanans', 'tarifs'));
     }
 
     public function updateRute(Request $request, $id)
@@ -934,6 +948,8 @@ class AdminController extends Controller
             'harga_dasar' => 'required|numeric|min:0',
             'status' => 'required|in:aktif,nonaktif',
             'rute_pemberhentian' => 'nullable|string',
+            'master_tarif_ids' => 'nullable|array',
+            'master_tarif_ids.*' => 'exists:master_tarif,id',
         ]);
 
         $data = $request->all();
@@ -943,7 +959,14 @@ class AdminController extends Controller
             $data['durasi'] = $data['durasi'] . ':00';
         }
 
+        // Hapus master_tarif_ids dari data sebelum update
+        $tarifIds = $request->input('master_tarif_ids', []);
+        unset($data['master_tarif_ids']);
+
         $rute->update($data);
+
+        // Sync tarifs
+        $rute->masterTarifs()->sync($tarifIds);
 
         return redirect()->route('admin.rute')->with('success', 'Rute berhasil diperbarui.');
     }
@@ -964,7 +987,7 @@ class AdminController extends Controller
 
     public function showRute($id)
     {
-        $rute = Rute::with('layanan')->findOrFail($id);
+        $rute = Rute::with(['layanan', 'masterTarifs'])->findOrFail($id);
 
         // Parse pemberhentian
         $pemberhentian = [];
@@ -1301,6 +1324,14 @@ class AdminController extends Controller
         ];
 
         return $rolePermissions[$role] ?? [];
+    }
+
+    public function pengadaanBahan()
+    {
+        return view('admin.pengadaan-bahan', [
+            'title' => 'Pengaturan - Pengadaan Bahan',
+            'pageTitle' => 'Pengaturan - Pengadaan Bahan'
+        ]);
     }
 
     public function menu()

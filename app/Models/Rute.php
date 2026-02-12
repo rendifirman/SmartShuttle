@@ -13,6 +13,9 @@ class Rute extends Model
     protected $fillable = [
         'layanan_id',
         'master_harga_id',
+        'master_tarif_id',
+        'cabang_asal_id',
+        'cabang_tujuan_id',
         'kode_rute',
         'nama_rute',
         'kota_asal',
@@ -22,7 +25,9 @@ class Rute extends Model
         'harga_dasar',
         'rute_pemberhentian',
         'segment_details',
-        'status'
+        'status',
+        'created_by',
+        'updated_by'
     ];
 
     protected $casts = [
@@ -49,11 +54,43 @@ class Rute extends Model
     }
 
     /**
+     * Relasi ke master tarif (backward compatibility - single tarif)
+     */
+    public function masterTarif()
+    {
+        return $this->belongsTo(MasterTarif::class);
+    }
+
+    /**
+     * Relasi many-to-many ke master tarif (multiple tariffs)
+     */
+    public function masterTarifs()
+    {
+        return $this->belongsToMany(MasterTarif::class, 'rute_master_tarif', 'rute_id', 'master_tarif_id');
+    }
+
+    /**
      * Relasi ke layanan
      */
     public function layanan()
     {
         return $this->belongsTo(MLayanan::class, 'layanan_id');
+    }
+
+    /**
+     * Relasi ke cabang asal
+     */
+    public function cabangAsal()
+    {
+        return $this->belongsTo(Branch::class, 'cabang_asal_id');
+    }
+
+    /**
+     * Relasi ke cabang tujuan
+     */
+    public function cabangTujuan()
+    {
+        return $this->belongsTo(Branch::class, 'cabang_tujuan_id');
     }
 
     /**
@@ -309,5 +346,107 @@ class Rute extends Model
         return $this->belongsToMany(Jadwal::class, 'rute_jadwals', 'rute_id', 'jadwal_id')
                     ->withPivot('urutan', 'durasi_segment', 'harga_segment')
                     ->withTimestamps();
+    }
+
+    /**
+     * Ambil master tarif aktif yang berlaku untuk rute ini.
+     * Jika ada beberapa, kembalikan yang bertipe 'reguler' jika ada, atau yang pertama.
+     */
+    public function getActiveMasterTarif()
+    {
+        $tarifs = $this->masterTarifs()->where('status', 'aktif')
+                        ->where(function($q) {
+                            $q->whereNull('tanggal_berlaku')
+                              ->orWhere('tanggal_berlaku', '<=', now());
+                        })
+                        ->where(function($q) {
+                            $q->whereNull('tanggal_kadaluarsa')
+                              ->orWhere('tanggal_kadaluarsa', '>=', now());
+                        })
+                        ->get();
+
+        if ($tarifs->isEmpty()) return null;
+
+        // Preferensi tarif tipe 'reguler' jika ada
+        $prefer = $tarifs->firstWhere('jenis_tarif', 'reguler');
+        return $prefer ?? $tarifs->first();
+    }
+
+    /**
+     * Accessor untuk formatted_durasi
+     */
+    public function getFormattedDurasiAttribute()
+    {
+        // Parse durasi utama ke menit
+        $baseMinutes = $this->parseDurationToMinutes($this->durasi);
+
+        // Tambahkan durasi singgah dari rute pemberhentian
+        $pemberhentian = $this->rute_pemberhentian ?? [];
+        $singgahMinutes = 0;
+        if (is_array($pemberhentian)) {
+            foreach ($pemberhentian as $stop) {
+                if (isset($stop['durasi_singgah'])) {
+                    $singgahMinutes += (int) $stop['durasi_singgah'];
+                }
+            }
+        }
+
+        $totalMinutes = $baseMinutes + $singgahMinutes;
+
+        return $this->formatMinutesToDuration($totalMinutes);
+    }
+
+    /**
+     * Parse duration string to minutes
+     */
+    private function parseDurationToMinutes($duration)
+    {
+        if (!$duration) return 0;
+
+        $minutes = 0;
+
+        // Parse HH:MM format (e.g., "03:30")
+        if (preg_match('/^(\d{1,2}):(\d{2})$/', $duration, $matches)) {
+            $hours = (int) $matches[1];
+            $mins = (int) $matches[2];
+            $minutes = $hours * 60 + $mins;
+        }
+        // Parse "X jam Y menit" or similar
+        elseif (preg_match('/(\d+)\s*jam/i', $duration, $matches)) {
+            $minutes += $matches[1] * 60;
+            if (preg_match('/(\d+)\s*menit/i', $duration, $matches)) {
+                $minutes += $matches[1];
+            }
+        }
+        elseif (preg_match('/(\d+)\s*menit/i', $duration, $matches)) {
+            $minutes += $matches[1];
+        }
+        // If no match, try to parse as number (assuming minutes)
+        elseif (is_numeric($duration)) {
+            $minutes = (int) $duration;
+        }
+
+        return $minutes;
+    }
+
+    /**
+     * Format minutes to duration string
+     */
+    private function formatMinutesToDuration($minutes)
+    {
+        if ($minutes <= 0) return '0 menit';
+
+        $hours = floor($minutes / 60);
+        $mins = $minutes % 60;
+
+        $parts = [];
+        if ($hours > 0) {
+            $parts[] = $hours . ' jam';
+        }
+        if ($mins > 0) {
+            $parts[] = $mins . ' menit';
+        }
+
+        return implode(' ', $parts);
     }
 }

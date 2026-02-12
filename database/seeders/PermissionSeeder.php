@@ -24,6 +24,8 @@ class PermissionSeeder extends Seeder
             'manage_outlet',
             'view_promo',
             'manage_promo',
+            'view_tarif',
+            'manage_tarif',
             'view_kontak',
             'manage_kontak',
             'view_artikel',

@@ -1,17 +1,12 @@
-# TODO: Membership Payment Integration with Paylabs
-
-## Current Status
-- Membership payment currently uses manual transfer and basic online payment
-- Regular payments use Paylabs integration
-- Need to align membership payment with regular payment system
+# TODO: Remove Pengadaan Bahan Feature
 
 ## Tasks
-- [ ] Add "Simulasi Bayar" button to membership payment view
-- [ ] Create simulateMembershipPayment method in CustomerController
-- [ ] Modify processMembershipPayment to use Paylabs like regular payments
-- [ ] Ensure Paylabs integration matches regular payment system
-- [ ] Test the integration
+- [x] Remove permission `view_pengadaan_bahan` from PermissionSeeder.php
+- [x] Remove route `/admin/pengadaan-bahan` from routes/web.php
+- [x] Remove `pengadaanBahan()` method from AdminController.php
+- [x] Remove menu item from admin sidebar layout (app-admin.blade.php)
+- [x] Delete view file `resources/views/admin/pengadaan-bahan.blade.php`
 
-## Files to Modify
-- resources/views/customer/membership_payment.blade.php
-- app/Http/Controllers/CustomerController.php
+## Followup Steps
+- [ ] Run database seeder to update permissions
+- [ ] Clear route cache

@@ -38,7 +38,11 @@ class ScheduleController extends Controller
                 $q->select('id', 'nama_shuttle', 'kapasitas_kursi', 'tipe_shuttle', 'nomor_polisi');
             },
             'rutes' => function($q) {
-                $q->select('id', 'nama_rute', 'kota_asal', 'kota_tujuan', 'durasi', 'harga_dasar');
+                $q->select('id', 'nama_rute', 'kota_asal', 'kota_tujuan', 'durasi', 'harga_dasar')
+                  ->with(['segments' => function($sq) {
+                      $sq->with('outlet:id,nama_outlet,alamat_lengkap,telepon')
+                         ->orderBy('urutan_segment', 'asc');
+                  }]);
             }
         ]);
 
@@ -275,7 +279,11 @@ class ScheduleController extends Controller
                     $q->select('id', 'nama_shuttle', 'kapasitas_kursi', 'tipe_shuttle', 'layanan_id')
                       ->with('layanan:id_layanan,kode_layanan,nama_layanan');
                 },
-                'rutes'
+                'rutes',
+                'rutes.segments' => function($q) {
+                    $q->with('outlet:id,nama_outlet,alamat_lengkap,telepon')
+                      ->orderBy('urutan_segment', 'asc');
+                }
             ])
             ->whereIn('id', function($query) use ($ruteIds) {
                 $query->select('jadwal_id')
@@ -328,7 +336,12 @@ class ScheduleController extends Controller
                 'shuttle' => function($q) {
                     $q->with(['layanan', 'driver:id,nama_lengkap,no_telepon']);
                 },
-                'rutes',
+                'rutes' => function($q) {
+                    $q->with(['segments' => function($sq) {
+                        $sq->with('outlet:id,nama_outlet,alamat_lengkap,telepon')
+                           ->orderBy('urutan_segment', 'asc');
+                    }]);
+                },
                 'ruteJadwals.rute'
             ])->find($id);
 
@@ -388,7 +401,15 @@ class ScheduleController extends Controller
                 ], 404);
             }
 
-            $schedules = Jadwal::with(['shuttle', 'rutes'])
+            $schedules = Jadwal::with([
+                'shuttle',
+                'rutes' => function($q) {
+                    $q->with(['segments' => function($sq) {
+                        $sq->with('outlet:id,nama_outlet,alamat_lengkap,telepon')
+                           ->orderBy('urutan_segment', 'asc');
+                    }]);
+                }
+            ])
                 ->whereHas('shuttle', function($q) use ($layananId) {
                     $q->where('layanan_id', $layananId);
                 })
@@ -485,7 +506,15 @@ class ScheduleController extends Controller
     public function today()
     {
         try {
-            $schedules = Jadwal::with(['shuttle', 'rutes'])
+            $schedules = Jadwal::with([
+                'shuttle',
+                'rutes' => function($q) {
+                    $q->with(['segments' => function($sq) {
+                        $sq->with('outlet:id,nama_outlet,alamat_lengkap,telepon')
+                           ->orderBy('urutan_segment', 'asc');
+                    }]);
+                }
+            ])
                 ->whereDate('tanggal_keberangkatan', Carbon::today())
                 ->where('status', 'tersedia')
                 ->orderBy('waktu_keberangkatan')
@@ -545,7 +574,15 @@ class ScheduleController extends Controller
             $days = $request->input('days', 7);
             $limit = $request->input('limit', 10);
 
-            $schedules = Jadwal::with(['shuttle.layanan', 'rutes'])
+            $schedules = Jadwal::with([
+                'shuttle.layanan',
+                'rutes' => function($q) {
+                    $q->with(['segments' => function($sq) {
+                        $sq->with('outlet:id,nama_outlet,alamat_lengkap,telepon')
+                           ->orderBy('urutan_segment', 'asc');
+                    }]);
+                }
+            ])
                 ->whereDate('tanggal_keberangkatan', '>=', Carbon::today())
                 ->whereDate('tanggal_keberangkatan', '<=', Carbon::today()->addDays($days))
                 ->where('status', 'tersedia')
@@ -667,14 +704,34 @@ class ScheduleController extends Controller
         // Add rutes info
         if ($schedule->relationLoaded('rutes') && $schedule->rutes->isNotEmpty()) {
             $data['rutes'] = $schedule->rutes->map(function ($rute) {
-                return [
+                $ruteData = [
                     'id' => $rute->id,
                     'nama_rute' => $rute->nama_rute,
                     'kota_asal' => $rute->kota_asal,
                     'kota_tujuan' => $rute->kota_tujuan,
                     'durasi' => $rute->durasi,
-                    'harga_dasar' => (float) $rute->harga_dasar
+                    'harga_dasar' => (float) $rute->harga_dasar,
+                    'outlets_pemberhentian' => []
                 ];
+
+                // Add outlet details jika segments tersedia
+                if ($rute->relationLoaded('segments') && $rute->segments->isNotEmpty()) {
+                    $ruteData['outlets_pemberhentian'] = $rute->segments->map(function ($segment) {
+                        return [
+                            'urutan' => $segment->urutan_segment,
+                            'outlet_id' => $segment->outlet_id,
+                            'nama_outlet' => $segment->outlet ? $segment->outlet->nama_outlet : $segment->nama_lokasi,
+                            'alamat' => $segment->outlet ? $segment->outlet->alamat_lengkap : null,
+                            'telepon' => $segment->outlet ? $segment->outlet->telepon : null,
+                            'jarak_kumulatif' => (float) $segment->jarak_kumulatif,
+                            'estimasi_waktu' => $segment->estimasi_waktu,
+                            'is_pickup_point' => (bool) $segment->is_pickup_point,
+                            'is_drop_point' => (bool) $segment->is_drop_point
+                        ];
+                    })->toArray();
+                }
+
+                return $ruteData;
             });
         }
 

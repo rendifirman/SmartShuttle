@@ -66,11 +66,11 @@ class JadwalController extends Controller
 
         // Statistics
         $totalJadwal = Jadwal::count();
-        
+
         $tersedia = Jadwal::where('status', 'tersedia')
             ->where('kursi_tersedia', '>', 0)
             ->count();
-        
+
         $hampirPenuh = Jadwal::where('status', 'tersedia')
             ->where('kursi_tersedia', '>', 0)
             ->with(['shuttle'])
@@ -81,7 +81,7 @@ class JadwalController extends Controller
                 $persentase = ($jadwal->kursi_tersedia / $totalKursi) * 100;
                 return $persentase <= 20;
             })->count();
-        
+
         $penuh = Jadwal::where(function($q) {
                 $q->where('status', 'penuh')
                   ->orWhere('kursi_tersedia', '<=', 0);
@@ -105,7 +105,7 @@ class JadwalController extends Controller
     {
         $shuttles = Shuttle::all();
         $rutes = Rute::all();
-        
+
         return view('admin.jadwal-create', compact('shuttles', 'rutes'));
     }
 
@@ -117,21 +117,24 @@ class JadwalController extends Controller
             'tanggal_keberangkatan' => 'required|date|after_or_equal:today',
             'waktu_keberangkatan' => 'required',
             'waktu_kedatangan' => 'required',
-            'harga_total' => 'required|numeric|min:1000', // Minimal 1000
         ]);
 
         // Tidak ada validasi waktu keberangkatan harus lebih awal
         // Bisa 21:00 -> 03:30 (melewati tengah malam)
 
         $shuttle = Shuttle::findOrFail($request->shuttle_id);
+        $rute = Rute::findOrFail($request->rute_id);
         $totalKursi = $shuttle->kapasitas_kursi ?? $shuttle->total_kursi ?? 0;
+
+        // Ambil harga dari rute (dari tarif yang dipilih)
+        $hargaRute = $rute->harga_dasar ?? 0;
 
         $jadwal = Jadwal::create([
             'shuttle_id' => $request->shuttle_id,
             'tanggal_keberangkatan' => $request->tanggal_keberangkatan,
             'waktu_keberangkatan' => $request->waktu_keberangkatan,
             'waktu_kedatangan' => $request->waktu_kedatangan,
-            'harga_total' => $request->harga_total,
+            'harga_total' => $hargaRute,
             'kursi_tersedia' => $totalKursi,
             'status' => 'tersedia',
         ]);
@@ -139,7 +142,7 @@ class JadwalController extends Controller
         $jadwal->rutes()->attach($request->rute_id, [
             'urutan' => 1,
             'durasi_segment' => $this->calculateDuration($request->waktu_keberangkatan, $request->waktu_kedatangan),
-            'harga_segment' => $request->harga_total,
+            'harga_segment' => $hargaRute,
         ]);
 
         return redirect()->route('admin.jadwal.index')
@@ -151,9 +154,9 @@ class JadwalController extends Controller
         $jadwal = Jadwal::with(['shuttle', 'rutes'])->findOrFail($id);
         $shuttles = Shuttle::all();
         $rutes = Rute::all();
-        
+
         $totalKursi = $jadwal->shuttle->kapasitas_kursi ?? $jadwal->shuttle->total_kursi ?? 0;
-        
+
         return view('admin.jadwal-edit', compact('jadwal', 'shuttles', 'rutes', 'totalKursi'));
     }
 
@@ -165,13 +168,16 @@ class JadwalController extends Controller
             'tanggal_keberangkatan' => 'required|date',
             'waktu_keberangkatan' => 'required',
             'waktu_kedatangan' => 'required',
-            'harga_total' => 'required|numeric|min:1000',
             'kursi_tersedia' => 'required|integer|min:0',
         ]);
 
         $jadwal = Jadwal::findOrFail($id);
         $shuttle = Shuttle::findOrFail($request->shuttle_id);
+        $rute = Rute::findOrFail($request->rute_id);
         $totalKursi = $shuttle->kapasitas_kursi ?? $shuttle->total_kursi ?? 0;
+
+        // Ambil harga dari rute
+        $hargaRute = $rute->harga_dasar ?? 0;
 
         if ($request->kursi_tersedia > $totalKursi) {
             return back()->withErrors(['kursi_tersedia' => 'Kursi tersedia tidak boleh melebihi kapasitas armada'])->withInput();
@@ -184,7 +190,7 @@ class JadwalController extends Controller
             'tanggal_keberangkatan' => $request->tanggal_keberangkatan,
             'waktu_keberangkatan' => $request->waktu_keberangkatan,
             'waktu_kedatangan' => $request->waktu_kedatangan,
-            'harga_total' => $request->harga_total,
+            'harga_total' => $hargaRute,
             'kursi_tersedia' => $request->kursi_tersedia,
             'status' => $status,
         ]);
@@ -192,7 +198,7 @@ class JadwalController extends Controller
         $jadwal->rutes()->sync([$request->rute_id => [
             'urutan' => 1,
             'durasi_segment' => $this->calculateDuration($request->waktu_keberangkatan, $request->waktu_kedatangan),
-            'harga_segment' => $request->harga_total,
+            'harga_segment' => $hargaRute,
         ]]);
 
         return redirect()->route('admin.jadwal.index')
@@ -202,14 +208,14 @@ class JadwalController extends Controller
     public function destroy($id)
     {
         $jadwal = Jadwal::findOrFail($id);
-        
+
         if ($jadwal->driverSchedules()->exists()) {
             return redirect()->route('admin.jadwal.index')
                 ->with('error', 'Jadwal tidak dapat dihapus karena sudah diambil driver.');
         }
-        
+
         $jadwal->delete();
-        
+
         return redirect()->route('admin.jadwal.index')
             ->with('success', 'Jadwal berhasil dihapus!');
     }
@@ -218,12 +224,12 @@ class JadwalController extends Controller
     {
         $berangkat = Carbon::parse($waktuBerangkat);
         $tiba = Carbon::parse($waktuTiba);
-        
+
         // Jika waktu tiba lebih kecil dari waktu berangkat, berarti melewati tengah malam
         if ($tiba < $berangkat) {
             $tiba->addDay(); // Tambah 1 hari
         }
-        
+
         return $berangkat->diffInMinutes($tiba);
     }
 
@@ -232,17 +238,17 @@ class JadwalController extends Controller
         if ($kursiTersedia <= 0) {
             return 'penuh';
         }
-        
+
         $totalKursi = $shuttle->kapasitas_kursi ?? $shuttle->total_kursi ?? 0;
         if ($totalKursi == 0) {
             return 'tersedia';
         }
-        
+
         $persentase = ($kursiTersedia / $totalKursi) * 100;
         if ($persentase <= 20) {
             return 'hampir_penuh';
         }
-        
+
         return 'tersedia';
     }
 }

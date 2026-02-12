@@ -592,6 +592,12 @@
                 <span>Promo</span>
             </a>
             @endif
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_tarif'))
+            <a href="{{ route('admin.master-tarif.index') }}" class="submenu-item" id="tarif-link">
+                <i class="fas fa-money-bill-wave submenu-icon"></i>
+                <span>Tarif</span>
+            </a>
+            @endif
             @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_kontak'))
             <a href="{{ route('admin.kontakperusahaan') }}" class="submenu-item" id="kontak-link">
                 <i class="fas fa-address-book submenu-icon"></i>
@@ -624,7 +630,7 @@
             </a>
             @endif
             @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_rute'))
-            <a href="{{ route('admin.rute') }}" class="submenu-item" id="rute-link">
+            <a href="{{ route('admin.rute.index') }}" class="submenu-item" id="rute-link">
                 <i class="fas fa-route submenu-icon"></i>
                 <span>Rute</span>
             </a>
@@ -740,6 +746,7 @@
                 <span>User</span>
             </a>
             @endif
+
             @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_menu'))
             <a href="{{ route('admin.menu') }}" class="submenu-item" id="menu-link">
                 <i class="fas fa-bars submenu-icon"></i>
@@ -798,6 +805,7 @@
         'promo': { title: 'Master Data - Promo', icon: 'fas fa-tag' },
         'kontak': { title: 'Master Data - Kontak', icon: 'fas fa-address-book' },
         'artikel': { title: 'Master Data - Artikel', icon: 'fas fa-newspaper' },
+        'tarif': { title: 'Master Data - Tarif', icon: 'fas fa-money-bill-wave' },
         'armada': { title: 'Master Data - Armada', icon: 'fas fa-bus' },
         'driver': { title: 'Master Data - Driver', icon: 'fas fa-user-tie' },
         'pegawai': { title: 'Master Data - Pegawai', icon: 'fas fa-users' },

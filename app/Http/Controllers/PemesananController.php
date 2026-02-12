@@ -12,6 +12,8 @@ use App\Models\Pemesanan;
 use App\Models\Jadwal;
 use App\Models\DetailPenumpang;
 use App\Models\Promo;
+use App\Models\Rute;
+use App\Models\RuteJadwal;
 use App\Models\Transaksi;
 use App\Models\MetodePembayaran;
 use App\Models\User;
@@ -102,8 +104,23 @@ class PemesananController extends Controller
                 throw new \Exception('Kursi tidak tersedia. Sisa kursi: ' . $jadwal->kursi_tersedia);
             }
 
-            // Hitung harga total
-            $hargaTotal = $jadwal->harga_total * $request->jumlah_penumpang;
+            // Hitung harga total — per-seat price mengambil tarif dari rute jika tersedia
+            $hargaPerSeat = $jadwal->harga_total;
+            $ruteJadwal = RuteJadwal::where('jadwal_id', $jadwal->id)->first();
+            if ($ruteJadwal) {
+                $rute = Rute::find($ruteJadwal->rute_id);
+                if ($rute) {
+                    $masterTarif = $rute->getActiveMasterTarif();
+                    if ($masterTarif) {
+                        $base = $masterTarif->harga_dasar ?? $rute->harga_dasar ?? $jadwal->harga_total;
+                        $hargaPerSeat = (float) $masterTarif->hitungTarif($base);
+                    } else {
+                        $hargaPerSeat = $rute->harga_dasar ?? $jadwal->harga_total;
+                    }
+                }
+            }
+
+            $hargaTotal = $hargaPerSeat * $request->jumlah_penumpang;
             $diskon = 0;
             $promoId = null;
             $kodePromo = null;

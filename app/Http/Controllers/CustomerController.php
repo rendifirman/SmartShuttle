@@ -221,7 +221,7 @@ class CustomerController extends Controller
     }
 
     // ★★★ TAMBAHKAN METHOD INI DI CustomerController ★★★
-    
+
     /**
      * Ambil jadwal driver untuk customer (dipakai di beranda dan search)
      */
@@ -259,13 +259,13 @@ class CustomerController extends Controller
         try {
             // Get user data
             $user = $this->getUserData();
-            
+
             // Query dasar dari DriverJadwal
             $query = DriverJadwal::with(['driver', 'jadwal'])
                 ->tersediaUntukCustomer()
                 ->orderBy('tanggal', 'asc')
                 ->orderBy('waktu_keberangkatan', 'asc');
-            
+
             // Apply search filters
             if ($request->filled('search')) {
                 $search = $request->input('search');
@@ -274,17 +274,17 @@ class CustomerController extends Controller
                       ->orWhere('armada', 'like', '%' . $search . '%');
                 });
             }
-            
+
             // Filter by rute
             if ($request->filled('rute')) {
                 $query->where('rute', 'like', '%' . $request->input('rute') . '%');
             }
-            
+
             // Filter by tanggal
             if ($request->filled('tanggal')) {
                 $query->where('tanggal', $request->input('tanggal'));
             }
-            
+
             // Filter by harga range
             if ($request->filled('harga_min')) {
                 $query->where('harga', '>=', $request->input('harga_min'));
@@ -292,15 +292,15 @@ class CustomerController extends Controller
             if ($request->filled('harga_max')) {
                 $query->where('harga', '<=', $request->input('harga_max'));
             }
-            
+
             // Filter by waktu keberangkatan
             if ($request->filled('waktu_keberangkatan')) {
                 $query->whereTime('waktu_keberangkatan', '>=', $request->input('waktu_keberangkatan'));
             }
-            
+
             // Pagination
             $jadwals = $query->paginate(10);
-            
+
             // Get unique rute list for dropdown
             $ruteList = DriverJadwal::select('rute')
                 ->distinct()
@@ -308,17 +308,17 @@ class CustomerController extends Controller
                 ->pluck('rute')
                 ->filter()
                 ->values();
-            
+
             // Get date range for filter
             $dateRange = DriverJadwal::selectRaw('MIN(tanggal) as min_date, MAX(tanggal) as max_date')
                 ->tersediaUntukCustomer()
                 ->first();
-            
+
             // Get price range
             $priceRange = DriverJadwal::selectRaw('MIN(harga) as min_harga, MAX(harga) as max_harga')
                 ->tersediaUntukCustomer()
                 ->first();
-            
+
             return view('customer.beranda_customer', compact(
                 'user',
                 'jadwals',
@@ -326,7 +326,7 @@ class CustomerController extends Controller
                 'dateRange',
                 'priceRange'
             ));
-            
+
         } catch (\Exception $e) {
             \Log::error('Error in berandaCustomer: ' . $e->getMessage());
             return redirect()->route('customer.beranda')
@@ -347,7 +347,7 @@ class CustomerController extends Controller
                 'harga_max' => 'nullable|numeric|min:0',
                 'waktu_keberangkatan' => 'nullable|date_format:H:i',
             ]);
-            
+
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
@@ -355,39 +355,39 @@ class CustomerController extends Controller
                     'errors' => $validator->errors()
                 ], 422);
             }
-            
+
             $query = DriverJadwal::with(['driver', 'jadwal'])
                 ->tersediaUntukCustomer();
-            
+
             // Apply filters
             if ($request->filled('rute')) {
                 $query->where('rute', 'like', '%' . $request->rute . '%');
             }
-            
+
             if ($request->filled('tanggal')) {
                 $query->where('tanggal', $request->tanggal);
             }
-            
+
             if ($request->filled('harga_min')) {
                 $query->where('harga', '>=', $request->harga_min);
             }
-            
+
             if ($request->filled('harga_max')) {
                 $query->where('harga', '<=', $request->harga_max);
             }
-            
+
             if ($request->filled('waktu_keberangkatan')) {
                 $query->whereTime('waktu_keberangkatan', '>=', $request->waktu_keberangkatan);
             }
-            
+
             $jadwals = $query->orderBy('tanggal', 'asc')
                 ->orderBy('waktu_keberangkatan', 'asc')
                 ->paginate(10);
-            
+
             // Format response
             $formattedJadwals = $jadwals->map(function($jadwal) {
                 $detailRute = $jadwal->getDetailRute();
-                
+
                 return [
                     'id_jadwal_driver' => $jadwal->id_jadwal_driver,
                     'rute' => $jadwal->rute,
@@ -407,7 +407,7 @@ class CustomerController extends Controller
                     'is_available' => $jadwal->isAvailableForCustomer()
                 ];
             });
-            
+
             return response()->json([
                 'success' => true,
                 'jadwals' => $formattedJadwals,
@@ -418,7 +418,7 @@ class CustomerController extends Controller
                     'per_page' => $jadwals->perPage()
                 ]
             ]);
-            
+
         } catch (\Exception $e) {
             \Log::error('Error in searchJadwalDriver: ' . $e->getMessage());
             return response()->json([
@@ -601,12 +601,12 @@ class CustomerController extends Controller
                 });
 
             return view('customer.beranda', compact(
-                'user', 
-                'outletsGrouped', 
-                'layanan', 
-                'profile', 
-                'reviews', 
-                'promos', 
+                'user',
+                'outletsGrouped',
+                'layanan',
+                'profile',
+                'reviews',
+                'promos',
                 'articles',
                 'jadwals',
                 'kotaAsalList',
@@ -1177,20 +1177,23 @@ class CustomerController extends Controller
             // Filter: tanggal hari ini atau lebih
             $query->where('tanggal', '>=', now()->toDateString());
 
-            // Filter berdasarkan kota asal (dari field rute melalui parsing yang tepat)
-            if ($asal) {
-                $query->where(function($q) use ($asal) {
-                    // Match dalam pattern (Kota → Kota) 
-                    $q->where('rute', 'like', '%(' . $asal . '%')
-                      ->orWhere('rute', 'like', '% ' . $asal . '%');
-                });
-            }
-
-            // Filter berdasarkan kota tujuan (dari field rute)
-            if ($tujuan) {
-                $query->where(function($q) use ($tujuan) {
-                    // Match dalam pattern (Kota → Kota)
-                    $q->where('rute', 'like', '%' . $tujuan . '%');
+            // Filter berdasarkan kota asal & tujuan dengan regex yang lebih akurat
+            if ($asal || $tujuan) {
+                $query->where(function($q) use ($asal, $tujuan) {
+                    // Pattern format: "Nama Rute (Kota Asal → Kota Tujuan)"
+                    if ($asal && $tujuan) {
+                        // Cari rute yang TEPAT: asal → tujuan
+                        $pattern = '\(' . preg_quote(trim($asal), '/') . '\s*→\s*' . preg_quote(trim($tujuan), '/') . '\)';
+                        $q->whereRaw("rute REGEXP ?", [$pattern]);
+                    } elseif ($asal) {
+                        // Cari rute dimana asal sebelum arrow
+                        $pattern = '\(' . preg_quote(trim($asal), '/') . '\s*→';
+                        $q->whereRaw("rute REGEXP ?", [$pattern]);
+                    } elseif ($tujuan) {
+                        // Cari rute dimana tujuan setelah arrow
+                        $pattern = '→\s*' . preg_quote(trim($tujuan), '/') . '\)';
+                        $q->whereRaw("rute REGEXP ?", [$pattern]);
+                    }
                 });
             }
 
@@ -1275,128 +1278,107 @@ class CustomerController extends Controller
     /**
      * Halaman show search (kompatibel dengan parameter baru dan lama) - PERBAIKAN UTAMA
      */
-    public function showSearch(Request $request)
-    {
-        try {
-            // ★★★ DEBUG: CEK PARAMETER YANG DITERIMA ★★★
-            \Log::info('=== DEBUG SHUTTLE SEARCH ===');
-            \Log::info('CustomerController@showSearch - Request parameters:', $request->all());
-            \Log::info('Request URL:', [$request->fullUrl()]);
+   /**
+ * Halaman show search (kompatibel dengan parameter baru dan lama) - PERBAIKAN UTAMA
+ */
+public function showSearch(Request $request)
+{
+    try {
+        \Log::info('=== DEBUG SHUTTLE SEARCH ===');
+        \Log::info('CustomerController@showSearch - Request parameters:', $request->all());
 
-            // Get user data
-            $user = session()->get('user');
-            if (!$user && Auth::check()) {
-                $authUser = Auth::user();
-                $user = [
-                    'id' => $authUser->id,
-                    'name' => $authUser->name,
-                    'email' => $authUser->email,
-                    'phone' => $authUser->phone,
-                    'avatar' => $authUser->avatar_url,
-                ];
-            }
+        // Get user data
+        $user = session()->get('user');
+        if (!$user && Auth::check()) {
+            $authUser = Auth::user();
+            $user = [
+                'id' => $authUser->id,
+                'name' => $authUser->name,
+                'email' => $authUser->email,
+                'phone' => $authUser->phone,
+                'avatar' => $authUser->avatar_url,
+            ];
+        }
 
-            // ★★★ JIKA ADA PARAMETER PENCARIAN (asal, tujuan) ★★★
-            if ($request->filled('asal') && $request->filled('tujuan')) {
-                // Validasi input
-                $validated = $request->validate([
-                    'asal' => 'required|string|max:255',
-                    'tujuan' => 'required|string|max:255|different:asal',
-                    'tanggal' => 'nullable|date|after_or_equal:today',
-                    'penumpang' => 'nullable|integer|min:1|max:10'
-                ]);
+        // ★★★ JIKA ADA PARAMETER PENCARIAN (asal, tujuan) ★★★
+        if ($request->filled('asal') && $request->filled('tujuan')) {
+            // Validasi input
+            $validated = $request->validate([
+                'asal' => 'required|string|max:255',
+                'tujuan' => 'required|string|max:255|different:asal',
+                'tanggal' => 'nullable|date|after_or_equal:today',
+                'penumpang' => 'nullable|integer|min:1|max:10'
+            ]);
 
-                $asal = $validated['asal'];
-                $tujuan = $validated['tujuan'];
-                $tanggal = $validated['tanggal'] ?? date('Y-m-d');
-                $penumpang = (int) ($validated['penumpang'] ?? 1);
+            $asal = $validated['asal'];
+            $tujuan = $validated['tujuan'];
+            $tanggal = $validated['tanggal'] ?? date('Y-m-d');
+            $penumpang = (int) ($validated['penumpang'] ?? 1);
 
-                \Log::info('Search parameters:', compact('asal', 'tujuan', 'tanggal', 'penumpang'));
+            \Log::info('Search parameters:', compact('asal', 'tujuan', 'tanggal', 'penumpang'));
 
-                // ★★★ QUERY UTAMA - SESUAI FORMAT RUTE ★★★
-                $query = DriverJadwal::with(['driver', 'jadwal', 'masterRute'])
-                    ->where('status', 'aktif')
-                    ->where('tanggal', '>=', now()->toDateString())
-                    ->whereRaw('(total_kursi - kursi_terisi) >= ?', [$penumpang]);
-
-                // ★★★ FILTER RUTE: cari rute yang mengandung asal DAN tujuan ★★★
-                // Contoh: rute LIKE "%Bandung%" AND rute LIKE "%Jakarta%"
-                $query->where('rute', 'LIKE', "%{$asal}%")
-                      ->where('rute', 'LIKE', "%{$tujuan}%");
-                
-                // Filter tanggal spesifik jika ada
-                if ($tanggal) {
-                    $query->whereDate('tanggal', $tanggal);
-                }
-
-                // Pagination
-                $jadwals = $query->orderBy('tanggal', 'asc')
-                    ->orderBy('waktu_keberangkatan', 'asc')
-                    ->paginate(10);
-
-                \Log::info('Search results count:', ['count' => $jadwals->count()]);
-
-                // Get dropdown data
-                $kotaAsalList = DriverJadwal::where('status', 'aktif')
-                    ->where('tanggal', '>=', now()->toDateString())
-                    ->get()
-                    ->map(function($item) {
-                        $detail = $item->getDetailRute();
-                        return $detail['kota_asal'] ?? null;
-                    })
-                    ->filter()
-                    ->unique()
-                    ->values();
-
-                $kotaTujuanList = DriverJadwal::where('status', 'aktif')
-                    ->where('tanggal', '>=', now()->toDateString())
-                    ->get()
-                    ->map(function($item) {
-                        $detail = $item->getDetailRute();
-                        return $detail['kota_tujuan'] ?? null;
-                    })
-                    ->filter()
-                    ->unique()
-                    ->values();
-
-                // Get outlets grouped untuk backward compatibility
-                $outletsGrouped = Outlet::with('branch')
-                    ->where('status', 'aktif')
-                    ->orderBy('nama_outlet')
-                    ->get()
-                    ->groupBy(function ($outlet) {
-                        return $outlet->branch ? $outlet->branch->kota : 'Lainnya';
-                    });
-
-                return view('customer.search', array_merge(
-                    $validated,
-                    compact(
-                        'user',
-                        'jadwals',
-                        'kotaAsalList',
-                        'kotaTujuanList',
-                        'outletsGrouped',
-                        'penumpang',
-                        'validated'
-                    )
-                ));
-            }
-
-            // ★★★ DEFAULT VIEW TANPA HASIL SEARCH ★★★
-            // Use Outlet table only for dropdowns (origin/destination)
-            $kotaAsalList = Outlet::with('branch')
+            // ★★★ QUERY UTAMA - DRIVER_JADWALS SAJA ★★★
+            $query = DriverJadwal::with(['driver', 'jadwal.rutes', 'jadwal.shuttle', 'masterRute'])
                 ->where('status', 'aktif')
-                ->orderBy('nama_outlet')
+                ->where('tanggal', '>=', now()->toDateString())
+                ->whereRaw('(total_kursi - kursi_terisi) >= ?', [$penumpang]);
+
+            // ★★★ FILTER RUTE: GUNAKAN MASTER_RUTE + FALLBACK KE RUTE STRING ★★★
+            // Prioritas 1: Cocok dengan masterRute
+            // Prioritas 2: Fallback ke string matching di kolom rute jika masterRute kosong
+            $asal = strtolower(trim($asal));
+            $tujuan = strtolower(trim($tujuan));
+
+            $query->where(function($q) use ($asal, $tujuan) {
+                // Kondisi 1: Cocok dengan masterRute (jika rute_id ada)
+                $q->whereHas('masterRute', function($subQ) use ($asal, $tujuan) {
+                    $subQ->whereRaw('LOWER(kota_asal) LIKE ?', ["%{$asal}%"])
+                         ->whereRaw('LOWER(kota_tujuan) LIKE ?', ["%{$tujuan}%"]);
+                })
+                // Kondisi 2: Fallback ke string matching jika masterRute kosong
+                ->orWhere(function($orQ) use ($asal, $tujuan) {
+                    $orQ->whereNull('rute_id')
+                        ->whereRaw('LOWER(rute) LIKE ?', ["%{$asal}%"])
+                        ->whereRaw('LOWER(rute) LIKE ?', ["%{$tujuan}%"]);
+                });
+            });
+
+            // Filter tanggal spesifik jika ada
+            if ($tanggal) {
+                $query->whereDate('tanggal', $tanggal);
+            }
+
+            // Pagination
+            $driverJadwals = $query->orderBy('tanggal', 'asc')
+                ->orderBy('waktu_keberangkatan', 'asc')
+                ->paginate(10);
+
+            \Log::info('Search results count:', ['count' => $driverJadwals->count()]);
+
+            // Get dropdown data
+            $kotaAsalList = DriverJadwal::where('status', 'aktif')
+                ->where('tanggal', '>=', now()->toDateString())
                 ->get()
-                ->map(function($outlet) {
-                    return $outlet->branch->kota ?? $outlet->kota ?? null;
+                ->map(function($item) {
+                    $detail = $item->getDetailRute();
+                    return $detail['kota_asal'] ?? null;
                 })
                 ->filter()
                 ->unique()
                 ->values();
 
-            $kotaTujuanList = $kotaAsalList;
+            $kotaTujuanList = DriverJadwal::where('status', 'aktif')
+                ->where('tanggal', '>=', now()->toDateString())
+                ->get()
+                ->map(function($item) {
+                    $detail = $item->getDetailRute();
+                    return $detail['kota_tujuan'] ?? null;
+                })
+                ->filter()
+                ->unique()
+                ->values();
 
+            // Get outlets grouped untuk backward compatibility
             $outletsGrouped = Outlet::with('branch')
                 ->where('status', 'aktif')
                 ->orderBy('nama_outlet')
@@ -1405,22 +1387,59 @@ class CustomerController extends Controller
                     return $outlet->branch ? $outlet->branch->kota : 'Lainnya';
                 });
 
-            return view('customer.search', compact(
-                'user',
-                'kotaAsalList',
-                'kotaTujuanList',
-                'outletsGrouped'
+            return view('customer.search', array_merge(
+                $validated,
+                compact(
+                    'user',
+                    'driverJadwals', // Ubah dari $jadwals ke $driverJadwals
+                    'kotaAsalList',
+                    'kotaTujuanList',
+                    'outletsGrouped',
+                    'penumpang',
+                    'validated'
+                )
             ));
-
-        } catch (\Exception $e) {
-            \Log::error('Error in showSearch: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return redirect()->route('customer.beranda')
-                ->with('error', 'Terjadi kesalahan saat membuka halaman pencarian.');
         }
+
+        // ★★★ DEFAULT VIEW TANPA HASIL SEARCH ★★★
+        // Use Outlet table only for dropdowns
+        $kotaAsalList = Outlet::with('branch')
+            ->where('status', 'aktif')
+            ->orderBy('nama_outlet')
+            ->get()
+            ->map(function($outlet) {
+                return $outlet->branch->kota ?? $outlet->kota ?? null;
+            })
+            ->filter()
+            ->unique()
+            ->values();
+
+        $kotaTujuanList = $kotaAsalList;
+
+        $outletsGrouped = Outlet::with('branch')
+            ->where('status', 'aktif')
+            ->orderBy('nama_outlet')
+            ->get()
+            ->groupBy(function ($outlet) {
+                return $outlet->branch ? $outlet->branch->kota : 'Lainnya';
+            });
+
+        return view('customer.search', compact(
+            'user',
+            'kotaAsalList',
+            'kotaTujuanList',
+            'outletsGrouped'
+        ));
+
+    } catch (\Exception $e) {
+        \Log::error('Error in showSearch: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return redirect()->route('customer.beranda')
+            ->with('error', 'Terjadi kesalahan saat membuka halaman pencarian.');
     }
+}
 
     /**
      * Proses pencarian jadwal (versi lama)
@@ -1590,13 +1609,17 @@ class CustomerController extends Controller
         $rute = Rute::find($ruteJadwal->rute_id);
         if (!$rute) return $jadwal->harga_total;
 
-        if ($rute->kota_asal == $departureCity && $rute->kota_tujuan == $destinationCity) {
-            return $rute->harga_dasar;
+        // Jika ada master tarif aktif untuk rute ini, gunakan aturan tarifnya
+        $masterTarif = $rute->getActiveMasterTarif();
+        if ($masterTarif) {
+            // Gunakan harga dasar tarif jika tersedia, fallback ke harga dasar rute
+            $base = $masterTarif->harga_dasar ?? $rute->harga_dasar ?? $jadwal->harga_total;
+            return (float) $masterTarif->hitungTarif($base);
         }
 
-        if ($rute->jarak) {
-            $hargaPerKm = $rute->harga_dasar / $rute->jarak;
-            return $rute->harga_dasar;
+        // Jika tidak ada master tarif, fallback ke harga dasar rute atau harga jadwal
+        if ($rute->kota_asal == $departureCity && $rute->kota_tujuan == $destinationCity) {
+            return $rute->harga_dasar ?? $jadwal->harga_total;
         }
 
         return $jadwal->harga_total;
@@ -1623,7 +1646,8 @@ class CustomerController extends Controller
                 ->with('error', 'Kursi tidak tersedia. Hanya tersisa ' . $jadwal->kursi_tersedia . ' kursi.');
         }
 
-        $hargaPerKursi = $jadwal->harga_total;
+        // Hitung harga per kursi berdasarkan tarif rute yang aktif (jika ada)
+        $hargaPerKursi = $this->calculatePriceForRoute($jadwal, $kotaAsal ?? '', $kotaTujuan ?? '') ?? $jadwal->harga_total;
         $totalHarga = $hargaPerKursi * $validated['penumpang'];
 
         // Cek promo
@@ -1679,6 +1703,27 @@ class CustomerController extends Controller
             'shuttle'
         );
 
+        // Prepare selected tariff info for view
+        $selectedTarif = null;
+        try {
+            $ruteJadwal = RuteJadwal::where('jadwal_id', $jadwal->id)->first();
+            if ($ruteJadwal) {
+                $ruteObj = Rute::find($ruteJadwal->rute_id);
+                if ($ruteObj) {
+                    $mt = $ruteObj->getActiveMasterTarif();
+                    if ($mt) {
+                        $selectedTarif = $mt->formatTarif();
+                        $base = $mt->harga_dasar ?? $ruteObj->harga_dasar ?? null;
+                        $selectedTarif['final_price'] = (float) $mt->hitungTarif($base);
+                        $selectedTarif['delta'] = $selectedTarif['final_price'] - (float) ($base ?? 0);
+                    }
+                    else $selectedTarif = ['harga_dasar' => $ruteObj->harga_dasar ?? null];
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to determine selected tariff: ' . $e->getMessage());
+        }
+
         return view('customer.pesan', [
             'jadwal' => $jadwal,
             'penumpang' => $validated['penumpang'],
@@ -1700,6 +1745,9 @@ class CustomerController extends Controller
             'user' => $user,
             'eligiblePromos' => $eligiblePromos,
             'userData' => $userData,
+            'basePrice' => $hargaPerKursi ?? $jadwal->harga_total,
+            'hargaPerKursi' => $hargaPerKursi ?? $jadwal->harga_total,
+            'selectedTarif' => $selectedTarif,
         ]);
     }
 
@@ -1737,6 +1785,8 @@ class CustomerController extends Controller
 
             // Calculate total_price
             $total_price = $driverJadwal->harga * $penumpang;
+            $totalTarif = 0; // Initialize untuk menampung total tarif
+            $tarifDetails = []; // Untuk breakdown tarif di view
 
             // Get user data for promo eligibility
             $userData = $this->getUserData();
@@ -1768,6 +1818,105 @@ class CustomerController extends Controller
             $jadwalView->rute_terakhir = (object) ['kota_tujuan' => $detailRute['kota_tujuan'] ?? ''];
 
             // Pass data to pesan.blade.php
+            // Determine selected tariff for display and per-seat price
+            $selectedTarif = null;
+            $hargaPerKursi = $driverJadwal->harga;
+            $availableTarifs = []; // Initialize
+            try {
+                // Priority 1: master tarif assigned directly to driver_jadwals
+                if ($driverJadwal->masterTarif) {
+                    $mt = $driverJadwal->masterTarif;
+                    if ($mt && ($mt->status ?? null) === 'aktif') {
+                        $base = $mt->harga_dasar ?? $driverJadwal->harga;
+                        $hargaPerKursi = (float) $mt->hitungTarif($base);
+                        $selectedTarif = $mt->formatTarif();
+                    }
+                }
+
+                // Priority 2: route-level active master tarif via masterRute relation or by matching route string
+                if (!$selectedTarif) {
+                    $ruteObj = $driverJadwal->masterRute ?? null;
+                    if (!$ruteObj) {
+                        // Try to find Rute by parsed kota asal / kota tujuan
+                        $parsed = $driverJadwal->getDetailRute();
+                        if (!empty($parsed['kota_asal']) && !empty($parsed['kota_tujuan'])) {
+                            $ka = trim(strtolower($parsed['kota_asal']));
+                            $kt = trim(strtolower($parsed['kota_tujuan']));
+                            $ruteObj = Rute::whereRaw('LOWER(kota_asal) = ?', [$ka])
+                                ->whereRaw('LOWER(kota_tujuan) = ?', [$kt])
+                                ->aktif()
+                                ->first();
+                        }
+                    }
+
+                    if ($ruteObj) {
+                        // Collect all active master tariffs for this route
+                        $tarifCollection = $ruteObj->masterTarifs()->where('status','aktif')
+                            ->where(function($q){
+                                $q->whereNull('tanggal_berlaku')->orWhere('tanggal_berlaku','<=',now());
+                            })->where(function($q){
+                                $q->whereNull('tanggal_kadaluarsa')->orWhere('tanggal_kadaluarsa','>=',now());
+                            })->get();
+
+                        // Prefer explicit masterTarif on driverJadwal, else prefer jenis 'reguler', else first
+                        $mt = null;
+                        if ($driverJadwal->masterTarif && ($driverJadwal->masterTarif->status ?? null) === 'aktif') {
+                            $mt = $driverJadwal->masterTarif;
+                        } elseif ($tarifCollection->isNotEmpty()) {
+                            $mt = $tarifCollection->firstWhere('jenis_tarif','reguler') ?? $tarifCollection->first();
+                        }
+
+                        if ($mt) {
+                            $base = $mt->harga_dasar ?? $ruteObj->harga_dasar ?? $driverJadwal->harga;
+                            $hargaPerKursi = (float) $mt->hitungTarif($base);
+                            $selectedTarif = $mt->formatTarif();
+                            $selectedTarif['final_price'] = $hargaPerKursi;
+                            $selectedTarif['delta'] = $hargaPerKursi - (float) $base;
+                        }
+
+                        // Format available tarifs for view and include calculated price per tarif
+                        // ALSO calculate total tarif
+                        $availableTarifs = $tarifCollection->map(function($t) use ($ruteObj, $driverJadwal){
+                            $fmt = $t->formatTarif();
+                            $base = $t->harga_dasar ?? $ruteObj->harga_dasar ?? $driverJadwal->harga;
+                            $final = (float) $t->hitungTarif($base);
+                            $fmt['final_price'] = $final;
+                            $fmt['delta'] = $final - (float) $base;
+                            return $fmt;
+                        })->toArray();
+
+                        // Calculate total tarif from all available tarifs
+                        foreach ($availableTarifs as $tarif) {
+                            $totalTarif += ($tarif['final_price'] ?? 0) * $penumpang;
+                            $tarifDetails[] = [
+                                'nama' => $tarif['nama_tarif'] ?? 'Tarif',
+                                'harga_per_tiket' => $tarif['final_price'] ?? 0,
+                                'total' => ($tarif['final_price'] ?? 0) * $penumpang
+                            ];
+                        }
+                    }
+                }
+
+                // Fallback: use driverJadwal->harga as per-seat price
+                if (!$selectedTarif) {
+                    $selectedTarif = ['harga_dasar' => $driverJadwal->harga];
+                }
+
+                // Debug log: report detected tarifs
+                Log::info('Debug tarif detection for pesan()', [
+                    'id_jadwal_driver' => $driverJadwal->id_jadwal_driver,
+                    'driver_harga' => $driverJadwal->harga,
+                    'total_tarif' => $totalTarif,
+                    'jumlah_penumpang' => $penumpang,
+                    'availableTarifs_count' => count($availableTarifs)
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Failed to determine selected tariff for driver jadwal pesan: ' . $e->getMessage());
+            }
+
+            // Calculate final total with tarif included
+            $total_price_with_tarif = $total_price + $totalTarif;
+
             return view('customer.pesan', [
                 'jadwal' => $jadwalView,
                 'id_jadwal_driver' => $driverJadwal->id_jadwal_driver,
@@ -1779,10 +1928,10 @@ class CustomerController extends Controller
                 'rute_pertama' => $jadwalView->rute_pertama,
                 'rute_terakhir' => $jadwalView->rute_terakhir,
                 'rute_string' => $driverJadwal->rute,
-                'totalHarga' => $total_price,
+                'totalHarga' => $total_price_with_tarif,
                 'diskon' => 0,
                 'diskonLoyalty' => 0,
-                'totalAfterDiscount' => $total_price,
+                'totalAfterDiscount' => $total_price_with_tarif,
                 'appliedPromo' => null,
                 'availablePromos' => Promo::active()->get(),
                 'promos' => Promo::orderByDesc('status')->get(),
@@ -1790,6 +1939,12 @@ class CustomerController extends Controller
                 'user' => session()->get('user', []),
                 'eligiblePromos' => $eligiblePromos,
                 'userData' => $userData,
+                'basePrice' => $driverJadwal->harga,
+                'hargaPerKursi' => $hargaPerKursi,
+                'selectedTarif' => $selectedTarif,
+                'availableTarifs' => $availableTarifs ?? [],
+                'totalTarif' => $totalTarif,
+                'tarifDetails' => $tarifDetails,
             ]);
         } catch (\Exception $e) {
             \Log::error('Error in pesan method: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
@@ -2029,6 +2184,63 @@ class CustomerController extends Controller
                 }
 
                 $hargaPerOrang = $driverJadwal->harga;
+                // Try to apply master tarif (priority: driver_jadwals.master_tarif -> masterRute active master tarif)
+                try {
+                    if ($driverJadwal->masterTarif) {
+                        $mt = $driverJadwal->masterTarif;
+                        if ($mt && ($mt->status ?? null) === 'aktif') {
+                            $base = $mt->harga_dasar ?? $driverJadwal->harga;
+                            $hargaPerOrang = (float) $mt->hitungTarif($base);
+                        }
+                    }
+
+                    if ($hargaPerOrang === $driverJadwal->harga) {
+                        // try masterRute or lookup by parsed route
+                        $ruteObj = $driverJadwal->masterRute ?? null;
+                        if (!$ruteObj) {
+                            $parsed = $driverJadwal->getDetailRute();
+                            if (!empty($parsed['kota_asal']) && !empty($parsed['kota_tujuan'])) {
+                                $ka = trim(strtolower($parsed['kota_asal']));
+                                $kt = trim(strtolower($parsed['kota_tujuan']));
+                                $ruteObj = Rute::whereRaw('LOWER(kota_asal) = ?', [$ka])
+                                    ->whereRaw('LOWER(kota_tujuan) = ?', [$kt])
+                                    ->aktif()
+                                    ->first();
+                            }
+                        }
+
+                        if ($ruteObj) {
+                            // also collect possible multiple tarifs
+                            $availableTarifsForProcess = $ruteObj->masterTarifs()->where('status','aktif')
+                                ->where(function($q){ $q->whereNull('tanggal_berlaku')->orWhere('tanggal_berlaku','<=',now()); })
+                                ->where(function($q){ $q->whereNull('tanggal_kadaluarsa')->orWhere('tanggal_kadaluarsa','>=',now()); })
+                                ->get();
+
+                            $mt = $availableTarifsForProcess->firstWhere('jenis_tarif','reguler') ?? $availableTarifsForProcess->first();
+                            if ($mt) {
+                                $base = $mt->harga_dasar ?? $ruteObj->harga_dasar ?? $driverJadwal->harga;
+                                $hargaPerOrang = (float) $mt->hitungTarif($base);
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to apply master tarif in prosesPemesanan (driver flow): ' . $e->getMessage());
+                }
+
+                    // Debug log: report which tarif applied when processing pemesanan
+                    Log::info('Debug tarif application in prosesPemesanan (driver flow)', [
+                        'id_jadwal_driver' => $driverJadwal->id_jadwal_driver,
+                        'driver_harga' => $driverJadwal->harga,
+                        'driver_master_tarif' => $driverJadwal->masterTarif ? [
+                            'id' => $driverJadwal->masterTarif->id ?? null,
+                            'nama' => $driverJadwal->masterTarif->nama_tarif ?? null,
+                            'status' => $driverJadwal->masterTarif->status ?? null
+                        ] : null,
+                        'route_master_tarifs' => $driverJadwal->masterRute ? $driverJadwal->masterRute->masterTarifs()->pluck('id','nama_tarif')->toArray() : [],
+                        'final_hargaPerOrang' => $hargaPerOrang,
+                        'hargaTotal' => $hargaTotal
+                    ]);
+
                 $hargaTotal = $hargaPerOrang * $request->jumlah_penumpang;
 
                 // Create temp jadwal object if we need to store jadwal_id (backward compatibility)
@@ -2041,7 +2253,26 @@ class CustomerController extends Controller
                     throw new \Exception('Kursi tidak tersedia. Sisa kursi: ' . $jadwal->kursi_tersedia);
                 }
 
+                // Determine per-seat price using route's active master tarif if available
                 $hargaPerOrang = $jadwal->harga_total;
+                try {
+                    $ruteJadwalObj = RuteJadwal::where('jadwal_id', $jadwal->id)->first();
+                    if ($ruteJadwalObj) {
+                        $ruteObj = Rute::find($ruteJadwalObj->rute_id);
+                        if ($ruteObj) {
+                            $mt = $ruteObj->getActiveMasterTarif();
+                            if ($mt) {
+                                $base = $mt->harga_dasar ?? $ruteObj->harga_dasar ?? $jadwal->harga_total;
+                                $hargaPerOrang = (float) $mt->hitungTarif($base);
+                            } else {
+                                $hargaPerOrang = $ruteObj->harga_dasar ?? $jadwal->harga_total;
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to determine tarif for sequential booking: ' . $e->getMessage());
+                }
+
                 $hargaTotal = $hargaPerOrang * $request->jumlah_penumpang;
                 $driverJadwal = null;
             }
@@ -2090,7 +2321,7 @@ class CustomerController extends Controller
             DB::commit();
 
             // STEP 1 → STEP 2: Redirect to seat selection
-            return redirect()->route('customer.kursi', ['pemesanan_id' => $pemesanan->id])
+            return redirect('/customer/kursi?pemesanan_id=' . $pemesanan->id)
                 ->with('success', 'Data penumpang berhasil disimpan. Silakan pilih kursi Anda.');
 
         } catch (\Exception $e) {
@@ -2162,7 +2393,7 @@ class CustomerController extends Controller
 
             // Mark occupied seats
             $occupiedSeatNumbers = DetailPenumpang::where('pemesanan_id', '!=', $pemesanan->id)
-                ->whereHas('pemesanan', function($query) {
+                ->whereHas('pemesanan', function($query) use ($pemesanan) {
                     $query->where('id_jadwal_driver', $this->getField($pemesanan, 'id_jadwal_driver'))
                         ->whereNotIn('status', ['dibatalkan', 'expired']);
                 })
@@ -2204,7 +2435,7 @@ class CustomerController extends Controller
             $kursiTerpesan = KursiTerpesan::where('jadwal_id', $pemesanan->jadwal_id)
                 ->where('status', 'terpesan')
                 ->where('pemesanan_id', '!=', $pemesanan->id)
-                ->whereHas('pemesanan', function($query) {
+                ->whereHas('pemesanan', function($query) use ($pemesanan) {
                     $query->whereNotIn('status', ['dibatalkan', 'expired']);
                 })
                 ->pluck('nomor_kursi')
@@ -2228,6 +2459,91 @@ class CustomerController extends Controller
             }
         }
 
+        // Ensure route information is available for display
+        if ($pemesanan->jadwal && !$pemesanan->jadwal->rutes()->exists() && $usesDriverJadwal && $driverJadwal->masterRute) {
+            $masterRute = $driverJadwal->masterRute;
+            $pemesanan->jadwal->setRelation('rutes', collect([$masterRute]));
+        }
+
+        // Determine selected tariff for display
+        $selectedTarif = null;
+        $availableTarifs = [];
+        try {
+            if ($pemesanan->jadwal && $pemesanan->jadwal->rutes && $pemesanan->jadwal->rutes->isNotEmpty()) {
+                $ruteObj = $pemesanan->jadwal->rutes->first();
+                $mt = $ruteObj->getActiveMasterTarif();
+                if ($mt) {
+                    $selectedTarif = $mt->formatTarif();
+                    $base = $mt->harga_dasar ?? $ruteObj->harga_dasar ?? ($pemesanan->driverJadwal->harga ?? $pemesanan->jadwal->harga_total ?? 0);
+                    $selectedTarif['calculated_price'] = (float) $mt->hitungTarif($base);
+                } else {
+                    $selectedTarif = ['harga_dasar' => $ruteObj->harga_dasar ?? null];
+                }
+                // collect all active tarifs for display
+                $availableTarifs = $ruteObj->masterTarifs()->where('status','aktif')
+                    ->where(function($q){ $q->whereNull('tanggal_berlaku')->orWhere('tanggal_berlaku','<=',now()); })
+                    ->where(function($q){ $q->whereNull('tanggal_kadaluarsa')->orWhere('tanggal_kadaluarsa','>=',now()); })
+                    ->get()->map(function($t) use ($ruteObj, $pemesanan){
+                        $fmt = $t->formatTarif();
+                        $base = $t->harga_dasar ?? $ruteObj->harga_dasar ?? ($pemesanan->driverJadwal->harga ?? $pemesanan->jadwal->harga_total ?? 0);
+                        $fmt['calculated_price'] = (float) $t->hitungTarif($base);
+                        return $fmt;
+                    })->toArray();
+            } elseif ($usesDriverJadwal && $pemesanan->driverJadwal) {
+                // For driver_jadwals flow, prefer masterTarif on driverJadwal,
+                // else try masterRute, else try to find Rute by parsed kota asal/tujuan
+                $dj = $pemesanan->driverJadwal;
+                if ($dj->masterTarif) {
+                    $mt = $dj->masterTarif;
+                    if ($mt && ($mt->status ?? null) === 'aktif') {
+                        $selectedTarif = $mt->formatTarif();
+                    }
+                }
+
+                if (!$selectedTarif) {
+                    $ruteObj = $dj->masterRute ?? null;
+                    if (!$ruteObj) {
+                        $parsed = $dj->getDetailRute();
+                        if (!empty($parsed['kota_asal']) && !empty($parsed['kota_tujuan'])) {
+                            $ka = trim(strtolower($parsed['kota_asal']));
+                            $kt = trim(strtolower($parsed['kota_tujuan']));
+                            $ruteObj = Rute::whereRaw('LOWER(kota_asal) = ?', [$ka])
+                                ->whereRaw('LOWER(kota_tujuan) = ?', [$kt])
+                                ->aktif()
+                                ->first();
+                        }
+                    }
+
+                    if ($ruteObj) {
+                        $mt = $ruteObj->getActiveMasterTarif();
+                        if ($mt) {
+                            $selectedTarif = $mt->formatTarif();
+                            $base = $mt->harga_dasar ?? $ruteObj->harga_dasar ?? ($dj->harga ?? 0);
+                            $selectedTarif['calculated_price'] = (float) $mt->hitungTarif($base);
+                        } else {
+                            $selectedTarif = ['harga_dasar' => $ruteObj->harga_dasar ?? null];
+                        }
+                        $availableTarifs = $ruteObj->masterTarifs()->where('status','aktif')
+                            ->where(function($q){ $q->whereNull('tanggal_berlaku')->orWhere('tanggal_berlaku','<=',now()); })
+                            ->where(function($q){ $q->whereNull('tanggal_kadaluarsa')->orWhere('tanggal_kadaluarsa','>=',now()); })
+                            ->get()->map(function($t) use ($ruteObj, $dj){
+                                $fmt = $t->formatTarif();
+                                $base = $t->harga_dasar ?? $ruteObj->harga_dasar ?? ($dj->harga ?? 0);
+                                $fmt['calculated_price'] = (float) $t->hitungTarif($base);
+                                return $fmt;
+                            })->toArray();
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to get selected tariff for kursi view: ' . $e->getMessage());
+        }
+
+        // Calculate pricing variables for display consistency
+        $totalHarga = $pemesanan->harga_total;
+        $diskon = $pemesanan->diskon ?? 0;
+        $totalAfterDiscount = $pemesanan->total_bayar;
+
         return view('customer.kursi', [
             'pemesanan' => $pemesanan,
             'shuttle' => $shuttle,
@@ -2235,7 +2551,13 @@ class CustomerController extends Controller
             'layoutKursi' => $layoutKursi,
             'kursiSaya' => $kursiSaya,
             'kursiTerpesan' => $kursiTerpesan,
-            'usesDriverJadwal' => $usesDriverJadwal
+            'usesDriverJadwal' => $usesDriverJadwal,
+            'selectedTarif' => $selectedTarif,
+            'availableTarifs' => $availableTarifs,
+            'totalHarga' => $totalHarga,
+            'diskon' => $diskon,
+            'totalAfterDiscount' => $totalAfterDiscount,
+            'totalTarif' => 0 // Initialize as 0 for kursi page
         ]);
     }
 
@@ -2246,7 +2568,7 @@ class CustomerController extends Controller
     /**
      * Proses pemilihan kursi (STEP 2 → STEP 3)
      * Validasi: Status harus menunggu_kursi
-     * Aksi: 
+     * Aksi:
      *   1. Update nomor_kursi di detail_penumpang
      *   2. Update kursi_terisi di driver_jadwals (atau kursi_tersedia di jadwals)
      *   3. Ubah status menjadi menunggu_konfirmasi
@@ -2359,7 +2681,7 @@ class CustomerController extends Controller
             if ($usesDriverJadwal) {
                 $driverJadwal = $pemesanan->driverJadwal;
                 $driverJadwal->kursi_terisi += $seatsAssigned;
-                
+
                 // Update status if seats full
                 if ($driverJadwal->kursi_terisi >= $driverJadwal->total_kursi) {
                     $driverJadwal->status = 'penuh';
@@ -2426,7 +2748,7 @@ class CustomerController extends Controller
     /**
      * Halaman detail pemesanan (STEP 3)
      * Validasi: Status harus menunggu_konfirmasi
-     * Fungsi: 
+     * Fungsi:
      *   - Tampilkan ringkasan pemesanan
      *   - Validasi semua data dari step sebelumnya
      *   - Konfirmasi untuk lanjut ke pembayaran
@@ -2467,7 +2789,7 @@ class CustomerController extends Controller
         // Validate that all passengers have seat assignments
         $detailPenumpang = $pemesanan->detailPenumpang;
         $passengersMissingSeats = $detailPenumpang->where('nomor_kursi', null)->count();
-        
+
         if ($passengersMissingSeats > 0) {
             \Log::error('Detail Pemesanan - Missing seat assignments', [
                 'kode_booking' => $kode_booking,
@@ -2504,6 +2826,24 @@ class CustomerController extends Controller
         $customer_email = $pemesanan->email_pemesan;
         $total = $pemesanan->total_bayar;
 
+        // Determine selected tariff for display on detail page
+        $selectedTarif = null;
+        try {
+            if (!$usesDriverJadwal && $pemesanan->jadwal && $pemesanan->jadwal->rutes && $pemesanan->jadwal->rutes->isNotEmpty()) {
+                $ruteObj = $pemesanan->jadwal->rutes->first();
+                $mt = $ruteObj->getActiveMasterTarif();
+                if ($mt) {
+                    $selectedTarif = $mt->formatTarif();
+                    $base = $mt->harga_dasar ?? $ruteObj->harga_dasar ?? ($pemesanan->driverJadwal->harga ?? $pemesanan->jadwal->harga_total ?? 0);
+                    $selectedTarif['calculated_price'] = (float) $mt->hitungTarif($base);
+                } else {
+                    $selectedTarif = ['harga_dasar' => $ruteObj->harga_dasar ?? null];
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to get selected tariff for detail_pesanan: ' . $e->getMessage());
+        }
+
         return view('customer.detail_pesanan', [
             'pemesanan' => $pemesanan,
             'user' => $user,
@@ -2518,6 +2858,7 @@ class CustomerController extends Controller
             'total' => $total,
             'usesDriverJadwal' => $usesDriverJadwal,
             'step' => 3 // Indicate we're on step 3 for view
+            ,'selectedTarif' => $selectedTarif
         ]);
     }
 
