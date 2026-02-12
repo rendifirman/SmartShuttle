@@ -304,6 +304,26 @@ public function getLayoutWithStatus($jadwalId = null)
         return null;
     }
 
+    /**
+     * Accessor: provide `plat_nomor` value.
+     * If `plat_nomor` isn't set, fall back to stored `nomor_polisi`.
+     */
+    public function getPlatNomorAttribute()
+    {
+        // Direct attribute if present
+        if (array_key_exists('plat_nomor', $this->attributes) && !empty($this->attributes['plat_nomor'])) {
+            return $this->attributes['plat_nomor'];
+        }
+
+        // Fallback to nomor_polisi attribute/column
+        if (array_key_exists('nomor_polisi', $this->attributes) && !empty($this->attributes['nomor_polisi'])) {
+            return $this->attributes['nomor_polisi'];
+        }
+
+        // Last fallback: dynamic property
+        return $this->nomor_polisi ?? null;
+    }
+
     // ================ AUDIT RELATIONSHIPS ================
 
     /**

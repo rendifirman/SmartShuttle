@@ -419,7 +419,7 @@
             background: white !important;
             box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
         }
-        
+
         .custom-navbar.scrolled {
             background: white !important;
             box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
@@ -546,13 +546,13 @@
         }
 
         @keyframes slideDownMobile {
-            from { 
-                opacity: 0; 
-                transform: translateY(-10px) scale(0.95); 
+            from {
+                opacity: 0;
+                transform: translateY(-10px) scale(0.95);
             }
-            to { 
-                opacity: 1; 
-                transform: translateY(0) scale(1); 
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
             }
         }
 
@@ -830,17 +830,17 @@
             height: 36px;
             font-size: 1.25rem;
         }
-        
+
         .dropdown-menu {
             top: 65px !important;
             right: 15px !important;
             min-width: 160px;
         }
-        
+
         .profile-btn {
             padding: 4px 6px;
         }
-        
+
         .profile-avatar {
             width: 30px;
             height: 30px;
@@ -848,7 +848,7 @@
             min-width: 30px;
             min-height: 30px;
         }
-        
+
         .dropdown-menu a,
         .dropdown-menu button[type="submit"] {
             padding: 10px 14px;
@@ -886,11 +886,11 @@
                 <i class="fas fa-bars"></i>
                 <i class="fas fa-times"></i>
             </button>
-            
+
             <div class="nav-brand">
                 <img src="{{ asset('/images/smartshuttlelogo.png') }}" alt="Smart Shuttle">
             </div>
-            
+
             <!-- NAV MENU (Tampil di desktop, disembunyikan di mobile) -->
             <div class="nav-menu" id="nav-menu">
                 <ul class="nav-links">
@@ -898,59 +898,59 @@
                         $currentRoute = Route::currentRouteName();
                         $currentPath = request()->path();
                     @endphp
-                    
-                    <li><a href="/customer/beranda" 
+
+                    <li><a href="/customer/beranda"
                            class="{{ $currentRoute == 'customer.beranda' || $currentPath == 'customer/beranda' ? 'active' : '' }}">
                            Beranda
                        </a>
                     </li>
-                    
-                    <li><a href="{{ route('customer.search') }}" 
+
+                    <li><a href="{{ route('customer.search') }}"
                            class="{{ $currentRoute == 'customer.search' || str_contains($currentPath, 'search') ? 'active' : '' }}">
                            Cari Tiket
                        </a>
                     </li>
-                    
-                    <li><a href="{{ route('customer.outlet') }}" 
+
+                    <li><a href="{{ route('customer.outlet') }}"
                            class="{{ $currentRoute == 'customer.outlet' || str_contains($currentPath, 'outlet') ? 'active' : '' }}">
                            Outlet
                        </a>
                     </li>
-                    
-                    <li><a href="{{ route('customer.smartsend') }}" 
+
+                    <li><a href="{{ route('customer.smartsend') }}"
                            class="{{ $currentRoute == 'customer.smartsend' || str_contains($currentPath, 'smartsend') ? 'active' : '' }}">
                            Kirim Paket
                        </a>
                     </li>
-                    
-                <li><a href="{{ route('customer.smartrent') }}" 
+
+                <li><a href="{{ route('customer.smartrent') }}"
                             class="{{ $currentRoute == 'customer.smartrent' || str_contains($currentPath, 'smartrent') ? 'active' : '' }}">
                             Sewa Armada
                         </a>
                         </li>
-                    
-                    <li><a href="{{ route('customer.contact') }}" 
+
+                    <li><a href="{{ route('customer.contact') }}"
                            class="{{ $currentRoute == 'customer.contact' || str_contains($currentPath, 'contact') ? 'active' : '' }}">
                            Kontak
                        </a>
                     </li>
-                    
-                    <li><a href="{{ route('customer.cek-reservasi') }}" 
+
+                    <li><a href="{{ route('customer.cek-reservasi') }}"
                            class="{{ $currentRoute == 'customer.cek-reservasi' || str_contains($currentPath, 'cek-reservasi') ? 'active' : '' }}">
                            Cek Reservasi
                        </a>
                     </li>
                 </ul>
             </div>
-            
+
             <div class="nav-auth">
                 <!-- BAGIAN AVATAR DI NAVBAR -->
-                @if(session()->has('user') && isset(session('user')['id']))
+                @if($userSession && isset($userSession['id']))
                     @php
-                        $user = session('user');
+                        $user = $userSession;
                         $userName = $user['name'] ?? 'User';
                         $avatarUrl = $user['avatar'] ?? null;
-                        
+
                         // Generate initials dari nama user
                         $initials = 'GU'; // Guest User default
                         if (!empty($userName)) {
@@ -963,13 +963,13 @@
                                 $initials = strtoupper(substr($userName, 0, 2));
                             }
                         }
-                        
+
                         // Debug: cek apa yang ada di avatarUrl
                         // dd($avatarUrl, session()->all());
-                        
+
                         // Tentukan apakah ada avatar yang valid
                         $hasValidAvatar = false;
-                        
+
                         if ($avatarUrl) {
                             // Cek jika avatar adalah path storage (format: 'avatars/filename.jpg')
                             if (str_starts_with($avatarUrl, 'avatars/')) {
@@ -987,25 +987,25 @@
                             }
                         }
                     @endphp
-                    
+
                     <div class="profile-wrapper">
                         <button id="profile-dropdown" class="profile-btn" type="button" aria-expanded="false">
                             @if($hasValidAvatar && $avatarUrl)
                                 <span class="profile-avatar">
-                                    <img src="{{ $avatarUrl }}" 
+                                    <img src="{{ $avatarUrl }}"
                                          alt="Avatar {{ $userName }}"
                                          onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML='{{ $initials }}'; this.parentElement.classList.add('initials-only');">
                                 </span>
                             @else
                                 <span class="profile-avatar initials-only">{{ $initials }}</span>
                             @endif
-                            
+
                             <span class="profile-name">
                                 {{ strlen($userName) > 12 ? substr($userName, 0, 12).'...' : $userName }}
                             </span>
                             <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
                         </button>
-                        
+
                         <!-- Dropdown menu -->
                         <div id="dropdown-menu" class="dropdown-menu">
                             <a href="{{ route('customer.dashboardprofile') }}">
@@ -1049,12 +1049,12 @@
     </div>
 
     <div class="mobile-sidebar-content">
-        @if(session()->has('user') && isset(session('user')['id']))
+        @if($userSession && isset($userSession['id']))
             @php
-                $mobileUser = session('user');
+                $mobileUser = $userSession;
                 $mobileUserName = $mobileUser['name'] ?? 'User';
                 $mobileAvatarUrl = $mobileUser['avatar'] ?? null;
-                
+
                 // Generate initials untuk mobile
                 $mobileInitials = 'GU';
                 if (!empty($mobileUserName)) {
@@ -1065,10 +1065,10 @@
                         $mobileInitials = strtoupper(substr($mobileUserName, 0, 2));
                     }
                 }
-                
+
                 // Tentukan apakah ada avatar yang valid untuk mobile
                 $mobileHasValidAvatar = false;
-                
+
                 if ($mobileAvatarUrl) {
                     if (str_starts_with($mobileAvatarUrl, 'avatars/')) {
                         $mobileHasValidAvatar = true;
@@ -1081,11 +1081,11 @@
                     }
                 }
             @endphp
-            
+
             <div class="mobile-profile-section" onclick="location.href='{{ route('customer.dashboardprofile') }}'">
                 @if($mobileHasValidAvatar && $mobileAvatarUrl)
                     <div class="mobile-profile-avatar">
-                        <img src="{{ $mobileAvatarUrl }}" 
+                        <img src="{{ $mobileAvatarUrl }}"
                              alt="Avatar {{ $mobileUserName }}"
                              onerror="this.onerror=null; this.innerHTML='{{ $mobileInitials }}'; this.classList.add('initials-only');">
                     </div>
@@ -1104,49 +1104,49 @@
                 $currentRoute = Route::currentRouteName();
                 $currentPath = request()->path();
             @endphp
-            
+
             <li class="{{ $currentRoute == 'customer.beranda' || $currentPath == 'customer/beranda' ? 'active' : '' }}">
                 <a href="/customer/beranda">
                     <span class="mobile-nav-icon"><i class="fas fa-home"></i></span>
                     <span>Beranda</span>
                 </a>
             </li>
-            
+
             <li class="{{ $currentRoute == 'customer.search' || str_contains($currentPath, 'search') ? 'active' : '' }}">
                 <a href="{{ route('customer.search') }}">
                     <span class="mobile-nav-icon"><i class="fas fa-search"></i></span>
                     <span>Cari Tiket</span>
                 </a>
             </li>
-            
+
             <li class="{{ $currentRoute == 'customer.outlet' || str_contains($currentPath, 'outlet') ? 'active' : '' }}">
                 <a href="{{ route('customer.outlet') }}">
                     <span class="mobile-nav-icon"><i class="fas fa-store"></i></span>
                     <span>Outlet</span>
                 </a>
             </li>
-            
+
             <li class="{{ $currentRoute == 'customer.smartsend' || str_contains($currentPath, 'smartsend') ? 'active' : '' }}">
                 <a href="{{ route('customer.smartsend') }}">
                     <span class="mobile-nav-icon"><i class="fas fa-box"></i></span>
                     <span>Kirim Paket</span>
                 </a>
             </li>
-            
+
             <li>
                 <a href="#" onclick="alert('Fitur Sewa Armada akan segera hadir!'); return false;">
                     <span class="mobile-nav-icon"><i class="fas fa-car"></i></span>
                     <span>Sewa Armada</span>
                 </a>
             </li>
-            
+
             <li class="{{ $currentRoute == 'customer.contact' || str_contains($currentPath, 'contact') ? 'active' : '' }}">
                 <a href="{{ route('customer.contact') }}">
                     <span class="mobile-nav-icon"><i class="fas fa-phone"></i></span>
                     <span>Kontak</span>
                 </a>
             </li>
-            
+
             <li class="{{ $currentRoute == 'customer.cek-reservasi' || str_contains($currentPath, 'cek-reservasi') ? 'active' : '' }}">
                 <a href="{{ route('customer.cek-reservasi') }}">
                     <span class="mobile-nav-icon"><i class="fas fa-ticket-alt"></i></span>
@@ -1155,14 +1155,14 @@
             </li>
 
             <!-- Menu tambahan jika user sudah login -->
-            @if(session()->has('user') && isset(session('user')['id']))
+            @if($userSession && isset($userSession['id']))
                 <li class="{{ $currentRoute == 'customer.dashboardprofile' ? 'active' : '' }}">
                     <a href="{{ route('customer.dashboardprofile') }}">
                         <span class="mobile-nav-icon"><i class="fas fa-user-circle"></i></span>
                         <span>Profil</span>
                     </a>
                 </li>
-                
+
                 <li class="{{ $currentRoute == 'customer.riwayat' ? 'active' : '' }}">
                     <a href="{{ route('customer.riwayat') }}">
                         <span class="mobile-nav-icon"><i class="fas fa-history"></i></span>
@@ -1175,7 +1175,7 @@
 
     <div class="mobile-sidebar-bottom">
         <ul class="mobile-nav-menu">
-            @if(session()->has('user') && isset(session('user')['id']))
+            @if($userSession && isset($userSession['id']))
                 <li>
                     <form action="{{ route('customer.logout') }}" method="POST" style="display: none;" id="logout-form-mobile">
                         @csrf
@@ -1201,7 +1201,7 @@
 // NAVBAR GLOBAL SCRIPT
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Navbar script loaded - Mobile Profile di Kanan dengan Toggle');
-    
+
     // Elements
     const navbar = document.getElementById('navbar');
     const dropdownButton = document.getElementById('profile-dropdown');
@@ -1210,9 +1210,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const mobileSidebar = document.getElementById('mobile-sidebar');
     const mobileSidebarClose = document.getElementById('mobile-sidebar-close');
     const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
-    
+
     const isMobile = window.innerWidth <= 768;
-    
+
     /* ========== NAVBAR SCROLL ========== */
     if (navbar) {
         // Force white background on mobile
@@ -1220,7 +1220,7 @@ document.addEventListener('DOMContentLoaded', function() {
             navbar.style.background = 'white';
             navbar.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)';
         }
-        
+
         window.addEventListener('scroll', function () {
             if (!isMobile) {
                 if (window.scrollY > 50) {
@@ -1230,7 +1230,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }, { passive: true });
-        
+
         if (!isMobile && window.scrollY > 50) {
             navbar.classList.add('scrolled');
         }
@@ -1240,7 +1240,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dropdownButton && dropdownMenu) {
         dropdownButton.setAttribute('aria-haspopup', 'true');
         dropdownButton.setAttribute('aria-expanded', 'false');
-        
+
         // Function to close dropdown
         function closeDropdown() {
             dropdownMenu.classList.remove('show');
@@ -1248,29 +1248,29 @@ document.addEventListener('DOMContentLoaded', function() {
             dropdownButton.setAttribute('aria-expanded', 'false');
             document.body.style.overflow = ''; // Reset scroll
         }
-        
+
         // Function to open dropdown
         function openDropdown() {
             // Close sidebar if open on mobile
             if (isMobile && mobileSidebar && mobileSidebar.classList.contains('active')) {
                 closeMobileSidebar();
             }
-            
+
             dropdownMenu.classList.add('show');
             dropdownButton.classList.add('active');
             dropdownButton.setAttribute('aria-expanded', 'true');
-            
+
             // Prevent body scroll on mobile when dropdown is open
             if (isMobile) {
                 document.body.style.overflow = 'hidden';
             }
         }
-        
+
         // Toggle dropdown on click (klik bua, klik lagi tutup)
         dropdownButton.addEventListener('click', function (e) {
             e.stopPropagation();
             e.preventDefault();
-            
+
             // Cek apakah dropdown sedang terbuka
             if (dropdownMenu.classList.contains('show')) {
                 // Jika terbuka, tutup
@@ -1280,26 +1280,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 openDropdown();
             }
         });
-        
+
         // Close dropdown when clicking outside
         document.addEventListener('click', function (e) {
             if (dropdownMenu && dropdownMenu.classList.contains('show')) {
-                const isClickInside = dropdownMenu.contains(e.target) || 
+                const isClickInside = dropdownMenu.contains(e.target) ||
                                      dropdownButton.contains(e.target);
-                
+
                 if (!isClickInside) {
                     closeDropdown();
                 }
             }
         });
-        
+
         // Close with Escape key
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && dropdownMenu && dropdownMenu.classList.contains('show')) {
                 closeDropdown();
             }
         });
-        
+
         // Close when clicking links inside dropdown
         dropdownMenu.addEventListener('click', function (e) {
             if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') {
@@ -1310,12 +1310,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     /* ========== MOBILE SIDEBAR FUNCTIONS ========== */
     function toggleMobileSidebar() {
         if (mobileSidebar) {
             const isOpen = mobileSidebar.classList.contains('active');
-            
+
             if (isOpen) {
                 // Jika sedang terbuka, tutup
                 closeMobileSidebar();
@@ -1332,7 +1332,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (dropdownMenu && dropdownMenu.classList.contains('show')) {
                 closeDropdown();
             }
-            
+
             mobileSidebar.classList.add('active');
             mobileSidebarOverlay.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -1352,7 +1352,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-    
+
     /* ========== EVENT LISTENERS ========== */
     // Open/close mobile sidebar dengan toggle
     if (mobileMenuToggle && mobileSidebar) {
@@ -1374,13 +1374,13 @@ document.addEventListener('DOMContentLoaded', function() {
             closeMobileSidebar();
         });
     }
-    
+
     // Close sidebar when clicking links (except alerts)
     if (mobileSidebar) {
         const mobileNavLinks = mobileSidebar.querySelectorAll('a');
         mobileNavLinks.forEach(link => {
             const onclickAttr = link.getAttribute('onclick');
-            if (!onclickAttr || 
+            if (!onclickAttr ||
                 (!onclickAttr.includes('alert') && !onclickAttr.includes('submit'))) {
                 link.addEventListener('click', function(e) {
                     if (this.href && this.target !== '_blank') {
@@ -1390,24 +1390,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Close all on Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             if (mobileSidebar && mobileSidebar.classList.contains('active')) {
                 closeMobileSidebar();
             }
-            
+
             if (dropdownMenu && dropdownMenu.classList.contains('show')) {
                 closeDropdown();
             }
         }
     });
-    
+
     /* ========== WINDOW RESIZE HANDLER ========== */
     function handleResize() {
         const nowMobile = window.innerWidth <= 768;
-        
+
         // Force white background on mobile
         if (navbar) {
             if (nowMobile) {
@@ -1419,36 +1419,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 navbar.style.boxShadow = '';
             }
         }
-        
+
         // Close mobile sidebar when resizing to desktop
         if (!nowMobile && mobileSidebar && mobileSidebar.classList.contains('active')) {
             closeMobileSidebar();
         }
-        
+
         // Always close dropdown on resize (safer)
         if (dropdownMenu && dropdownMenu.classList.contains('show')) {
             closeDropdown();
         }
     }
-    
+
     window.addEventListener('resize', handleResize);
-    
+
     // Initial setup for mobile
     if (isMobile && navbar) {
         navbar.style.background = 'white';
         navbar.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)';
     }
-    
+
     /* ========== AVATAR IMAGE ERROR HANDLING ========== */
     const avatarImages = document.querySelectorAll('.profile-avatar img, .mobile-profile-avatar img');
     avatarImages.forEach(img => {
         img.addEventListener('error', function() {
             console.log('Avatar image failed to load, showing initials');
-            
+
             const parent = this.parentElement;
             const altText = this.alt || '';
             const userName = altText.replace('Avatar ', '').replace('avatar ', '') || 'User';
-            
+
             // Get initials
             let initials = 'GU';
             if (userName && userName !== 'User') {
@@ -1460,7 +1460,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 initials = initials.toUpperCase();
             }
-            
+
             // Replace image with initials
             parent.innerHTML = initials;
             parent.classList.add('initials-only');

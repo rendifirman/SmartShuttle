@@ -16,6 +16,7 @@ class KursiTerpesan extends Model
 
     protected $fillable = [
         'jadwal_id',
+        'id_jadwal_driver',
         'nomor_kursi',
         'detail_penumpang_id',
         'pemesanan_id',
@@ -31,6 +32,11 @@ class KursiTerpesan extends Model
     public function jadwal()
     {
         return $this->belongsTo(Jadwal::class, 'jadwal_id');
+    }
+
+    public function driverJadwal()
+    {
+        return $this->belongsTo(DriverJadwal::class, 'id_jadwal_driver', 'id_jadwal_driver');
     }
 
     public function detailPenumpang()
@@ -77,7 +83,7 @@ class KursiTerpesan extends Model
      * Method untuk mendapatkan layout dengan status terkini
      * INI YANG MEMBUAT LAYOUT TETAP STABIL
      */
-    public static function getLayoutWithStatus($jadwalId, $shuttleId = null, $pemesananId = null)
+    public static function getLayoutWithStatus($jadwalId, $shuttleId = null, $idJadwalDriver = null, $pemesananId = null)
     {
         // 1. Ambil atau generate layout FIX dari shuttle
         $shuttle = Shuttle::find($shuttleId);
@@ -101,9 +107,28 @@ class KursiTerpesan extends Model
         }
 
         // 3. Ambil kursi yang sudah terpesan dari database dengan LOCK untuk konsistensi
-        $terpesan = self::where('jadwal_id', $jadwalId)
-            ->whereIn('status', ['terpesan', 'terisi'])
-            ->lockForUpdate()
+        $query = self::whereIn('status', ['terpesan', 'terisi']);
+
+        // If both ids are provided, consider seats reserved for either the
+        // original jadwal (`jadwal_id`) or the driver-specific schedule
+        // (`id_jadwal_driver`). This prevents showing seats as available
+        // when they are booked on the original jadwal but the flow is
+        // using driver_jadwal.
+        if (!empty($idJadwalDriver) && !empty($jadwalId)) {
+            $query->where(function($q) use ($idJadwalDriver, $jadwalId) {
+                $q->where('id_jadwal_driver', $idJadwalDriver)
+                  ->orWhere('jadwal_id', $jadwalId);
+            });
+        } elseif (!empty($idJadwalDriver)) {
+            $query->where('id_jadwal_driver', $idJadwalDriver);
+        } elseif (!empty($jadwalId)) {
+            $query->where('jadwal_id', $jadwalId);
+        } else {
+            // No identifier provided: ensure no rows are matched (safe default)
+            $query->whereRaw('1 = 0');
+        }
+
+        $terpesan = $query->lockForUpdate()
             ->pluck('nomor_kursi')
             ->toArray();
 
@@ -111,6 +136,12 @@ class KursiTerpesan extends Model
         foreach ($layoutKursi as &$kursi) {
             if (in_array($kursi['nomor'], $terpesan)) {
                 $kursi['status'] = 'terpesan';
+                $kursi['class'] = 'sold';
+                $kursi['icon'] = 'fa-lock';
+            } else {
+                $kursi['status'] = 'tersedia';
+                $kursi['class'] = 'available';
+                $kursi['icon'] = 'fa-check';
             }
         }
 
@@ -138,7 +169,7 @@ class KursiTerpesan extends Model
             }
         }
 
-        return !$query->exists();
+        return $availableSeats;
     }
 
     /**

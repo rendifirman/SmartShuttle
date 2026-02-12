@@ -1551,10 +1551,16 @@
                     <h2 class="card-title">DATA KURSI</h2>
 
                     <div class="shuttle-info-summary">
-                        <div class="shuttle-name" id="shuttle-name">{{ $jadwal->shuttle->nama_shuttle ?? 'Smart Shuttle Standard 2' }}</div>
+                        @php
+                            // Determine shuttle object based on flow
+                            $shuttle_obj = $usesDriverJadwal ? $driverJadwal?->shuttle : $jadwal?->shuttle;
+                            $shuttle_name = $shuttle_obj?->nama_shuttle ?? 'Smart Shuttle Standard 2';
+                            $shuttle_fasilitas = $shuttle_obj?->fasilitas ?? null;
+                        @endphp
+                        <div class="shuttle-name" id="shuttle-name">{{ $shuttle_name }}</div>
                         <div class="shuttle-detail" id="shuttle-detail">
-                            @if(isset($jadwal->shuttle->fasilitas))
-                                @php $fasilitasArray = explode(',', $jadwal->shuttle->fasilitas); @endphp
+                            @if(!empty($shuttle_fasilitas))
+                                @php $fasilitasArray = explode(',', $shuttle_fasilitas); @endphp
                                 <div class="fasilitas-badges">
                                     @foreach($fasilitasArray as $fasilitas)
                                         <span class="badge-fasilitas">{{ trim($fasilitas) }}</span>
@@ -1590,6 +1596,9 @@
                     <form id="kursi-form" action="{{ route('customer.kursi.proses') }}" method="POST">
                         @csrf
                         <input type="hidden" name="pemesanan_id" value="{{ $pemesanan->id }}">
+                        @if($pemesanan->id_jadwal_driver)
+                            <input type="hidden" name="id_jadwal_driver" value="{{ $pemesanan->id_jadwal_driver }}">
+                        @endif
 
                         {{-- GRID KURSI --}}
                         <div class="seat-grid" id="seat-grid">
@@ -1613,14 +1622,14 @@
                                             $title = 'Tersedia';
                                         }
                                     @endphp
-                                    <div class="seat {{ $seatClass }}"
+                                     <div class="seat {{ $seatClass }}"
                                          data-seat="{{ $seatNumber }}"
                                          data-harga="{{ $hargaKursi }}"
                                          data-status="{{ $seatStatus }}"
                                          data-nomor="{{ $seatNumber }}"
-                                         onclick="{{ $onclick }}"
+                                         @if($isClickable) onclick="selectSeat(this, '{{ $seatNumber }}')" @endif
                                          title="{{ $title }}"
-                                         @if($seatClass === 'sold') style="pointer-events:none; cursor:not-allowed;" @endif>
+                                         @if($seatClass === 'sold') aria-disabled="true" data-disabled="1" style="pointer-events:none; cursor:not-allowed;" @endif>
                                         <span class="seat-number">{{ $seatNumber }}</span>
                                         @if(isset($kursi['tipe']) && $kursi['tipe'] === 'premium')
                                             <small class="seat-premium-badge">PREMIUM</small>
@@ -1633,33 +1642,6 @@
                                         <i class="fas {{ $seatIcon }} seat-status-icon"></i>
                                     </div>
                                 @endforeach
-                            @else
-                                {{-- FALLBACK: Generate 9 kursi default --}}
-                                @php
-                                    $totalKursi = $jadwal->shuttle->total_kursi ?? 9;
-                                    $rows = ceil($totalKursi / 3);
-                                    $kursiCounter = 1;
-                                @endphp
-                                @for($row = 1; $row <= $rows; $row++)
-                                    @for($col = 1; $col <= 3; $col++)
-                                        @if($kursiCounter <= $totalKursi)
-                                            @php
-                                                $seatNumber = $row . chr(64 + $col);
-                                            @endphp
-                                            <div class="seat available"
-                                                 data-seat="{{ $seatNumber }}"
-                                                 data-harga="{{ $hargaPerOrang }}"
-                                                 data-status="tersedia"
-                                                 data-nomor="{{ $seatNumber }}"
-                                                 onclick="selectSeat(this, '{{ $seatNumber }}')"
-                                                 title="Tersedia">
-                                                <span class="seat-number">{{ $seatNumber }}</span>
-                                                <i class="fas fa-check seat-status-icon"></i>
-                                            </div>
-                                            @php $kursiCounter++; @endphp
-                                        @endif
-                                    @endfor
-                                @endfor
                             @endif
                         </div>
 
@@ -1700,13 +1682,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // =====================================================
     //   DATA HARGA DARI SERVER – SINKRON DENGAN PESAN
     // =====================================================
-    const hargaPerKursi     = {{ $hargaPerOrang }};
-    const jumlahPenumpang   = {{ $jumlahPenumpang }};
-    const totalTarifServer  = {{ $totalTarif }};      // total tarif tambahan (untuk semua tiket)
-    const diskonServer      = {{ $diskon }};          // diskon absolut
-    const subtotalServer    = {{ $subtotal }};        // (harga * jumlah) + totalTarif
-    const totalBayarServer  = {{ $totalBayar }};      // subtotal - diskon
-    const tarifPerKursi     = {{ $tarifPerKursi }};   // tarif per kursi (untuk proporsi)
+    const hargaPerKursi     = {{ $hargaPerOrang ?? 0 }};
+    const jumlahPenumpang   = {{ $jumlahPenumpang ?? 1 }};
+    const totalTarifServer  = {{ $totalTarif ?? 0 }};      // total tarif tambahan (untuk semua tiket)
+    const diskonServer      = {{ $diskon ?? 0 }};          // diskon absolut
+    const subtotalServer    = {{ $subtotal ?? 0 }};        // (harga * jumlah) + totalTarif
+    const totalBayarServer  = {{ $totalBayar ?? 0 }};      // subtotal - diskon
+    const tarifPerKursi     = {{ $tarifPerKursi ?? 0 }};   // tarif per kursi (untuk proporsi)
 
     // State kursi yang dipilih
     let selectedSeats = [];
@@ -1723,18 +1705,55 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // =====================================================
-    //   FUNGSI-FUNGSI UTAMA
+    //   FUNGSI-FUNGSI UTAMA (PERBAIKAN VALIDASI KETAT)
     // =====================================================
     window.selectSeat = function(seatElement, seatNumber) {
-        const seatId = seatElement.getAttribute('data-seat');
-        const seatStatus = seatElement.getAttribute('data-status');
-
-        // Cek kursi sudah dipesan
-        if (seatStatus === 'terpesan') {
-            showAlert('error', 'Kursi Tidak Tersedia', `Kursi ${seatNumber} sudah dipesan oleh penumpang lain!`);
-            return;
+        // SAFETY CHECK 1: Pastikan element valid
+        if (!seatElement || !seatElement.classList) {
+            console.error('Invalid seat element');
+            return false;
         }
 
+        // SAFETY CHECK 2: Triple-check kursi adalah SOLD - HARUS BLOCK!
+        if (seatElement.classList.contains('sold')) {
+            console.warn('Attempt to select SOLD seat:', seatNumber);
+            showAlert('error', 'Kursi Tidak Tersedia', `Kursi ${seatNumber} sudah dipesan dan TIDAK dapat dipilih.`);
+            return false;
+        }
+
+        // SAFETY CHECK 3: Check pointer-events CSS
+        const computedStyle = window.getComputedStyle(seatElement);
+        if (computedStyle.pointerEvents === 'none') {
+            console.warn('Attempt to select seat with pointer-events:none:', seatNumber);
+            showAlert('error', 'Kursi Tidak Tersedia', `Kursi ${seatNumber} sudah dipesan.`);
+            return false;
+        }
+
+        // SAFETY CHECK 4: Check data attributes
+        const seatId = seatElement.getAttribute('data-seat');
+        const seatStatus = seatElement.getAttribute('data-status');
+        const seatDisabled = seatElement.getAttribute('data-disabled') === '1' || seatElement.getAttribute('aria-disabled') === 'true';
+
+        if (seatStatus === 'terpesan') {
+            console.warn('Attempt to select seat with status=terpesan:', seatNumber);
+            showAlert('error', 'Kursi Tidak Tersedia', `Kursi ${seatNumber} sudah dipesan oleh penumpang lain.`);
+            return false;
+        }
+
+        if (seatDisabled) {
+            console.warn('Attempt to select disabled seat:', seatNumber);
+            showAlert('error', 'Kursi Tidak Tersedia', `Kursi ${seatNumber} tidak dapat dipilih.`);
+            return false;
+        }
+
+        // SAFETY CHECK 5: Kursi harus ada class 'available' atau 'selected'
+        if (!seatElement.classList.contains('available') && !seatElement.classList.contains('selected')) {
+            console.warn('Seat does not have available/selected class:', seatNumber, 'Current classes:', seatElement.className);
+            showAlert('error', 'Kursi Tidak Tersedia', `Kursi ${seatNumber} tidak dalam kondisi tersedia.`);
+            return false;
+        }
+
+        // ===== SEMUANYA OK, LANJUTKAN LOGIKA NORMAL =====
         const index = selectedSeats.findIndex(s => s.id === seatId);
 
         if (index > -1) {
@@ -1746,7 +1765,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Cek batas maksimal
             if (selectedSeats.length >= jumlahPenumpang) {
                 showAlert('warning', 'Maksimal Kursi', `Anda hanya dapat memilih maksimal ${jumlahPenumpang} kursi!`);
-                return;
+                return false;
             }
             // Tambah pilihan
             selectedSeats.push({
@@ -1761,6 +1780,8 @@ document.addEventListener('DOMContentLoaded', function() {
         updateSelectedSeatsDisplay();
         updateFormInputs();
         updatePaymentButton();
+
+        return false; // Prevent any default action
     };
 
     function updateSeatUI(seat, cssClass, status, icon) {
@@ -1901,7 +1922,48 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    // ===== ANTI-CLICK HANDLER UNTUK KURSI SOLD =====
+    // Block SEMUA kursi dengan class 'sold' agar TIDAK BISA diklik
+    function blockSoldSeats() {
+        const soldSeats = document.querySelectorAll('.seat.sold');
+
+        soldSeats.forEach(seat => {
+            // Remove onclick attribute jika ada
+            seat.removeAttribute('onclick');
+
+            // Add mousedown listener yang stop propagation
+            seat.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }, true); // Use capture phase
+
+            // Add touchstart listener
+            seat.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }, true);
+
+            // Add click listener sebagai fallback
+            seat.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                showAlert('error', 'Kursi Tidak Tersedia', 'Kursi ' + (seat.getAttribute('data-seat') || 'ini') + ' sudah dipesan oleh penumpang lain.');
+                return false;
+            }, true);
+
+            // Add pointer-events: none dengan !important via inline style sebagai fallback
+            seat.style.setProperty('pointer-events', 'none', 'important');
+            seat.style.setProperty('cursor', 'not-allowed', 'important');
+        });
+    }
+
     // Inisialisasi
+    blockSoldSeats(); // BLOCK KURSI SOLD DULU
     updateSelectedSeatsDisplay();
     updateFormInputs();
     updatePaymentButton();

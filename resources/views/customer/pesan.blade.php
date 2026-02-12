@@ -1307,7 +1307,7 @@
                                     </h6>
                                     @foreach($availableTarifs as $tarif)
                                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13px;">
-                                            <strong style="color: #00215E; font-size: 13px;">{{ $tarif['nama_tarif'] ?? 'Biaya Tambahan' }}</strong>
+                                            <strong style="color: #00215E; font-size: 13px;">{{ $tarif['nama'] ?? 'Biaya Tambahan' }}</strong>
                                             <small class="fw-bold" style="color: #FF581E;">Rp {{ number_format($tarif['final_price'] ?? $tarif['harga_dasar'] ?? 0, 0, ',', '.') }}</small>
                                         </div>
                                     @endforeach
@@ -1326,8 +1326,15 @@
                                         <span style="color: #666;">Harga Dasar × {{ $penumpang }}:</span>
                                         <span class="fw-bold">Rp {{ number_format($jadwal->harga_total * $penumpang, 0, ',', '.') }}</span>
                                     </div>
-                                    <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">+ Total Tarif Tambahan:</span>
+                                    <!-- Breakdown Tarif Tambahan per Item -->
+                                    @foreach($availableTarifs as $tarif)
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                                            <span style="color: #666;">+ {{ $tarif['nama'] ?? 'Tarif Tambahan' }} × {{ $penumpang }}:</span>
+                                            <span class="fw-bold" style="color: #FF581E;">Rp {{ number_format(($tarif['final_price'] ?? 0) * $penumpang, 0, ',', '.') }}</span>
+                                        </div>
+                                    @endforeach
+                                    <div style="display: flex; justify-content: space-between; border-top: 1px solid #ddd; padding-top: 4px; margin-top: 4px;">
+                                        <span style="color: #666;"><strong>Total Tarif Tambahan:</strong></span>
                                         <span class="fw-bold" style="color: #FF581E;">Rp {{ number_format($totalTarif, 0, ',', '.') }}</span>
                                     </div>
                                 </div>
@@ -1359,6 +1366,8 @@
                         <input type="hidden" id="kode_promo_input" name="kode_promo" value="{{ $appliedPromo['kode'] ?? '' }}">
                         <input type="hidden" id="diskon_amount" name="diskon_amount" value="{{ $diskon }}">
                         <input type="hidden" id="total_after_discount" name="total_after_discount" value="{{ $totalAfterDiscount }}">
+                        <input type="hidden" id="total_tarif" name="total_tarif" value="{{ $totalTarif ?? 0 }}">
+                        <input type="hidden" id="subtotal_harga" name="subtotal_harga" value="{{ $totalHarga ?? 0 }}">
 
                         <!-- Data Pemesan -->
                         <div class="form-group">
@@ -1521,30 +1530,6 @@
                         </div>
                         @endfor
 
-                        <!-- TARIF TAMBAHAN SECTION (Card Kanan) -->
-                        @if(!empty($availableTarifs) && count($availableTarifs) > 0)
-                        <div class="tarif-section mb-4">
-                            <h6 class="fw-bold mb-3" style="color: #00215E; font-size: 14px; border-bottom: 2px solid #FF581E; padding-bottom: 8px;">
-                                <i class="fas fa-plus-circle"></i> Tarif Tambahan Rute
-                            </h6>
-                            <div style="background: #fff3e0; padding: 12px; border-radius: 8px; border-left: 3px solid #FF581E;">
-                                @foreach($availableTarifs as $tarif)
-                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #ffe0b2;">
-                                        <div>
-                                            <strong style="color: #00215E; font-size: 13px; display: block; margin-bottom: 2px;">
-                                                {{ $tarif['nama_tarif'] ?? 'Tarif' }}
-                                            </strong>
-                                        </div>
-                                        <small class="fw-bold" style="color: #FF581E;">Rp {{ number_format($tarif['final_price'] ?? $tarif['harga_dasar'] ?? 0, 0, ',', '.') }}/tiket</small>
-                                    </div>
-                                @endforeach
-                            </div>
-                            <small style="display: block; margin-top: 8px; color: #666; font-style: italic;">
-                                <i class="fas fa-info-circle"></i> Tarif tambahan akan dikalikan jumlah penumpang pada subtotal
-                            </small>
-                        </div>
-                        @endif
-
                         <!-- PROMO SECTION -->
                         <div class="promo-section">
                             <h6 class="promo-title">Kode Promo</h6>
@@ -1605,18 +1590,6 @@
 
                         <!-- Summary Section -->
                         <div class="summary-section">
-                            <!-- Breakdown: Harga Dasar & Total Tarif -->
-                            @if($totalTarif > 0)
-                                <div class="summary-item" style="font-size: 12px; color: #666; padding: 8px 0; border-bottom: 1px solid #e0e0e0;">
-                                    <span>Harga Dasar ({{ $jadwal->harga_total }} × {{ $penumpang }}):</span>
-                                    <span class="fw-bold">Rp {{ number_format($jadwal->harga_total * $penumpang, 0, ',', '.') }}</span>
-                                </div>
-                                <div class="summary-item" style="font-size: 12px; color: #666; padding: 8px 0; border-bottom: 1px solid #e0e0e0;">
-                                    <span>+ Total Tarif Tambahan:</span>
-                                    <span class="fw-bold" style="color: #FF581E;">Rp {{ number_format($totalTarif, 0, ',', '.') }}</span>
-                                </div>
-                            @endif
-
                             <div class="summary-item">
                                 <span>Subtotal</span>
                                 <span id="subtotal-amount-right">Rp {{ number_format($totalHarga, 0, ',', '.') }}</span>

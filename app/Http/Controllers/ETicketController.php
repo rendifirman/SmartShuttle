@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Pemesanan;
 use App\Models\User;
 use App\Models\Jadwal;
@@ -17,12 +18,12 @@ class ETicketController extends Controller
      */
     public function show($kode_booking)
     {
-        // Cek jika user sudah login
-        if (!session()->has('user')) {
+        // Cek jika user sudah login menggunakan Auth
+        if (!Auth::check()) {
             return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        $user = session()->get('user');
+        $user = Auth::user();
 
         try {
             // Ambil data pemesanan dengan relasi yang benar
@@ -30,7 +31,8 @@ class ETicketController extends Controller
                 'jadwal.shuttle',
                 'driverJadwal.driver',
                 'detailPenumpang',
-                'jadwal.rutes'
+                'jadwal.rutes',
+                'user'
             ])->where('kode_booking', $kode_booking)
               ->first();
 
@@ -55,7 +57,7 @@ class ETicketController extends Controller
                 $date = Carbon::parse($driverJadwal->tanggal)->isoFormat('dddd, D MMMM YYYY');
                 $waktuBerangkat = Carbon::parse($driverJadwal->waktu_keberangkatan);
                 $shuttle = null; // Driver jadwals don't directly link to shuttle, but we can try to get from driver
-                
+
                 // Safely calculate arrival time
                 $waktuSampai = $waktuBerangkat->copy();
                 if ($driverJadwal->waktu_kedatangan) {
@@ -105,7 +107,7 @@ class ETicketController extends Controller
             $shuttle = $shuttle ?? null;
 
             // Get user data
-            $userData = User::find($user['id']);
+            $userData = $user;
 
             $data = [
                 'pemesanan' => $pemesanan,
@@ -167,7 +169,7 @@ class ETicketController extends Controller
                 $to = $lastRoute->kota_tujuan ?? $lastRoute->tujuan ?? 'Jatinangor';
             }
 
-            $userData = User::find($user['id']);
+            $userData = $user;
 
             $data = [
                 'pemesanan' => $pemesanan,

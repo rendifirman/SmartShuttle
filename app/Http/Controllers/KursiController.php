@@ -34,9 +34,10 @@ class KursiController extends Controller
             // Ambil data pemesanan dengan relasi
             $pemesanan = Pemesanan::with([
                 'jadwal.shuttle',
-                'detailPenumpang'
+                'detailPenumpang',
+                'driverJadwal'
             ])->where('id', $request->pemesanan_id)
-              ->where('status', 'menunggu_pembayaran')
+              ->where('status', 'menunggu_kursi')
               ->first();
 
             if (!$pemesanan) {
@@ -65,19 +66,70 @@ class KursiController extends Controller
                 $shuttle->save();
             }
 
-            // Ambil layout dengan status terkini
-            $layoutKursi = KursiTerpesan::getLayoutWithStatus($pemesanan->jadwal_id, $shuttle->id);
+            // Ambil layout base dari shuttle
+            $layoutKursi = is_array($shuttle->layout_kursi)
+                ? $shuttle->layout_kursi
+                : json_decode($shuttle->layout_kursi, true);
+
+            if (empty($layoutKursi) || !is_array($layoutKursi)) {
+                $layoutKursi = KursiTerpesan::generateLayoutKursi($shuttle->total_kursi ?? 9);
+            }
+
+            // ===== BAGIAN PENTING: GET KURSI YANG SUDAH TERPESAN =====
+            // Query SEMUA kursi terpesan dari booking lain (exclude booking ini)
+            $kursiTerpesanQuery = KursiTerpesan::where('status', 'terpesan')
+                ->where('pemesanan_id', '!=', $pemesanan->id)
+                ->whereHas('pemesanan', function($query) {
+                    $query->whereNotIn('status', ['dibatalkan', 'expired']);
+                });
+
+            // Handle BOTH jadwal dan driver_jadwal flows
+            if ($pemesanan->id_jadwal_driver) {
+                // Use driver jadwal filter
+                $kursiTerpesanQuery->where('id_jadwal_driver', $pemesanan->id_jadwal_driver);
+            } else {
+                // Use jadwal filter
+                $kursiTerpesanQuery->where('jadwal_id', $pemesanan->jadwal_id);
+            }
+
+            // Ambil semua nomor kursi yang terpesan
+            $kursiTerpesan = $kursiTerpesanQuery->pluck('nomor_kursi')->toArray();
+            $kursiTerpesan = array_map(function($v){ return trim((string) $v); }, $kursiTerpesan);
+
+            // ===== NORMALISASI LAYOUT DENGAN DETAIL PENUMPANG & KURSI TERPESAN =====
+            // Ambil kursi yang dipilih user di booking SEKARANG (belum di-simpan ke database)
+            $kursiSaya = $pemesanan->detailPenumpang->pluck('nomor_kursi')->filter()->toArray();
+            $kursiSaya = array_map(function($v){ return trim((string) $v); }, $kursiSaya);
+
+            // Normalisasi setiap kursi dengan status yang benar
+            foreach ($layoutKursi as &$kursi) {
+                $nomor = trim((string) ($kursi['nomor'] ?? ''));
+
+                // PRIORITY 1: Cek apakah kursi sudah terpesan oleh booking lain (SOLD)
+                if ($nomor !== '' && in_array($nomor, $kursiTerpesan, true)) {
+                    $kursi['status'] = 'terpesan';
+                    $kursi['class'] = 'sold';
+                    $kursi['icon'] = 'fa-lock';
+                }
+                // PRIORITY 2: Cek apakah kursi dipilih user sekarang (SELECTED)
+                elseif ($nomor !== '' && in_array($nomor, $kursiSaya, true)) {
+                    $kursi['status'] = 'selected';
+                    $kursi['class'] = 'selected';
+                    $kursi['icon'] = 'fa-user-check';
+                }
+                // PRIORITY 3: Kursi tersedia
+                else {
+                    $kursi['status'] = 'tersedia';
+                    $kursi['class'] = 'available';
+                    $kursi['icon'] = 'fa-check';
+                }
+            }
+            unset($kursi); // Unset reference
 
             // Backup: jika masih kosong, generate default
             if (empty($layoutKursi)) {
                 $layoutKursi = KursiTerpesan::generateLayoutKursi(9);
             }
-
-            // Ambil kursi terpesan (hanya untuk validasi tambahan)
-            $kursiTerpesan = KursiTerpesan::where('jadwal_id', $pemesanan->jadwal_id)
-                ->whereIn('status', ['terpesan', 'terisi'])
-                ->pluck('nomor_kursi')
-                ->toArray();
 
             // Determine selected tariff for display
             $selectedTarif = null;
@@ -91,12 +143,34 @@ class KursiController extends Controller
                 \Log::error('Failed to get selected tariff in KursiController: ' . $e->getMessage());
             }
 
+            // Tentukan apakah menggunakan driver jadwal atau jadwal regular
+            $usesDriverJadwal = !empty($pemesanan->id_jadwal_driver) && $pemesanan->driverJadwal;
+            $driverJadwal = $usesDriverJadwal ? $pemesanan->driverJadwal : null;
+            $jadwal = $pemesanan->jadwal;
+
+            // Hitung harga (sama seperti pesan.blade.php)
+            $hargaPerOrang = $jadwal?->harga_total ?? 0;
+            $totalTarif = 0;
+            $diskon = $pemesanan->diskon ?? 0;
+            $subtotal = ($hargaPerOrang * $pemesanan->jumlah_penumpang) + $totalTarif;
+            $totalBayar = max(0, $subtotal - $diskon);
+            $tarifPerKursi = $pemesanan->jumlah_penumpang > 0 ? $totalTarif / $pemesanan->jumlah_penumpang : 0;
+
             return view('customer.kursi', compact(
                 'pemesanan',
                 'kursiTerpesan',
                 'layoutKursi',
                 'shuttle',
-                'selectedTarif'
+                'selectedTarif',
+                'usesDriverJadwal',
+                'driverJadwal',
+                'jadwal',
+                'hargaPerOrang',
+                'totalTarif',
+                'diskon',
+                'subtotal',
+                'totalBayar',
+                'tarifPerKursi'
             ));
 
         } catch (\Exception $e) {
@@ -166,13 +240,17 @@ class KursiController extends Controller
             // Validasi 4: Cek apakah kursi sudah terpesan (double-check dengan lock)
             $terpesanSeats = [];
             foreach ($request->kursi as $nomorKursi) {
-                $kursiTerpesan = KursiTerpesan::where('jadwal_id', $request->jadwal_id)
-                    ->where('nomor_kursi', $nomorKursi)
+                $query = KursiTerpesan::where('nomor_kursi', $nomorKursi)
                     ->whereIn('status', ['terpesan', 'terisi'])
-                    ->lockForUpdate() // Lock untuk mencegah double booking
-                    ->exists();
+                    ->lockForUpdate(); // Lock untuk mencegah double booking
 
-                if ($kursiTerpesan) {
+                if ($pemesanan->id_jadwal_driver) {
+                    $query->where('id_jadwal_driver', $pemesanan->id_jadwal_driver);
+                } else {
+                    $query->where('jadwal_id', $request->jadwal_id);
+                }
+
+                if ($query->exists()) {
                     $terpesanSeats[] = $nomorKursi;
                 }
             }
@@ -434,7 +512,7 @@ class KursiController extends Controller
 
             // Gunakan layout FIX dari shuttle
             $shuttle = $jadwal->shuttle;
-            $layoutKursi = KursiTerpesan::getLayoutWithStatus($jadwalId, $shuttle->id);
+            $layoutKursi = KursiTerpesan::getLayoutWithStatus($jadwalId, $shuttle->id, null);
 
             // Filter hanya kursi tersedia
             $availableSeats = [];
