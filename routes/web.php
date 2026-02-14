@@ -244,6 +244,9 @@ Route::get('/beranda', [CustomerController::class, 'beranda'])->name('customer.b
         // ★★★ KURSI ★★★
         Route::get('/customer/kursi', [CustomerController::class, 'showPemilihanKursi'])->name('customer.kursi');
         Route::post('/customer/kursi/proses', [CustomerController::class, 'prosesPemilihanKursi'])->name('customer.kursi.proses');
+        // AJAX endpoints to lock/unlock seats during selection
+        Route::post('/customer/kursi/lock', [KursiController::class, 'lockSeat'])->name('customer.kursi.lock');
+        Route::post('/customer/kursi/unlock', [KursiController::class, 'unlockSeat'])->name('customer.kursi.unlock');
 
         // ★★★ PEMBAYARAN ★★★
         Route::get('/customer/pembayaran/{kode_booking}', [PembayaranController::class, 'index'])->name('customer.pembayaran');

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\Pemesanan;
 use App\Models\Jadwal;
+use App\Models\DriverJadwal;
 use App\Models\DetailPenumpang;
 use App\Models\Promo;
 use App\Models\Rute;
@@ -204,6 +205,20 @@ class PemesananController extends Controller
             }
             $jadwal->save();
 
+            // Jika ada entri driver_jadwals terkait, update kursi_terisi juga
+            try {
+                $driverJadwal = DriverJadwal::where('id_jadwal', $jadwal->id)->first();
+                if ($driverJadwal) {
+                    $driverJadwal->kursi_terisi += $request->jumlah_penumpang;
+                    if ($driverJadwal->kursi_terisi >= $driverJadwal->total_kursi) {
+                        $driverJadwal->status = 'selesai';
+                    }
+                    $driverJadwal->save();
+                }
+            } catch (\\Exception $e) {
+                Log::warning('Gagal update DriverJadwal kursi_terisi: ' . $e->getMessage());
+            }
+
             // Tambah poin member jika user adalah member aktif
             $user = $request->user();
             if ($user && method_exists($user, 'isMemberActive') && $user->isMemberActive()) {
@@ -316,6 +331,24 @@ class PemesananController extends Controller
             }
 
             $jadwal->save();
+
+            // Jika ada entri driver_jadwals terkait, kembalikan kursi_terisi juga
+            try {
+                $driverJadwal = DriverJadwal::where('id_jadwal', $jadwal->id)->first();
+                if ($driverJadwal) {
+                    $driverJadwal->kursi_terisi -= $pemesanan->jumlah_penumpang;
+                    if ($driverJadwal->kursi_terisi < 0) {
+                        $driverJadwal->kursi_terisi = 0;
+                    }
+                    // Jika sebelumnya penuh, ubah status kembali jika diperlukan
+                    if ($driverJadwal->kursi_terisi < $driverJadwal->total_kursi && $driverJadwal->status === 'selesai') {
+                        $driverJadwal->status = 'aktif';
+                    }
+                    $driverJadwal->save();
+                }
+            } catch (\\Exception $e) {
+                Log::warning('Gagal update DriverJadwal kursi_terisi saat pembatalan: ' . $e->getMessage());
+            }
 
             // Update status pemesanan
             $pemesanan->status = 'dibatalkan';

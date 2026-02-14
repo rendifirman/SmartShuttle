@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use App\Models\Jadwal;
+use App\Models\DriverJadwal;
 
 class KursiTerpesan extends Model
 {
@@ -106,31 +108,49 @@ class KursiTerpesan extends Model
             $kursi['status'] = 'tersedia';
         }
 
-        // 3. Ambil kursi yang sudah terpesan dari database dengan LOCK untuk konsistensi
-        $query = self::whereIn('status', ['terpesan', 'terisi']);
+        // 3. Ambil kursi yang sudah terpesan/terisi dari database dengan LOCK untuk konsistensi
+        // Perubahan: kursi akan dianggap "terisi/terpesan" berdasarkan status pembayaran
+        // - Semua baris dengan status 'terisi' tetap dianggap terisi
+        // - Baris dengan status 'terpesan' hanya dianggap terpesan jika pemesanan terkait
+        //   memiliki pembayaran yang berhasil (paid statuses)
 
-        // If both ids are provided, consider seats reserved for either the
-        // original jadwal (`jadwal_id`) or the driver-specific schedule
-        // (`id_jadwal_driver`). This prevents showing seats as available
-        // when they are booked on the original jadwal but the flow is
-        // using driver_jadwal.
+        $paidStatuses = ['sukses', 'dibayar', 'berhasil', 'success'];
+
+        // Base query constraints for jadwal/id_jadwal_driver
+        $baseQuery = self::query();
         if (!empty($idJadwalDriver) && !empty($jadwalId)) {
-            $query->where(function($q) use ($idJadwalDriver, $jadwalId) {
+            $baseQuery->where(function($q) use ($idJadwalDriver, $jadwalId) {
                 $q->where('id_jadwal_driver', $idJadwalDriver)
                   ->orWhere('jadwal_id', $jadwalId);
             });
         } elseif (!empty($idJadwalDriver)) {
-            $query->where('id_jadwal_driver', $idJadwalDriver);
+            $baseQuery->where('id_jadwal_driver', $idJadwalDriver);
         } elseif (!empty($jadwalId)) {
-            $query->where('jadwal_id', $jadwalId);
+            $baseQuery->where('jadwal_id', $jadwalId);
         } else {
             // No identifier provided: ensure no rows are matched (safe default)
-            $query->whereRaw('1 = 0');
+            $baseQuery->whereRaw('1 = 0');
         }
 
-        $terpesan = $query->lockForUpdate()
+        // 3.a Seats with explicit 'terisi' status (definitely occupied)
+        $terisiSeats = (clone $baseQuery)
+            ->where('status', 'terisi')
+            ->lockForUpdate()
             ->pluck('nomor_kursi')
             ->toArray();
+
+        // 3.b Seats with 'terpesan' but whose pemesanan has a successful pembayaran
+        $terpesanPaidSeats = (clone $baseQuery)
+            ->where('status', 'terpesan')
+            ->whereHas('pemesanan.pembayaran', function($q) use ($paidStatuses) {
+                $q->whereIn('status', $paidStatuses);
+            })
+            ->lockForUpdate()
+            ->pluck('nomor_kursi')
+            ->toArray();
+
+        // Merge both sets
+        $terpesan = array_values(array_unique(array_merge($terisiSeats, $terpesanPaidSeats)));
 
         // 4. Update status kursi yang terpesan
         foreach ($layoutKursi as &$kursi) {
@@ -205,6 +225,20 @@ class KursiTerpesan extends Model
                 'status' => 'terpesan' // LANGSUNG TERPESAN
             ]);
 
+            // Jika ada driver_jadwal terkait, increment kursi_terisi
+            try {
+                $driverJadwal = DriverJadwal::where('id_jadwal', $jadwalId)->first();
+                if ($driverJadwal) {
+                    $driverJadwal->kursi_terisi += 1;
+                    if ($driverJadwal->kursi_terisi >= $driverJadwal->total_kursi) {
+                        $driverJadwal->status = 'selesai';
+                    }
+                    $driverJadwal->save();
+                }
+            } catch (\Exception $e) {
+                Log::warning('Gagal sinkron DriverJadwal saat pesanKursi: ' . $e->getMessage());
+            }
+
             // Clear cache
             Cache::forget('kursi_jadwal_' . $jadwalId);
 
@@ -235,6 +269,20 @@ class KursiTerpesan extends Model
                 $jadwal = Jadwal::find($jadwalId);
                 if ($jadwal) {
                     $jadwal->increment('kursi_tersedia');
+                    // Jika ada driver_jadwal terkait, kembalikan kursi_terisi
+                    try {
+                        $driverJadwal = DriverJadwal::where('id_jadwal', $jadwal->id)->first();
+                        if ($driverJadwal) {
+                            $driverJadwal->kursi_terisi -= 1;
+                            if ($driverJadwal->kursi_terisi < 0) $driverJadwal->kursi_terisi = 0;
+                            if ($driverJadwal->kursi_terisi < $driverJadwal->total_kursi && $driverJadwal->status === 'selesai') {
+                                $driverJadwal->status = 'aktif';
+                            }
+                            $driverJadwal->save();
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('Gagal sinkron DriverJadwal saat batalkan kursi: ' . $e->getMessage());
+                    }
                 }
             }
 
@@ -253,7 +301,8 @@ class KursiTerpesan extends Model
      */
     public static function konfirmasiKursi($jadwalId, $nomorKursi)
     {
-        return self::where('pemesanan_id', $pemesananId)
+        return self::where('jadwal_id', $jadwalId)
+            ->where('nomor_kursi', $nomorKursi)
             ->where('status', 'terpesan')
             ->exists();
     }
@@ -262,11 +311,34 @@ class KursiTerpesan extends Model
      * Mark seats as booked after successful payment
      */
     public static function markSeatsAsBooked($pemesananId)
-    {
-        return self::where('pemesanan_id', $pemesananId)
+{
+    DB::beginTransaction();
+    try {
+        $rows = self::where('pemesanan_id', $pemesananId)
             ->where('status', 'terpesan')
+            ->get();
+
+        if ($rows->isEmpty()) {
+            DB::commit();
+            return 0;
+        }
+
+        $count = $rows->count();
+
+        // Update rows status
+        self::whereIn('id', $rows->pluck('id')->toArray())
             ->update(['status' => 'terisi']);
+
+        // ✅ HAPUS BAGIAN YANG MENAMBAH kursi_terisi DI SINI
+        // karena sudah ditambah saat lockSeat
+
+        DB::commit();
+        return $count;
+    } catch (\Exception $e) {
+        DB::rollBack();
+        throw $e;
     }
+}
 
     /**
      * Get semua kursi terpesan untuk jadwal
@@ -299,6 +371,21 @@ class KursiTerpesan extends Model
                     $jadwal = Jadwal::find($kursi->jadwal_id);
                     if ($jadwal) {
                         $jadwal->increment('kursi_tersedia');
+                    }
+
+                    // Sync driver_jadwal if exists
+                    try {
+                        $driverJadwal = DriverJadwal::where('id_jadwal', $kursi->jadwal_id)->first();
+                        if ($driverJadwal) {
+                            $driverJadwal->kursi_terisi -= 1;
+                            if ($driverJadwal->kursi_terisi < 0) $driverJadwal->kursi_terisi = 0;
+                            if ($driverJadwal->kursi_terisi < $driverJadwal->total_kursi && $driverJadwal->status === 'selesai') {
+                                $driverJadwal->status = 'aktif';
+                            }
+                            $driverJadwal->save();
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('Gagal sinkron DriverJadwal saat clear kursi by pemesanan: ' . $e->getMessage());
                     }
                 }
             }

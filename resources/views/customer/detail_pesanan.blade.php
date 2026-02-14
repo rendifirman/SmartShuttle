@@ -554,16 +554,8 @@
     $hargaPerOrang      = $jadwal->harga_total ?? 0;
     $jumlahPenumpang    = $pemesanan->jumlah_penumpang ?? 1;
 
-    // Total tarif tambahan – jika dikirim controller gunakan, jika tidak hitung manual
+    // Total tarif tambahan (dikirim oleh controller, fallback 0) - SAMA DENGAN KURSI.BLADE.PHP
     $totalTarif = $totalTarif ?? 0;
-    if ((empty($totalTarif) || $totalTarif == 0) && isset($availableTarifs) && is_array($availableTarifs) && count($availableTarifs) > 0) {
-        $calc = 0;
-        foreach($availableTarifs as $t) {
-            $nilai = $t['final_price'] ?? $t['harga_dasar'] ?? 0;
-            $calc += ($nilai * $jumlahPenumpang);
-        }
-        $totalTarif = $calc;
-    }
 
     $subtotal   = ($hargaPerOrang * $jumlahPenumpang) + $totalTarif;
     $diskon     = $diskon ?? ($pemesanan->diskon ?? 0);

@@ -867,6 +867,7 @@
         filter: grayscale(80%);
         position: relative;
         pointer-events: none;
+        overflow: visible;
     }
 
     .seat.sold::before,
@@ -879,14 +880,17 @@
         height: 3px;
         background: #ff4444;
         transform: translate(-50%, -50%);
+        z-index: 10;
     }
 
     .seat.sold::before {
         transform: translate(-50%, -50%) rotate(45deg);
+        z-index: 10;
     }
 
     .seat.sold::after {
         transform: translate(-50%, -50%) rotate(-45deg);
+        z-index: 10;
     }
 
     .seat.sold .seat-number {
@@ -1263,6 +1267,58 @@
             <div class="alert-progress"></div>
         </div>
     </div>
+@elseif(session('error'))
+    <div class="global-alert-container">
+        <div class="global-alert alert-error">
+            <div class="alert-content">
+                <i class="alert-icon fas fa-exclamation-circle"></i>
+                <div class="alert-message">
+                    <strong>Gagal Memilih Kursi</strong>
+                    <span>{{ session('error') }}</span>
+                </div>
+                <button class="alert-close" onclick="this.parentElement.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="alert-progress"></div>
+        </div>
+    </div>
+@elseif(session('success'))
+    <div class="global-alert-container">
+        <div class="global-alert alert-success">
+            <div class="alert-content">
+                <i class="alert-icon fas fa-check-circle"></i>
+                <div class="alert-message">
+                    <strong>Sukses</strong>
+                    <span>{{ session('success') }}</span>
+                </div>
+                <button class="alert-close" onclick="this.parentElement.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="alert-progress"></div>
+        </div>
+    </div>
+@elseif($errors->any())
+    <div class="global-alert-container">
+        <div class="global-alert alert-error">
+            <div class="alert-content">
+                <i class="alert-icon fas fa-exclamation-circle"></i>
+                <div class="alert-message">
+                    <strong>Validasi Gagal</strong>
+                    <span>
+                        @foreach($errors->all() as $error)
+                            • {{ $error }}<br>
+                        @endforeach
+                    </span>
+                </div>
+                <button class="alert-close" onclick="this.parentElement.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="alert-progress"></div>
+        </div>
+    </div>
 @endif
 
 @php
@@ -1474,76 +1530,7 @@
                         </p>
                     </div>
 
-                    {{-- RINGKASAN HARGA – SAMA SEPERTI PESAN.BLADE.PHP --}}
-                    <div class="price-summary">
-                        <div class="price-item">
-                            <span class="price-label">Harga Tiket per orang</span>
-                            <span class="price-value" id="harga-per-orang-label">
-                                Rp {{ number_format($hargaPerOrang, 0, ',', '.') }}
-                            </span>
-                        </div>
-
-                        @if(!empty($availableTarifs) && count($availableTarifs) > 0)
-                            <div style="margin:12px 0; padding:12px; background:#f8f9fa; border-radius:8px; border-left:3px solid #FF581E;">
-                                <h6 class="fw-bold mb-2" style="color:#00215E; font-size:13px;">
-                                    <i class="fas fa-plus-circle"></i> Tarif Tambahan (per tiket):
-                                </h6>
-                                @foreach($availableTarifs as $tarif)
-                                    @php
-                                        $nama = $tarif['nama_tarif'] ?? ($tarif['nama'] ?? 'Biaya Tambahan');
-                                        $nilai = $tarif['final_price'] ?? $tarif['harga_dasar'] ?? 0;
-                                    @endphp
-                                    <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:13px;">
-                                        <strong style="color:#00215E;">{{ $nama }}</strong>
-                                        <small class="fw-bold" style="color:#FF581E;">
-                                            Rp {{ number_format($nilai, 0, ',', '.') }}
-                                        </small>
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endif
-
-                        <div class="price-item">
-                            <span class="price-label">Jumlah Penumpang</span>
-                            <span class="price-value">× {{ $jumlahPenumpang }}</span>
-                        </div>
-
-                        @if($totalTarif > 0)
-                            <div style="padding:8px 0; border-bottom:1px solid #e0e0e0; font-size:12px;">
-                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                                    <span style="color:#666;">Harga Dasar × {{ $jumlahPenumpang }}:</span>
-                                    <span class="fw-bold">Rp {{ number_format($hargaPerOrang * $jumlahPenumpang, 0, ',', '.') }}</span>
-                                </div>
-                                <div style="display:flex; justify-content:space-between;">
-                                    <span style="color:#666;">+ Total Tarif Tambahan:</span>
-                                    <span class="fw-bold" style="color:#FF581E;">
-                                        Rp {{ number_format($totalTarif, 0, ',', '.') }}
-                                    </span>
-                                </div>
-                            </div>
-                        @endif
-
-                        <div class="price-item">
-                            <span class="price-label">Subtotal</span>
-                            <span class="price-value" id="subtotal-amount-left">
-                                Rp {{ number_format($subtotal, 0, ',', '.') }}
-                            </span>
-                        </div>
-                        <div class="price-item">
-                            <span class="price-label">Diskon Promo</span>
-                            <span class="price-value text-success" id="discount-amount-left">
-                                - Rp {{ number_format($diskon, 0, ',', '.') }}
-                            </span>
-                        </div>
-                        <div class="price-item total">
-                            <span class="price-label">Total Bayar</span>
-                            <span class="price-value" id="total-amount-left">
-                                Rp {{ number_format($totalBayar, 0, ',', '.') }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<br></br>
 
             {{-- DATA KURSI --}}
             <div class="seat-card">
@@ -1678,6 +1665,60 @@
 
 @push('scripts')
 <script>
+// =====================================================
+//   FORM SUBMISSION HANDLER - ANTI-DOUBLE-CLICK & LOADING
+// =====================================================
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('kursi-form');
+    const submitBtn = document.getElementById('payment-btn');
+    let isSubmitting = false;
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // PREVENT DOUBLE SUBMIT
+            if (isSubmitting) {
+                e.preventDefault();
+                return false;
+            }
+
+            // VALIDATE BEFORE SUBMIT
+            const selectedSeatsInputs = document.querySelectorAll('#selected-seats-inputs input[type="hidden"]');
+            const jumlahPenumpang = parseInt(document.getElementById('max-seats').textContent);
+
+            if (selectedSeatsInputs.length !== jumlahPenumpang) {
+                e.preventDefault();
+                showAlert('error', 'Kursi Tidak Lengkap', `Anda harus memilih ${jumlahPenumpang} kursi sebelum melanjutkan.`);
+                return false;
+            }
+
+            // MARK AS SUBMITTING
+            isSubmitting = true;
+
+            // DISABLE BUTTON & SHOW LOADING
+            submitBtn.disabled = true;
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+            submitBtn.style.opacity = '0.6';
+            submitBtn.style.cursor = 'wait';
+
+            // SET TIMEOUT TO PREVENT INFINITE LOADING (allow form to submit)
+            setTimeout(() => {
+                if (isSubmitting) {
+                    console.warn('Form submission still pending...');
+                    // Jangan reset, biar form submit sesuai response dari server
+                }
+            }, 30000); // 30 second timeout
+
+            // NORMAL FORM SUBMISSION - tidak perlu preventDefault
+            // Form akan submit secara normal dan redirect akan handle di server
+            return true;
+        });
+    }
+
+    // NOTE: Removed beforeunload handler to avoid browser showing
+    // the default "Changes you made may not be saved." dialog.
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     // =====================================================
     //   DATA HARGA DARI SERVER – SINKRON DENGAN PESAN
@@ -1692,6 +1733,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // State kursi yang dipilih
     let selectedSeats = [];
+
+    const pemesananId = {{ $pemesanan->id }};
+    const csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '{{ csrf_token() }}';
 
     // Inisialisasi kursi yang sudah terpilih sebelumnya
     document.querySelectorAll('.seat.selected').forEach(seatElement => {
@@ -1757,24 +1801,60 @@ document.addEventListener('DOMContentLoaded', function() {
         const index = selectedSeats.findIndex(s => s.id === seatId);
 
         if (index > -1) {
-            // Batalkan pilihan
-            selectedSeats.splice(index, 1);
-            updateSeatUI(seatElement, 'available', 'tersedia', 'fa-check');
-            showAlert('info', 'Kursi Dibatalkan', `Kursi ${seatNumber} tidak lagi dipilih.`);
+            // Batalkan pilihan -> unlock via AJAX first
+            fetch("{{ route('customer.kursi.unlock') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ pemesanan_id: pemesananId, nomor_kursi: seatNumber })
+            }).then(r => r.json()).then(res => {
+                if (res.success) {
+                    selectedSeats.splice(index, 1);
+                    updateSeatUI(seatElement, 'available', 'tersedia', 'fa-check');
+                    showAlert('info', 'Kursi Dibatalkan', `Kursi ${seatNumber} tidak lagi dipilih.`);
+                    updateSelectedSeatsDisplay();
+                    updateFormInputs();
+                    updatePaymentButton();
+                } else {
+                    showAlert('error', 'Gagal', res.message || 'Gagal membatalkan kursi');
+                }
+            }).catch(err => {
+                console.error(err);
+                showAlert('error', 'Gagal', 'Terjadi kesalahan jaringan saat membatalkan kursi');
+            });
         } else {
-            // Cek batas maksimal
+            // Tambah pilihan -> lock via AJAX first
             if (selectedSeats.length >= jumlahPenumpang) {
                 showAlert('warning', 'Maksimal Kursi', `Anda hanya dapat memilih maksimal ${jumlahPenumpang} kursi!`);
                 return false;
             }
-            // Tambah pilihan
-            selectedSeats.push({
-                id: seatId,
-                number: seatNumber,
-                price: hargaPerKursi
+
+            fetch("{{ route('customer.kursi.lock') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ pemesanan_id: pemesananId, nomor_kursi: seatNumber })
+            }).then(r => r.json()).then(res => {
+                if (res.success) {
+                    selectedSeats.push({ id: seatId, number: seatNumber, price: hargaPerKursi });
+                    updateSeatUI(seatElement, 'selected', 'selected', 'fa-user-check');
+                    showAlert('success', 'Kursi Dipilih', `Kursi ${seatNumber} berhasil dipilih!`);
+                    updateSelectedSeatsDisplay();
+                    updateFormInputs();
+                    updatePaymentButton();
+                } else {
+                    showAlert('error', 'Gagal', res.message || 'Gagal mengunci kursi');
+                }
+            }).catch(err => {
+                console.error(err);
+                showAlert('error', 'Gagal', 'Terjadi kesalahan jaringan saat memilih kursi');
             });
-            updateSeatUI(seatElement, 'selected', 'selected', 'fa-user-check');
-            showAlert('success', 'Kursi Dipilih', `Kursi ${seatNumber} berhasil dipilih!`);
         }
 
         updateSelectedSeatsDisplay();
@@ -1929,36 +2009,51 @@ document.addEventListener('DOMContentLoaded', function() {
 
         soldSeats.forEach(seat => {
             // Remove onclick attribute jika ada
+            // Hapus onclick agar tidak memanggil `selectSeat` dari atribut inline
             seat.removeAttribute('onclick');
 
-            // Add mousedown listener yang stop propagation
-            seat.addEventListener('mousedown', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-                return false;
-            }, true); // Use capture phase
+            // Pastikan kursi relatif sehingga overlay dapat diposisikan di atasnya
+            if (window.getComputedStyle(seat).position === 'static') {
+                seat.style.position = 'relative';
+            }
 
-            // Add touchstart listener
-            seat.addEventListener('touchstart', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-                return false;
-            }, true);
+            // Tambahkan overlay penuh yang menangkap semua event pointer untuk kursi yang sold
+            // Overlay ini mencegah anak-elemen menerima event klik/touch, sehingga kursi benar-benar tidak bisa dipilih
+            const overlay = document.createElement('div');
+            overlay.className = 'seat-overlay';
+            overlay.style.position = 'absolute';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.right = '0';
+            overlay.style.bottom = '0';
+            overlay.style.zIndex = '25';
+            overlay.style.cursor = 'not-allowed';
 
-            // Add click listener sebagai fallback
-            seat.addEventListener('click', function(e) {
+            // Tangani berbagai event pada overlay sebagai fallback
+            const blockHandler = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
                 showAlert('error', 'Kursi Tidak Tersedia', 'Kursi ' + (seat.getAttribute('data-seat') || 'ini') + ' sudah dipesan oleh penumpang lain.');
                 return false;
-            }, true);
+            };
 
-            // Add pointer-events: none dengan !important via inline style sebagai fallback
-            seat.style.setProperty('pointer-events', 'none', 'important');
+            overlay.addEventListener('click', blockHandler, { capture: true });
+            overlay.addEventListener('mousedown', blockHandler, { capture: true });
+            overlay.addEventListener('touchstart', blockHandler, { capture: true });
+
+            // Pastikan semua anak-elemen tidak menerima pointer (fallback tambahan)
+            seat.querySelectorAll('*').forEach(child => {
+                child.style.pointerEvents = 'none';
+            });
+
+            // Tambahkan atribut aksesibilitas dan gaya
+            seat.setAttribute('aria-disabled', 'true');
+            seat.setAttribute('data-disabled', '1');
             seat.style.setProperty('cursor', 'not-allowed', 'important');
+
+            // Sisipkan overlay di akhir isi kursi
+            seat.appendChild(overlay);
         });
     }
 
@@ -1970,9 +2065,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Submit form validation
     document.getElementById('kursi-form').addEventListener('submit', function(e) {
+        console.log('=== FORM SUBMISSION DEBUG ===');
+        console.log('Selected Seats:', selectedSeats);
+        console.log('Required:', jumlahPenumpang);
+        console.log('Form Hidden Inputs:', document.querySelectorAll('#selected-seats-inputs input'));
+
         if (selectedSeats.length !== jumlahPenumpang) {
             e.preventDefault();
+            console.warn('✗ Validation FAILED: ' + selectedSeats.length + ' != ' + jumlahPenumpang);
             showAlert('warning', 'Peringatan', `Anda harus memilih tepat ${jumlahPenumpang} kursi untuk melanjutkan.`);
+            return false;
+        } else {
+            console.log('✓ Validation PASSED - Form will submit');
+            // Form submit langsung tanpa confirmation
+            return true;
         }
     });
 });

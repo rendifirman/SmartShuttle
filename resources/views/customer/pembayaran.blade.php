@@ -361,8 +361,11 @@ main {
 
                 @php
                     // Hitung harga dasar per orang
-                    $hargaPerOrang = $pemesanan->harga_total / $pemesanan->jumlah_penumpang;
-                    $jumlahPenumpang = $pemesanan->jumlah_penumpang;
+                    // Gunakan sumber harga yang sama dengan `detail_pesanan.blade.php`:
+                    // prioritas: jadwal->harga_total (per-seat yang dihitung dari route/master tarif),
+                    // fallback ke pemesanan->harga_total jika jadwal tidak tersedia.
+                    $hargaPerOrang = $pemesanan->jadwal->harga_total ?? $pemesanan->harga_total ?? 0;
+                    $jumlahPenumpang = $pemesanan->jumlah_penumpang ?? 1;
 
                     // Total tarif tambahan
                     $totalTarif = $totalTarif ?? 0;
