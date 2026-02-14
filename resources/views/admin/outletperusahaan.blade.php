@@ -562,9 +562,11 @@ textarea {
         <!-- HEADER -->
         <div class="page-header">
             <h2>Master Data - Outlet</h2>
+            @can('manage_outlet')
             <a href="{{ route('admin.outletperusahaan.create') }}" class="btn-add">
                 <i class="fas fa-plus"></i> Tambah Outlet
             </a>
+            @endcan
         </div>
 
         <!-- Display success/error messages -->
@@ -709,6 +711,7 @@ textarea {
                                 <a href="{{ route('admin.outletperusahaan.show', $outlet->id) }}" class="btn-action btn-view" title="Lihat">
                                     <i class="fas fa-eye"></i>
                                 </a>
+                                @can('manage_outlet')
                                 <a href="{{ route('admin.outletperusahaan.edit', $outlet->id) }}" class="btn-action btn-edit" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
@@ -719,6 +722,7 @@ textarea {
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
+                                @endcan
                             </td>
                         </tr>
                         @endforeach

@@ -337,6 +337,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/jadwal/{id}/edit', [JadwalController::class, 'edit'])->name('jadwal.edit');
         Route::put('/jadwal/{id}', [JadwalController::class, 'update'])->name('jadwal.update');
         Route::delete('/jadwal/{id}', [JadwalController::class, 'destroy'])->name('jadwal.destroy');
+        Route::get('/jadwal/{id}/penumpang', [JadwalController::class, 'showPenumpang'])->name('jadwal.penumpang');
 
         // ★★★ MASTER TARIF ROUTES ★★★
         Route::get('/master-tarif', [MasterTarifController::class, 'index'])
@@ -387,58 +388,132 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::delete('/outletperusahaan/{id}', [AdminController::class, 'destroyOutlet'])
             ->middleware(['permission:manage_outlet', 'branch.access'])
             ->name('outletperusahaan.destroy');
-        Route::get('/promo', [AdminController::class, 'promo'])->name('promo');
-        Route::get('/promo/create', [AdminController::class, 'createPromo'])->name('promo.create');
-        Route::post('/promo', [AdminController::class, 'storePromo'])->name('promo.store');
-        Route::get('/promo/{id}', [AdminController::class, 'showPromo'])->name('promo.show');
-        Route::get('/promo/{id}/edit', [AdminController::class, 'editPromo'])->name('promo.edit');
-        Route::put('/promo/{id}', [AdminController::class, 'updatePromo'])->name('promo.update');
-        Route::delete('/promo/{id}', [AdminController::class, 'destroyPromo'])->name('promo.destroy');
-        Route::get('/driver', [AdminController::class, 'driver'])->name('driver');
-        Route::get('/pegawai', [AdminController::class, 'pegawai'])->name('pegawai');
+        Route::get('/promo', [AdminController::class, 'promo'])
+            ->middleware('permission:view_promo')
+            ->name('promo');
+        Route::get('/promo/create', [AdminController::class, 'createPromo'])
+            ->middleware('permission:manage_promo')
+            ->name('promo.create');
+        Route::post('/promo', [AdminController::class, 'storePromo'])
+            ->middleware('permission:manage_promo')
+            ->name('promo.store');
+        Route::get('/promo/{id}', [AdminController::class, 'showPromo'])
+            ->middleware('permission:view_promo')
+            ->name('promo.show');
+        Route::get('/promo/{id}/edit', [AdminController::class, 'editPromo'])
+            ->middleware('permission:manage_promo')
+            ->name('promo.edit');
+        Route::put('/promo/{id}', [AdminController::class, 'updatePromo'])
+            ->middleware('permission:manage_promo')
+            ->name('promo.update');
+        Route::delete('/promo/{id}', [AdminController::class, 'destroyPromo'])
+            ->middleware('permission:manage_promo')
+            ->name('promo.destroy');
+        Route::get('/driver', [AdminController::class, 'driver'])
+            ->middleware('permission:view_driver')
+            ->name('driver');
+        Route::get('/pegawai', [AdminController::class, 'pegawai'])
+            ->middleware('permission:view_pegawai')
+            ->name('pegawai');
         // Rute Routes
-        Route::get('/rute', [RuteController::class, 'index'])->name('rute.index');
-        Route::get('/rute/create', [RuteController::class, 'create'])->name('rute.create');
-        Route::post('/rute', [RuteController::class, 'store'])->name('rute.store');
-        Route::get('/rute/{id}', [RuteController::class, 'show'])->name('rute.show');
-        Route::get('/rute/{id}/edit', [RuteController::class, 'edit'])->name('rute.edit');
-        Route::put('/rute/{id}', [RuteController::class, 'update'])->name('rute.update');
-        Route::delete('/rute/{id}', [RuteController::class, 'destroy'])->name('rute.destroy');
+        Route::get('/rute', [RuteController::class, 'index'])
+            ->middleware('permission:view_rute')
+            ->name('rute.index');
+        Route::get('/rute/create', [RuteController::class, 'create'])
+            ->middleware('permission:manage_rute')
+            ->name('rute.create');
+        Route::post('/rute', [RuteController::class, 'store'])
+            ->middleware('permission:manage_rute')
+            ->name('rute.store');
+        Route::get('/rute/{id}', [RuteController::class, 'show'])
+            ->middleware('permission:view_rute')
+            ->name('rute.show');
+        Route::get('/rute/{id}/edit', [RuteController::class, 'edit'])
+            ->middleware('permission:manage_rute')
+            ->name('rute.edit');
+        Route::put('/rute/{id}', [RuteController::class, 'update'])
+            ->middleware('permission:manage_rute')
+            ->name('rute.update');
+        Route::delete('/rute/{id}', [RuteController::class, 'destroy'])
+            ->middleware('permission:manage_rute')
+            ->name('rute.destroy');
 
         // Transaksi Routes
-        Route::get('/smartsend-transaksi', [AdminController::class, 'smartsendTransaksi'])->name('smartsend-transaksi');
-        Route::get('/perjalanan', [AdminController::class, 'perjalanan'])->name('perjalanan');
-        Route::get('/tiket-perjalanan', [AdminController::class, 'tiketPerjalanan'])->name('tiket-perjalanan');
-        Route::get('/armada-transaksi', [AdminController::class, 'armadaTransaksi'])->name('armada-transaksi');
+        Route::get('/smartsend-transaksi', [AdminController::class, 'smartsendTransaksi'])
+            ->middleware('permission:view_smartsend_transaksi')
+            ->name('smartsend-transaksi');
+        Route::get('/perjalanan', [AdminController::class, 'perjalanan'])
+            ->middleware('permission:view_perjalanan_transaksi')
+            ->name('perjalanan');
+        Route::get('/tiket-perjalanan', [AdminController::class, 'tiketPerjalanan'])
+            ->middleware('permission:view_perjalanan_transaksi')
+            ->name('tiket-perjalanan');
+        Route::get('/armada-transaksi', [AdminController::class, 'armadaTransaksi'])
+            ->middleware('permission:view_armada_transaksi')
+            ->name('armada-transaksi');
 
         // SmartSend Routes
-        Route::get('/smartsend-tiket', [AdminController::class, 'smartsendTiket'])->name('smartsend-tiket');
-        Route::get('/smartsend-perjalanan', [AdminController::class, 'smartsendPerjalanan'])->name('smartsend-perjalanan');
-        Route::get('/smartsend-armada', [AdminController::class, 'smartsendArmada'])->name('smartsend-armada');
+        Route::get('/smartsend-tiket', [AdminController::class, 'smartsendTiket'])
+            ->middleware('permission:view_smartsend_tiket')
+            ->name('smartsend-tiket');
+        Route::get('/smartsend-perjalanan', [AdminController::class, 'smartsendPerjalanan'])
+            ->middleware('permission:view_smartsend_perjalanan')
+            ->name('smartsend-perjalanan');
+        Route::get('/smartsend-armada', [AdminController::class, 'smartsendArmada'])
+            ->middleware('permission:view_smartsend_armada')
+            ->name('smartsend-armada');
 
         // SmartRent Route
-        Route::get('/smartrent', [AdminController::class, 'smartrent'])->name('smartrent');
+        Route::get('/smartrent', [AdminController::class, 'smartrent'])
+            ->middleware('permission:view_smartrent')
+            ->name('smartrent');
 
         // Laporan Route
-        Route::get('/laporan', [AdminController::class, 'laporan'])->name('laporan');
+        Route::get('/laporan', [AdminController::class, 'laporan'])
+            ->middleware('permission:view_laporan')
+            ->name('laporan');
 
         // Pengaturan Routes
-        Route::get('/user', [AdminController::class, 'user'])->name('user');
-        Route::post('/user', [AdminController::class, 'storeUser'])->name('user.store');
-        Route::get('/menu', [AdminController::class, 'menu'])->name('menu');
+        Route::get('/user', [AdminController::class, 'user'])
+            ->middleware('permission:view_user')
+            ->name('user');
+        Route::post('/user', [AdminController::class, 'storeUser'])
+            ->middleware('permission:manage_user')
+            ->name('user.store');
+        Route::get('/menu', [AdminController::class, 'menu'])
+            ->middleware('permission:view_menu')
+            ->name('menu');
 
         // Kontak Perusahaan Routes
-        Route::get('/kontakperusahaan', [KontakPerusahaanController::class, 'index'])->name('kontakperusahaan');
-        Route::put('/kontakperusahaan/{id}', [KontakPerusahaanController::class, 'update'])->name('kontakperusahaan.update');
+        Route::get('/kontakperusahaan', [KontakPerusahaanController::class, 'index'])
+            ->middleware('permission:view_kontak')
+            ->name('kontakperusahaan');
+        Route::put('/kontakperusahaan/{id}', [KontakPerusahaanController::class, 'update'])
+            ->middleware('permission:manage_kontak')
+            ->name('kontakperusahaan.update');
 
         // Artikel Management Routes
-        Route::get('/artikel', [AdminController::class, 'artikel'])->name('artikel.index');
-        Route::get('/artikel/create', [AdminController::class, 'createArtikel'])->name('artikel.create');
-        Route::post('/artikel', [AdminController::class, 'storeArtikel'])->name('artikel.store');
-        Route::get('/artikel/{id}', [AdminController::class, 'showArtikel'])->name('artikel.show');
-        Route::get('/artikel/{id}/edit', [AdminController::class, 'editArtikel'])->name('artikel.edit');
-        Route::put('/artikel/{id}', [AdminController::class, 'updateArtikel'])->name('artikel.update');
-        Route::delete('/artikel/{id}', [AdminController::class, 'destroyArtikel'])->name('artikel.destroy');
+        Route::get('/artikel', [AdminController::class, 'artikel'])
+            ->middleware('permission:view_artikel')
+            ->name('artikel.index');
+        Route::get('/artikel/create', [AdminController::class, 'createArtikel'])
+            ->middleware('permission:manage_artikel')
+            ->name('artikel.create');
+        Route::post('/artikel', [AdminController::class, 'storeArtikel'])
+            ->middleware('permission:manage_artikel')
+            ->name('artikel.store');
+        Route::get('/artikel/{id}', [AdminController::class, 'showArtikel'])
+            ->middleware('permission:view_artikel')
+            ->name('artikel.show');
+        Route::get('/artikel/{id}/edit', [AdminController::class, 'editArtikel'])
+            ->middleware('permission:manage_artikel')
+            ->name('artikel.edit');
+        Route::put('/artikel/{id}', [AdminController::class, 'updateArtikel'])
+            ->middleware('permission:manage_artikel')
+            ->name('artikel.update');
+        Route::delete('/artikel/{id}', [AdminController::class, 'destroyArtikel'])
+            ->middleware('permission:manage_artikel')
+            ->name('artikel.destroy');
     }); // Close admin.role middleware group
 
     // Logout Route (outside admin.role middleware)

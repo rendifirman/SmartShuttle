@@ -722,9 +722,11 @@ textarea {
         <!-- HEADER -->
         <div class="page-header">
             <h2>Data Promo</h2>
+            @can('manage_promo')
             <a href="{{ route('admin.promo.create') }}" class="btn-add">
                 <i class="fas fa-plus"></i> Tambah Promo
             </a>
+            @endcan
         </div>
 
         <!-- Flash Messages -->
@@ -770,7 +772,7 @@ textarea {
                         <option value="keluarga" {{ request('kategori_promo') == 'keluarga' ? 'selected' : '' }}>Keluarga</option>
                         <option value="membership" {{ request('kategori_promo') == 'membership' ? 'selected' : '' }}>Membership</option>
                     </select>
-                    
+
                     <select name="tipe_promo" id="filter-tipe">
                         <option value="">Semua Tipe</option>
                         <option value="all" {{ request('tipe_promo') == 'all' ? 'selected' : '' }}>All (Semua)</option>
@@ -778,13 +780,13 @@ textarea {
                         <option value="paket" {{ request('tipe_promo') == 'paket' ? 'selected' : '' }}>Paket</option>
                         <option value="sewa" {{ request('tipe_promo') == 'sewa' ? 'selected' : '' }}>Sewa</option>
                     </select>
-                    
+
                     <select name="jenis_diskon" id="filter-diskon">
                         <option value="">Jenis Diskon</option>
                         <option value="persentase" {{ request('jenis_diskon') == 'persentase' ? 'selected' : '' }}>Persentase</option>
                         <option value="nominal" {{ request('jenis_diskon') == 'nominal' ? 'selected' : '' }}>Nominal</option>
                     </select>
-                    
+
                     <select name="status" id="filter-status">
                         <option value="">Status Promo</option>
                         <option value="aktif" {{ request('status') == 'aktif' ? 'selected' : '' }}>Aktif</option>
@@ -872,12 +874,12 @@ textarea {
                             @php
                                 $statusClass = 'status-nonaktif';
                                 $statusText = 'Nonaktif';
-                                
+
                                 if($promo->status) {
                                     $now = now();
                                     $startDate = \Carbon\Carbon::parse($promo->tanggal_mulai);
                                     $endDate = \Carbon\Carbon::parse($promo->tanggal_berakhir);
-                                    
+
                                     if($now->between($startDate, $endDate)) {
                                         $statusClass = 'status-aktif';
                                         $statusText = 'Aktif';
@@ -895,6 +897,7 @@ textarea {
                             <a href="{{ route('admin.promo.show', $promo->id) }}" class="btn-action btn-view">
                                 <i class="fas fa-eye"></i> View
                             </a>
+                            @can('manage_promo')
                             <a href="{{ route('admin.promo.edit', $promo->id) }}" class="btn-action btn-edit">
                                 <i class="fas fa-edit"></i> Edit
                             </a>
@@ -905,6 +908,7 @@ textarea {
                                     <i class="fas fa-trash"></i> Hapus
                                 </button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                     @empty

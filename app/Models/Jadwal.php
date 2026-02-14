@@ -10,7 +10,7 @@ class Jadwal extends Model
     use HasFactory;
 
     protected $table = 'jadwals';
-    
+
     protected $fillable = [
         'shuttle_id',
         'tanggal_keberangkatan',
@@ -53,6 +53,12 @@ class Jadwal extends Model
         return $this->hasOne(DriverJadwal::class, 'id_jadwal');
     }
 
+    // ★★★ Relasi ke Pemesanan (one-to-many) ★★★
+    public function pemesanan()
+    {
+        return $this->hasMany(Pemesanan::class, 'jadwal_id');
+    }
+
     // ★★★ Scope untuk jadwal yang tersedia (belum diambil driver) ★★★
     public function scopeTersedia($query)
     {
@@ -77,7 +83,7 @@ class Jadwal extends Model
         // Update status admin
         $this->status_admin = 'diambil';
         $this->save();
-        
+
         // Buat jadwal driver
         return DriverJadwal::createFromJadwalAdmin($this, $driverId);
     }

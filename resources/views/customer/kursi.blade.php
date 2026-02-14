@@ -1884,10 +1884,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const diskonProporsional = Math.round(diskonServer * (selectedCount / (jumlahPenumpang || 1)));
         const totalAfter = Math.max(0, subtotal - diskonProporsional);
 
-        // Update elemen di kolom kiri
-        document.getElementById('subtotal-amount-left').textContent = `Rp ${formatCurrency(subtotal)}`;
-        document.getElementById('discount-amount-left').textContent = `- Rp ${formatCurrency(diskonProporsional)}`;
-        document.getElementById('total-amount-left').textContent = `Rp ${formatCurrency(totalAfter)}`;
+        // Update elemen di kolom kiri (jika ada di halaman ini)
+        const subtotalEl = document.getElementById('subtotal-amount-left');
+        const discountEl = document.getElementById('discount-amount-left');
+        const totalLeftEl = document.getElementById('total-amount-left');
+
+        if (subtotalEl) subtotalEl.textContent = `Rp ${formatCurrency(subtotal)}`;
+        if (discountEl) discountEl.textContent = `- Rp ${formatCurrency(diskonProporsional)}`;
+        if (totalLeftEl) totalLeftEl.textContent = `Rp ${formatCurrency(totalAfter)}`;
 
         // Update total kecil di bawah kursi yang dipilih
         const totalAmountSpan = document.getElementById('total-amount');
@@ -1896,33 +1900,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateSelectedSeatsDisplay() {
         const selectedCount = selectedSeats.length;
-        document.getElementById('selected-count').textContent = selectedCount;
+        const selectedCountEl = document.getElementById('selected-count');
+        if (selectedCountEl) selectedCountEl.textContent = selectedCount;
 
         const list = document.getElementById('selected-list');
-        list.innerHTML = '';
+        if (list) list.innerHTML = '';
         selectedSeats.forEach(seat => {
             const badge = document.createElement('span');
             badge.className = 'seat-badge-item';
             badge.innerHTML = seat.number;
-            list.appendChild(badge);
+            if (list) list.appendChild(badge);
         });
 
         const totalPriceContainer = document.getElementById('total-price-container');
         if (selectedCount > 0) {
             updateSummaryForSelection(selectedCount);
-            totalPriceContainer.style.display = 'block';
+            if (totalPriceContainer) totalPriceContainer.style.display = 'block';
         } else {
             // Kembalikan ke nilai server (semua penumpang)
-            document.getElementById('subtotal-amount-left').textContent = `Rp ${formatCurrency(subtotalServer)}`;
-            document.getElementById('discount-amount-left').textContent = `- Rp ${formatCurrency(diskonServer)}`;
-            document.getElementById('total-amount-left').textContent = `Rp ${formatCurrency(totalBayarServer)}`;
-            document.getElementById('total-amount').textContent = `Rp ${formatCurrency(totalBayarServer)}`;
-            totalPriceContainer.style.display = 'none';
+            const subtotalEl = document.getElementById('subtotal-amount-left');
+            const discountEl = document.getElementById('discount-amount-left');
+            const totalLeftEl = document.getElementById('total-amount-left');
+            const totalAmountSpan = document.getElementById('total-amount');
+
+            if (subtotalEl) subtotalEl.textContent = `Rp ${formatCurrency(subtotalServer)}`;
+            if (discountEl) discountEl.textContent = `- Rp ${formatCurrency(diskonServer)}`;
+            if (totalLeftEl) totalLeftEl.textContent = `Rp ${formatCurrency(totalBayarServer)}`;
+            if (totalAmountSpan) totalAmountSpan.textContent = `Rp ${formatCurrency(totalBayarServer)}`;
+            if (totalPriceContainer) totalPriceContainer.style.display = 'none';
         }
     }
 
     function updateFormInputs() {
         const container = document.getElementById('selected-seats-inputs');
+        if (!container) return;
         container.innerHTML = '';
         selectedSeats.forEach((seat, idx) => {
             const input = document.createElement('input');
@@ -1935,6 +1946,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updatePaymentButton() {
         const btn = document.getElementById('payment-btn');
+        if (!btn) return;
         btn.disabled = selectedSeats.length !== jumlahPenumpang;
     }
 

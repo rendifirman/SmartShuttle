@@ -535,9 +535,11 @@ textarea {
         <!-- HEADER -->
         <div class="page-header">
             <h2>Master Data - Cabang Perusahaan</h2>
+            @can('manage_cabang')
             <a href="{{ route('admin.cabang.create') }}" class="btn-add">
                 <i class="fas fa-plus"></i> Tambah Cabang
             </a>
+            @endcan
         </div>
 
         <!-- Display success/error messages -->
@@ -658,6 +660,7 @@ textarea {
                                 </span>
                             </td>
                             <td>
+                                @can('manage_cabang')
                                 <a href="{{ route('admin.cabang.edit', $branch->id) }}" class="btn-action btn-edit" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
@@ -668,6 +671,7 @@ textarea {
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
+                                @endcan
                             </td>
                         </tr>
                         @endforeach

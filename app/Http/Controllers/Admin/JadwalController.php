@@ -13,7 +13,7 @@ class JadwalController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Jadwal::with(['shuttle', 'rutes'])
+        $query = Jadwal::with(['shuttle', 'rutes', 'driverJadwal'])
             ->orderBy('tanggal_keberangkatan', 'desc')
             ->orderBy('waktu_keberangkatan', 'asc');
 
@@ -250,5 +250,23 @@ class JadwalController extends Controller
         }
 
         return 'tersedia';
+    }
+
+    // Method untuk menampilkan data penumpang/transaksi dari jadwal
+    public function showPenumpang($id)
+    {
+        $jadwal = Jadwal::with(['shuttle', 'rutes'])->findOrFail($id);
+
+        // Ambil semua pemesanan yang terkait dengan jadwal ini
+        $pemesanan = Jadwal::findOrFail($id)->pemesanan()->with(['user', 'detailPenumpang', 'pembayaran', 'kursiTerpesan'])->get();
+
+        // Jika tidak ada pemesanan langsung, coba cari dari DriverJadwal
+        if ($jadwal->driverJadwal && $pemesanan->isEmpty()) {
+            $pemesanan = \App\Models\Pemesanan::where('id_jadwal_driver', $jadwal->driverJadwal->id_jadwal_driver)
+                ->with(['user', 'detailPenumpang', 'pembayaran', 'kursiTerpesan'])
+                ->get();
+        }
+
+        return view('admin.jadwal-penumpang', compact('jadwal', 'pemesanan'));
     }
 }
