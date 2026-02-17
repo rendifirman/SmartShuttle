@@ -515,7 +515,17 @@
         <form method="POST" action="{{ route('admin.jadwal.store') }}" id="jadwalForm">
             @csrf
 
-            <div class="form-grid">
+            <!-- Flow Mode Info -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; padding: 15px 20px; margin-bottom: 25px; color: white; display: flex; align-items: center; gap: 12px;">
+                <i class="fas fa-info-circle" style="font-size: 18px;"></i>
+                <div>
+                    @if(isset($mode) && $mode === 'direct_assign')
+                        <strong>Mode:</strong> Direct Assign - Anda harus memilih driver sekarang, jadwal akan langsung aktif
+                    @else
+                        <strong>Mode:</strong> Driver Confirmation - Driver akan melihat jadwal ini dan dapat mengambilnya
+                    @endif
+                </div>
+            </div>
                 <!-- Armada -->
                 <div class="form-group">
                     <label class="form-label">Armada <span>*</span></label>
@@ -582,6 +592,35 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Driver Selection (only shown/required in direct_assign mode) -->
+                @if(isset($mode) && $mode === 'direct_assign')
+                    <div class="form-group">
+                        <label class="form-label">Driver <span>*</span></label>
+                        <div class="select-wrapper">
+                            <select name="driver_id" class="form-control" required>
+                                <option value="">Pilih Driver</option>
+                                @if(isset($drivers) && $drivers->count() > 0)
+                                    @foreach($drivers as $driver)
+                                        <option value="{{ $driver->id }}" {{ old('driver_id') == $driver->id ? 'selected' : '' }}>
+                                            {{ $driver->name }}
+                                        </option>
+                                    @endforeach
+                                @else
+                                    <option value="" disabled>Driver tidak tersedia</option>
+                                @endif
+                            </select>
+                        </div>
+                        <small style="display: block; margin-top: 8px; color: var(--text-muted); font-size: 12px;">
+                            <i class="fas fa-warning"></i> Dalam mode Direct Assign, Anda harus memilih driver. Jadwal akan dibuat dengan status aktif.
+                        </small>
+                    </div>
+                @else
+                    <div style="background: rgba(102, 126, 234, 0.1); border-radius: 10px; padding: 15px 20px; border-left: 4px solid #667eea; margin-bottom: 20px;">
+                        <i class="fas fa-info-circle" style="color: #667eea; margin-right: 8px;"></i>
+                        <span style="color: var(--text-secondary);">Dalam mode Driver Confirmation, driver akan melihat jadwal ini sebagai "terbuka" dan dapat mengambilnya.</span>
+                    </div>
+                @endif
 
                 <!-- Harga dari Rute (Readonly) -->
                 <div class="form-group">

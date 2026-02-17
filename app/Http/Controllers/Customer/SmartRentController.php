@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\MProfilePerusahaan;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class SmartRentController extends Controller
 {
@@ -15,7 +17,6 @@ class SmartRentController extends Controller
     {
         $profile = MProfilePerusahaan::first();
         
-        // Data kendaraan
         $vehicles = [
             [
                 'id' => 1,
@@ -73,137 +74,151 @@ class SmartRentController extends Controller
         return view('customer.smartrent', compact('profile', 'vehicles'));
     }
     
-    public function showCheckoutForm(Request $request)
+    /**
+     * Halaman detail kendaraan (TIDAK PERLU LOGIN)
+     */
+    public function detail($id)
     {
-        $vehicleId = $request->query('vehicle_id');
-        $service = $request->query('service');
-        $duration = $request->query('duration', 1);
-        $rentDate = $request->query('rent_date', date('Y-m-d'));
+        $vehicles = [
+            1 => [
+                'id' => 1,
+                'name' => 'Toyota Hiace Commuter',
+                'type' => 'Shuttle | Manual',
+                'category' => 'Shuttle Bus',
+                'image' => asset('images/shuttle1.jpeg'),
+                'images' => [
+                    asset('images/shuttle1.jpeg'),
+                    asset('images/shuttle2.jpg'),
+                    asset('images/shuttle3.jpg'),
+                ],
+                'seats' => '12 Seat',
+                'luggage' => '4 Koper',
+                'fuel' => 'Bensin',
+                'transmission' => 'Manual',
+                'ac' => 'Dual AC',
+                'year' => '2022',
+                'insurance' => 'All Risk',
+                'driver' => 'Termasuk Sopir',
+                'features' => ['AC', 'Audio System', 'LCD TV', 'Reclining Seats', 'Cool Box', 'USB Charger', 'WiFi', 'Safety Belt'],
+                'price' => 1200000,
+                'driver_price' => 150000,
+                'price_formatted' => '1.200.000',
+                'period' => '/hari',
+                'min_rent' => '2',
+                'available' => true,
+                'description' => 'Toyota Hiace Commuter dengan kapasitas 12 penumpang sangat cocok untuk perjalanan grup atau keluarga. Dilengkapi dengan AC ganda, kursi yang nyaman, dan bagasi yang luas. Mobil ini dalam kondisi prima dan siap untuk perjalanan jarak jauh dengan kenyamanan maksimal.',
+                'specifications' => [
+                    ['label' => 'Merek', 'value' => 'Toyota'],
+                    ['label' => 'Model', 'value' => 'Hiace Commuter'],
+                    ['label' => 'Tahun', 'value' => '2022'],
+                    ['label' => 'Warna', 'value' => 'Putih'],
+                    ['label' => 'Plat Nomor', 'value' => 'B 1234 ABC'],
+                    ['label' => 'Kapasitas Mesin', 'value' => '2500 cc'],
+                    ['label' => 'Transmisi', 'value' => 'Manual'],
+                    ['label' => 'AC', 'value' => 'Dual AC'],
+                    ['label' => 'Sistem Audio', 'value' => 'Touchscreen + Bluetooth'],
+                ]
+            ],
+            2 => [
+                'id' => 2,
+                'name' => 'Isuzu Elf Long',
+                'type' => 'MPV | Manual',
+                'category' => 'Shuttle Bus',
+                'image' => asset('images/shuttle1.jpeg'),
+                'images' => [
+                    asset('images/shuttle1.jpeg'),
+                ],
+                'seats' => '18 Seat',
+                'luggage' => '6 Koper',
+                'fuel' => 'Solar',
+                'transmission' => 'Manual',
+                'ac' => 'Triple AC',
+                'year' => '2021',
+                'insurance' => 'All Risk',
+                'driver' => 'Termasuk Sopir',
+                'features' => ['AC', 'Audio System', 'LCD TV', 'Reclining Seats', 'Cool Box', 'USB Charger', 'WiFi', 'Safety Belt', 'Emergency Exit', 'First Aid Kit'],
+                'price' => 1500000,
+                'driver_price' => 200000,
+                'price_formatted' => '1.500.000',
+                'period' => '/hari',
+                'min_rent' => '2',
+                'available' => true,
+                'description' => 'Isuzu Elf Long dengan kapasitas 18 penumpang, ideal untuk transportasi kelompok besar. Dilengkapi dengan 3 unit AC untuk kenyamanan seluruh penumpang. Mobil ini sangat cocok untuk perjalanan wisata, perusahaan, atau acara keluarga besar.',
+                'specifications' => [
+                    ['label' => 'Merek', 'value' => 'Isuzu'],
+                    ['label' => 'Model', 'value' => 'Elf Long'],
+                    ['label' => 'Tahun', 'value' => '2021'],
+                    ['label' => 'Warna', 'value' => 'Silver'],
+                    ['label' => 'Plat Nomor', 'value' => 'B 5678 DEF'],
+                    ['label' => 'Kapasitas Mesin', 'value' => '3000 cc'],
+                    ['label' => 'Transmisi', 'value' => 'Manual'],
+                    ['label' => 'AC', 'value' => 'Triple AC'],
+                    ['label' => 'Bagasi', 'value' => 'Ekstra Luas'],
+                ]
+            ],
+            3 => [
+                'id' => 3,
+                'name' => 'Mitsubishi L300',
+                'type' => 'Shuttle | Manual',
+                'category' => 'Shuttle',
+                'image' => asset('images/shuttle1.jpeg'),
+                'images' => [
+                    asset('images/shuttle1.jpeg'),
+                ],
+                'seats' => '8 Seat',
+                'luggage' => 'Besar',
+                'fuel' => 'Solar',
+                'transmission' => 'Manual',
+                'ac' => 'Single AC',
+                'year' => '2020',
+                'insurance' => 'TLO',
+                'driver' => 'Termasuk Sopir',
+                'features' => ['AC', 'Audio System', 'Bagasi Luas', 'Safety Belt', 'Power Steering'],
+                'price' => 800000,
+                'driver_price' => 100000,
+                'price_formatted' => '800.000',
+                'period' => '/hari',
+                'min_rent' => '1',
+                'available' => true,
+                'description' => 'Mitsubishi L300 yang tangguh dan ekonomis, cocok untuk perjalanan dengan bagasi besar. Dengan kapasitas 8 penumpang, sangat ideal untuk keluarga atau tim kecil. Mobil ini sangat hemat bahan bakar dan mudah dalam perawatan.',
+                'specifications' => [
+                    ['label' => 'Merek', 'value' => 'Mitsubishi'],
+                    ['label' => 'Model', 'value' => 'L300'],
+                    ['label' => 'Tahun', 'value' => '2020'],
+                    ['label' => 'Warna', 'value' => 'Hitam'],
+                    ['label' => 'Plat Nomor', 'value' => 'B 9012 GHI'],
+                    ['label' => 'Kapasitas Mesin', 'value' => '2400 cc'],
+                    ['label' => 'Transmisi', 'value' => 'Manual'],
+                    ['label' => 'AC', 'value' => 'Single AC'],
+                    ['label' => 'Konsumsi BBM', 'value' => '10 km/liter'],
+                ]
+            ],
+        ];
         
-        // Cari data kendaraan
-        $vehicle = Vehicle::find($vehicleId);
+        $vehicle = $vehicles[$id] ?? null;
         
         if (!$vehicle) {
-            return redirect()->route('smartrent.index')->with('error', 'Kendaraan tidak ditemukan.');
+            abort(404);
         }
         
-        // Hitung total harga
-        $total = $vehicle->price * $duration;
+        $profile = MProfilePerusahaan::first();
         
-        return view('customer.checkout-smartrent', compact(
-            'vehicle',
-            'vehicleId',
-            'service',
-            'duration',
-            'rentDate',
-            'total'
-        ));
+        return view('customer.smartrent-detail', compact('profile', 'vehicle'));
     }
-
-    public function processCheckout(Request $request)
-    {
-        // Validasi data
-        $validated = $request->validate([
-            'vehicle_id' => 'required|exists:vehicles,id',
-            'full_name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
-            'email' => 'required|email|max:255',
-            'pickup_address' => 'required|string|max:500',
-            'rent_date' => 'required|date',
-            'duration' => 'required|integer|min:1|max:30',
-            'city' => 'required|string|max:100',
-            'service_type' => 'required|in:self-drive,with-driver',
-            'ktp_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'sim_file' => $request->service_type === 'self-drive' ? 'required|file|mimes:jpg,jpeg,png,pdf|max:2048' : 'nullable',
-            'notes' => 'nullable|string|max:1000',
-        ]);
-        
-        try {
-            // Simpan file KTP
-            $ktpPath = $request->file('ktp_file')->store('ktp_documents', 'public');
-            
-            // Simpan file SIM jika ada
-            $simPath = null;
-            if ($request->hasFile('sim_file')) {
-                $simPath = $request->file('sim_file')->store('sim_documents', 'public');
-            }
-            
-            // Hitung total harga
-            $vehicle = Vehicle::find($validated['vehicle_id']);
-            $totalPrice = $vehicle->price * $validated['duration'];
-            
-            // Tambahan biaya untuk layanan dengan sopir
-            if ($validated['service_type'] === 'with-driver') {
-                $driverFee = 150000 * $validated['duration']; // Rp 150,000 per hari
-                $totalPrice += $driverFee;
-            }
-            
-            // Generate order number
-            $orderNumber = 'SR-' . date('Ymd') . '-' . strtoupper(uniqid());
-            
-            // Simpan data pesanan
-            $order = SmartRentOrder::create([
-                'order_number' => $orderNumber,
-                'vehicle_id' => $validated['vehicle_id'],
-                'customer_name' => $validated['full_name'],
-                'customer_phone' => $validated['phone'],
-                'customer_email' => $validated['email'],
-                'pickup_address' => $validated['pickup_address'],
-                'rent_date' => $validated['rent_date'],
-                'duration' => $validated['duration'],
-                'city' => $validated['city'],
-                'service_type' => $validated['service_type'],
-                'ktp_file' => $ktpPath,
-                'sim_file' => $simPath,
-                'notes' => $validated['notes'],
-                'total_price' => $totalPrice,
-                'status' => 'pending',
-                'payment_status' => 'unpaid',
-            ]);
-            
-            // Redirect ke halaman pembayaran dengan data order
-            return redirect()->route('smartrent.payment', ['order_id' => $order->id])
-                ->with('success', 'Pesanan berhasil dibuat! Silakan lakukan pembayaran.');
-                
-        } catch (\Exception $e) {
-            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
-                ->withInput();
-        }
-    }
-
-    public function showPayment(Request $request)
-    {
-        $orderId = $request->query('order_id');
-        
-        if (!$orderId) {
-            return redirect()->route('smartrent.index')->with('error', 'Order ID tidak ditemukan.');
-        }
-        
-        $order = SmartRentOrder::with('vehicle')->find($orderId);
-        
-        if (!$order) {
-            return redirect()->route('smartrent.index')->with('error', 'Pesanan tidak ditemukan.');
-        }
-        
-        // Hitung detail harga
-        $vehiclePrice = $order->vehicle->price;
-        $subtotal = $vehiclePrice * $order->duration;
-        $driverFee = 0;
-        
-        if ($order->service_type === 'with-driver') {
-            $driverFee = 150000 * $order->duration;
-        }
-        
-        $total = $order->total_price;
-        
-        return view('customer.pembayaran-smartrent', compact('order', 'vehiclePrice', 'subtotal', 'driverFee', 'total'));
-    }
-
+    
     /**
-     * Halaman booking dengan filter
+     * Halaman booking dengan filter (PERLU LOGIN)
      */
     public function booking(Request $request)
     {
+        // CEK APAKAH USER SUDAH LOGIN
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'Silakan login terlebih dahulu untuk mengakses halaman booking.')
+                ->with('redirect_url', route('smartrent.booking', $request->all()));
+        }
+        
+        // Ambil parameter dari URL untuk filter
         $filterData = [
             'city' => $request->input('city', ''),
             'vehicle_type' => $request->input('vehicle_type', ''),
@@ -215,7 +230,6 @@ class SmartRentController extends Controller
         
         $profile = MProfilePerusahaan::first();
         
-        // Data semua kendaraan
         $allVehicles = [
             [
                 'id' => 1,
@@ -226,6 +240,7 @@ class SmartRentController extends Controller
                 'luggage' => '4 Koper',
                 'fuel' => 'Bensin',
                 'price' => 1200000,
+                'driver_price' => 150000,
                 'price_formatted' => '1.200.000',
                 'period' => '/hari',
                 'available' => true,
@@ -243,6 +258,7 @@ class SmartRentController extends Controller
                 'luggage' => '6 Koper',
                 'fuel' => 'Solar',
                 'price' => 1500000,
+                'driver_price' => 200000,
                 'price_formatted' => '1.500.000',
                 'period' => '/hari',
                 'available' => true,
@@ -260,6 +276,7 @@ class SmartRentController extends Controller
                 'luggage' => 'Besar',
                 'fuel' => 'Solar',
                 'price' => 800000,
+                'driver_price' => 100000,
                 'price_formatted' => '800.000',
                 'period' => '/hari',
                 'available' => true,
@@ -270,22 +287,23 @@ class SmartRentController extends Controller
             ],
         ];
         
-        // Filter kendaraan berdasarkan input
         $filteredVehicles = $allVehicles;
         
+        // Filter berdasarkan kota (jika ada)
         if ($filterData['city']) {
-            // Filter berdasarkan kota (simulasi)
             $filteredVehicles = array_filter($filteredVehicles, function($vehicle) use ($filterData) {
-                return true; // Untuk sementara return true semua
+                return true; // Untuk sementara selalu true, bisa ditambahkan logika filter kota nanti
             });
         }
         
+        // Filter berdasarkan tipe kendaraan
         if ($filterData['vehicle_type']) {
             $filteredVehicles = array_filter($filteredVehicles, function($vehicle) use ($filterData) {
                 return stripos($vehicle['type'], $filterData['vehicle_type']) !== false;
             });
         }
         
+        // Filter berdasarkan kapasitas
         if ($filterData['capacity']) {
             $filteredVehicles = array_filter($filteredVehicles, function($vehicle) use ($filterData) {
                 $capacityRange = $filterData['capacity'];
@@ -299,10 +317,9 @@ class SmartRentController extends Controller
             });
         }
         
-        // Reset array keys
         $filteredVehicles = array_values($filteredVehicles);
         
-        // Cari vehicle yang dipilih
+        // Cari kendaraan yang dipilih (jika ada vehicle_id)
         $selectedVehicle = null;
         if ($filterData['vehicle_id']) {
             foreach ($allVehicles as $vehicle) {
@@ -313,6 +330,7 @@ class SmartRentController extends Controller
             }
         }
         
+        // Return view dengan semua data
         return view('customer.smartrent-booking', [
             'filterData' => $filterData,
             'vehicles' => $filteredVehicles,
@@ -322,49 +340,17 @@ class SmartRentController extends Controller
     }
     
     /**
-     * Halaman detail kendaraan
-     */
-    public function vehicleDetail($id)
-    {
-        $profile = MProfilePerusahaan::first();
-        
-        // Data kendaraan (contoh)
-        $vehicle = [
-            'id' => $id,
-            'name' => 'Toyota Hiace Commuter',
-            'type' => 'Shuttle',
-            'image' => asset('images/shuttle1.jpeg'),
-            'seats' => '12 Seat',
-            'luggage' => '4 Koper',
-            'fuel' => 'Bensin',
-            'transmission' => 'Manual',
-            'ac' => 'AC Double',
-            'price' => 1200000,
-            'price_formatted' => '1.200.000',
-            'period' => '/hari',
-            'available' => true,
-            'description' => 'Mobil shuttle dengan kapasitas 12 penumpang, cocok untuk keluarga besar atau rombongan kecil. Dilengkapi dengan AC dan audio system. Kursi empuk dan memiliki sistem keselamatan yang lengkap.',
-            'specifications' => [
-                ['label' => 'Kapasitas', 'value' => '12 Penumpang'],
-                ['label' => 'Transmisi', 'value' => 'Manual'],
-                ['label' => 'Bahan Bakar', 'value' => 'Bensin'],
-                ['label' => 'AC', 'value' => 'Double AC'],
-                ['label' => 'Audio', 'value' => 'System Stereo'],
-                ['label' => 'Tahun', 'value' => '2023'],
-            ],
-            'facilities' => ['AC', 'Audio System', 'Kursi Empuk', 'Safety Belt', 'P3K', 'Karpet', 'Kursi Reclining'],
-            'driver_included_price' => 150000,
-            'driver_included' => true
-        ];
-        
-        return view('customer.smartrent-detail', compact('profile', 'vehicle'));
-    }
-    
-    /**
-     * Proses order (langsung ke halaman pesanan)
+     * Proses order langsung (PERLU LOGIN)
      */
     public function order(Request $request)
     {
+        // CEK LOGIN
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'Silakan login terlebih dahulu untuk melakukan pemesanan.')
+                ->with('redirect_url', route('smartrent.booking'));
+        }
+
         $request->validate([
             'vehicle_id' => 'required|integer',
             'service' => 'required|in:self-drive,with-driver',
@@ -372,19 +358,16 @@ class SmartRentController extends Controller
             'rent_date' => 'required|date|after_or_equal:today',
         ]);
 
-        // Ambil data kendaraan
         $vehicle = $this->getVehicleById($request->vehicle_id);
         if (!$vehicle) {
             return redirect()->route('smartrent.booking')->with('error', 'Kendaraan tidak ditemukan.');
         }
 
-        // Hitung total harga
         $vehiclePrice = $vehicle['price'] * $request->duration;
         $driverPrice = ($request->service == 'with-driver') ?
             ($vehicle['driver_included_price'] ?? 0) * $request->duration : 0;
         $totalPrice = $vehiclePrice + $driverPrice;
 
-        // Simpan data booking ke session
         session()->put('smartrent_order', [
             'vehicle_id' => $request->vehicle_id,
             'vehicle_name' => $vehicle['name'],
@@ -408,167 +391,251 @@ class SmartRentController extends Controller
     }
 
     /**
-     * Proses booking (form checkout)
+     * Proses checkout dari halaman detail (POST) - PERLU LOGIN
      */
-    public function checkout(Request $request)
+    public function processDetailCheckout(Request $request)
     {
-        // Jika request GET (dari tombol Lanjutkan ke Pembayaran)
-        if ($request->isMethod('get')) {
-            $validated = $request->validate([
-                'vehicle_id' => 'required|integer',
-                'service' => 'required|in:self-drive,with-driver',
-                'duration' => 'required|integer|min:1|max:30',
-                'rent_date' => 'required|date|after_or_equal:today',
-            ]);
-            
-            // Ambil data kendaraan
-            $vehicle = $this->getVehicleById($validated['vehicle_id']);
-            if (!$vehicle) {
-                return redirect()->route('smartrent.booking')->with('error', 'Kendaraan tidak ditemukan.');
-            }
-            
-            // Hitung harga
-            $vehiclePrice = $vehicle['price'] * $validated['duration'];
-            $driverPrice = ($validated['service'] == 'with-driver') ? 
-                ($vehicle['driver_included_price'] ?? 0) * $validated['duration'] : 0;
-            $total = $vehiclePrice + $driverPrice;
-            
-            $profile = MProfilePerusahaan::first();
-            
-            return view('customer.pesanan-smartrent', [
-                'profile' => $profile,
-                'vehicle' => $vehicle,
-                'service' => $validated['service'],
-                'duration' => $validated['duration'],
-                'rentDate' => $validated['rent_date'],
-                'vehicleId' => $validated['vehicle_id'],
-                'vehiclePrice' => $vehiclePrice,
-                'driverPrice' => $driverPrice,
-                'total' => $total
-            ]);
+        // CEK LOGIN
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'Silakan login terlebih dahulu untuk melanjutkan checkout.')
+                ->with('redirect_url', route('smartrent.detail', $request->vehicle_id))
+                ->with('form_data', $request->except('_token'));
         }
         
-        // Jika request POST (dari form pesanan)
-        $request->validate([
+        $validated = $request->validate([
             'vehicle_id' => 'required|integer',
+            'vehicle_name' => 'required|string',
+            'vehicle_price' => 'required|numeric',
+            'vehicle_image' => 'required|string',
+            'vehicle_type' => 'required|string',
+            'pickup_location' => 'required|string',
             'rent_date' => 'required|date|after_or_equal:today',
             'duration' => 'required|integer|min:1|max:30',
-            'service_type' => 'required|in:self-drive,with-driver',
-            'full_name' => 'required|string|max:100',
-            'email' => 'required|email|max:100',
-            'phone' => 'required|string|max:20',
-            'pickup_address' => 'required|string|max:255',
-            'city' => 'required|string',
-            'notes' => 'nullable|string',
-            'ktp_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'sim_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'service_type' => 'required|in:with_driver,self_drive',
+            'driver_price' => 'required|numeric',
         ]);
         
-        // Ambil data kendaraan
-        $vehicle = $this->getVehicleById($request->vehicle_id);
+        $vehicleData = $this->getVehicleById($validated['vehicle_id']);
+        
+        $vehiclePrice = $validated['vehicle_price'] * $validated['duration'];
+        $driverPrice = 0;
+        
+        if ($validated['service_type'] == 'with_driver') {
+            $driverPricePerDay = $validated['driver_price'];
+            $driverPrice = $driverPricePerDay * $validated['duration'];
+        }
+        
+        $totalPrice = $vehiclePrice + $driverPrice;
+        
+        $checkoutData = [
+            'vehicle_id' => $validated['vehicle_id'],
+            'vehicle_name' => $validated['vehicle_name'],
+            'vehicle_price' => $validated['vehicle_price'],
+            'vehicle_image' => $validated['vehicle_image'],
+            'vehicle_type' => $validated['vehicle_type'],
+            'pickup_location' => $validated['pickup_location'],
+            'rent_date' => $validated['rent_date'],
+            'duration' => $validated['duration'],
+            'service_type' => $validated['service_type'],
+            'vehicle_total' => $vehiclePrice,
+            'driver_total' => $driverPrice,
+            'driver_price_per_day' => $driverPricePerDay ?? 0,
+            'total_price' => $totalPrice,
+            'booking_code' => 'SR' . date('Ymd') . strtoupper(substr(md5(uniqid()), 0, 6)),
+            'created_at' => now()->format('Y-m-d H:i:s')
+        ];
+        
+        session(['smartrent_checkout' => $checkoutData]);
+        
+        return redirect()->route('smartrent.checkout');
+    }
+    
+    /**
+     * Proses checkout dari halaman booking (GET dengan query parameters) - PERLU LOGIN
+     */
+    public function processBookingCheckout(Request $request)
+    {
+        // CEK LOGIN
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'Silakan login terlebih dahulu untuk melanjutkan checkout.')
+                ->with('redirect_url', route('smartrent.booking', $request->all()));
+        }
+        
+        $validated = $request->validate([
+            'vehicle_id' => 'required|integer',
+            'service' => 'required|in:self-drive,with-driver',
+            'duration' => 'required|integer|min:1|max:30',
+            'rent_date' => 'required|date|after_or_equal:today',
+        ]);
+        
+        $vehicle = $this->getVehicleById($validated['vehicle_id']);
         if (!$vehicle) {
             return redirect()->route('smartrent.booking')->with('error', 'Kendaraan tidak ditemukan.');
         }
         
-        // Hitung total harga
-        $vehiclePrice = $vehicle['price'] * $request->duration;
-        $driverPrice = ($request->service_type == 'with-driver') ? 
-            ($vehicle['driver_included_price'] ?? 0) * $request->duration : 0;
+        $serviceType = $validated['service'] == 'with-driver' ? 'with_driver' : 'self_drive';
+        
+        $vehiclePrice = $vehicle['price'] * $validated['duration'];
+        $driverPrice = 0;
+        $driverPricePerDay = 0;
+        
+        if ($serviceType == 'with_driver') {
+            $driverPricePerDay = $vehicle['driver_price'] ?? 200000;
+            $driverPrice = $driverPricePerDay * $validated['duration'];
+        }
+        
         $totalPrice = $vehiclePrice + $driverPrice;
         
-        // Upload file KTP
-        $ktpPath = null;
-        if ($request->hasFile('ktp_file')) {
-            $ktpPath = $request->file('ktp_file')->store('smartrent/documents', 'public');
-        }
-        
-        // Upload file SIM jika ada
-        $simPath = null;
-        if ($request->hasFile('sim_file') && $request->service_type == 'self-drive') {
-            $simPath = $request->file('sim_file')->store('smartrent/documents', 'public');
-        }
-        
-        // Generate booking code
-        $bookingCode = 'SR' . date('Ymd') . strtoupper(substr(md5(uniqid()), 0, 6));
-        
-        // Simpan data booking ke session
-        session()->put('smartrent_booking', [
-            'vehicle_id' => $request->vehicle_id,
+        $checkoutData = [
+            'vehicle_id' => $validated['vehicle_id'],
             'vehicle_name' => $vehicle['name'],
+            'vehicle_price' => $vehicle['price'],
+            'vehicle_image' => $vehicle['image'] ?? asset('images/shuttle1.jpeg'),
             'vehicle_type' => $vehicle['type'],
-            'rent_date' => $request->rent_date,
-            'duration' => $request->duration,
-            'service_type' => $request->service_type,
-            'full_name' => $request->full_name,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'pickup_address' => $request->pickup_address,
-            'city' => $request->city,
-            'notes' => $request->notes,
-            'vehicle_price' => $vehiclePrice,
-            'driver_price' => $driverPrice,
+            'pickup_location' => '',
+            'rent_date' => $validated['rent_date'],
+            'duration' => $validated['duration'],
+            'service_type' => $serviceType,
+            'vehicle_total' => $vehiclePrice,
+            'driver_total' => $driverPrice,
+            'driver_price_per_day' => $driverPricePerDay,
             'total_price' => $totalPrice,
-            'ktp_file' => $ktpPath,
-            'sim_file' => $simPath,
-            'booking_code' => $bookingCode,
+            'booking_code' => 'SR' . date('Ymd') . strtoupper(substr(md5(uniqid()), 0, 6)),
             'created_at' => now()->format('Y-m-d H:i:s')
-        ]);
+        ];
         
-        return redirect()->route('smartrent.payment')->with('success', 'Pesanan berhasil dibuat!');
+        session(['smartrent_checkout' => $checkoutData]);
+        
+        return redirect()->route('smartrent.checkout');
     }
     
     /**
-     * Halaman pembayaran
+     * Halaman form checkout (GET) - PERLU LOGIN
      */
-    public function payment()
+    public function showCheckoutForm()
     {
-        $booking = session()->get('smartrent_booking');
+        // CEK LOGIN
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'Silakan login terlebih dahulu untuk melanjutkan checkout.')
+                ->with('redirect_url', route('smartrent.index'));
+        }
         
-        if (!$booking) {
-            return redirect()->route('smartrent.index')->with('error', 'Sesi booking tidak ditemukan.');
+        $checkout = session('smartrent_checkout');
+        
+        if (!$checkout) {
+            return redirect()->route('smartrent.index')
+                ->with('error', 'Sesi pemesanan tidak ditemukan. Silakan ulangi pemesanan.');
         }
         
         $profile = MProfilePerusahaan::first();
         
-        return view('customer.pembayaran-smartrent', compact('profile', 'booking'));
+        return view('customer.smartrent-checkout', compact('profile', 'checkout'));
     }
     
     /**
-     * Proses pembayaran
+     * Finalisasi checkout dengan data customer (POST) - PERLU LOGIN
      */
-    public function processPayment(Request $request)
+    public function finalizeCheckout(Request $request)
     {
-        $booking = session()->get('smartrent_booking');
-        
-        if (!$booking) {
-            return redirect()->route('smartrent.index')->with('error', 'Sesi booking tidak ditemukan.');
+        // CEK LOGIN
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'Silakan login terlebih dahulu untuk melanjutkan checkout.')
+                ->with('redirect_url', route('smartrent.checkout'));
         }
         
-        $request->validate([
-            'payment_method' => 'required|in:bank_transfer,qris,credit_card',
-            'payment_proof' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        // Validasi input
+        $validated = $request->validate([
+            'full_name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'required|string|max:20',
+            'address' => 'required|string|max:500',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'start_time' => 'required',
+            'end_time' => 'required',
+            'pickup_location' => 'required|string|max:100',
+            'notes' => 'nullable|string|max:1000',
+            'ktp_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'sim_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'other_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
         ]);
         
-        // Generate invoice number
-        $invoiceNumber = 'INV-SR-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid()), 0, 8));
+        // Ambil data checkout dari session
+        $checkout = session('smartrent_checkout');
         
-        // Simpan ke session untuk halaman konfirmasi
-        session()->put('smartrent_payment', [
-            'invoice_number' => $invoiceNumber,
-            'booking_data' => $booking,
-            'payment_method' => $request->payment_method,
-            'payment_date' => now()->format('Y-m-d H:i:s'),
-            'status' => 'pending'
+        if (!$checkout) {
+            return redirect()->route('smartrent.index')
+                ->with('error', 'Sesi pemesanan telah berakhir. Silakan ulangi pemesanan.');
+        }
+        
+        // Proses upload file
+        $ktpPath = $request->file('ktp_file')->store('documents/ktp', 'public');
+        $simPath = $request->file('sim_file')->store('documents/sim', 'public');
+        $otherPath = null;
+        
+        if ($request->hasFile('other_document')) {
+            $otherPath = $request->file('other_document')->store('documents/other', 'public');
+        }
+        
+        // Gabungkan semua data
+        $completeCheckout = array_merge($checkout, [
+            'customer_data' => [
+                'full_name' => $validated['full_name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'],
+                'address' => $validated['address'],
+            ],
+            'rental_details' => [
+                'start_date' => $validated['start_date'],
+                'end_date' => $validated['end_date'],
+                'start_time' => $validated['start_time'],
+                'end_time' => $validated['end_time'],
+                'pickup_location' => $validated['pickup_location'],
+                'notes' => $validated['notes'] ?? '',
+            ],
+            'documents' => [
+                'ktp_path' => $ktpPath,
+                'sim_path' => $simPath,
+                'other_document' => $otherPath,
+            ],
+            'invoice_number' => 'INV-SR-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid()), 0, 8)),
+            'booking_code' => 'BOOK-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid()), 0, 6)),
+            'status' => 'pending_payment',
+            'payment_status' => 'unpaid',
+            'created_at' => now()->format('Y-m-d H:i:s'),
+            'updated_at' => now()->format('Y-m-d H:i:s'),
         ]);
         
-        return redirect()->route('smartrent.confirmation');
+        // Simpan ke session dengan nama yang BENAR
+        session(['smartrent_complete_checkout' => $completeCheckout]);
+        
+        // Hapus session checkout awal
+        session()->forget('smartrent_checkout');
+        
+        // Log untuk debugging
+        Log::info('Checkout data saved to session:', $completeCheckout);
+        
+        // Redirect ke halaman pembayaran
+        return redirect()->route('smartrent.payment')
+            ->with('success', 'Data pemesanan berhasil disimpan. Silakan lanjutkan pembayaran.');
     }
     
     /**
-     * Halaman konfirmasi booking
+     * Halaman konfirmasi booking - PERLU LOGIN
      */
     public function confirmation()
     {
+        // CEK LOGIN
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'Silakan login terlebih dahulu untuk melihat konfirmasi.')
+                ->with('redirect_url', route('smartrent.index'));
+        }
+        
         $payment = session()->get('smartrent_payment');
         
         if (!$payment) {
@@ -585,37 +652,42 @@ class SmartRentController extends Controller
      */
     public function getVehicle($id)
     {
-        // Data kendaraan (contoh)
         $vehicles = [
             1 => [
                 'id' => 1,
                 'name' => 'Toyota Hiace Commuter',
                 'type' => 'Shuttle',
                 'price' => 1200000,
+                'driver_price' => 150000,
                 'price_formatted' => '1.200.000',
                 'driver_included_price' => 150000,
                 'seats' => '12 Seat',
-                'description' => 'Mobil shuttle dengan kapasitas 12 penumpang...'
+                'description' => 'Mobil shuttle dengan kapasitas 12 penumpang...',
+                'image' => asset('images/shuttle1.jpeg')
             ],
             2 => [
                 'id' => 2,
                 'name' => 'Isuzu Elf Long',
                 'type' => 'MPV',
                 'price' => 1500000,
+                'driver_price' => 200000,
                 'price_formatted' => '1.500.000',
                 'driver_included_price' => 200000,
                 'seats' => '18 Seat',
-                'description' => 'Armada besar untuk rombongan besar...'
+                'description' => 'Armada besar untuk rombongan besar...',
+                'image' => asset('images/shuttle1.jpeg')
             ],
             3 => [
                 'id' => 3,
                 'name' => 'Mitsubishi L300',
                 'type' => 'Shuttle',
                 'price' => 800000,
+                'driver_price' => 100000,
                 'price_formatted' => '800.000',
                 'driver_included_price' => 100000,
                 'seats' => '8 Seat',
-                'description' => 'Ekonomis dan tangguh, cocok untuk kebutuhan sehari-hari...'
+                'description' => 'Ekonomis dan tangguh, cocok untuk kebutuhan sehari-hari...',
+                'image' => asset('images/shuttle1.jpeg')
             ],
         ];
         
@@ -645,7 +717,6 @@ class SmartRentController extends Controller
             'duration' => 'required|integer|min:1'
         ]);
         
-        // Simulasi cek ketersediaan
         $available = true;
         
         return response()->json([
@@ -666,30 +737,113 @@ class SmartRentController extends Controller
                 'name' => 'Toyota Hiace Commuter',
                 'type' => 'Shuttle',
                 'price' => 1200000,
+                'driver_price' => 150000,
+                'price_formatted' => '1.200.000',
                 'driver_included_price' => 150000,
                 'seats' => '12 Seat',
-                'description' => 'Mobil shuttle dengan kapasitas 12 penumpang...'
+                'description' => 'Mobil shuttle dengan kapasitas 12 penumpang...',
+                'image' => asset('images/shuttle1.jpeg')
             ],
             2 => [
                 'id' => 2,
                 'name' => 'Isuzu Elf Long',
                 'type' => 'MPV',
                 'price' => 1500000,
+                'driver_price' => 200000,
+                'price_formatted' => '1.500.000',
                 'driver_included_price' => 200000,
                 'seats' => '18 Seat',
-                'description' => 'Armada besar untuk rombongan besar...'
+                'description' => 'Armada besar untuk rombongan besar...',
+                'image' => asset('images/shuttle1.jpeg')
             ],
             3 => [
                 'id' => 3,
                 'name' => 'Mitsubishi L300',
                 'type' => 'Shuttle',
                 'price' => 800000,
+                'driver_price' => 100000,
+                'price_formatted' => '800.000',
                 'driver_included_price' => 100000,
                 'seats' => '8 Seat',
-                'description' => 'Ekonomis dan tangguh, cocok untuk kebutuhan sehari-hari...'
+                'description' => 'Ekonomis dan tangguh, cocok untuk kebutuhan sehari-hari...',
+                'image' => asset('images/shuttle1.jpeg')
             ],
         ];
         
         return $vehicles[$id] ?? null;
+    }
+    
+    /**
+     * Halaman pembayaran - PERLU LOGIN
+     */
+    public function payment()
+    {
+        // CEK LOGIN
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'Silakan login terlebih dahulu untuk melanjutkan pembayaran.')
+                ->with('redirect_url', route('smartrent.checkout'));
+        }
+        
+        $checkout = session('smartrent_complete_checkout');
+        
+        if (!$checkout) {
+            return redirect()->route('smartrent.checkout')
+                ->with('error', 'Data pemesanan tidak ditemukan. Silakan ulangi proses checkout.');
+        }
+        
+        $profile = MProfilePerusahaan::first();
+        
+        return view('customer.pembayaran-smartrent', compact('profile', 'checkout'));
+    }
+    
+    /**
+     * Proses pembayaran - PERLU LOGIN
+     */
+    public function processPayment(Request $request)
+    {
+        // CEK LOGIN
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'Silakan login terlebih dahulu untuk melakukan pembayaran.')
+                ->with('redirect_url', route('smartrent.payment'));
+        }
+        
+        $request->validate([
+            'payment_method' => 'required|in:transfer,cash,qris',
+            'payment_proof' => 'required_if:payment_method,transfer|file|mimes:jpg,jpeg,png,pdf|max:2048',
+        ]);
+        
+        $checkout = session('smartrent_complete_checkout');
+        
+        if (!$checkout) {
+            return redirect()->route('smartrent.checkout')
+                ->with('error', 'Data pemesanan tidak ditemukan. Silakan ulangi proses checkout.');
+        }
+        
+        // Simpan bukti pembayaran jika transfer
+        $paymentProofPath = null;
+        if ($request->hasFile('payment_proof')) {
+            $paymentProofPath = $request->file('payment_proof')->store('payment-proofs', 'public');
+        }
+        
+        $paymentData = [
+            'checkout_data' => $checkout,
+            'payment_method' => $request->payment_method,
+            'payment_proof' => $paymentProofPath,
+            'payment_date' => now()->format('Y-m-d H:i:s'),
+            'payment_status' => $request->payment_method === 'cash' ? 'pending' : 'pending_verification',
+            'transaction_id' => 'TRX-' . date('YmdHis') . '-' . strtoupper(substr(md5(uniqid()), 0, 6)),
+        ];
+        
+        // Simpan ke session
+        session(['smartrent_payment' => $paymentData]);
+        
+        // Hapus session checkout
+        session()->forget('smartrent_complete_checkout');
+        
+        // Redirect ke halaman konfirmasi
+        return redirect()->route('smartrent.confirmation')
+            ->with('success', 'Pembayaran berhasil diproses. Menunggu verifikasi.');
     }
 }

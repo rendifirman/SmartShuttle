@@ -694,6 +694,33 @@ Route::prefix('admin')->middleware(['auth:admin'])->group(function () {
 
 // ★★★ ROUTE FALLBACK ★★★
 // Taruh di luar group middleware UpdateAvatarSession agar tidak terpengaruh
+// Schedule / Flow routes (admin, driver, customer)
+use App\Http\Controllers\Admin\RuteJadwalController as AdminRuteJadwalController;
+use App\Http\Controllers\Admin\SystemSettingsController;
+use App\Http\Controllers\Driver\RuteJadwalController as DriverRuteJadwalController;
+use App\Http\Controllers\Customer\RuteJadwalController as CustomerRuteJadwalController;
+
+Route::prefix('admin')->middleware(['auth:admin', \App\Http\Middleware\CheckAdminRole::class])->name('admin.')->group(function () {
+    Route::get('/rute-jadwal', [AdminRuteJadwalController::class, 'index'])->name('rute_jadwal.index');
+    Route::get('/rute-jadwal/create', [AdminRuteJadwalController::class, 'create'])->name('rute_jadwal.create');
+    Route::post('/rute-jadwal', [AdminRuteJadwalController::class, 'store'])->name('rute_jadwal.store');
+
+    // Admin: toggle global jadwal flow mode from the listing page
+    Route::post('/jadwal/config', [AdminRuteJadwalController::class, 'updateConfig'])->name('jadwal.config.update');
+
+    Route::get('/system-settings/schedule-flow', [SystemSettingsController::class, 'index'])->name('system_settings.schedule_flow');
+    Route::post('/system-settings/schedule-flow', [SystemSettingsController::class, 'update'])->name('system_settings.schedule_flow.update');
+});
+
+// Driver endpoints (uses web auth; driver users expected to use auth guard)
+Route::middleware('auth')->prefix('driver')->group(function () {
+    Route::get('/rute-jadwal', [DriverRuteJadwalController::class, 'index'])->name('driver.rute_jadwal.index');
+    Route::post('/rute-jadwal/{id}/take', [DriverRuteJadwalController::class, 'take'])->name('driver.rute_jadwal.take');
+});
+
+// Public / customer schedules listing
+Route::get('/schedules', [CustomerRuteJadwalController::class, 'index'])->name('customer.rute_jadwal.index');
+
 Route::fallback(function () {
     return redirect()->route('customer.beranda');
 });
@@ -1105,3 +1132,87 @@ if (app()->isLocal()) {
         }
     })->name('test.tarif.relationship');
 }
+
+// ---- Schedule workflow routes (dual-mode) ----
+// Admin management and system settings
+// Driver-facing schedule actions (guarded by driver auth)
+Route::middleware(['auth:driver'])->prefix('driver')->name('driver.')->group(function () {
+    Route::get('/schedules', [\App\Http\Controllers\Driver\RuteJadwalController::class, 'index'])->name('rute_jadwal.index');
+    Route::post('/schedules/{id}/take', [\App\Http\Controllers\Driver\RuteJadwalController::class, 'take'])->name('rute_jadwal.take');
+});
+
+// Public/customer schedules listing (shows only active schedules)
+Route::get('/schedules', [\App\Http\Controllers\Customer\RuteJadwalController::class, 'index'])->name('customer.rute_jadwal.index');
+
+// ★★★ SMART RENT ROUTES ★★★
+Route::middleware(['web'])->prefix('smartrent')->name('smartrent.')->group(function () {
+    // Halaman utama SmartRent
+    Route::get('/', [SmartRentController::class, 'index'])->name('index');
+    
+    // Halaman detail kendaraan
+    Route::get('/detail/{id}', [SmartRentController::class, 'detail'])->name('detail');
+    
+    // Halaman booking dengan filter
+    Route::get('/booking', [SmartRentController::class, 'booking'])->name('booking');
+    
+    // Proses order langsung
+    Route::post('/order', [SmartRentController::class, 'order'])->name('order');
+    
+    // 1. PROSES CHECKOUT dari halaman detail (POST)
+    Route::post('/checkout/process', [SmartRentController::class, 'processDetailCheckout'])
+        ->name('checkout.process');
+    
+    // 2. PROSES CHECKOUT dari halaman booking (GET)
+    Route::get('/checkout/booking', [SmartRentController::class, 'processBookingCheckout'])
+        ->name('checkout.booking');
+    
+    // 3. HALAMAN FORM CHECKOUT (GET)
+    Route::get('/checkout', [SmartRentController::class, 'showCheckoutForm'])
+        ->name('checkout');
+    
+    // 4. FINALISASI CHECKOUT (POST) - PERUBAHAN: gunakan 'checkout.finalize' 
+    Route::post('/checkout/finalize', [SmartRentController::class, 'finalizeCheckout'])
+        ->name('checkout.finalize'); // PERUBAHAN: dari 'checkout.final' ke 'checkout.finalize'
+    
+    // 5. Halaman pembayaran
+    Route::get('/payment', [SmartRentController::class, 'payment'])->name('payment');
+    
+    // 6. Proses pembayaran
+    Route::post('/payment/process', [SmartRentController::class, 'processPayment'])
+        ->name('payment.process');
+    
+    // 7. Halaman konfirmasi
+    Route::get('/confirmation', [SmartRentController::class, 'confirmation'])
+        ->name('confirmation');
+    
+    // API Routes
+    Route::get('/api/vehicle/{id}', [SmartRentController::class, 'getVehicle']);
+    Route::post('/api/check-availability', [SmartRentController::class, 'checkAvailability']);
+});
+
+// ★★★ ALIAS ROUTES untuk kompatibilitas ★★★
+Route::get('/smartrent-page', [SmartRentController::class, 'index'])->name('customer.smartrent');
+Route::get('/smartrent/detail/{id}', [SmartRentController::class, 'detail'])
+    ->name('customer.smartrent-detail');
+
+
+// Atau jika ingin pengecekan manual di controller (sesuai dengan kode di atas)
+// Bisa juga menggunakan route seperti ini tanpa middleware auth di routes,
+// karena pengecekan sudah dilakukan di controller:
+Route::prefix('smartrent')->name('smartrent.')->group(function () {
+    Route::get('/', [SmartRentController::class, 'index'])->name('index');
+    Route::get('/detail/{id}', [SmartRentController::class, 'detail'])->name('detail');
+    Route::get('/booking', [SmartRentController::class, 'booking'])->name('booking');
+    Route::post('/order', [SmartRentController::class, 'order'])->name('order');
+    Route::post('/checkout/process', [SmartRentController::class, 'processDetailCheckout'])->name('checkout.process');
+    Route::get('/checkout/booking', [SmartRentController::class, 'processBookingCheckout'])->name('checkout.booking');
+    Route::get('/checkout', [SmartRentController::class, 'showCheckoutForm'])->name('checkout');
+    Route::post('/checkout/finalize', [SmartRentController::class, 'finalizeCheckout'])->name('checkout.finalize');
+    Route::get('/payment', [SmartRentController::class, 'payment'])->name('payment');
+    Route::post('/payment/process', [SmartRentController::class, 'processPayment'])->name('payment.process');
+    Route::get('/confirmation', [SmartRentController::class, 'confirmation'])->name('confirmation');
+    
+    // API Routes
+    Route::get('/api/vehicle/{id}', [SmartRentController::class, 'getVehicle']);
+    Route::post('/api/check-availability', [SmartRentController::class, 'checkAvailability']);
+});

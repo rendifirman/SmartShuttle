@@ -494,6 +494,9 @@
     <div class="page-header">
         <h2>Manajemen Jadwal</h2>
         <div class="header-actions">
+            <a href="{{ route('admin.system_settings.schedule_flow') }}" class="btn btn-info" style="background: var(--info-color); color: #fff;">
+                <i class="fas fa-cog"></i> <span>Config</span>
+            </a>
             <a href="{{ route('admin.jadwal.create') }}" class="btn btn-add">
                 <i class="fas fa-plus"></i> <span>Tambah Jadwal</span>
             </a>

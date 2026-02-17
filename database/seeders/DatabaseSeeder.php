@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             MetodePembayaranSeeder::class,
             ArtikelSeeder::class,
             MasterTarifSeeder::class,
+            \Database\Seeders\AppSettingsSeeder::class,
         ];
 
         // Jalankan setiap seeder dengan try-catch agar jika gagal, yang lain tetap berjalan

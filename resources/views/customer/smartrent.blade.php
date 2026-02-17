@@ -930,9 +930,10 @@
             </a>
 
 <a href="{{ route('customer.smartrent') }}" class="hero-service active">
-              <i class="fas fa-car"></i>
-                <span>Sewa Armada</span>
-            </a>
+    <i class="fas fa-car"></i>
+    <span>Sewa Armada</span>
+</a>
+
         </div>
     </div>
 </div>
@@ -1049,10 +1050,11 @@
                             <i class="fas fa-calendar-check"></i>
                             Sewa Mobil
                         </button>
-                        <button class="btn-detail" onclick="showVehicleDetail({{ $vehicle['id'] }})">
-                            <i class="fas fa-info-circle"></i>
-                            Detail
-                        </button>
+         {{-- Atau gunakan alias --}}
+<button class="btn-detail" onclick="window.location.href='{{ route('customer.smartrent-detail', ['id' => $vehicle['id']]) }}'">
+    <i class="fas fa-info-circle"></i>
+    Detail
+</button>
                     </div>
                 </div>
             </div>

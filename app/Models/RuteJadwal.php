@@ -2,22 +2,30 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class RuteJadwal extends Model
 {
-    use HasFactory;
+    protected $table = 'rute_jadwal';
 
-    protected $table = 'rute_jadwals';
-    
     protected $fillable = [
-        'jadwal_id',
-        'rute_id',
-        'urutan',
-        'durasi_segment',
-        'harga_segment'
+        'id_rute',
+        'id_shuttle',
+        'id_driver',
+        'tanggal',
+        'jam_berangkat',
+        'status',
     ];
+
+    protected $casts = [
+        'tanggal' => 'date',
+        'jam_berangkat' => 'string',
+    ];
+
+    const STATUS_OPEN = 'open';
+    const STATUS_ACTIVE = 'active';
+    const STATUS_CANCELLED = 'cancelled';
+    const STATUS_DONE = 'done';
 
     public function jadwal()
     {

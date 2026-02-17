@@ -76,6 +76,44 @@ class DriverJadwal extends Model
 
     /**
      * ========================
+     * STATIC METHODS
+     * ========================
+     */
+
+    /**
+     * Membuat DriverJadwal dari Jadwal Admin (ketika admin langsung menetapkan driver)
+     */
+    public static function createFromJadwalAdmin(Jadwal $jadwal, $driverId)
+    {
+        // Ambil rute pertama dari jadwal
+        $rute = $jadwal->rutes->first();
+        $shuttle = $jadwal->shuttle;
+
+        // Hitung total kursi dari shuttle
+        $totalKursi = $shuttle ? ($shuttle->kapasitas_kursi ?? $shuttle->total_kursi ?? 0) : 0;
+
+        // Hitung kursi yang sudah terisi
+        $kursiTerisi = $totalKursi - $jadwal->kursi_tersedia;
+
+        // Buat record di driver_jadwals
+        return self::create([
+            'id_jadwal' => $jadwal->id,
+            'id_driver' => $driverId,
+            'rute' => $rute ? ($rute->nama_rute . ' (' . $rute->kota_asal . ' → ' . $rute->kota_tujuan . ')') : 'Rute Tidak Diketahui',
+            'tanggal' => $jadwal->tanggal_keberangkatan,
+            'armada' => $shuttle ? $shuttle->nama_shuttle . ' (' . ($shuttle->plat_nomor ?? '-') . ')' : 'Armada Tidak Diketahui',
+            'waktu_keberangkatan' => $jadwal->waktu_keberangkatan,
+            'waktu_kedatangan' => $jadwal->waktu_kedatangan,
+            'harga' => $jadwal->harga_total,
+            'total_kursi' => $totalKursi,
+            'kursi_terisi' => $kursiTerisi,
+            'status' => 'aktif',
+            'waktu_diambil' => Carbon::now(),
+        ]);
+    }
+
+    /**
+     * ========================
      * ACCESSORS (GETTERS)
      * ========================
      */

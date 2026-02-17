@@ -2704,7 +2704,7 @@
 <div class="search-section">
     <div class="search-container">
         <!-- Form Tiket Shuttle (dari file kedua) -->
-        <form action="{{ route('customer.showSearch') }}" method="GET" id="search-form" class="service-form">
+        <form action="{{ route('customer.search') }}" method="GET" id="search-form" class="service-form">
             <div class="search-row">
                 <div class="search-field">
                     <select class="search-input" id="departure-outlet" name="asal" required>
@@ -2809,7 +2809,15 @@
                     <p><i class="far fa-calendar"></i> {{ $tanggal }}</p>
                     
                     @if($rute)
-                    <p><i class="fas fa-route"></i> {{ $rute->nama_rute ?? 'Rute' }}</p>
+                    <p><i class="fas fa-route"></i>
+                        <a href="{{ route('customer.search', [
+                            'asal' => $detail['kota_asal'] ?? '',
+                            'tujuan' => $detail['kota_tujuan'] ?? '',
+                            'tanggal' => $jadwal->tanggal
+                        ]) }}" style="color: inherit; text-decoration: none;">
+                            {{ $rute->nama_rute ?? 'Rute' }}
+                        </a>
+                    </p>
                     @endif
                     
                     @php $shuttle = $jadwal->shuttle ?? null; @endphp
@@ -2822,7 +2830,7 @@
                     @endif
                 </div>
                 
-                <a href="{{ route('customer.showSearch', [
+                <a href="{{ route('customer.search', [
                     'asal' => $detail['kota_asal'] ?? '',
                     'tujuan' => $detail['kota_tujuan'] ?? '',
                     'tanggal' => $jadwal->tanggal

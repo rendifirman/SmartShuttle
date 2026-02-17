@@ -45,6 +45,7 @@ use App\Models\ShipmentTracking;
 use App\Services\PaylabsService;
 use App\Models\DriverSchedule;
 use App\Models\DriverJadwal;
+use App\Services\JadwalSearchService;
 
 // Helper function untuk mendapatkan inisial nama
 if (!function_exists('getInitials')) {
@@ -232,12 +233,15 @@ class CustomerController extends Controller
 
         // Filter berdasarkan kota asal/tujuan jika ada
         if ($request && ($request->filled('asal') || $request->filled('tujuan'))) {
+            // Use strict exact, case-insensitive matching for origin/destination to avoid cross-route results
             $query->whereHas('jadwal.rutes', function($q) use ($request) {
                 if ($request->filled('asal')) {
-                    $q->where('kota_asal', 'like', '%' . $request->asal . '%');
+                    $val = mb_strtolower(trim($request->asal));
+                    $q->whereRaw('LOWER(kota_asal) = ?', [$val]);
                 }
                 if ($request->filled('tujuan')) {
-                    $q->where('kota_tujuan', 'like', '%' . $request->tujuan . '%');
+                    $val = mb_strtolower(trim($request->tujuan));
+                    $q->whereRaw('LOWER(kota_tujuan) = ?', [$val]);
                 }
             });
         }
@@ -260,64 +264,21 @@ class CustomerController extends Controller
             // Get user data
             $user = $this->getUserData();
 
-            // Query dasar dari DriverJadwal
-            $query = DriverJadwal::with(['driver', 'jadwal'])
-                ->tersediaUntukCustomer()
-                ->orderBy('tanggal', 'asc')
-                ->orderBy('waktu_keberangkatan', 'asc');
+            // Use unified search service so beranda and search share the same source and filters
+            $service = new JadwalSearchService();
 
-            // Apply search filters
-            if ($request->filled('search')) {
-                $search = $request->input('search');
-                $query->where(function($q) use ($search) {
-                    $q->where('rute', 'like', '%' . $search . '%')
-                      ->orWhere('armada', 'like', '%' . $search . '%');
-                });
-            }
+            $params = $request->only([
+                'asal', 'tujuan', 'tanggal', 'penumpang', 'rute', 'search',
+                'harga_min', 'harga_max', 'waktu_keberangkatan'
+            ]);
 
-            // Filter by rute
-            if ($request->filled('rute')) {
-                $query->where('rute', 'like', '%' . $request->input('rute') . '%');
-            }
+            $jadwals = $service->searchPaginated($params, 10);
 
-            // Filter by tanggal
-            if ($request->filled('tanggal')) {
-                $query->where('tanggal', $request->input('tanggal'));
-            }
-
-            // Filter by harga range
-            if ($request->filled('harga_min')) {
-                $query->where('harga', '>=', $request->input('harga_min'));
-            }
-            if ($request->filled('harga_max')) {
-                $query->where('harga', '<=', $request->input('harga_max'));
-            }
-
-            // Filter by waktu keberangkatan
-            if ($request->filled('waktu_keberangkatan')) {
-                $query->whereTime('waktu_keberangkatan', '>=', $request->input('waktu_keberangkatan'));
-            }
-
-            // Pagination
-            $jadwals = $query->paginate(10);
-
-            // Get unique rute list for dropdown
-            $ruteList = DriverJadwal::select('rute')
-                ->distinct()
-                ->tersediaUntukCustomer()
-                ->pluck('rute')
-                ->filter()
-                ->values();
-
-            // Get date range for filter
-            $dateRange = DriverJadwal::selectRaw('MIN(tanggal) as min_date, MAX(tanggal) as max_date')
-                ->tersediaUntukCustomer()
-                ->first();
-
-            // Get price range
-            $priceRange = DriverJadwal::selectRaw('MIN(harga) as min_harga, MAX(harga) as max_harga')
-                ->tersediaUntukCustomer()
-                ->first();
+            // Get unique rute list, date range and price range depending on flow mode
+            // Use service helpers for filter metadata
+            $ruteList = $service->getRuteList();
+            $dateRange = $service->getDateRange();
+            $priceRange = $service->getPriceRange();
 
             return view('customer.beranda_customer', compact(
                 'user',
@@ -356,55 +317,51 @@ class CustomerController extends Controller
                 ], 422);
             }
 
-            $query = DriverJadwal::with(['driver', 'jadwal'])
-                ->tersediaUntukCustomer();
+            // Use unified search service for both modes
+            $service = new JadwalSearchService();
+            $params = $request->only([
+                'asal', 'tujuan', 'rute', 'tanggal', 'harga_min', 'harga_max', 'waktu_keberangkatan', 'penumpang'
+            ]);
 
-            // Apply filters
-            if ($request->filled('rute')) {
-                $query->where('rute', 'like', '%' . $request->rute . '%');
-            }
+            $jadwals = $service->searchPaginated($params, 10);
 
-            if ($request->filled('tanggal')) {
-                $query->where('tanggal', $request->tanggal);
-            }
+            $formattedJadwals = $jadwals->map(function($item) {
+                // item may be a DriverJadwal model or our anonymous mapped object
+                $detail = []; $kotaAsal = '-'; $kotaTujuan = '-';
 
-            if ($request->filled('harga_min')) {
-                $query->where('harga', '>=', $request->harga_min);
-            }
+                if (is_object($item) && method_exists($item, 'getDetailRute')) {
+                    $detail = $item->getDetailRute();
+                    $kotaAsal = $detail['kota_asal'] ?? '-';
+                    $kotaTujuan = $detail['kota_tujuan'] ?? '-';
+                } elseif (is_object($item) && isset($item->jadwal) && $item->jadwal->rutes) {
+                    $r = $item->jadwal->rutes->first();
+                    $kotaAsal = $r->kota_asal ?? '-';
+                    $kotaTujuan = $r->kota_tujuan ?? '-';
+                }
 
-            if ($request->filled('harga_max')) {
-                $query->where('harga', '<=', $request->harga_max);
-            }
-
-            if ($request->filled('waktu_keberangkatan')) {
-                $query->whereTime('waktu_keberangkatan', '>=', $request->waktu_keberangkatan);
-            }
-
-            $jadwals = $query->orderBy('tanggal', 'asc')
-                ->orderBy('waktu_keberangkatan', 'asc')
-                ->paginate(10);
-
-            // Format response
-            $formattedJadwals = $jadwals->map(function($jadwal) {
-                $detailRute = $jadwal->getDetailRute();
+                $tanggalVal = null;
+                if (isset($item->tanggal) && $item->tanggal) {
+                    try { $tanggalVal = \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y'); } catch (\Exception $e) { $tanggalVal = (string) $item->tanggal; }
+                }
 
                 return [
-                    'id_jadwal_driver' => $jadwal->id_jadwal_driver,
-                    'rute' => $jadwal->rute,
-                    'kota_asal' => $detailRute['kota_asal'] ?? '-',
-                    'kota_tujuan' => $detailRute['kota_tujuan'] ?? '-',
-                    'tanggal' => $jadwal->tanggal->format('d-m-Y'),
-                    'armada' => $jadwal->armada,
-                    'waktu_keberangkatan' => $jadwal->waktu_keberangkatan,
-                    'waktu_kedatangan' => $jadwal->waktu_kedatangan,
-                    'harga' => 'Rp ' . number_format($jadwal->harga, 0, ',', '.'),
-                    'harga_raw' => $jadwal->harga,
-                    'sisa_kursi' => $jadwal->sisa_kursi,
-                    'total_kursi' => $jadwal->total_kursi,
-                    'kursi_terisi' => $jadwal->kursi_terisi,
-                    'status' => $jadwal->status,
-                    'driver' => $jadwal->driver ? $jadwal->driver->name : 'Driver',
-                    'is_available' => $jadwal->isAvailableForCustomer()
+                    'id_jadwal_driver' => $item->id_jadwal_driver ?? null,
+                    'jadwal_id' => $item->jadwal_id ?? null,
+                    'rute' => $item->rute ?? null,
+                    'kota_asal' => $kotaAsal,
+                    'kota_tujuan' => $kotaTujuan,
+                    'tanggal' => $tanggalVal ?? '',
+                    'armada' => $item->armada ?? null,
+                    'waktu_keberangkatan' => $item->waktu_keberangkatan ?? null,
+                    'waktu_kedatangan' => $item->waktu_kedatangan ?? null,
+                    'harga' => isset($item->harga) ? ('Rp ' . number_format($item->harga, 0, ',', '.')) : null,
+                    'harga_raw' => $item->harga ?? 0,
+                    'sisa_kursi' => $item->sisa_kursi ?? ($item->sisa_kursi ?? 0),
+                    'total_kursi' => $item->total_kursi ?? null,
+                    'kursi_terisi' => $item->kursi_terisi ?? 0,
+                    'status' => $item->status ?? null,
+                    'driver' => $item->driver ?? null,
+                    'is_available' => isset($item->sisa_kursi) ? ($item->sisa_kursi > 0) : true,
                 ];
             });
 
@@ -459,36 +416,101 @@ class CustomerController extends Controller
             $tanggalParam = $request->get('tanggal', date('Y-m-d'));
             $penumpangParam = (int) $request->get('penumpang', 1);
 
-            // ★★★ QUERY DARI DRIVERJADWAL SAJA - TIDAK MENGGUNAKAN ADMINJADWAL ★★★
-            $query = DriverJadwal::with(['driver', 'jadwal.rutes', 'jadwal.shuttle'])
-                ->where('status', 'aktif')
-                ->where('tanggal', '>=', now()->toDateString())
-                ->whereColumn('kursi_terisi', '<', 'total_kursi');
+            // ★★★ GET FLOW MODE FOR FLOW MODE-BASED FILTERING ★★★
+            $flowMode = appSetting('jadwal_flow_mode', 'driver_confirmation');
 
-            // Filter rute: require substrings in rute for origin and destination
-            if ($asalParam) {
-                $query->where('rute', 'like', "%{$asalParam}%");
+            // Build query depending on flow mode
+            if ($flowMode === 'driver_confirmation') {
+                // Use driver_jadwals as source
+                $query = DriverJadwal::with(['driver', 'jadwal.rutes', 'jadwal.shuttle'])
+                    ->join('jadwals', 'driver_jadwals.id_jadwal', '=', 'jadwals.id')
+                    ->join('rute_jadwals', function($join) {
+                        $join->on('jadwals.id', '=', 'rute_jadwals.jadwal_id');
+                    })
+                    ->join('rutes', 'rute_jadwals.rute_id', '=', 'rutes.id')
+                    ->where('driver_jadwals.status', 'aktif')
+                    ->where('driver_jadwals.tanggal', '>=', now()->toDateString())
+                    ->whereColumn('driver_jadwals.kursi_terisi', '<', 'driver_jadwals.total_kursi')
+                    ->where('rute_jadwals.status', 'active')
+                    ->select('driver_jadwals.*');
+            } else {
+                // direct_assign: use jadwals as source and adapt result rows later
+                $query = \App\Models\Jadwal::with(['shuttle', 'rutes'])
+                    ->join('rute_jadwals', function($join) {
+                        $join->on('jadwals.id', '=', 'rute_jadwals.jadwal_id');
+                    })
+                    ->join('rutes', 'rute_jadwals.rute_id', '=', 'rutes.id')
+                    ->where('jadwals.status', 'active')
+                    ->where('jadwals.tanggal_keberangkatan', '>=', now()->toDateString())
+                    ->where('rute_jadwals.status', 'active')
+                    ->select('jadwals.*');
             }
 
-            if ($tujuanParam) {
-                $query->where('rute', 'like', "%{$tujuanParam}%");
+            // Filter EXACT origin & destination (STRICT matching, no LIKE)
+            if ($asalParam && $tujuanParam) {
+                // Both origin and destination specified: EXACT, CASE-INSENSITIVE match
+                $query->whereRaw('LOWER(rutes.kota_asal) = ?', [mb_strtolower(trim($asalParam))])
+                      ->whereRaw('LOWER(rutes.kota_tujuan) = ?', [mb_strtolower(trim($tujuanParam))]);
+            } elseif ($asalParam) {
+                // Only origin specified: EXACT, CASE-INSENSITIVE match on origin only
+                $query->whereRaw('LOWER(rutes.kota_asal) = ?', [mb_strtolower(trim($asalParam))]);
+            } elseif ($tujuanParam) {
+                // Only destination specified: EXACT, CASE-INSENSITIVE match on destination only
+                $query->whereRaw('LOWER(rutes.kota_tujuan) = ?', [mb_strtolower(trim($tujuanParam))]);
             }
 
             // Filter berdasarkan tanggal spesifik jika ada
             if ($tanggalParam) {
-                $query->whereDate('tanggal', $tanggalParam);
+                if ($flowMode === 'driver_confirmation') {
+                    $query->whereDate('driver_jadwals.tanggal', $tanggalParam);
+                } else {
+                    $query->whereDate('jadwals.tanggal_keberangkatan', $tanggalParam);
+                }
             }
 
             // Filter berdasarkan jumlah penumpang
             if ($penumpangParam > 1) {
-                $query->whereRaw('(total_kursi - kursi_terisi) >= ?', [$penumpangParam]);
+                if ($flowMode === 'driver_confirmation') {
+                    $query->whereRaw('(driver_jadwals.total_kursi - driver_jadwals.kursi_terisi) >= ?', [$penumpangParam]);
+                } else {
+                    $query->whereRaw('(jadwals.kursi_tersedia) >= ?', [$penumpangParam]);
+                }
             }
+            
+            // Ensure no duplicate rows due to joins
+            $query->distinct('driver_jadwals.id');
 
             // Pagination: 12 jadwal per halaman (untuk beranda grid)
-            $jadwals = $query->orderBy('tanggal', 'asc')
-                ->orderBy('waktu_keberangkatan', 'asc')
+            $dateCol = $flowMode === 'driver_confirmation' ? 'driver_jadwals.tanggal' : 'jadwals.tanggal_keberangkatan';
+            $timeCol = $flowMode === 'driver_confirmation' ? 'driver_jadwals.waktu_keberangkatan' : 'jadwals.waktu_keberangkatan';
+
+            $jadwals = $query->orderBy($dateCol, 'asc')
+                ->orderBy($timeCol, 'asc')
                 ->take(12)
                 ->get();
+
+            // If direct_assign mode and source is Jadwal, adapt items to DriverJadwal-like objects
+            if ($flowMode !== 'driver_confirmation') {
+                $jadwals = $jadwals->map(function($jadwal) {
+                    $rute = $jadwal->rutes->first();
+                    $obj = new \stdClass();
+                    $obj->id_jadwal_driver = null;
+                    $obj->jadwal_id = $jadwal->id;
+                    $obj->rute = $jadwal->rute ?? (($rute->kota_asal ?? '') . ' - ' . ($rute->kota_tujuan ?? ''));
+                    $obj->tanggal = \Carbon\Carbon::parse($jadwal->tanggal_keberangkatan);
+                    $obj->waktu_keberangkatan = $jadwal->waktu_keberangkatan;
+                    $obj->waktu_kedatangan = $jadwal->waktu_kedatangan;
+                    $obj->harga = $jadwal->harga_total ?? 0;
+                    $obj->armada = $jadwal->shuttle?->nama_shuttle ?? 'Smart Shuttle';
+                    $obj->jadwal = $jadwal;
+                    $obj->driver = null;
+                    $obj->total_kursi = $jadwal->shuttle?->total_kursi ?? null;
+                    $obj->kursi_terisi = ($jadwal->shuttle?->total_kursi ?? 0) - ($jadwal->kursi_tersedia ?? 0);
+                    $obj->sisa_kursi = $jadwal->kursi_tersedia ?? 0;
+                    $obj->status = $jadwal->status;
+                    return $obj;
+                });
+            }
 
             // Dropdown data: use Outlet table (only for filling dropdowns)
             $kotaAsalList = Outlet::with('branch')
@@ -1127,17 +1149,23 @@ class CustomerController extends Controller
     /**
      * Update method search untuk pencarian jadwal driver
      */
+    /**
+     * API/AJAX search endpoint - MODE-AWARE IMPLEMENTATION
+     * 
+     * Used by search forms to get schedules
+     * Supports both driver_confirmation and direct_assign modes
+     */
     public function search(Request $request)
     {
         try {
-            // Log request parameters untuk debugging
-            \Log::info('CustomerController::search() called', [
+            // ★★★ MODE-AWARE INITIALIZATION ★★★
+            $flowMode = appSetting('jadwal_flow_mode', 'driver_confirmation');
+
+            \Log::info('CustomerController::search() - Mode-aware search', [
+                'mode' => $flowMode,
                 'method' => $request->method(),
-                'all_params' => $request->all(),
-                'has_asal' => $request->filled('asal'),
-                'has_tujuan' => $request->filled('tujuan'),
-                'has_tanggal' => $request->filled('tanggal'),
-                'has_penumpang' => $request->filled('penumpang'),
+                'asal' => $request->input('asal'),
+                'tujuan' => $request->input('tujuan'),
             ]);
 
             // Validasi input
@@ -1148,12 +1176,12 @@ class CustomerController extends Controller
                 'penumpang' => 'nullable|integer|min:1|max:10'
             ]);
 
-            $asal = $validated['asal'] ?? null;
-            $tujuan = $validated['tujuan'] ?? null;
+            $asal = $validated['asal'] ? trim($validated['asal']) : null;
+            $tujuan = $validated['tujuan'] ? trim($validated['tujuan']) : null;
             $tanggal = $validated['tanggal'] ?? null;
             $penumpang = (int) ($validated['penumpang'] ?? 1);
 
-            \Log::info('Search parameters extracted', compact('asal', 'tujuan', 'tanggal', 'penumpang'));
+            \Log::info('Search parameters', compact('asal', 'tujuan', 'tanggal', 'penumpang', 'flowMode'));
 
             // Get user data
             $user = session()->get('user');
@@ -1168,75 +1196,86 @@ class CustomerController extends Controller
                 ];
             }
 
-            // ★★★ QUERY HANYA DARI DRIVERJADWAL - TIDAK ADA RELATIONSHIP JADWAL ★★★
-            $query = DriverJadwal::query()->with(['jadwal.rutes', 'driver']);
+            // ★★★ MODE-SPECIFIC QUERY LOGIC ★★★
+            if ($flowMode === 'driver_confirmation') {
+                // MODE 1: DRIVER CONFIRMATION
+                $schedules = $this->buildDriverConfirmationSearch($asal, $tujuan, $tanggal, $penumpang);
+            } else {
+                // MODE 2: DIRECT ASSIGN
+                $schedules = $this->buildDirectAssignSearch($asal, $tujuan, $tanggal, $penumpang);
+            }
 
-            // Filter: status aktif
-            $query->where('status', 'aktif');
+            // Variable naming for view - provide `driverJadwals` for blade compatibility
+            $jadwals = $schedules;
+            $driverJadwals = $schedules;
 
-            // Filter: tanggal hari ini atau lebih
-            $query->where('tanggal', '>=', now()->toDateString());
-
-            // Filter berdasarkan kota asal & tujuan dengan regex yang lebih akurat
-            if ($asal || $tujuan) {
-                $query->where(function($q) use ($asal, $tujuan) {
-                    // Pattern format: "Nama Rute (Kota Asal → Kota Tujuan)"
-                    if ($asal && $tujuan) {
-                        // Cari rute yang TEPAT: asal → tujuan
-                        $pattern = '\(' . preg_quote(trim($asal), '/') . '\s*→\s*' . preg_quote(trim($tujuan), '/') . '\)';
-                        $q->whereRaw("rute REGEXP ?", [$pattern]);
-                    } elseif ($asal) {
-                        // Cari rute dimana asal sebelum arrow
-                        $pattern = '\(' . preg_quote(trim($asal), '/') . '\s*→';
-                        $q->whereRaw("rute REGEXP ?", [$pattern]);
-                    } elseif ($tujuan) {
-                        // Cari rute dimana tujuan setelah arrow
-                        $pattern = '→\s*' . preg_quote(trim($tujuan), '/') . '\)';
-                        $q->whereRaw("rute REGEXP ?", [$pattern]);
-                    }
+            // If DIRECT_ASSIGN mode, adapt Jadwal paginator to DriverJadwal-like objects
+            if ($flowMode !== 'driver_confirmation') {
+                $driverJadwals->getCollection()->transform(function($jadwal) {
+                    $rute = $jadwal->rutes->first();
+                    return new class($jadwal) {
+                        public $jadwal;
+                        public function __construct($jadwal) { $this->jadwal = $jadwal; }
+                        public function getDetailRute() {
+                            $r = $this->jadwal->rutes->first();
+                            return [
+                                'kota_asal' => $r->kota_asal ?? null,
+                                'kota_tujuan' => $r->kota_tujuan ?? null,
+                            ];
+                        }
+                        public function __get($name) {
+                            switch($name) {
+                                case 'id_jadwal_driver': return null;
+                                case 'jadwal_id': return $this->jadwal->id;
+                                case 'rute':
+                                    $r = $this->jadwal->rutes->first();
+                                    return $this->jadwal->rute ?? (($r->kota_asal ?? '') . ' - ' . ($r->kota_tujuan ?? ''));
+                                case 'tanggal': return \Carbon\Carbon::parse($this->jadwal->tanggal_keberangkatan);
+                                case 'waktu_keberangkatan': return $this->jadwal->waktu_keberangkatan;
+                                case 'waktu_kedatangan': return $this->jadwal->waktu_kedatangan;
+                                case 'harga': return $this->jadwal->harga_total ?? 0;
+                                case 'armada': return $this->jadwal->shuttle?->nama_shuttle ?? 'Smart Shuttle';
+                                case 'jadwal': return $this->jadwal;
+                                case 'total_kursi': return $this->jadwal->shuttle?->total_kursi ?? null;
+                                case 'kursi_terisi': return ($this->jadwal->shuttle?->total_kursi ?? 0) - ($this->jadwal->kursi_tersedia ?? 0);
+                                case 'sisa_kursi': return $this->jadwal->kursi_tersedia ?? 0;
+                                case 'status': return $this->jadwal->status;
+                            }
+                            return null;
+                        }
+                    };
                 });
             }
 
-            // Filter berdasarkan tanggal keberangkatan spesifik
-            if ($tanggal) {
-                $query->where('tanggal', $tanggal);
-            }
-
-            // Filter berdasarkan kursi tersedia sesuai jumlah penumpang
-            $query->whereRaw('(total_kursi - kursi_terisi) >= ?', [$penumpang]);
-
-            // Pagination: 10 jadwal per halaman
-            $jadwals = $query->orderBy('tanggal', 'asc')
-                ->orderBy('waktu_keberangkatan', 'asc')
-                ->paginate(10);
-
-            \Log::info('Search query executed', [
-                'total_results' => $jadwals->total(),
-                'current_page_count' => $jadwals->count(),
-                'sql' => $query->toSql(),
-                'bindings' => $query->getBindings()
+            \Log::info('Search results', [
+                'mode' => $flowMode,
+                'count' => $jadwals->count(),
+                'total' => $jadwals->total()
             ]);
 
-            // Dropdown data: use Outlet table only for origin/destination dropdowns
-            $kotaAsalList = Outlet::with('branch')
-                ->where('status', 'aktif')
-                ->orderBy('nama_outlet')
-                ->get()
-                ->map(function($outlet) {
-                    return $outlet->branch->kota ?? $outlet->kota ?? null;
-                })
-                ->filter()
-                ->unique()
-                ->values();
+            // Get dropdown data based on mode
+            if ($flowMode === 'driver_confirmation') {
+                $kotaAsalList = $this->getAvailableCitiesDriverConfirmation('asal');
+                $kotaTujuanList = $this->getAvailableCitiesDriverConfirmation('tujuan');
+            } else {
+                $kotaAsalList = $this->getAvailableCitiesDirectAssign('asal');
+                $kotaTujuanList = $this->getAvailableCitiesDirectAssign('tujuan');
+            }
 
-            $kotaTujuanList = $kotaAsalList;
-
-            // Get price range (HANYA dari driver_jadwals)
-            $priceRange = DriverJadwal::where('status', 'aktif')
-                ->where('tanggal', '>=', now()->toDateString())
-                ->whereRaw('total_kursi > kursi_terisi')
-                ->selectRaw('MIN(harga) as min_harga, MAX(harga) as max_harga')
-                ->first();
+            // Get price range (mode-specific)
+            if ($flowMode === 'driver_confirmation') {
+                $priceRange = DriverJadwal::where('status', 'aktif')
+                    ->where('tanggal', '>=', now()->toDateString())
+                    ->whereRaw('total_kursi > kursi_terisi')
+                    ->selectRaw('MIN(harga) as min_harga, MAX(harga) as max_harga')
+                    ->first();
+            } else {
+                $priceRange = \App\Models\Jadwal::where('status', 'active')
+                    ->where('tanggal_keberangkatan', '>=', now()->toDateString())
+                    ->whereRaw('kursi_tersedia > 0')
+                    ->selectRaw('MIN(harga_total) as min_harga, MAX(harga_total) as max_harga')
+                    ->first();
+            }
 
             // Get outlets grouped untuk backward compatibility
             $outletsGrouped = Outlet::with('branch')
@@ -1257,7 +1296,8 @@ class CustomerController extends Controller
                     'priceRange',
                     'outletsGrouped',
                     'penumpang',
-                    'validated'
+                    'validated',
+                    'flowMode'
                 )
             ));
 
@@ -1276,109 +1316,171 @@ class CustomerController extends Controller
     }
 
     /**
-     * Halaman show search (kompatibel dengan parameter baru dan lama) - PERBAIKAN UTAMA
+     * Build search query for DRIVER CONFIRMATION mode (without pagination for API)
      */
-   /**
- * Halaman show search (kompatibel dengan parameter baru dan lama) - PERBAIKAN UTAMA
- */
-public function showSearch(Request $request)
-{
-    try {
-        \Log::info('=== DEBUG SHUTTLE SEARCH ===');
-        \Log::info('CustomerController@showSearch - Request parameters:', $request->all());
+    private function buildDriverConfirmationSearch($asal, $tujuan, $tanggal, $penumpang)
+    {
+        $query = DriverJadwal::query()
+            ->join('jadwals', 'driver_jadwals.id_jadwal', '=', 'jadwals.id')
+            ->join('rute_jadwals', function($join) {
+                $join->on('jadwals.id', '=', 'rute_jadwals.jadwal_id');
+            })
+            ->join('rutes', 'rute_jadwals.rute_id', '=', 'rutes.id')
+            ->with(['jadwal.rutes', 'driver'])
+            ->where('driver_jadwals.status', 'aktif')
+            ->where('driver_jadwals.tanggal', '>=', now()->toDateString())
+            ->where('rute_jadwals.status', 'active')
+            ->select('driver_jadwals.*');
 
-        // Get user data
-        $user = session()->get('user');
-        if (!$user && Auth::check()) {
-            $authUser = Auth::user();
-            $user = [
-                'id' => $authUser->id,
-                'name' => $authUser->name,
-                'email' => $authUser->email,
-                'phone' => $authUser->phone,
-                'avatar' => $authUser->avatar_url,
-            ];
+        // ★★★ STRICT EXACT MATCHING (CASE-INSENSITIVE) ★★★
+        if ($asal && $tujuan) {
+            $query->whereRaw('LOWER(rutes.kota_asal) = ?', [mb_strtolower(trim($asal))])
+                  ->whereRaw('LOWER(rutes.kota_tujuan) = ?', [mb_strtolower(trim($tujuan))]);
+        } elseif ($asal) {
+            $query->whereRaw('LOWER(rutes.kota_asal) = ?', [mb_strtolower(trim($asal))]);
+        } elseif ($tujuan) {
+            $query->whereRaw('LOWER(rutes.kota_tujuan) = ?', [mb_strtolower(trim($tujuan))]);
         }
 
-        // ★★★ JIKA ADA PARAMETER PENCARIAN (asal, tujuan) ★★★
-        if ($request->filled('asal') && $request->filled('tujuan')) {
-            // Validasi input
-            $validated = $request->validate([
-                'asal' => 'required|string|max:255',
-                'tujuan' => 'required|string|max:255|different:asal',
-                'tanggal' => 'nullable|date|after_or_equal:today',
-                'penumpang' => 'nullable|integer|min:1|max:10'
-            ]);
+        if ($tanggal) {
+            $query->where('driver_jadwals.tanggal', $tanggal);
+        }
 
-            $asal = $validated['asal'];
-            $tujuan = $validated['tujuan'];
-            $tanggal = $validated['tanggal'] ?? date('Y-m-d');
-            $penumpang = (int) ($validated['penumpang'] ?? 1);
+        $query->whereRaw('(driver_jadwals.total_kursi - driver_jadwals.kursi_terisi) >= ?', [$penumpang]);
+        $query->distinct('driver_jadwals.id_jadwal_driver');
 
-            \Log::info('Search parameters:', compact('asal', 'tujuan', 'tanggal', 'penumpang'));
+        return $query->orderBy('driver_jadwals.tanggal', 'asc')
+                     ->orderBy('driver_jadwals.waktu_keberangkatan', 'asc')
+                     ->paginate(10);
+    }
 
-            // ★★★ QUERY UTAMA - DRIVER_JADWALS SAJA ★★★
-            $query = DriverJadwal::with(['driver', 'jadwal.rutes', 'jadwal.shuttle', 'masterRute'])
-                ->where('status', 'aktif')
-                ->where('tanggal', '>=', now()->toDateString())
-                ->whereRaw('(total_kursi - kursi_terisi) >= ?', [$penumpang]);
+    /**
+     * Build search query for DIRECT ASSIGN mode (without pagination for API)
+     */
+    private function buildDirectAssignSearch($asal, $tujuan, $tanggal, $penumpang)
+    {
+        $query = \App\Models\Jadwal::query()
+            ->join('rute_jadwals', 'jadwals.id', '=', 'rute_jadwals.jadwal_id')
+            ->join('rutes', 'rute_jadwals.rute_id', '=', 'rutes.id')
+            ->with(['shuttle', 'rutes'])
+            ->where('jadwals.status', 'active')
+            ->where('jadwals.tanggal_keberangkatan', '>=', now()->toDateString())
+            ->select('jadwals.*');
 
-            // ★★★ FILTER RUTE: GUNAKAN MASTER_RUTE + FALLBACK KE RUTE STRING ★★★
-            // Prioritas 1: Cocok dengan masterRute
-            // Prioritas 2: Fallback ke string matching di kolom rute jika masterRute kosong
-            $asal = strtolower(trim($asal));
-            $tujuan = strtolower(trim($tujuan));
+        // ★★★ STRICT EXACT MATCHING (CASE-INSENSITIVE) ★★★
+        if ($asal && $tujuan) {
+            $query->whereRaw('LOWER(rutes.kota_asal) = ?', [mb_strtolower(trim($asal))])
+                  ->whereRaw('LOWER(rutes.kota_tujuan) = ?', [mb_strtolower(trim($tujuan))]);
+        } elseif ($asal) {
+            $query->whereRaw('LOWER(rutes.kota_asal) = ?', [mb_strtolower(trim($asal))]);
+        } elseif ($tujuan) {
+            $query->whereRaw('LOWER(rutes.kota_tujuan) = ?', [mb_strtolower(trim($tujuan))]);
+        }
 
-            $query->where(function($q) use ($asal, $tujuan) {
-                // Kondisi 1: Cocok dengan masterRute (jika rute_id ada)
-                $q->whereHas('masterRute', function($subQ) use ($asal, $tujuan) {
-                    $subQ->whereRaw('LOWER(kota_asal) LIKE ?', ["%{$asal}%"])
-                         ->whereRaw('LOWER(kota_tujuan) LIKE ?', ["%{$tujuan}%"]);
-                })
-                // Kondisi 2: Fallback ke string matching jika masterRute kosong
-                ->orWhere(function($orQ) use ($asal, $tujuan) {
-                    $orQ->whereNull('rute_id')
-                        ->whereRaw('LOWER(rute) LIKE ?', ["%{$asal}%"])
-                        ->whereRaw('LOWER(rute) LIKE ?', ["%{$tujuan}%"]);
-                });
-            });
+        if ($tanggal) {
+            $query->whereDate('jadwals.tanggal_keberangkatan', $tanggal);
+        }
 
-            // Filter tanggal spesifik jika ada
-            if ($tanggal) {
-                $query->whereDate('tanggal', $tanggal);
+        $query->whereRaw('jadwals.kursi_tersedia >= ?', [$penumpang]);
+        $query->distinct('jadwals.id');
+
+        return $query->orderBy('jadwals.tanggal_keberangkatan', 'asc')
+                     ->orderBy('jadwals.waktu_keberangkatan', 'asc')
+                     ->paginate(10);
+    }
+
+    /**
+     * Halaman pencarian jadwal - MODE-AWARE IMPLEMENTATION
+     * 
+     * Supports two modes:
+     * 1. driver_confirmation: Customers see schedules from driver_jadwals (after driver claims)
+     * 2. direct_assign: Customers see active schedules from jadwals (admin-assigned drivers)
+     * 
+     * Both modes use STRICT EXACT matching on origin, destination, date, and status
+     */
+    public function showSearch(Request $request)
+    {
+        try {
+            // ★★★ MODE-AWARE INITIALIZATION ★★★
+            $flowMode = appSetting('jadwal_flow_mode', 'driver_confirmation');
+            
+            \Log::info('=== MODE-AWARE CUSTOMER SEARCH ===');
+            \Log::info('Current mode: ' . $flowMode);
+            \Log::info('Request parameters:', $request->all());
+
+            // Get user data
+            $user = session()->get('user');
+            if (!$user && Auth::check()) {
+                $authUser = Auth::user();
+                $user = [
+                    'id' => $authUser->id,
+                    'name' => $authUser->name,
+                    'email' => $authUser->email,
+                    'phone' => $authUser->phone,
+                    'avatar' => $authUser->avatar_url,
+                ];
             }
 
-            // Pagination
-            $driverJadwals = $query->orderBy('tanggal', 'asc')
-                ->orderBy('waktu_keberangkatan', 'asc')
-                ->paginate(10);
+            // ★★★ JIKA ADA PARAMETER PENCARIAN (asal, tujuan) ★★★
+            if ($request->filled('asal') && $request->filled('tujuan')) {
+                // Validate input
+                $validated = $request->validate([
+                    'asal' => 'required|string|max:255',
+                    'tujuan' => 'required|string|max:255|different:asal',
+                    'tanggal' => 'nullable|date|after_or_equal:today',
+                    'penumpang' => 'nullable|integer|min:1|max:10'
+                ]);
 
-            \Log::info('Search results count:', ['count' => $driverJadwals->count()]);
+                $params = [
+                    'asal' => trim($validated['asal']),
+                    'tujuan' => trim($validated['tujuan']),
+                    'tanggal' => $validated['tanggal'] ?? date('Y-m-d'),
+                    'penumpang' => (int) ($validated['penumpang'] ?? 1),
+                ];
 
-            // Get dropdown data
-            $kotaAsalList = DriverJadwal::where('status', 'aktif')
-                ->where('tanggal', '>=', now()->toDateString())
-                ->get()
-                ->map(function($item) {
-                    $detail = $item->getDetailRute();
-                    return $detail['kota_asal'] ?? null;
-                })
-                ->filter()
-                ->unique()
-                ->values();
+                $service = new JadwalSearchService();
+                $driverJadwals = $service->searchPaginated($params, 10);
 
-            $kotaTujuanList = DriverJadwal::where('status', 'aktif')
-                ->where('tanggal', '>=', now()->toDateString())
-                ->get()
-                ->map(function($item) {
-                    $detail = $item->getDetailRute();
-                    return $detail['kota_tujuan'] ?? null;
-                })
-                ->filter()
-                ->unique()
-                ->values();
+                // Dropdown cities (reuse existing helpers)
+                if (appSetting('jadwal_flow_mode', 'driver_confirmation') === 'driver_confirmation') {
+                    $kotaAsalList = $this->getAvailableCitiesDriverConfirmation('asal');
+                    $kotaTujuanList = $this->getAvailableCitiesDriverConfirmation('tujuan');
+                } else {
+                    $kotaAsalList = $this->getAvailableCitiesDirectAssign('asal');
+                    $kotaTujuanList = $this->getAvailableCitiesDirectAssign('tujuan');
+                }
 
-            // Get outlets grouped untuk backward compatibility
+                $outletsGrouped = Outlet::with('branch')
+                    ->where('status', 'aktif')
+                    ->orderBy('nama_outlet')
+                    ->get()
+                    ->groupBy(function ($outlet) {
+                        return $outlet->branch ? $outlet->branch->kota : 'Lainnya';
+                    });
+
+                return view('customer.search', array_merge(
+                    $validated,
+                    compact(
+                        'user',
+                        'driverJadwals',
+                        'kotaAsalList',
+                        'kotaTujuanList',
+                        'outletsGrouped',
+                        'params',
+                        'validated'
+                    )
+                ));
+            }
+
+            // ★★★ DEFAULT VIEW TANPA HASIL SEARCH ★★★
+            if ($flowMode === 'driver_confirmation') {
+                $kotaAsalList = $this->getAvailableCitiesDriverConfirmation('asal');
+                $kotaTujuanList = $this->getAvailableCitiesDriverConfirmation('tujuan');
+            } else {
+                $kotaAsalList = $this->getAvailableCitiesDirectAssign('asal');
+                $kotaTujuanList = $this->getAvailableCitiesDirectAssign('tujuan');
+            }
+
             $outletsGrouped = Outlet::with('branch')
                 ->where('status', 'aktif')
                 ->orderBy('nama_outlet')
@@ -1387,59 +1489,142 @@ public function showSearch(Request $request)
                     return $outlet->branch ? $outlet->branch->kota : 'Lainnya';
                 });
 
-            return view('customer.search', array_merge(
-                $validated,
-                compact(
-                    'user',
-                    'driverJadwals', // Ubah dari $jadwals ke $driverJadwals
-                    'kotaAsalList',
-                    'kotaTujuanList',
-                    'outletsGrouped',
-                    'penumpang',
-                    'validated'
-                )
+            return view('customer.search', compact(
+                'user',
+                'kotaAsalList',
+                'kotaTujuanList',
+                'outletsGrouped',
+                'flowMode'
             ));
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->route('customer.search')
+                ->withErrors($e->errors())
+                ->withInput();
+        } catch (\Exception $e) {
+            \Log::error('Error in showSearch: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->route('customer.beranda')
+                ->with('error', 'Terjadi kesalahan saat membuka halaman pencarian.');
+        }
+    }
+
+    /**
+     * ★★★ MODE-SPECIFIC SEARCH METHODS ★★★
+     */
+
+    /**
+     * Search schedules in DRIVER CONFIRMATION mode
+     * Customers see schedules from driver_jadwals (claimed by drivers)
+     */
+    private function searchDriverConfirmationMode($asal, $tujuan, $tanggal, $penumpang)
+    {
+        \Log::info('searchDriverConfirmationMode: Query from driver_jadwals');
+
+        // Join via jadwals -> rute_jadwals -> rutes to support DriverJadwal created from Jadwal
+        $query = DriverJadwal::query()
+            ->join('jadwals', 'driver_jadwals.id_jadwal', '=', 'jadwals.id')
+            ->join('rute_jadwals', function($join) {
+                $join->on('jadwals.id', '=', 'rute_jadwals.jadwal_id');
+            })
+            ->join('rutes', 'rute_jadwals.rute_id', '=', 'rutes.id')
+            ->with(['driver', 'jadwal.rutes', 'jadwal.shuttle'])
+            ->where('driver_jadwals.status', 'aktif')
+            ->where('driver_jadwals.tanggal', '>=', now()->toDateString())
+            ->whereRaw('(driver_jadwals.total_kursi - driver_jadwals.kursi_terisi) >= ?', [$penumpang])
+            ->where('rute_jadwals.status', 'active')
+            ->select('driver_jadwals.*');
+
+          // ★★★ STRICT EXACT MATCHING - CASE-INSENSITIVE, NO LIKE, NO OR, NO FALLBACK ★★★
+          $query->whereRaw('LOWER(rutes.kota_asal) = ?', [mb_strtolower(trim($asal))])
+              ->whereRaw('LOWER(rutes.kota_tujuan) = ?', [mb_strtolower(trim($tujuan))]);
+
+        // Filter by specific date if provided
+        if ($tanggal) {
+            $query->whereDate('driver_jadwals.tanggal', $tanggal);
         }
 
-        // ★★★ DEFAULT VIEW TANPA HASIL SEARCH ★★★
-        // Use Outlet table only for dropdowns
-        $kotaAsalList = Outlet::with('branch')
-            ->where('status', 'aktif')
-            ->orderBy('nama_outlet')
+        // Prevent duplicate rows from joins
+        $query->distinct('driver_jadwals.id_jadwal_driver');
+
+        // Paginate results
+        return $query->orderBy('driver_jadwals.tanggal', 'asc')
+                     ->orderBy('driver_jadwals.waktu_keberangkatan', 'asc')
+                     ->paginate(10);
+    }
+
+    /**
+     * Search schedules in DIRECT ASSIGN mode
+     * Customers see active schedules from jadwals (admin-assigned drivers)
+     */
+    private function searchDirectAssignMode($asal, $tujuan, $tanggal, $penumpang)
+    {
+        \Log::info('searchDirectAssignMode: Query from jadwals');
+
+        $query = \App\Models\Jadwal::query()
+            ->join('rute_jadwals', 'jadwals.id', '=', 'rute_jadwals.jadwal_id')
+            ->join('rutes', 'rute_jadwals.rute_id', '=', 'rutes.id')
+            ->with(['shuttle', 'rutes'])
+            ->where('jadwals.status', 'active')
+            ->where('jadwals.tanggal_keberangkatan', '>=', now()->toDateString())
+            ->whereRaw('jadwals.kursi_tersedia >= ?', [$penumpang])
+            ->select('jadwals.*');
+
+          // ★★★ STRICT EXACT MATCHING - CASE-INSENSITIVE, NO LIKE, NO OR, NO FALLBACK ★★★
+          $query->whereRaw('LOWER(rutes.kota_asal) = ?', [mb_strtolower(trim($asal))])
+              ->whereRaw('LOWER(rutes.kota_tujuan) = ?', [mb_strtolower(trim($tujuan))]);
+
+        // Filter by specific date if provided
+        if ($tanggal) {
+            $query->whereDate('jadwals.tanggal_keberangkatan', $tanggal);
+        }
+
+        // Prevent duplicate rows from joins
+        $query->distinct('jadwals.id');
+
+        // Paginate results
+        return $query->orderBy('jadwals.tanggal_keberangkatan', 'asc')
+                     ->orderBy('jadwals.waktu_keberangkatan', 'asc')
+                     ->paginate(10);
+    }
+
+    /**
+     * Get available cities for driver_confirmation mode
+     */
+    private function getAvailableCitiesDriverConfirmation($type)
+    {
+        return DriverJadwal::where('status', 'aktif')
+            ->where('tanggal', '>=', now()->toDateString())
             ->get()
-            ->map(function($outlet) {
-                return $outlet->branch->kota ?? $outlet->kota ?? null;
+            ->map(function($item) use ($type) {
+                $detail = $item->getDetailRute();
+                return $type === 'asal' ? ($detail['kota_asal'] ?? null) : ($detail['kota_tujuan'] ?? null);
             })
             ->filter()
             ->unique()
             ->values();
-
-        $kotaTujuanList = $kotaAsalList;
-
-        $outletsGrouped = Outlet::with('branch')
-            ->where('status', 'aktif')
-            ->orderBy('nama_outlet')
-            ->get()
-            ->groupBy(function ($outlet) {
-                return $outlet->branch ? $outlet->branch->kota : 'Lainnya';
-            });
-
-        return view('customer.search', compact(
-            'user',
-            'kotaAsalList',
-            'kotaTujuanList',
-            'outletsGrouped'
-        ));
-
-    } catch (\Exception $e) {
-        \Log::error('Error in showSearch: ' . $e->getMessage(), [
-            'trace' => $e->getTraceAsString()
-        ]);
-
-        return redirect()->route('customer.beranda')
-            ->with('error', 'Terjadi kesalahan saat membuka halaman pencarian.');
     }
-}
+
+    /**
+     * Get available cities for direct_assign mode
+     */
+    private function getAvailableCitiesDirectAssign($type)
+    {
+        return \App\Models\Jadwal::where('status', 'active')
+            ->where('tanggal_keberangkatan', '>=', now()->toDateString())
+            ->with('rutes')
+            ->get()
+            ->flatMap(function($jadwal) use ($type) {
+                return $jadwal->rutes->map(function($rute) use ($type) {
+                    return $type === 'asal' ? $rute->kota_asal : $rute->kota_tujuan;
+                });
+            })
+            ->filter()
+            ->unique()
+            ->values();
+    }
 
     /**
      * Proses pencarian jadwal (versi lama)

@@ -2507,8 +2507,13 @@
                                         @if(!isset($driverJadwals) || $driverJadwals->isEmpty())
                                             <div class="empty-state" id="no-results-state">
                                                 <i class="fas fa-times-circle"></i>
-                                                <h3>Tidak ada jadwal tersedia</h3>
-                                                <p>Coba ubah parameter pencarian atau pilih tanggal yang berbeda.</p>
+                                                @if(isset($validated['asal']) && isset($validated['tujuan']))
+                                                    <h3>Rute tidak tersedia</h3>
+                                                    <p>Rute dari <strong>{{ $validated['asal'] }}</strong> ke <strong>{{ $validated['tujuan'] }}</strong> tidak memiliki jadwal yang tersedia. Coba pilih rute lain atau tanggal yang berbeda.</p>
+                                                @else
+                                                    <h3>Tidak ada jadwal tersedia</h3>
+                                                    <p>Coba ubah parameter pencarian atau pilih tanggal yang berbeda.</p>
+                                                @endif
                                             </div>
                                         @else
                                             <!-- Results Counter -->

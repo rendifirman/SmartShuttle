@@ -105,19 +105,32 @@ class JadwalController extends Controller
     {
         $shuttles = Shuttle::all();
         $rutes = Rute::all();
+        $mode = appSetting('jadwal_flow_mode', 'driver_confirmation');
+        
+        // Fetch drivers for direct_assign mode
+        $drivers = \App\Models\User::where('status', 'active')->get();
 
-        return view('admin.jadwal-create', compact('shuttles', 'rutes'));
+        return view('admin.jadwal-create', compact('shuttles', 'rutes', 'mode', 'drivers'));
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $mode = appSetting('jadwal_flow_mode', 'driver_confirmation');
+        
+        $rules = [
             'shuttle_id' => 'required|exists:shuttles,id',
             'rute_id' => 'required|exists:rutes,id',
             'tanggal_keberangkatan' => 'required|date|after_or_equal:today',
             'waktu_keberangkatan' => 'required',
             'waktu_kedatangan' => 'required',
-        ]);
+        ];
+        
+        // Driver required in direct_assign mode
+        if ($mode === 'direct_assign') {
+            $rules['driver_id'] = 'required|exists:users,id';
+        }
+
+        $validated = $request->validate($rules);
 
         // Tidak ada validasi waktu keberangkatan harus lebih awal
         // Bisa 21:00 -> 03:30 (melewati tengah malam)
@@ -136,7 +149,7 @@ class JadwalController extends Controller
             'waktu_kedatangan' => $request->waktu_kedatangan,
             'harga_total' => $hargaRute,
             'kursi_tersedia' => $totalKursi,
-            'status' => 'tersedia',
+            'status' => $mode === 'direct_assign' ? 'tersedia' : 'tersedia',
         ]);
 
         $jadwal->rutes()->attach($request->rute_id, [
@@ -144,6 +157,11 @@ class JadwalController extends Controller
             'durasi_segment' => $this->calculateDuration($request->waktu_keberangkatan, $request->waktu_kedatangan),
             'harga_segment' => $hargaRute,
         ]);
+        
+        // Assign driver if in direct_assign mode
+        if ($mode === 'direct_assign' && $request->has('driver_id')) {
+            $jadwal->diambilOlehDriver($request->driver_id);
+        }
 
         return redirect()->route('admin.jadwal.index')
             ->with('success', 'Jadwal berhasil dibuat!');
