@@ -39,5 +39,11 @@ class AppServiceProvider extends ServiceProvider
             $masterKontak = MMasterKontak::getDataKontak();
             $view->with('masterKontak', $masterKontak);
         });
+
+        // Share user session data ke semua views untuk navbar consistency
+        View::composer('*', function ($view) {
+            $userSession = session()->get('user', null);
+            $view->with('userSession', $userSession);
+        });
     }
 }

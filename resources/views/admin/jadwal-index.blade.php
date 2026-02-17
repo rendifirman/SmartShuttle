@@ -467,7 +467,7 @@
             flex-direction: column;
             width: 100%;
         }
-        
+
         .btn-add {
             width: 100%;
             justify-content: center;
@@ -609,23 +609,34 @@
             </thead>
             <tbody>
                 @forelse($jadwals as $jadwal)
-                    @php
-                        // Hitung total kursi dari shuttle
-                        $totalKursi = $jadwal->shuttle->kapasitas_kursi ?? $jadwal->shuttle->total_kursi ?? 0;
-                        $kursiTerisi = $totalKursi - $jadwal->kursi_tersedia;
-                        
-                        // Tentukan status tampilan
-                        if ($jadwal->status == 'penuh' || $jadwal->kursi_tersedia <= 0) {
+                        @php
+                        // Jika jadwal sudah diambil driver dan memiliki DriverJadwal, gunakan data dari driver_jadwals
+                        $shuttleCapacity = $jadwal->shuttle->kapasitas_kursi ?? $jadwal->shuttle->total_kursi ?? 0;
+
+                        if (!empty($jadwal->driverJadwal)) {
+                            $dj = $jadwal->driverJadwal;
+                            $totalKursi = $dj->total_kursi ?? $shuttleCapacity;
+                            $kursiTerisi = $dj->kursi_terisi ?? ($totalKursi - $jadwal->kursi_tersedia);
+                            // status dari driver jadwal jika tersedia
+                            $statusSource = $dj->status ?? $jadwal->status;
+                        } else {
+                            $totalKursi = $shuttleCapacity;
+                            $kursiTerisi = $totalKursi - $jadwal->kursi_tersedia;
+                            $statusSource = $jadwal->status;
+                        }
+
+                        // Tentukan status tampilan (mengutamakan status dari driver jadwal jika ada)
+                        if ($statusSource == 'penuh' || ($totalKursi > 0 && $kursiTerisi >= $totalKursi) || ($jadwal->kursi_tersedia !== null && $jadwal->kursi_tersedia <= 0 && empty($jadwal->driverJadwal))) {
                             $statusTampilan = 'penuh';
                             $statusClass = 'status-penuh';
-                        } elseif ($totalKursi > 0 && ($jadwal->kursi_tersedia / $totalKursi) <= 0.2) {
+                        } elseif ($totalKursi > 0 && (($totalKursi - $kursiTerisi) / $totalKursi) <= 0.2) {
                             $statusTampilan = 'hampir penuh';
                             $statusClass = 'status-hampir-penuh';
                         } else {
                             $statusTampilan = 'tersedia';
                             $statusClass = 'status-tersedia';
                         }
-                    @endphp
+                        @endphp
                     <tr>
                         <td>{{ $loop->iteration + ($jadwals->currentPage() - 1) * $jadwals->perPage() }}</td>
                         <td>
@@ -654,6 +665,9 @@
                         </td>
                         <td>
                             <div style="display: flex; gap: 5px;">
+                                <a href="{{ route('admin.jadwal.penumpang', $jadwal->id) }}" class="btn-action btn-view" title="Lihat Penumpang">
+                                    <i class="fas fa-users"></i> Penumpang
+                                </a>
                                 <a href="{{ route('admin.jadwal.edit', $jadwal->id) }}" class="btn-action btn-edit">
                                     <i class="fas fa-edit"></i> Edit
                                 </a>
@@ -683,7 +697,7 @@
             <div class="pagination-info">
                 Menampilkan {{ $jadwals->firstItem() ?? 0 }} - {{ $jadwals->lastItem() ?? 0 }} dari {{ $jadwals->total() }} data
             </div>
-            
+
             <div class="pagination-container">
                 {{-- Previous Page Link --}}
                 @if($jadwals->onFirstPage())
@@ -705,13 +719,13 @@
                     $right = $current + $delta + 1;
                     $range = [];
                     $rangeWithDots = [];
-                    
+
                     for ($i = 1; $i <= $last; $i++) {
                         if ($i == 1 || $i == $last || $i >= $left && $i < $right) {
                             $range[] = $i;
                         }
                     }
-                    
+
                     $prev = 0;
                     foreach ($range as $i) {
                         if ($prev) {
@@ -730,7 +744,7 @@
                     @if (is_string($page))
                         <span class="pagination-dots">...</span>
                     @else
-                        <a href="{{ $jadwals->url($page) }}" 
+                        <a href="{{ $jadwals->url($page) }}"
                            class="pagination-btn {{ $page == $current ? 'active' : '' }}">
                             {{ $page }}
                         </a>
@@ -760,7 +774,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         const filterForm = document.getElementById('filterForm');
         const filterInputs = document.querySelectorAll('#rute_id, #tanggal, #status, #shuttle_id');
-        
+
         filterInputs.forEach(input => {
             input.addEventListener('change', function() {
                 filterForm.submit();

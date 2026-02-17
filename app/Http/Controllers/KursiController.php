@@ -8,6 +8,7 @@ use App\Models\Pemesanan;
 use App\Models\DetailPenumpang;
 use App\Models\KursiTerpesan;
 use App\Models\Shuttle;
+use App\Models\DriverJadwal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
@@ -19,94 +20,254 @@ class KursiController extends Controller
      * Tampilkan halaman pemilihan kursi (LAYOUT STABIL)
      */
    public function index(Request $request)
-    {
-        // Validasi parameter
-        $validator = Validator::make($request->all(), [
-            'pemesanan_id' => 'required|exists:pemesanan,id',
-        ]);
+{
+    // Validasi parameter
+    $validator = Validator::make($request->all(), [
+        'pemesanan_id' => 'required|exists:pemesanan,id',
+    ]);
 
-        if ($validator->fails()) {
-            return redirect()->route('customer.riwayat')
-                ->with('error', 'Parameter pemesanan tidak valid');
-        }
-
-        try {
-            // Ambil data pemesanan dengan relasi
-            $pemesanan = Pemesanan::with([
-                'jadwal.shuttle',
-                'detailPenumpang'
-            ])->where('id', $request->pemesanan_id)
-              ->where('status', 'menunggu_pembayaran')
-              ->first();
-
-            if (!$pemesanan) {
-                return redirect()->route('customer.riwayat')
-                    ->with('error', 'Pemesanan tidak ditemukan atau sudah diproses');
-            }
-
-            // Cek apakah sudah memilih kursi
-            $sudahPilihKursi = $pemesanan->detailPenumpang()
-                ->whereNotNull('nomor_kursi')
-                ->exists();
-
-            if ($sudahPilihKursi) {
-                return redirect()->route('customer.detail_pesanan', ['kode' => $pemesanan->kode_booking])
-                    ->with('info', 'Kursi sudah dipilih. Silakan lanjutkan ke pembayaran.');
-            }
-
-            // ================ KUNCI UTAMA: LAYOUT STABIL ================
-            // Ambil layout kursi yang FIX dari shuttle
-            $shuttle = $pemesanan->jadwal->shuttle;
-
-            // Pastikan shuttle memiliki layout yang valid
-            if (!$shuttle->layout_kursi || $shuttle->layout_kursi === '[]') {
-                // Inisialisasi layout jika kosong
-                $shuttle->layout_kursi = json_encode(KursiTerpesan::generateLayoutKursi($shuttle->total_kursi ?? 9));
-                $shuttle->save();
-            }
-
-            // Ambil layout dengan status terkini
-            $layoutKursi = KursiTerpesan::getLayoutWithStatus($pemesanan->jadwal_id, $shuttle->id);
-
-            // Backup: jika masih kosong, generate default
-            if (empty($layoutKursi)) {
-                $layoutKursi = KursiTerpesan::generateLayoutKursi(9);
-            }
-
-            // Ambil kursi terpesan (hanya untuk validasi tambahan)
-            $kursiTerpesan = KursiTerpesan::where('jadwal_id', $pemesanan->jadwal_id)
-                ->whereIn('status', ['terpesan', 'terisi'])
-                ->pluck('nomor_kursi')
-                ->toArray();
-
-            // Determine selected tariff for display
-            $selectedTarif = null;
-            try {
-                if ($pemesanan->jadwal && $pemesanan->jadwal->rutes && $pemesanan->jadwal->rutes->isNotEmpty()) {
-                    $ruteObj = $pemesanan->jadwal->rutes->first();
-                    $mt = $ruteObj->getActiveMasterTarif();
-                    $selectedTarif = $mt ? $mt->formatTarif() : ['harga_dasar' => $ruteObj->harga_dasar ?? null];
-                }
-            } catch (\Exception $e) {
-                \Log::error('Failed to get selected tariff in KursiController: ' . $e->getMessage());
-            }
-
-            return view('customer.kursi', compact(
-                'pemesanan',
-                'kursiTerpesan',
-                'layoutKursi',
-                'shuttle',
-                'selectedTarif'
-            ));
-
-        } catch (\Exception $e) {
-            \Log::error('Error in KursiController@index: ' . $e->getMessage());
-            \Log::error('Trace: ' . $e->getTraceAsString());
-
-            return redirect()->route('customer.riwayat')
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
-        }
+    if ($validator->fails()) {
+        return redirect()->route('customer.riwayat')
+            ->with('error', 'Parameter pemesanan tidak valid');
     }
+
+    try {
+        // Ambil data pemesanan dengan relasi
+        $pemesanan = Pemesanan::with([
+            'jadwal.shuttle',
+            'detailPenumpang',
+            'driverJadwal'
+        ])->where('id', $request->pemesanan_id)
+          ->where('status', 'menunggu_kursi')
+          ->first();
+
+        if (!$pemesanan) {
+            return redirect()->route('customer.riwayat')
+                ->with('error', 'Pemesanan tidak ditemukan atau sudah diproses');
+        }
+
+        // Cek apakah sudah memilih kursi
+        $sudahPilihKursi = $pemesanan->detailPenumpang()
+            ->whereNotNull('nomor_kursi')
+            ->exists();
+
+        if ($sudahPilihKursi) {
+            return redirect()->route('customer.detail_pesanan', ['kode' => $pemesanan->kode_booking])
+                ->with('info', 'Kursi sudah dipilih. Silakan lanjutkan ke pembayaran.');
+        }
+
+        // ================ KUNCI UTAMA: LAYOUT STABIL ================
+        // Ambil layout kursi yang FIX dari shuttle
+        $shuttle = $pemesanan->jadwal->shuttle;
+
+        // Pastikan shuttle memiliki layout yang valid
+        if (!$shuttle->layout_kursi || $shuttle->layout_kursi === '[]') {
+            // Inisialisasi layout jika kosong
+            $shuttle->layout_kursi = json_encode(KursiTerpesan::generateLayoutKursi($shuttle->total_kursi ?? 9));
+            $shuttle->save();
+        }
+
+        // Ambil layout base dari shuttle
+        $layoutKursi = is_array($shuttle->layout_kursi)
+            ? $shuttle->layout_kursi
+            : json_decode($shuttle->layout_kursi, true);
+
+        if (empty($layoutKursi) || !is_array($layoutKursi)) {
+            $layoutKursi = KursiTerpesan::generateLayoutKursi($shuttle->total_kursi ?? 9);
+        }
+
+        // ===== BAGIAN PENTING: GET KURSI YANG SUDAH TERPESAN =====
+        // Query SEMUA kursi terpesan dari booking lain (exclude booking ini)
+        $kursiTerpesanQuery = KursiTerpesan::where('status', 'terpesan')
+            ->where('pemesanan_id', '!=', $pemesanan->id)
+            ->whereHas('pemesanan', function($query) {
+                $query->whereNotIn('status', ['dibatalkan', 'expired']);
+            });
+
+        // Handle BOTH jadwal dan driver_jadwal flows
+        if ($pemesanan->id_jadwal_driver) {
+            // Use driver jadwal filter
+            $kursiTerpesanQuery->where('id_jadwal_driver', $pemesanan->id_jadwal_driver);
+        } else {
+            // Use jadwal filter
+            $kursiTerpesanQuery->where('jadwal_id', $pemesanan->jadwal_id);
+        }
+
+        // Ambil semua nomor kursi yang terpesan
+        $kursiTerpesan = $kursiTerpesanQuery->pluck('nomor_kursi')->toArray();
+        $kursiTerpesan = array_map(function($v){ return trim((string) $v); }, $kursiTerpesan);
+
+        // ===== NORMALISASI LAYOUT DENGAN DETAIL PENUMPANG & KURSI TERPESAN =====
+        // Ambil kursi yang dipilih user di booking SEKARANG (belum di-simpan ke database)
+        $kursiSaya = $pemesanan->detailPenumpang->pluck('nomor_kursi')->filter()->toArray();
+        $kursiSaya = array_map(function($v){ return trim((string) $v); }, $kursiSaya);
+
+        // Normalisasi setiap kursi dengan status yang benar
+        foreach ($layoutKursi as &$kursi) {
+            $nomor = trim((string) ($kursi['nomor'] ?? ''));
+
+            // PRIORITY 1: Cek apakah kursi sudah terpesan oleh booking lain (SOLD)
+            if ($nomor !== '' && in_array($nomor, $kursiTerpesan, true)) {
+                $kursi['status'] = 'terpesan';
+                $kursi['class'] = 'sold';
+                $kursi['icon'] = 'fa-lock';
+            }
+            // PRIORITY 2: Cek apakah kursi dipilih user sekarang (SELECTED)
+            elseif ($nomor !== '' && in_array($nomor, $kursiSaya, true)) {
+                $kursi['status'] = 'selected';
+                $kursi['class'] = 'selected';
+                $kursi['icon'] = 'fa-user-check';
+            }
+            // PRIORITY 3: Kursi tersedia
+            else {
+                $kursi['status'] = 'tersedia';
+                $kursi['class'] = 'available';
+                $kursi['icon'] = 'fa-check';
+            }
+        }
+        unset($kursi); // Unset reference
+
+        // Backup: jika masih kosong, generate default
+        if (empty($layoutKursi)) {
+            $layoutKursi = KursiTerpesan::generateLayoutKursi(9);
+        }
+
+        // Tentukan apakah menggunakan driver jadwal atau jadwal regular
+        $usesDriverJadwal = !empty($pemesanan->id_jadwal_driver) && $pemesanan->driverJadwal;
+        $driverJadwal = $usesDriverJadwal ? $pemesanan->driverJadwal : null;
+        $jadwal = $pemesanan->jadwal;
+
+        // ================ PERBAIKAN: HITUNG TOTAL TARIF BERDASARKAN MASTER TARIF AKTIF ================
+        $totalTarif = 0;
+        $availableTarifs = [];
+        $selectedTarif = null;
+
+        if ($usesDriverJadwal && $driverJadwal) {
+            // Prioritas 1: master tarif langsung di driver_jadwal
+            if ($driverJadwal->masterTarif && $driverJadwal->masterTarif->status === 'aktif') {
+                $mt = $driverJadwal->masterTarif;
+                $hargaDasar = $mt->harga_dasar ?? $driverJadwal->harga;
+                $hargaSetelahTarif = (float) $mt->hitungTarif($hargaDasar);
+                $tarifPerKursi = $hargaSetelahTarif - $driverJadwal->harga;
+                if ($tarifPerKursi > 0) {
+                    $totalTarif = $tarifPerKursi * $pemesanan->jumlah_penumpang;
+                }
+                $selectedTarif = $mt->formatTarif();
+            }
+
+            // Prioritas 2: cari rute dari driverJadwal
+            if (!$totalTarif) {
+                $ruteObj = $driverJadwal->masterRute;
+                if (!$ruteObj) {
+                    $parsed = $driverJadwal->getDetailRute();
+                    if (!empty($parsed['kota_asal']) && !empty($parsed['kota_tujuan'])) {
+                        $ruteObj = Rute::where('kota_asal', $parsed['kota_asal'])
+                                        ->where('kota_tujuan', $parsed['kota_tujuan'])
+                                        ->aktif()
+                                        ->first();
+                    }
+                }
+
+                if ($ruteObj) {
+                    $tarifCollection = $ruteObj->masterTarifs()
+                        ->where('status', 'aktif')
+                        ->where(function($q) {
+                            $q->whereNull('tanggal_berlaku')->orWhere('tanggal_berlaku', '<=', now());
+                        })
+                        ->where(function($q) {
+                            $q->whereNull('tanggal_kadaluarsa')->orWhere('tanggal_kadaluarsa', '>=', now());
+                        })
+                        ->get();
+
+                    if ($tarifCollection->isNotEmpty()) {
+                        $mt = $tarifCollection->firstWhere('jenis_tarif', 'reguler') ?? $tarifCollection->first();
+                        $hargaDasar = $mt->harga_dasar ?? $ruteObj->harga_dasar ?? $driverJadwal->harga;
+                        $hargaSetelahTarif = (float) $mt->hitungTarif($hargaDasar);
+                        $tarifPerKursi = $hargaSetelahTarif - $driverJadwal->harga;
+                        if ($tarifPerKursi > 0) {
+                            $totalTarif = $tarifPerKursi * $pemesanan->jumlah_penumpang;
+                        }
+                        $selectedTarif = $mt->formatTarif();
+
+                        // Format available tarifs untuk view
+                        $availableTarifs = $tarifCollection->map(function($t) use ($ruteObj, $driverJadwal) {
+                            $fmt = $t->formatTarif();
+                            $base = $t->harga_dasar ?? $ruteObj->harga_dasar ?? $driverJadwal->harga;
+                            $fmt['final_price'] = (float) $t->hitungTarif($base);
+                            $fmt['delta'] = $fmt['final_price'] - (float) $base;
+                            return $fmt;
+                        })->toArray();
+                    }
+                }
+            }
+        } elseif ($jadwal) {
+            // Legacy flow: ambil dari jadwal dan rute pertama
+            $rute = $jadwal->rutes->first();
+            if ($rute) {
+                $tarifCollection = $rute->masterTarifs()
+                    ->where('status', 'aktif')
+                    ->where(function($q) {
+                        $q->whereNull('tanggal_berlaku')->orWhere('tanggal_berlaku', '<=', now());
+                    })
+                    ->where(function($q) {
+                        $q->whereNull('tanggal_kadaluarsa')->orWhere('tanggal_kadaluarsa', '>=', now());
+                    })
+                    ->get();
+
+                if ($tarifCollection->isNotEmpty()) {
+                    $mt = $tarifCollection->firstWhere('jenis_tarif', 'reguler') ?? $tarifCollection->first();
+                    $hargaDasar = $mt->harga_dasar ?? $rute->harga_dasar ?? $jadwal->harga_total;
+                    $hargaSetelahTarif = (float) $mt->hitungTarif($hargaDasar);
+                    $tarifPerKursi = $hargaSetelahTarif - $jadwal->harga_total;
+                    if ($tarifPerKursi > 0) {
+                        $totalTarif = $tarifPerKursi * $pemesanan->jumlah_penumpang;
+                    }
+                    $selectedTarif = $mt->formatTarif();
+
+                    $availableTarifs = $tarifCollection->map(function($t) use ($rute, $jadwal) {
+                        $fmt = $t->formatTarif();
+                        $base = $t->harga_dasar ?? $rute->harga_dasar ?? $jadwal->harga_total;
+                        $fmt['final_price'] = (float) $t->hitungTarif($base);
+                        $fmt['delta'] = $fmt['final_price'] - (float) $base;
+                        return $fmt;
+                    })->toArray();
+                }
+            }
+        }
+
+        // Hitung harga akhir
+        $hargaPerOrang = $jadwal?->harga_total ?? 0;
+        $diskon = $pemesanan->diskon ?? 0;
+        $subtotal = ($hargaPerOrang * $pemesanan->jumlah_penumpang) + $totalTarif;
+        $totalBayar = max(0, $subtotal - $diskon);
+        $tarifPerKursi = $pemesanan->jumlah_penumpang > 0 ? $totalTarif / $pemesanan->jumlah_penumpang : 0;
+
+        return view('customer.kursi', compact(
+            'pemesanan',
+            'kursiTerpesan',
+            'layoutKursi',
+            'shuttle',
+            'selectedTarif',
+            'usesDriverJadwal',
+            'driverJadwal',
+            'jadwal',
+            'hargaPerOrang',
+            'totalTarif',
+            'diskon',
+            'subtotal',
+            'totalBayar',
+            'tarifPerKursi',
+            'availableTarifs'   // Kirim juga ke view
+        ));
+
+    } catch (\Exception $e) {
+        \Log::error('Error in KursiController@index: ' . $e->getMessage());
+        \Log::error('Trace: ' . $e->getTraceAsString());
+
+        return redirect()->route('customer.riwayat')
+            ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+    }
+}
 
     /**
      * Proses pemilihan kursi (VALIDASI GANDA)
@@ -166,13 +327,17 @@ class KursiController extends Controller
             // Validasi 4: Cek apakah kursi sudah terpesan (double-check dengan lock)
             $terpesanSeats = [];
             foreach ($request->kursi as $nomorKursi) {
-                $kursiTerpesan = KursiTerpesan::where('jadwal_id', $request->jadwal_id)
-                    ->where('nomor_kursi', $nomorKursi)
+                $query = KursiTerpesan::where('nomor_kursi', $nomorKursi)
                     ->whereIn('status', ['terpesan', 'terisi'])
-                    ->lockForUpdate() // Lock untuk mencegah double booking
-                    ->exists();
+                    ->lockForUpdate(); // Lock untuk mencegah double booking
 
-                if ($kursiTerpesan) {
+                if ($pemesanan->id_jadwal_driver) {
+                    $query->where('id_jadwal_driver', $pemesanan->id_jadwal_driver);
+                } else {
+                    $query->where('jadwal_id', $request->jadwal_id);
+                }
+
+                if ($query->exists()) {
                     $terpesanSeats[] = $nomorKursi;
                 }
             }
@@ -193,19 +358,47 @@ class KursiController extends Controller
                     $penumpang->save();
 
                     // Buat record di kursi_terpesan dengan status terpesan
-                    KursiTerpesan::create([
+                    $dataKursi = [
                         'jadwal_id' => $pemesanan->jadwal_id,
                         'nomor_kursi' => $nomorKursi,
                         'detail_penumpang_id' => $penumpang->id,
                         'pemesanan_id' => $pemesanan->id,
                         'status' => 'terpesan'
-                    ]);
+                    ];
+
+                    // Jika booking terkait driver_jadwal, simpan referensinya
+                    if (!empty($pemesanan->id_jadwal_driver)) {
+                        $dataKursi['id_jadwal_driver'] = $pemesanan->id_jadwal_driver;
+                    }
+
+                    KursiTerpesan::create($dataKursi);
                 }
             }
 
             // Update kursi tersedia di jadwal
             $kursiTersediaBaru = $pemesanan->jadwal->kursi_tersedia - $pemesanan->jumlah_penumpang;
             $pemesanan->jadwal->update(['kursi_tersedia' => $kursiTersediaBaru]);
+
+            // Sync DriverJadwal.kursi_terisi when applicable
+            try {
+                $driverJadwal = null;
+                if (!empty($pemesanan->id_jadwal_driver)) {
+                    $driverJadwal = DriverJadwal::where('id_jadwal_driver', $pemesanan->id_jadwal_driver)->first();
+                }
+                if (!$driverJadwal) {
+                    $driverJadwal = DriverJadwal::where('id_jadwal', $pemesanan->jadwal_id)->first();
+                }
+
+                if ($driverJadwal) {
+                    $driverJadwal->kursi_terisi += $pemesanan->jumlah_penumpang;
+                    if ($driverJadwal->kursi_terisi >= $driverJadwal->total_kursi) {
+                        $driverJadwal->status = 'selesai';
+                    }
+                    $driverJadwal->save();
+                }
+            } catch (\Exception $e) {
+                Log::warning('Gagal sinkron DriverJadwal saat pilih kursi: ' . $e->getMessage());
+            }
 
         DB::commit();
 
@@ -327,8 +520,81 @@ class KursiController extends Controller
             }
 
             $data['selectedTarif'] = $selectedTarif;
-            // also provide available tarifs when possible
-            $data['availableTarifs'] = $selectedTarif ? ($selectedTarif ? [$selectedTarif] : []) : [];
+            // also provide available tarifs (attempt to collect all active master tarifs for the route)
+            $availableTarifs = [];
+            $totalTarif = 0;
+            try {
+                // If route object from jadwal is available
+                if (isset($rutePertama) && $rutePertama) {
+                    $tarifCollection = $rutePertama->masterTarifs()->where('status','aktif')
+                        ->where(function($q){
+                            $q->whereNull('tanggal_berlaku')->orWhere('tanggal_berlaku','<=',now());
+                        })->where(function($q){
+                            $q->whereNull('tanggal_kadaluarsa')->orWhere('tanggal_kadaluarsa','>=',now());
+                        })->get();
+
+                    if ($tarifCollection->isNotEmpty()) {
+                        $availableTarifs = $tarifCollection->map(function($t) use ($rutePertama, $pemesanan){
+                            $fmt = $t->formatTarif();
+                            $base = $t->harga_dasar ?? $rutePertama->harga_dasar ?? $pemesanan->jadwal->harga_total ?? 0;
+                            $final = (float) $t->hitungTarif($base);
+                            $fmt['final_price'] = $final;
+                            $fmt['delta'] = $final - (float) $base;
+                            return $fmt;
+                        })->toArray();
+
+                        foreach ($availableTarifs as $tarif) {
+                            $totalTarif += ($tarif['final_price'] ?? 0) * ($pemesanan->jumlah_penumpang ?? 1);
+                        }
+                    }
+                }
+
+                // If booking came from driverJadwal, try to collect from masterRute as fallback
+                if (empty($availableTarifs) && $pemesanan->driverJadwal) {
+                    $dj = $pemesanan->driverJadwal;
+                    $ruteObj = $dj->masterRute ?? null;
+                    if (!$ruteObj) {
+                        $parsed = $dj->getDetailRute();
+                        if (!empty($parsed['kota_asal']) && !empty($parsed['kota_tujuan'])) {
+                            $ka = trim(strtolower($parsed['kota_asal']));
+                            $kt = trim(strtolower($parsed['kota_tujuan']));
+                            $ruteObj = \App\Models\Rute::whereRaw('LOWER(kota_asal) = ?', [$ka])
+                                ->whereRaw('LOWER(kota_tujuan) = ?', [$kt])
+                                ->aktif()
+                                ->first();
+                        }
+                    }
+
+                    if ($ruteObj) {
+                        $tarifCollection = $ruteObj->masterTarifs()->where('status','aktif')
+                            ->where(function($q){
+                                $q->whereNull('tanggal_berlaku')->orWhere('tanggal_berlaku','<=',now());
+                            })->where(function($q){
+                                $q->whereNull('tanggal_kadaluarsa')->orWhere('tanggal_kadaluarsa','>=',now());
+                            })->get();
+
+                        if ($tarifCollection->isNotEmpty()) {
+                            $availableTarifs = $tarifCollection->map(function($t) use ($ruteObj, $pemesanan){
+                                $fmt = $t->formatTarif();
+                                $base = $t->harga_dasar ?? $ruteObj->harga_dasar ?? ($pemesanan->jadwal->harga_total ?? 0);
+                                $final = (float) $t->hitungTarif($base);
+                                $fmt['final_price'] = $final;
+                                $fmt['delta'] = $final - (float) $base;
+                                return $fmt;
+                            })->toArray();
+
+                            foreach ($availableTarifs as $tarif) {
+                                $totalTarif += ($tarif['final_price'] ?? 0) * ($pemesanan->jumlah_penumpang ?? 1);
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to get availableTarifs in KursiController@detailPesanan: ' . $e->getMessage());
+            }
+
+            $data['availableTarifs'] = $availableTarifs;
+            $data['totalTarif'] = $totalTarif;
 
             // Cek jika view ada, jika tidak gunakan view sederhana
             if (!view()->exists('customer.detail_pesanan')) {
@@ -434,7 +700,7 @@ class KursiController extends Controller
 
             // Gunakan layout FIX dari shuttle
             $shuttle = $jadwal->shuttle;
-            $layoutKursi = KursiTerpesan::getLayoutWithStatus($jadwalId, $shuttle->id);
+            $layoutKursi = KursiTerpesan::getLayoutWithStatus($jadwalId, $shuttle->id, null);
 
             // Filter hanya kursi tersedia
             $availableSeats = [];
@@ -465,6 +731,139 @@ class KursiController extends Controller
                 'success' => false,
                 'message' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Lock a seat via AJAX while user is selecting (create temporary 'terpesan')
+     */
+    public function lockSeat(Request $request)
+    {
+        $request->validate([
+            'pemesanan_id' => 'required|exists:pemesanan,id',
+            'nomor_kursi' => 'required|string'
+        ]);
+        // Use transaction + SELECT ... FOR UPDATE to avoid race conditions
+        DB::beginTransaction();
+        try {
+            $pemesanan = Pemesanan::findOrFail($request->pemesanan_id);
+
+            // Basic ownership check - only pemilik pemesanan atau admin allowed
+            $user = $request->user();
+            if ($user && $user->id !== $pemesanan->customer_id && !$user->hasRole('admin')) {
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
+            }
+
+            $nomor = trim($request->nomor_kursi);
+
+            // Lock matching rows to prevent two concurrent requests creating duplicate records
+            $query = KursiTerpesan::where('nomor_kursi', $nomor)
+                ->whereIn('status', ['terpesan','terisi']);
+
+            if (!empty($pemesanan->id_jadwal_driver)) {
+                $query->where(function($q) use ($pemesanan) {
+                    $q->where('id_jadwal_driver', $pemesanan->id_jadwal_driver)
+                      ->orWhere('jadwal_id', $pemesanan->jadwal_id);
+                });
+            } else {
+                $query->where('jadwal_id', $pemesanan->jadwal_id);
+            }
+
+            $exists = $query->lockForUpdate()->exists();
+
+            if ($exists) {
+                DB::commit();
+                return response()->json(['success' => false, 'message' => 'Kursi sudah dipesan'], 409);
+            }
+
+            // Create reservation row
+            $data = [
+                'jadwal_id' => $pemesanan->jadwal_id,
+                'nomor_kursi' => $nomor,
+                'detail_penumpang_id' => null,
+                'pemesanan_id' => $pemesanan->id,
+                'status' => 'terpesan'
+            ];
+            if (!empty($pemesanan->id_jadwal_driver)) {
+                $data['id_jadwal_driver'] = $pemesanan->id_jadwal_driver;
+            }
+
+            $seat = KursiTerpesan::create($data);
+
+            // Increment driver_jadwal.kursi_terisi if applicable
+            try {
+                if (!empty($pemesanan->id_jadwal_driver)) {
+                    $dj = DriverJadwal::where('id_jadwal_driver', $pemesanan->id_jadwal_driver)->first();
+                } else {
+                    $dj = DriverJadwal::where('id_jadwal', $pemesanan->jadwal_id)->first();
+                }
+                if ($dj) {
+                    $dj->kursi_terisi += 1;
+                    if ($dj->kursi_terisi >= $dj->total_kursi) $dj->status = 'selesai';
+                    $dj->save();
+                }
+            } catch (\Exception $e) {
+                Log::warning('Gagal update DriverJadwal saat lockSeat: ' . $e->getMessage());
+            }
+
+            DB::commit();
+            return response()->json(['success' => true, 'data' => ['seat_id' => $seat->id]]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('lockSeat error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Unlock a previously locked seat (user deselect)
+     */
+    public function unlockSeat(Request $request)
+    {
+        $request->validate([
+            'pemesanan_id' => 'required|exists:pemesanan,id',
+            'nomor_kursi' => 'required|string'
+        ]);
+
+        try {
+            $pemesanan = Pemesanan::findOrFail($request->pemesanan_id);
+            $nomor = trim($request->nomor_kursi);
+
+            $query = KursiTerpesan::where('nomor_kursi', $nomor)
+                ->where('pemesanan_id', $pemesanan->id);
+
+            if (!empty($pemesanan->id_jadwal_driver)) {
+                $query->where('id_jadwal_driver', $pemesanan->id_jadwal_driver);
+            } else {
+                $query->where('jadwal_id', $pemesanan->jadwal_id);
+            }
+
+            $deleted = $query->delete();
+
+            // Decrement driver_jadwal.kursi_terisi if applicable
+            try {
+                if (!empty($pemesanan->id_jadwal_driver)) {
+                    $dj = DriverJadwal::where('id_jadwal_driver', $pemesanan->id_jadwal_driver)->first();
+                } else {
+                    $dj = DriverJadwal::where('id_jadwal', $pemesanan->jadwal_id)->first();
+                }
+                if ($dj) {
+                    $dj->kursi_terisi -= $deleted;
+                    if ($dj->kursi_terisi < 0) $dj->kursi_terisi = 0;
+                    if ($dj->kursi_terisi < $dj->total_kursi && $dj->status === 'selesai') $dj->status = 'aktif';
+                    $dj->save();
+                }
+            } catch (\Exception $e) {
+                Log::warning('Gagal update DriverJadwal saat unlockSeat: ' . $e->getMessage());
+            }
+
+            return response()->json(['success' => true, 'deleted' => $deleted]);
+
+        } catch (\Exception $e) {
+            Log::error('unlockSeat error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 

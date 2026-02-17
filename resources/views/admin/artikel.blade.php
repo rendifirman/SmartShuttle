@@ -710,9 +710,11 @@ textarea {
         <!-- HEADER -->
         <div class="page-header">
             <h2>Data Artikel</h2>
+            @can('manage_artikel')
             <a href="{{ route('admin.artikel.create') }}" class="btn-add">
                 <i class="fas fa-plus"></i> Tambah Artikel
             </a>
+            @endcan
         </div>
 
         <!-- Flash Messages -->
@@ -756,7 +758,7 @@ textarea {
                             </option>
                         @endforeach
                     </select>
-                    
+
                     <select name="penulis" id="filter-penulis">
                         <option value="">Semua Penulis</option>
                         @foreach($penulisList as $penulis)
@@ -765,33 +767,33 @@ textarea {
                             </option>
                         @endforeach
                     </select>
-                    
+
                     <select name="status" id="filter-status">
                         <option value="">Semua Status</option>
                         <option value="publik" {{ request('status') == 'publik' ? 'selected' : '' }}>Publik</option>
                         <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
                     </select>
-                    
-                    <input type="date" name="tanggal_dari" id="filter-tanggal-dari" 
+
+                    <input type="date" name="tanggal_dari" id="filter-tanggal-dari"
                            value="{{ request('tanggal_dari') }}" placeholder="Tanggal Dari">
                 </div>
-                
+
                 <div class="filter-row">
-                    <input type="date" name="tanggal_sampai" id="filter-tanggal-sampai" 
+                    <input type="date" name="tanggal_sampai" id="filter-tanggal-sampai"
                            value="{{ request('tanggal_sampai') }}" placeholder="Tanggal Sampai">
-                    
+
                     <div style="grid-column: span 3;">
                         <!-- Empty for alignment -->
                     </div>
                 </div>
 
                 <div class="filter-action">
-                    <input type="text" name="search" id="search-artikel" 
+                    <input type="text" name="search" id="search-artikel"
                            placeholder="Cari judul, konten, atau penulis..." value="{{ request('search') }}">
                     <button type="submit" class="btn-filter">
                         <i class="fas fa-filter"></i> Filter
                     </button>
-                    <a href="{{ route('admin.artikel.index') }}" class="btn-cancel" 
+                    <a href="{{ route('admin.artikel.index') }}" class="btn-cancel"
                        style="padding: 12px 20px; text-decoration: none; display: inline-flex; align-items: center;">
                         <i class="fas fa-redo"></i> Reset
                     </a>
@@ -827,10 +829,10 @@ textarea {
                     <tr>
                         <td>
                             @if($artikel->thumbnail)
-                                <img src="{{ Storage::url($artikel->thumbnail) }}" 
+                                <img src="{{ Storage::url($artikel->thumbnail) }}"
                                      alt="Thumbnail" class="artikel-thumbnail">
                             @else
-                                <img src="{{ asset('images/default-thumbnail.jpg') }}" 
+                                <img src="{{ asset('images/default-thumbnail.jpg') }}"
                                      alt="No Thumbnail" class="artikel-thumbnail">
                             @endif
                         </td>
@@ -851,19 +853,21 @@ textarea {
                             </span>
                         </td>
                         <td>
-                            <a href="{{ route('admin.artikel.show', $artikel->id) }}" 
+                            <a href="{{ route('admin.artikel.show', $artikel->id) }}"
                                class="btn-action btn-view">
                                 <i class="fas fa-eye"></i> View
                             </a>
-                            <a href="{{ route('admin.artikel.edit', $artikel->id) }}" 
+                            @can('manage_artikel')
+                            <a href="{{ route('admin.artikel.edit', $artikel->id) }}"
                                class="btn-action btn-edit">
                                 <i class="fas fa-edit"></i> Edit
                             </a>
-                            <button type="button" 
-                                    class="btn-action btn-delete" 
+                            <button type="button"
+                                    class="btn-action btn-delete"
                                     onclick="confirmDelete({{ $artikel->id }}, '{{ $artikel->judul }}')">
                                 <i class="fas fa-trash"></i> Hapus
                             </button>
+                            @endcan
                         </td>
                     </tr>
                     @empty
@@ -886,7 +890,7 @@ textarea {
 </div>
 
 <!-- Modal Delete Confirmation -->
-<div id="deleteModal" class="modal hidden" 
+<div id="deleteModal" class="modal hidden"
      style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
     <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; width: 90%;">
         <h3 style="margin-top: 0; color: #0b2a4a;">Konfirmasi Hapus</h3>
@@ -910,7 +914,7 @@ let currentArtikelId = '';
 // Function to confirm delete
 function confirmDelete(id, judul) {
     deleteUrl = `{{ url('admin/artikel') }}/${id}`;
-    document.getElementById('deleteMessage').textContent = 
+    document.getElementById('deleteMessage').textContent =
         `Apakah Anda yakin ingin menghapus artikel "${judul}"?`;
     document.getElementById('deleteModal').classList.remove('hidden');
 }
@@ -928,21 +932,21 @@ document.getElementById('confirmDelete').addEventListener('click', function() {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = deleteUrl;
-        
+
         // Add CSRF token
         const csrfToken = document.createElement('input');
         csrfToken.type = 'hidden';
         csrfToken.name = '_token';
         csrfToken.value = '{{ csrf_token() }}';
         form.appendChild(csrfToken);
-        
+
         // Add method spoofing for DELETE
         const methodField = document.createElement('input');
         methodField.type = 'hidden';
         methodField.name = '_method';
         methodField.value = 'DELETE';
         form.appendChild(methodField);
-        
+
         // Submit form
         document.body.appendChild(form);
         form.submit();
@@ -976,7 +980,7 @@ document.getElementById('search-artikel').addEventListener('keypress', function(
 // Initialize date pickers
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Artikel management page loaded');
-    
+
     // Set today as default for "Tanggal Sampai"
     const tanggalSampai = document.getElementById('filter-tanggal-sampai');
     if (tanggalSampai && !tanggalSampai.value) {

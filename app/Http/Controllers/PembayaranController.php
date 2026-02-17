@@ -98,13 +98,59 @@ class PembayaranController extends Controller
         $currentMethod = MetodePembayaran::where('kode', $pembayaran->metode)->first();
         $instruksi = $currentMethod ? $currentMethod->instruksi_array : [];
 
+        // Prepare tariff and pricing data
+        $selectedTarif = null;
+        $availableTarifs = [];
+        $totalTarif = 0;
+        $jumlahPenumpang = $pemesanan->jumlah_penumpang;
+
+        try {
+            if ($pemesanan->jadwal && $pemesanan->jadwal->rutes && $pemesanan->jadwal->rutes->isNotEmpty()) {
+                $ruteObj = $pemesanan->jadwal->rutes->first();
+                $mt = $ruteObj->getActiveMasterTarif();
+                if ($mt) {
+                    $selectedTarif = $mt->formatTarif();
+                    $base = $mt->harga_dasar ?? $ruteObj->harga_dasar ?? $pemesanan->jadwal->harga_total ?? 0;
+                    $selectedTarif['calculated_price'] = (float) $mt->hitungTarif($base);
+                } else {
+                    $selectedTarif = ['harga_dasar' => $ruteObj->harga_dasar ?? null];
+                }
+
+                // Collect all active master tariffs for this route (availableTarifs)
+                $tarifCollection = $ruteObj->masterTarifs()->where('status','aktif')
+                    ->where(function($q){
+                        $q->whereNull('tanggal_berlaku')->orWhere('tanggal_berlaku','<=',now());
+                    })->where(function($q){
+                        $q->whereNull('tanggal_kadaluarsa')->orWhere('tanggal_kadaluarsa','>=',now());
+                    })->get();
+
+                if ($tarifCollection->isNotEmpty()) {
+                    $availableTarifs = $tarifCollection->map(function($t) use ($ruteObj, $pemesanan){
+                        $fmt = $t->formatTarif();
+                        $base = $t->harga_dasar ?? $ruteObj->harga_dasar ?? $pemesanan->jadwal->harga_total ?? 0;
+                        $final = (float) $t->hitungTarif($base);
+                        $fmt['final_price'] = $final;
+                        $fmt['delta'] = $final - (float) $base;
+                        return $fmt;
+                    })->toArray();
+
+                    // Calculate total tarif from all available tarifs
+                    foreach ($availableTarifs as $tarif) {
+                        $totalTarif += ($tarif['final_price'] ?? 0) * $jumlahPenumpang;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to get selected/available tariff in PembayaranController: ' . $e->getMessage());
+        }
+
         $data = [
             'pemesanan' => $pemesanan,
             'pembayaran' => $pembayaran,
             'metodePembayaran' => $metodePembayaran,
             'from' => $rutePertama->kota_asal ?? 'Kota Asal',
             'to' => $ruteTerakhir->kota_tujuan ?? 'Kota Tujuan',
-            'date' => Carbon::parse($pemesanan->jadwal->tanggal_keberangkatan)->isoFormat('dddd, D MMMM YYYY'),
+            'date' => $pemesanan->jadwal->tanggal_keberangkatan ?? now(),
             'time' => Carbon::parse($pemesanan->jadwal->waktu_keberangkatan)->format('H:i'),
             'customer_name' => $pemesanan->nama_pemesan ?? 'Nama Pemesan',
             'customer_phone' => $pemesanan->telepon_pemesan ?? 'Nomor Telepon',
@@ -115,21 +161,11 @@ class PembayaranController extends Controller
             'sisa_waktu_detik' => $sisa_waktu_detik,
             'payment_data' => $paymentData,
             'instruksi' => $instruksi,
+            'selectedTarif' => $selectedTarif,
+            'availableTarifs' => $availableTarifs,
+            'totalTarif' => $totalTarif,
+            'diskon' => $pemesanan->diskon ?? 0,
         ];
-
-        // Add selected tariff info
-        $selectedTarif = null;
-        try {
-            if ($pemesanan->jadwal && $pemesanan->jadwal->rutes && $pemesanan->jadwal->rutes->isNotEmpty()) {
-                $ruteObj = $pemesanan->jadwal->rutes->first();
-                $mt = $ruteObj->getActiveMasterTarif();
-                $selectedTarif = $mt ? $mt->formatTarif() : ['harga_dasar' => $ruteObj->harga_dasar ?? null];
-            }
-        } catch (\Exception $e) {
-            \Log::error('Failed to get selected tariff in PembayaranController: ' . $e->getMessage());
-        }
-
-        $data['selectedTarif'] = $selectedTarif;
 
         return view('customer.pembayaran', $data);
     }

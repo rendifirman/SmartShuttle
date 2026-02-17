@@ -359,9 +359,11 @@ table tbody tr:hover {
         <div>
             <h2><i class="fas fa-tag"></i> Master Tarif</h2>
         </div>
+        @can('manage_master_tarif')
         <a href="{{ route('admin.master-tarif.create') }}" class="btn-add">
             <i class="fas fa-plus"></i> Tambah Tarif
         </a>
+        @endcan
     </div>
 
     <!-- Success/Error Messages -->

@@ -879,34 +879,70 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedRole = this.value;
 
         // Show/hide permissions section
-        if (selectedRole && selectedRole !== 'customer') {
+        if (selectedRole && selectedRole !== 'customer' && selectedRole !== 'driver') {
             permissionsSection.style.display = 'block';
             loadPermissionsForRole(selectedRole);
         } else {
             permissionsSection.style.display = 'none';
+            // Clear any checked permissions when role does not use permissions
+            document.querySelectorAll('input[name="permissions[]"]').forEach(cb => cb.checked = false);
         }
     });
 
     // Function to load permissions for selected role
     function loadPermissionsForRole(role) {
-        // Get all permission checkboxes
-        const permissionCheckboxes = document.querySelectorAll('input[name="permissions[]"]');
+        // Get all permission checkboxes as an array
+        const permissionCheckboxes = Array.from(document.querySelectorAll('input[name="permissions[]"]'));
 
-        // Define default permissions for each role
-        const roleDefaults = {
-            'admin_pusat': ['view_dashboard', 'view_master_data', 'manage_profile_perusahaan', 'view_cabang', 'manage_cabang', 'view_outlet', 'manage_outlet', 'view_promo', 'manage_promo', 'view_kontak', 'manage_kontak', 'view_artikel', 'manage_artikel', 'view_armada', 'manage_armada', 'view_driver', 'manage_driver', 'view_pegawai', 'manage_pegawai', 'view_rute', 'manage_rute', 'view_jadwal', 'manage_jadwal', 'view_transaksi', 'view_smartsend_transaksi', 'manage_smartsend_transaksi', 'view_perjalanan_transaksi', 'manage_perjalanan_transaksi', 'view_armada_transaksi', 'manage_armada_transaksi', 'view_smartsend', 'view_smartsend_tiket', 'manage_smartsend_tiket', 'view_smartsend_perjalanan', 'manage_smartsend_perjalanan', 'view_smartsend_armada', 'manage_smartsend_armada', 'view_smartrent', 'manage_smartrent', 'view_laporan', 'manage_laporan', 'view_pengaturan', 'view_user', 'manage_user', 'view_menu', 'manage_menu'],
-            'admin_cabang': ['view_dashboard', 'view_master_data', 'view_outlet', 'manage_outlet', 'view_promo', 'view_armada', 'view_driver', 'view_jadwal', 'manage_jadwal', 'view_transaksi', 'view_smartsend_transaksi', 'view_perjalanan_transaksi', 'view_armada_transaksi', 'view_smartsend', 'view_smartsend_tiket', 'view_smartsend_perjalanan', 'view_smartsend_armada', 'view_laporan'],
-            'operator': ['view_dashboard', 'view_master_data', 'view_outlet', 'view_promo', 'manage_promo', 'view_armada', 'manage_armada', 'view_driver', 'manage_driver', 'view_rute', 'manage_rute', 'view_jadwal', 'manage_jadwal', 'view_transaksi', 'view_smartsend_transaksi', 'manage_smartsend_transaksi', 'view_perjalanan_transaksi', 'manage_perjalanan_transaksi', 'view_armada_transaksi', 'manage_armada_transaksi', 'view_smartsend', 'view_smartsend_tiket', 'manage_smartsend_tiket', 'view_smartsend_perjalanan', 'manage_smartsend_perjalanan', 'view_smartsend_armada', 'manage_smartsend_armada', 'view_smartrent', 'manage_smartrent', 'view_laporan', 'manage_laporan'],
-            'driver': ['view_dashboard', 'view_jadwal'],
-            'customer': []
-        };
+        // Clear all first
+        permissionCheckboxes.forEach(cb => cb.checked = false);
 
-        const defaultPermissions = roleDefaults[role] || [];
+        if (role === 'admin_pusat') {
+            // Admin pusat: check everything
+            permissionCheckboxes.forEach(cb => cb.checked = true);
+            return;
+        }
 
-        // Check/uncheck permissions based on role defaults
-        permissionCheckboxes.forEach(checkbox => {
-            checkbox.checked = defaultPermissions.includes(checkbox.value);
-        });
+        if (role === 'admin_cabang') {
+            // Admin cabang defaults:
+            // - Master Data: check only `view_` permissions
+            // - Transaksi: check all
+            // - SmartSend: check all
+            // - SmartRent: check all
+            // - Laporan: check all
+            // - Pengaturan: none
+            permissionCheckboxes.forEach(cb => {
+                const cat = cb.dataset.category;
+                const val = cb.value || '';
+
+                if (cat === 'master_data' && val.startsWith('view_')) {
+                    cb.checked = true;
+                    return;
+                }
+
+                if (['transaksi', 'smartsend', 'smartrent', 'laporan'].includes(cat)) {
+                    cb.checked = true;
+                    return;
+                }
+            });
+            return;
+        }
+
+        // Operator / driver / others: keep existing minimal sensible defaults
+        if (role === 'operator') {
+            // keep previous operator defaults (check a subset useful for operator)
+            const opDefaults = ['view_dashboard','view_master_data','view_outlet','view_promo','manage_promo','view_armada','manage_armada','view_driver','manage_driver','view_rute','manage_rute','view_jadwal','manage_jadwal','view_transaksi','view_smartsend_transaksi','manage_smartsend_transaksi','view_perjalanan_transaksi','manage_perjalanan_transaksi','view_armada_transaksi','manage_armada_transaksi','view_smartsend','view_smartsend_tiket','manage_smartsend_tiket','view_smartsend_perjalanan','manage_smartsend_perjalanan','view_smartsend_armada','manage_smartsend_armada','view_smartrent','manage_smartrent','view_laporan','manage_laporan'];
+            permissionCheckboxes.forEach(cb => cb.checked = opDefaults.includes(cb.value));
+            return;
+        }
+
+        if (role === 'driver') {
+            const drvDefaults = ['view_dashboard','view_jadwal'];
+            permissionCheckboxes.forEach(cb => cb.checked = drvDefaults.includes(cb.value));
+            return;
+        }
+
+        // Default: none
     }
 
     // Select all / deselect all for each category

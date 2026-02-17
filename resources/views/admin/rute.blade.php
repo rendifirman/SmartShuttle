@@ -591,9 +591,11 @@ textarea {
         <!-- HEADER -->
         <div class="page-header">
             <h2>Data Rute</h2>
+            @can('manage_rute')
             <a href="{{ route('admin.rute.create') }}" class="btn-add">
                 <i class="fas fa-plus"></i> Tambah Rute
             </a>
+            @endcan
         </div>
 
         <!-- Flash Messages -->
@@ -710,6 +712,7 @@ textarea {
                             <a href="{{ route('admin.rute.show', $rute->id) }}" class="btn-action btn-view">
                                 <i class="fas fa-eye"></i> View
                             </a>
+                            @can('manage_rute')
                             <a href="{{ route('admin.rute.edit', $rute->id) }}" class="btn-action btn-edit">
                                 <i class="fas fa-edit"></i> Edit
                             </a>
@@ -720,6 +723,7 @@ textarea {
                                     <i class="fas fa-trash"></i> Hapus
                                 </button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                     @empty

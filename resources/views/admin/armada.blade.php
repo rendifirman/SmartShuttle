@@ -610,9 +610,11 @@ textarea {
         <!-- HEADER -->
         <div class="page-header">
             <h2>Data Armada</h2>
+            @can('manage_armada')
             <button class="btn-add" onclick="showAddForm()">
                 <i class="fas fa-plus"></i> Tambah Armada
             </button>
+            @endcan
         </div>
 
         <!-- SUMMARY - SEPERTI CABANG -->
@@ -715,12 +717,14 @@ textarea {
                         </td>
                         <td>
                             <button class="btn-action btn-view" onclick="showDetail({{ $shuttle->id }})">View</button>
+                            @can('manage_armada')
                             <button class="btn-action btn-edit" onclick="showEditForm({{ $shuttle->id }})">Edit</button>
                             <form method="POST" action="{{ route('admin.armada.destroy', $shuttle->id) }}" style="display: inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus armada ini?')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn-action" style="background: #dc3545; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 12px; margin-right: 5px; cursor: pointer;">Delete</button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                     @empty
