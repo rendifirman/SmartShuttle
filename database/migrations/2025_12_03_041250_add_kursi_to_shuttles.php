@@ -38,7 +38,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('shuttles', function (Blueprint $table) {
-            $table->dropColumn(['total_kursi', 'layout_kursi']);
+            if (Schema::hasColumn('shuttles', 'total_kursi')) {
+                $table->dropColumn('total_kursi');
+            }
+            if (Schema::hasColumn('shuttles', 'layout_kursi')) {
+                $table->dropColumn('layout_kursi');
+            }
         });
         
         Schema::dropIfExists('kursi_terpesan');

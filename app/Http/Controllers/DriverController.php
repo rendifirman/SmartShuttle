@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use App\Models\User;
-use App\Models\DriverSchedule; // Tambahkan ini
+use App\Models\DriverSchedule;
 
 class DriverController extends Controller
 {
@@ -81,7 +82,8 @@ class DriverController extends Controller
      */
     public function dashboard()
     {
-        return view('driver.dashboard');
+        $driver = Auth::guard('driver')->user();
+        return view('driver.dashboard', compact('driver'));
     }
 
     /**
@@ -98,7 +100,7 @@ class DriverController extends Controller
     }
 
     /**
-     * Show driver schedule - PERBAIKAN: Tambahkan data schedules
+     * Show driver schedule
      */
     public function jadwal()
     {
@@ -119,7 +121,8 @@ class DriverController extends Controller
      */
     public function laporan()
     {
-        return view('driver.laporan');
+        $driver = Auth::guard('driver')->user();
+        return view('driver.laporan', compact('driver'));
     }
 
     /**
@@ -127,7 +130,8 @@ class DriverController extends Controller
      */
     public function perjalanan()
     {
-        return view('driver.perjalanan');
+        $driver = Auth::guard('driver')->user();
+        return view('driver.perjalanan', compact('driver'));
     }
 
     /**
@@ -135,7 +139,10 @@ class DriverController extends Controller
      */
     public function profile()
     {
-        return view('driver.profile');
+        // Ambil data driver yang sedang login
+        $driver = Auth::guard('driver')->user();
+        
+        return view('driver.profile', compact('driver'));
     }
 
     /**
@@ -146,8 +153,111 @@ class DriverController extends Controller
         // Ambil data driver yang sedang login
         $driver = Auth::guard('driver')->user();
         
-        // Kirim data driver ke view
         return view('driver.profile-edit', compact('driver'));
+    }
+
+    /**
+     * Update driver profile
+     */
+    public function updateProfile(Request $request)
+    {
+        // Validasi data
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,' . Auth::guard('driver')->id(),
+            'phone' => 'required|string|max:20',
+            'nik' => 'required|string|size:16',
+            'join_date' => 'required|date',
+            'sim_number' => 'required|string|max:50',
+            'sim_expiry_date' => 'required|date|after:today',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'ktp_file' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'sim_file' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+        ], [
+            'sim_expiry_date.after' => 'Masa berlaku SIM harus setelah hari ini',
+            'nik.size' => 'NIK harus 16 digit',
+            'phone.required' => 'Nomor telepon wajib diisi',
+            'sim_number.required' => 'Nomor SIM wajib diisi',
+        ]);
+
+        // Ambil driver yang sedang login
+        $driver = Auth::guard('driver')->user();
+
+        // Update data di tabel users
+        $driver->name = $request->name;
+        $driver->email = $request->email;
+        $driver->phone = $request->phone;
+        $driver->nik = $request->nik;
+        $driver->join_date = $request->join_date;
+        $driver->sim_number = $request->sim_number;
+        $driver->sim_expiry_date = $request->sim_expiry_date;
+        
+        // Handle upload avatar
+        if ($request->hasFile('avatar')) {
+            // Hapus avatar lama jika ada
+            if ($driver->avatar && Storage::disk('public')->exists($driver->avatar)) {
+                Storage::disk('public')->delete($driver->avatar);
+            }
+            
+            // Simpan avatar baru
+            $avatarPath = $request->file('avatar')->store('driver-avatars', 'public');
+            $driver->avatar = $avatarPath;
+        }
+
+        // Handle upload KTP
+        if ($request->hasFile('ktp_file')) {
+            // Hapus file lama jika ada
+            if ($driver->ktp_file && Storage::disk('public')->exists($driver->ktp_file)) {
+                Storage::disk('public')->delete($driver->ktp_file);
+            }
+            
+            // Simpan file baru
+            $ktpPath = $this->uploadFile($request->file('ktp_file'), 'driver-ktp', $driver->id);
+            $driver->ktp_file = $ktpPath;
+        }
+        
+        // Handle penghapusan KTP
+        if ($request->remove_ktp == '1') {
+            if ($driver->ktp_file && Storage::disk('public')->exists($driver->ktp_file)) {
+                Storage::disk('public')->delete($driver->ktp_file);
+            }
+            $driver->ktp_file = null;
+        }
+
+        // Handle upload SIM
+        if ($request->hasFile('sim_file')) {
+            // Hapus file lama jika ada
+            if ($driver->sim_file && Storage::disk('public')->exists($driver->sim_file)) {
+                Storage::disk('public')->delete($driver->sim_file);
+            }
+            
+            // Simpan file baru
+            $simPath = $this->uploadFile($request->file('sim_file'), 'driver-sim', $driver->id);
+            $driver->sim_file = $simPath;
+        }
+        
+        // Handle penghapusan SIM
+        if ($request->remove_sim == '1') {
+            if ($driver->sim_file && Storage::disk('public')->exists($driver->sim_file)) {
+                Storage::disk('public')->delete($driver->sim_file);
+            }
+            $driver->sim_file = null;
+        }
+
+        // Simpan semua perubahan
+        $driver->save();
+
+        return redirect()->route('driver.profile')
+            ->with('success', 'Profile berhasil diperbarui!');
+    }
+
+    /**
+     * Helper function untuk upload file
+     */
+    private function uploadFile($file, $folder, $userId)
+    {
+        $filename = time() . '_' . $userId . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+        return $file->storeAs($folder, $filename, 'public');
     }
 
     /**
@@ -155,7 +265,8 @@ class DriverController extends Controller
      */
     public function pengaturan()
     {
-        return view('driver.pengaturan');
+        $driver = Auth::guard('driver')->user();
+        return view('driver.pengaturan', compact('driver'));
     }
 
     /**
@@ -163,6 +274,7 @@ class DriverController extends Controller
      */
     public function bantuan()
     {
-        return view('driver.bantuan');
+        $driver = Auth::guard('driver')->user();
+        return view('driver.bantuan', compact('driver'));
     }
 }

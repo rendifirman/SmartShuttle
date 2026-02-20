@@ -398,4 +398,9 @@ class User extends Authenticatable implements MustVerifyEmail
         $this->loyalty_point = 0; // Reset loyalty point
         return $this->save();
     }
+
+    public function driverDetail()
+{
+    return $this->hasOne(DriverDetail::class);
+}
 }

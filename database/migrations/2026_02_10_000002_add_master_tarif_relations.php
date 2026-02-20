@@ -41,14 +41,14 @@ return new class extends Migration
     {
         Schema::table('rutes', function (Blueprint $table) {
             if (Schema::hasColumn('rutes', 'master_tarif_id')) {
-                $table->dropForeignKeyConstraints();
+                $table->dropForeign(['master_tarif_id']);
                 $table->dropColumn('master_tarif_id');
             }
         });
 
         Schema::table('driver_jadwals', function (Blueprint $table) {
             if (Schema::hasColumn('driver_jadwals', 'master_tarif_id')) {
-                $table->dropForeignKeyConstraints();
+                $table->dropForeign(['master_tarif_id']);
                 $table->dropColumn('master_tarif_id');
             }
         });

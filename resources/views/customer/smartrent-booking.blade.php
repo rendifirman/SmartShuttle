@@ -77,33 +77,39 @@
     .filter-buttons-group {
         display: flex;
         gap: 10px;
-        min-width: 250px;
+        min-width: 140px;
         align-items: flex-end;
     }
 
     .filter-button {
-        padding: 12px 15px;
+        padding: 12px 20px;
         height: 46px;
         background: var(--secondary-color);
         color: white;
         border: none;
         border-radius: 8px;
-        font-size: 14px;
+        font-size: 15px;
         font-weight: 600;
         cursor: pointer;
-        transition: background 0.3s;
+        transition: all 0.3s;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        gap: 10px;
         white-space: nowrap;
-        flex: 1;
+        width: 100%;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 8px rgba(255, 88, 30, 0.2);
     }
 
-    .reset-button {
-        background: white;
-        color: #666;
-        border: 2px solid var(--border-color);
+    .filter-button i {
+        font-size: 16px;
+    }
+
+    .filter-button:hover {
+        background: #E54E1A;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 88, 30, 0.3);
     }
 
     .filter-inputs-group {
@@ -138,6 +144,49 @@
         font-size: 14px;
         height: 46px;
         box-sizing: border-box;
+        background-color: white;
+        transition: all 0.2s;
+    }
+
+    .filter-input:focus,
+    .filter-input:hover {
+        outline: none;
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 0 3px rgba(255, 88, 30, 0.1);
+    }
+
+    /* Select2 */
+    .select2-container--default .select2-selection--single {
+        height: 46px !important;
+        border: 2px solid var(--border-color) !important;
+        border-radius: 8px !important;
+        transition: all 0.2s;
+    }
+
+    .select2-container--default .select2-selection--single:hover {
+        border-color: var(--secondary-color) !important;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 42px !important;
+        padding-left: 15px !important;
+        padding-right: 30px !important;
+        color: #333 !important;
+        font-size: 14px !important;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 44px !important;
+    }
+
+    .select2-dropdown {
+        border: 2px solid var(--border-color) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .select2-results__option--highlighted {
+        background-color: var(--secondary-color) !important;
     }
 
     /* ===== VEHICLE LIST ===== */
@@ -170,6 +219,12 @@
         border-bottom: 2px solid var(--border-color);
     }
 
+    .vehicle-count {
+        font-size: 14px;
+        color: #666;
+        font-weight: normal;
+    }
+
     .vehicle-list {
         display: flex;
         flex-direction: column;
@@ -187,9 +242,15 @@
         cursor: pointer;
     }
 
+    .vehicle-item:hover {
+        border-color: var(--secondary-color);
+        box-shadow: 0 4px 15px rgba(255, 88, 30, 0.15);
+    }
+
     .vehicle-item.active {
         border-color: var(--secondary-color);
         background: #fffaf8;
+        box-shadow: 0 4px 20px rgba(255, 88, 30, 0.2);
     }
 
     .vehicle-image {
@@ -202,6 +263,41 @@
         padding: 15px;
     }
 
+    .vehicle-name {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 5px;
+    }
+
+    .vehicle-type {
+        color: var(--secondary-color);
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    .vehicle-specs {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+    }
+
+    .spec {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: #666;
+        font-size: 12px;
+    }
+
+    .spec i {
+        color: var(--secondary-color);
+        font-size: 14px;
+    }
+
     .vehicle-price {
         margin-top: 15px;
         display: flex;
@@ -209,10 +305,20 @@
         align-items: center;
     }
 
+    .price-info {
+        display: flex;
+        flex-direction: column;
+    }
+
     .price-amount {
         font-size: 18px;
         font-weight: 700;
         color: var(--secondary-color);
+    }
+
+    .price-period {
+        color: #666;
+        font-size: 12px;
     }
 
     .select-btn {
@@ -224,9 +330,21 @@
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;
+        transition: background 0.3s;
     }
 
-    /* ===== VEHICLE DETAIL - DIRAPIHKAN UNTUK MOBILE ===== */
+    .select-btn:hover {
+        background: #E54E1A;
+    }
+
+    .no-vehicles {
+        text-align: center;
+        padding: 40px 20px;
+        background: var(--light-gray);
+        border-radius: 8px;
+    }
+
+    /* ===== VEHICLE DETAIL ===== */
     .vehicle-detail-section {
         background: white;
         border-radius: 12px;
@@ -251,6 +369,7 @@
         height: 220px;
         object-fit: cover;
         border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     .detail-info {
@@ -274,7 +393,6 @@
         border-bottom: 2px solid var(--blue-medium);
     }
 
-    /* Spesifikasi Grid - DIPERBAIKI UNTUK MOBILE */
     .detail-specs-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -291,6 +409,12 @@
         background: white;
         border-radius: 10px;
         border: 1px solid var(--border-color);
+        transition: all 0.2s;
+    }
+
+    .detail-spec:hover {
+        border-color: var(--secondary-color);
+        background: #fffaf8;
     }
 
     .detail-spec i {
@@ -313,7 +437,6 @@
         color: var(--primary-color);
     }
 
-    /* Deskripsi - DIPERBAIKI */
     .detail-description {
         color: #555;
         line-height: 1.6;
@@ -326,7 +449,6 @@
         border-left: 4px solid var(--secondary-color);
     }
 
-    /* Fasilitas - DIPERBAIKI */
     .facilities-section {
         margin-bottom: 30px;
     }
@@ -339,11 +461,6 @@
         display: flex;
         align-items: center;
         gap: 8px;
-    }
-
-    .facilities-title i {
-        color: var(--secondary-color);
-        font-size: 18px;
     }
 
     .facilities-grid {
@@ -365,12 +482,6 @@
         gap: 6px;
     }
 
-    .facility-badge i {
-        color: var(--secondary-color);
-        font-size: 12px;
-    }
-
-    /* Service Options - DIPERBAIKI UNTUK MOBILE */
     .service-options {
         margin-bottom: 30px;
     }
@@ -383,10 +494,6 @@
         display: flex;
         align-items: center;
         gap: 8px;
-    }
-
-    .service-title i {
-        color: var(--secondary-color);
     }
 
     .service-options-grid {
@@ -411,10 +518,8 @@
     .service-option.active {
         border-color: var(--secondary-color);
         background: #fffaf8;
-    }
-
-    .service-option.active {
-        box-shadow: 0 2px 8px rgba(255, 88, 30, 0.1);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 88, 30, 0.1);
     }
 
     .service-option.active::after {
@@ -446,10 +551,6 @@
         flex-shrink: 0;
     }
 
-    .service-text {
-        flex: 1;
-    }
-
     .service-text h4 {
         margin: 0 0 4px 0;
         color: var(--primary-color);
@@ -474,7 +575,6 @@
         border-top: 1px dashed var(--border-color);
     }
 
-    /* Price Summary - DIPERBAIKI */
     .price-summary {
         background: linear-gradient(to bottom, var(--light-gray), #ffffff);
         border-radius: 16px;
@@ -493,10 +593,6 @@
         gap: 8px;
     }
 
-    .summary-title i {
-        color: var(--secondary-color);
-    }
-
     .summary-row {
         display: flex;
         justify-content: space-between;
@@ -511,12 +607,6 @@
         display: flex;
         align-items: center;
         gap: 6px;
-    }
-
-    .summary-label i {
-        color: var(--secondary-color);
-        font-size: 14px;
-        width: 18px;
     }
 
     .summary-value {
@@ -571,19 +661,58 @@
         align-items: center;
         justify-content: center;
         gap: 10px;
-    }
-
-    .continue-btn i {
-        font-size: 20px;
+        text-decoration: none;
     }
 
     .continue-btn:hover {
         background: #E54E1A;
         transform: translateY(-2px);
         box-shadow: 0 4px 15px rgba(255, 88, 30, 0.3);
+        color: white;
+        text-decoration: none;
     }
 
-    /* ===== RESPONSIVE MOBILE - DETAIL DIUTAMAKAN ===== */
+    .continue-btn:visited, .continue-btn:active, .continue-btn:link {
+        color: white;
+        text-decoration: none;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 1200px) {
+        .booking-layout {
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+        
+        .filter-row {
+            flex-wrap: wrap;
+        }
+        
+        .filter-buttons-group {
+            min-width: 100%;
+            order: 1;
+            margin-bottom: 15px;
+        }
+        
+        .filter-button {
+            width: 100%;
+        }
+        
+        .filter-inputs-group {
+            min-width: 100%;
+            order: 2;
+        }
+        
+        .filter-group {
+            min-width: calc(33.333% - 10px);
+        }
+        
+        .detail-image {
+            width: 400px;
+            height: 200px;
+        }
+    }
+
     @media (max-width: 1024px) {
         .booking-layout {
             grid-template-columns: 1fr;
@@ -594,6 +723,12 @@
         .vehicle-list-section {
             position: static;
             max-height: none;
+            margin-bottom: 30px;
+        }
+        
+        .detail-image {
+            width: 500px;
+            height: 250px;
         }
     }
 
@@ -601,191 +736,122 @@
         .booking-container {
             padding: 20px 15px;
         }
-
-        /* Vehicle Detail Mobile - SANGAT RAPIH */
+        
+        .booking-title {
+            font-size: 28px;
+        }
+        
+        .filter-section {
+            padding: 20px;
+        }
+        
+        .filter-row {
+            flex-direction: column;
+        }
+        
+        .filter-buttons-group {
+            min-width: 100%;
+        }
+        
+        .filter-inputs-group {
+            flex-direction: column;
+        }
+        
+        .filter-group {
+            min-width: 100%;
+        }
+        
         .vehicle-detail-section {
             padding: 20px 15px;
         }
-
+        
         .detail-image {
             width: 100%;
             height: 200px;
         }
-
+        
         .detail-info h2 {
             font-size: 24px;
         }
-
-        .detail-type {
-            font-size: 14px;
-            padding-bottom: 12px;
-        }
-
+        
         .detail-specs-grid {
             gap: 10px;
-            margin: 20px 0;
         }
-
-        .detail-spec {
-            padding: 12px 8px;
-        }
-
-        .detail-spec i {
-            font-size: 22px;
-            margin-bottom: 8px;
-        }
-
-        .spec-value {
-            font-size: 15px;
-        }
-
-        .detail-description {
-            padding: 16px;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-
-        .facilities-grid {
-            gap: 8px;
-        }
-
-        .facility-badge {
-            padding: 6px 14px;
-            font-size: 13px;
-        }
-
+        
         .service-options-grid {
             grid-template-columns: 1fr;
             gap: 12px;
         }
-
-        .service-option {
-            padding: 16px;
-        }
-
-        .service-info {
-            margin-bottom: 8px;
-        }
-
-        .service-icon {
-            width: 36px;
-            height: 36px;
-            font-size: 16px;
-        }
-
-        .service-text h4 {
-            font-size: 15px;
-        }
-
-        .service-text p {
-            font-size: 12px;
-        }
-
-        .service-price {
-            font-size: 15px;
-            padding-top: 8px;
-        }
-
+        
         .price-summary {
             padding: 20px;
-        }
-
-        .summary-title {
-            font-size: 18px;
-        }
-
-        .summary-row {
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-        }
-
-        .summary-label,
-        .summary-value {
-            font-size: 14px;
-        }
-
-        .total-label {
-            font-size: 18px;
-        }
-
-        .total-value {
-            font-size: 22px;
-        }
-
-        .summary-note {
-            font-size: 12px;
-            padding: 10px;
-        }
-
-        .continue-btn {
-            padding: 14px;
-            font-size: 16px;
         }
     }
 
     @media (max-width: 480px) {
+        .booking-title {
+            font-size: 24px;
+        }
+        
+        .filter-section {
+            padding: 15px;
+        }
+        
+        .filter-button {
+            padding: 12px 15px;
+            font-size: 14px;
+        }
+        
         .detail-image {
             height: 180px;
         }
-
+        
         .detail-info h2 {
             font-size: 22px;
         }
-
+        
         .detail-specs-grid {
             grid-template-columns: 1fr;
             gap: 8px;
         }
-
+        
         .detail-spec {
             flex-direction: row;
             text-align: left;
             padding: 12px 16px;
             align-items: center;
         }
-
+        
         .detail-spec i {
             margin-bottom: 0;
             margin-right: 15px;
             font-size: 20px;
             width: 24px;
         }
-
+        
         .detail-spec-text {
             display: flex;
             align-items: baseline;
             gap: 8px;
             flex: 1;
         }
-
+        
         .spec-label {
             margin-bottom: 0;
             font-size: 13px;
         }
-
-        .service-option {
-            padding: 14px;
+        
+        .vehicle-image {
+            height: 120px;
         }
-
-        .service-icon {
-            width: 32px;
-            height: 32px;
-            font-size: 14px;
-        }
-
+        
         .total-value {
             font-size: 20px;
         }
-    }
-
-    /* Landscape mode */
-    @media (max-width: 896px) and (orientation: landscape) {
-        .detail-specs-grid {
-            grid-template-columns: repeat(3, 1fr);
-        }
-
-        .service-options-grid {
-            grid-template-columns: repeat(2, 1fr);
+        
+        .continue-btn {
+            padding: 14px;
+            font-size: 16px;
         }
     }
 </style>
@@ -795,10 +861,10 @@
 @php
     $filterData = $filterData ?? [
         'city' => '',
-        'vehicle_type' => '',
+        'capacity' => '',
+        'brand' => '',
         'rent_date' => date('Y-m-d'),
         'duration' => 1,
-        'capacity' => '',
         'vehicle_id' => ''
     ];
     
@@ -822,66 +888,51 @@
                     <button type="submit" class="filter-button search-button">
                         <i class="fas fa-search"></i> Cari
                     </button>
-                    <button type="button" class="filter-button reset-button" onclick="resetFilter()">
-                        <i class="fas fa-redo"></i> Reset
-                    </button>
                 </div>
                 
                 <div class="filter-inputs-group">
                     <div class="filter-group">
                         <label class="filter-label">Kota</label>
-                        <select name="city" class="filter-input">
+                        <select name="city" class="filter-input select2">
                             <option value="">Semua Kota</option>
-                            <option value="jakarta" {{ $filterData['city'] == 'jakarta' ? 'selected' : '' }}>Jakarta</option>
-                            <option value="bandung" {{ $filterData['city'] == 'bandung' ? 'selected' : '' }}>Bandung</option>
-                            <option value="surabaya" {{ $filterData['city'] == 'surabaya' ? 'selected' : '' }}>Surabaya</option>
-                            <option value="yogyakarta" {{ $filterData['city'] == 'yogyakarta' ? 'selected' : '' }}>Yogyakarta</option>
-                            <option value="bali" {{ $filterData['city'] == 'bali' ? 'selected' : '' }}>Bali</option>
+                            <option value="jakarta" {{ ($filterData['city'] ?? '') == 'jakarta' ? 'selected' : '' }}>Jakarta</option>
+                            <option value="bandung" {{ ($filterData['city'] ?? '') == 'bandung' ? 'selected' : '' }}>Bandung</option>
+                            <option value="surabaya" {{ ($filterData['city'] ?? '') == 'surabaya' ? 'selected' : '' }}>Surabaya</option>
+                            <option value="yogyakarta" {{ ($filterData['city'] ?? '') == 'yogyakarta' ? 'selected' : '' }}>Yogyakarta</option>
+                            <option value="bali" {{ ($filterData['city'] ?? '') == 'bali' ? 'selected' : '' }}>Bali</option>
                         </select>
                     </div>
                     
                     <div class="filter-group">
-                        <label class="filter-label">Tanggal Sewa</label>
-                        <input type="date" name="rent_date" class="filter-input" 
-                               value="{{ $filterData['rent_date'] }}" min="{{ date('Y-m-d') }}">
-                    </div>
-                    
-                    <div class="filter-group">
-                        <label class="filter-label">Durasi</label>
-                        <select name="duration" class="filter-input">
-                            @for($i = 1; $i <= 30; $i++)
-                                <option value="{{ $i }}" {{ $filterData['duration'] == $i ? 'selected' : '' }}>
-                                    {{ $i }} Hari
-                                </option>
-                            @endfor
+                        <label class="filter-label">Kapasitas Penumpang</label>
+                        <select name="capacity" class="filter-input select2">
+                            <option value="">Semua Kapasitas</option>
+                            <option value="1-4" {{ ($filterData['capacity'] ?? '') == '1-4' ? 'selected' : '' }}>1-4 Orang</option>
+                            <option value="5-7" {{ ($filterData['capacity'] ?? '') == '5-7' ? 'selected' : '' }}>5-7 Orang</option>
+                            <option value="8-12" {{ ($filterData['capacity'] ?? '') == '8-12' ? 'selected' : '' }}>8-12 Orang</option>
+                            <option value="13+" {{ ($filterData['capacity'] ?? '') == '13+' ? 'selected' : '' }}>13+ Orang</option>
                         </select>
                     </div>
                     
                     <div class="filter-group">
-                        <label class="filter-label">Kapasitas</label>
-                        <select name="capacity" class="filter-input">
-                            <option value="">Semua</option>
-                            <option value="1-4" {{ $filterData['capacity'] == '1-4' ? 'selected' : '' }}>1-4 Orang</option>
-                            <option value="5-7" {{ $filterData['capacity'] == '5-7' ? 'selected' : '' }}>5-7 Orang</option>
-                            <option value="8-12" {{ $filterData['capacity'] == '8-12' ? 'selected' : '' }}>8-12 Orang</option>
-                            <option value="13+" {{ $filterData['capacity'] == '13+' ? 'selected' : '' }}>13+ Orang</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-group">
-                        <label class="filter-label">Tipe</label>
-                        <select name="vehicle_type" class="filter-input">
-                            <option value="">Semua Tipe</option>
-                            <option value="shuttle" {{ $filterData['vehicle_type'] == 'shuttle' ? 'selected' : '' }}>Shuttle</option>
-                            <option value="family" {{ $filterData['vehicle_type'] == 'family' ? 'selected' : '' }}>Family</option>
-                            <option value="economy" {{ $filterData['vehicle_type'] == 'economy' ? 'selected' : '' }}>Economy</option>
-                            <option value="mpv" {{ $filterData['vehicle_type'] == 'mpv' ? 'selected' : '' }}>MPV</option>
+                        <label class="filter-label">Merk Mobil</label>
+                        <select name="brand" class="filter-input select2">
+                            <option value="">Semua Merk</option>
+                            <option value="toyota" {{ ($filterData['brand'] ?? '') == 'toyota' ? 'selected' : '' }}>Toyota</option>
+                            <option value="honda" {{ ($filterData['brand'] ?? '') == 'honda' ? 'selected' : '' }}>Honda</option>
+                            <option value="daihatsu" {{ ($filterData['brand'] ?? '') == 'daihatsu' ? 'selected' : '' }}>Daihatsu</option>
+                            <option value="suzuki" {{ ($filterData['brand'] ?? '') == 'suzuki' ? 'selected' : '' }}>Suzuki</option>
+                            <option value="mitsubishi" {{ ($filterData['brand'] ?? '') == 'mitsubishi' ? 'selected' : '' }}>Mitsubishi</option>
+                            <option value="isuzu" {{ ($filterData['brand'] ?? '') == 'isuzu' ? 'selected' : '' }}>Isuzu</option>
+                            <option value="nissan" {{ ($filterData['brand'] ?? '') == 'nissan' ? 'selected' : '' }}>Nissan</option>
                         </select>
                     </div>
                 </div>
             </div>
             
-            <input type="hidden" name="vehicle_id" id="selectedVehicleId" value="{{ $filterData['vehicle_id'] }}">
+            <input type="hidden" name="rent_date" value="{{ $filterData['rent_date'] ?? date('Y-m-d') }}">
+            <input type="hidden" name="duration" value="{{ $filterData['duration'] ?? 1 }}">
+            <input type="hidden" name="vehicle_id" id="selectedVehicleId" value="{{ $filterData['vehicle_id'] ?? '' }}">
         </form>
     </div>
 
@@ -895,50 +946,50 @@
             </h3>
             
             <div class="vehicle-list" id="vehicleList">
-                @foreach($vehicles as $vehicle)
+                @forelse($vehicles as $vehicle)
                 <div class="vehicle-item {{ $selectedVehicle && $selectedVehicle['id'] == $vehicle['id'] ? 'active' : '' }}" 
                      data-vehicle-id="{{ $vehicle['id'] }}">
-                    <img src="{{ $vehicle['image'] }}" alt="{{ $vehicle['name'] }}" class="vehicle-image"
+                    <img src="{{ $vehicle['image'] ?? asset('images/default-vehicle.jpg') }}" 
+                         alt="{{ $vehicle['name'] }}" 
+                         class="vehicle-image"
                          onerror="this.onerror=null; this.src='{{ asset('images/default-vehicle.jpg') }}';">
                     <div class="vehicle-info">
                         <h3 class="vehicle-name">{{ $vehicle['name'] }}</h3>
-                        <span class="vehicle-type">{{ $vehicle['type'] }}</span>
+                        <span class="vehicle-type">{{ $vehicle['type'] ?? 'MPV' }}</span>
                         
                         <div class="vehicle-specs">
                             <div class="spec">
                                 <i class="fas fa-chair"></i>
-                                <span>{{ $vehicle['seats'] }}</span>
+                                <span>{{ $vehicle['seats'] ?? 7 }} Kursi</span>
                             </div>
                             <div class="spec">
                                 <i class="fas fa-suitcase"></i>
-                                <span>{{ $vehicle['luggage'] }}</span>
+                                <span>{{ $vehicle['luggage'] ?? 2 }} Bagasi</span>
                             </div>
                             <div class="spec">
                                 <i class="fas fa-gas-pump"></i>
-                                <span>{{ $vehicle['fuel'] }}</span>
+                                <span>{{ $vehicle['fuel'] ?? 'Bensin' }}</span>
                             </div>
                         </div>
                         
                         <div class="vehicle-price">
                             <div class="price-info">
-                                <div class="price-amount">Rp {{ number_format($vehicle['price'], 0, ',', '.') }}</div>
-                                <div class="price-period">{{ $vehicle['period'] }}</div>
+                                <div class="price-amount">Rp {{ number_format($vehicle['price'] ?? 0, 0, ',', '.') }}</div>
+                                <div class="price-period">{{ $vehicle['period'] ?? '/hari' }}</div>
                             </div>
-                            <button class="select-btn" onclick="selectVehicle({{ $vehicle['id'] }})">
+                            <button type="button" class="select-btn" onclick="selectVehicle({{ $vehicle['id'] }})">
                                 Pilih
                             </button>
                         </div>
                     </div>
                 </div>
-                @endforeach
-                
-                @if(count($vehicles) == 0)
+                @empty
                 <div class="no-vehicles">
                     <i class="fas fa-car"></i>
                     <h3>Tidak ada kendaraan ditemukan</h3>
                     <p>Coba ubah filter pencarian Anda</p>
                 </div>
-                @endif
+                @endforelse
             </div>
         </div>
 
@@ -947,7 +998,7 @@
     </div>
 </div>
 
-<!-- Template untuk Vehicle Detail - DIPERBAIKI DENGAN ICON -->
+<!-- Template untuk Vehicle Detail -->
 <template id="vehicleDetailTemplate">
     <div class="detail-header">
         <div class="detail-image-container">
@@ -1045,7 +1096,7 @@
             <span class="summary-label">
                 <i class="fas fa-calendar-alt"></i> Durasi
             </span>
-            <span class="summary-value" id="summaryDuration">{{ $filterData['duration'] }} Hari</span>
+            <span class="summary-value" id="summaryDuration">{{ $filterData['duration'] ?? 1 }} Hari</span>
         </div>
         <div class="total-row">
             <span class="total-label">Total Sewa</span>
@@ -1054,9 +1105,9 @@
         <p class="summary-note">
             <i class="fas fa-info-circle"></i> Harga sudah termasuk PPN 11%. Belum termasuk akomodasi sopir untuk sewa > 1 hari.
         </p>
-        <button class="continue-btn" onclick="continueToPayment()">
+        <a href="/smartrent/checkout" class="continue-btn" onclick="return continueToPayment(event)">
             <i class="fas fa-arrow-right"></i> Lanjutkan ke Pembayaran
-        </button>
+        </a>
     </div>
 </template>
 
@@ -1064,27 +1115,26 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
+// Data kendaraan dari PHP
 const vehicles = @json($vehicles);
 let selectedVehicleId = {{ $selectedVehicle ? $selectedVehicle['id'] : 'null' }};
 let selectedService = 'with-driver';
-let duration = {{ $filterData['duration'] }};
+let duration = {{ $filterData['duration'] ?? 1 }};
+let rentDate = '{{ $filterData['rent_date'] ?? date('Y-m-d') }}';
 
 $(document).ready(function() {
-    $('select').select2({
-        minimumResultsForSearch: 3
+    // Initialize select2
+    $('.select2').select2({
+        minimumResultsForSearch: 3,
+        width: '100%',
+        placeholder: 'Pilih opsi',
+        allowClear: true
     });
 
     if (selectedVehicleId) {
         showVehicleDetail(selectedVehicleId);
     }
 });
-
-function resetFilter() {
-    $('#bookingFilterForm')[0].reset();
-    $('#selectedVehicleId').val('');
-    $('select').val(null).trigger('change');
-    $('input[name="rent_date"]').val('{{ date("Y-m-d") }}');
-}
 
 function selectVehicle(vehicleId) {
     selectedVehicleId = vehicleId;
@@ -1094,6 +1144,7 @@ function selectVehicle(vehicleId) {
     window.history.replaceState({}, '', url);
     
     $('#selectedVehicleId').val(vehicleId);
+    
     $('.vehicle-item').removeClass('active');
     $(`.vehicle-item[data-vehicle-id="${vehicleId}"]`).addClass('active');
     
@@ -1101,7 +1152,10 @@ function selectVehicle(vehicleId) {
     
     if (window.innerWidth <= 1024) {
         setTimeout(() => {
-            $('#vehicleDetailSection')[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+            $('#vehicleDetailSection')[0].scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
         }, 100);
     }
 }
@@ -1115,30 +1169,52 @@ function showVehicleDetail(vehicleId) {
     const template = document.getElementById('vehicleDetailTemplate');
     $('#vehicleDetailSection').html(template.innerHTML);
     
-    $('#detailImage').attr('src', vehicle.image).on('error', function() {
+    // Isi data kendaraan
+    $('#detailImage').attr('src', vehicle.image || '{{ asset('images/default-vehicle.jpg') }}').on('error', function() {
         this.src = '{{ asset('images/default-vehicle.jpg') }}';
     });
     $('#detailName').text(vehicle.name);
-    $('#detailType').text(vehicle.type);
-    $('#detailSeats').text(vehicle.seats);
-    $('#detailLuggage').text(vehicle.luggage);
-    $('#detailFuel').text(vehicle.fuel);
-    $('#detailDescription').text(vehicle.description || 'Deskripsi tidak tersedia');
+    $('#detailType').text(vehicle.type || 'MPV');
+    $('#detailSeats').text(vehicle.seats + ' Kursi');
+    $('#detailLuggage').text(vehicle.luggage + ' Bagasi');
+    $('#detailFuel').text(vehicle.fuel || 'Bensin');
+    $('#detailDescription').text(vehicle.description || 'Tidak ada deskripsi untuk kendaraan ini.');
     
+    // Isi fasilitas
     const facilitiesGrid = $('#facilitiesGrid');
     facilitiesGrid.empty();
     if (vehicle.facilities && vehicle.facilities.length > 0) {
         vehicle.facilities.forEach(facility => {
             facilitiesGrid.append(`<div class="facility-badge"><i class="fas fa-check-circle"></i> ${facility}</div>`);
         });
+    } else {
+        const defaultFacilities = ['AC', 'Audio', 'Power Window', 'Central Lock'];
+        defaultFacilities.forEach(facility => {
+            facilitiesGrid.append(`<div class="facility-badge"><i class="fas fa-check-circle"></i> ${facility}</div>`);
+        });
     }
+    
+    // Update link href dengan parameter
+    updateContinueButtonLink(vehicleId);
     
     updatePrices(vehicle);
 }
 
+function updateContinueButtonLink(vehicleId) {
+    const params = new URLSearchParams({
+        vehicle_id: vehicleId,
+        service: selectedService,
+        duration: duration,
+        rent_date: rentDate
+    });
+    
+    // Gunakan URL langsung
+    $('.continue-btn').attr('href', '/smartrent/checkout?' + params.toString());
+}
+
 function updatePrices(vehicle) {
-    const vehiclePrice = parseInt(vehicle.price);
-    const driverPrice = vehicle.driver_price ? parseInt(vehicle.driver_price) : 0;
+    const vehiclePrice = parseInt(vehicle.price) || 0;
+    const driverPrice = vehicle.driver_price ? parseInt(vehicle.driver_price) : 150000;
     
     $('#selfDrivePrice').text('Rp 0');
     $('#withDriverPrice').text(`Rp ${formatNumber(driverPrice)}/hari`);
@@ -1153,6 +1229,12 @@ function selectService(service) {
     selectedService = service;
     $('.service-option').removeClass('active');
     $(`.service-option[data-service="${service}"]`).addClass('active');
+    
+    // Update link href dengan service baru
+    if (selectedVehicleId) {
+        updateContinueButtonLink(selectedVehicleId);
+    }
+    
     calculateTotal();
 }
 
@@ -1160,9 +1242,12 @@ function calculateTotal() {
     const vehicle = vehicles.find(v => v.id == selectedVehicleId);
     if (!vehicle) return;
     
-    const vehiclePrice = parseInt(vehicle.price);
-    const driverPrice = selectedService === 'with-driver' && vehicle.driver_included ? 
-                        parseInt(vehicle.driver_included_price) : 0;
+    const vehiclePrice = parseInt(vehicle.price) || 0;
+    let driverPrice = 0;
+    
+    if (selectedService === 'with-driver') {
+        driverPrice = vehicle.driver_price ? parseInt(vehicle.driver_price) : 150000;
+    }
     
     const totalPerDay = vehiclePrice + driverPrice;
     const total = totalPerDay * duration;
@@ -1170,20 +1255,38 @@ function calculateTotal() {
     $('#summaryTotal').text(`Rp ${formatNumber(total)}`);
 }
 
-function continueToPayment() {
+function continueToPayment(event) {
     if (!selectedVehicleId) {
+        event.preventDefault();
         alert('Silakan pilih kendaraan terlebih dahulu');
-        return;
+        return false;
     }
     
-    const params = new URLSearchParams({
+    // Cari data kendaraan yang dipilih
+    const selectedVehicle = vehicles.find(v => v.id == selectedVehicleId);
+    
+    // Simpan data lengkap kendaraan ke sessionStorage
+    const checkoutData = {
         vehicle_id: selectedVehicleId,
+        vehicle_name: selectedVehicle.name,
+        vehicle_image: selectedVehicle.image,
+        vehicle_brand: selectedVehicle.brand || 'Toyota',
+        vehicle_type: selectedVehicle.type || 'MPV',
+        vehicle_seats: selectedVehicle.seats || 7,
+        vehicle_luggage: selectedVehicle.luggage || 2,
+        vehicle_fuel: selectedVehicle.fuel || 'Bensin',
+        vehicle_price: selectedVehicle.price || 0,
         service: selectedService,
         duration: duration,
-        rent_date: '{{ $filterData["rent_date"] }}'
-    });
+        rent_date: rentDate,
+        driver_price: selectedVehicle.driver_price || 150000
+    };
     
-    window.location.href = '{{ route("smartrent.checkout.booking") }}?' + params.toString();
+    // Simpan ke sessionStorage
+    sessionStorage.setItem('smartrent_checkout_data', JSON.stringify(checkoutData));
+    
+    // Lanjutkan ke halaman checkout (link sudah di-set di href)
+    return true;
 }
 
 function formatNumber(num) {

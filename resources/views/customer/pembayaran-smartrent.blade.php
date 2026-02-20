@@ -839,7 +839,7 @@
                     @if(isset($vehicle) && isset($vehicle['image']))
                         <img src="{{ $vehicle['image'] }}" alt="{{ $vehicle['name'] }}">
                     @else
-                        <img src="/images/vehicles/shuttle-bus.jpg" alt="Shuttle Bus" style="background:#f5f5f5; display:flex; align-items:center; justify-content:center; color:#999;">
+                        <img src="/images/shuttle1.jpeg" alt="Shuttle Bus" style="background:#f5f5f5; display:flex; align-items:center; justify-content:center; color:#999;">
                     @endif
                 </div>
                 <div class="vehicle-info-compact">
@@ -969,7 +969,7 @@
                 <i class="fas fa-info-circle" style="margin-right:8px;"></i> Pilih metode pembayaran yang Anda inginkan, kemudian klik "Konfirmasi Pembayaran"
             </div>
 
-            <form action="{{ route('smartrent.process.payment') }}" method="POST" id="paymentForm">
+            <form action="{{ route('smartrent.process-payment') }}" method="POST" id="paymentForm">
                 @csrf
                 <input type="hidden" name="order_id" value="{{ isset($order_id) ? $order_id : '' }}">
                 <input type="hidden" name="order_number" value="{{ isset($order_number) ? $order_number : 'SR2026021230D448' }}">

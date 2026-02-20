@@ -31,7 +31,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('pembayaran', function (Blueprint $table) {
-            $table->dropColumn([
+            $columns = [
                 'paylabs_transaction_id',
                 'paylabs_merchant_id',
                 'paylabs_payment_code',
@@ -39,11 +39,21 @@ return new class extends Migration
                 'paylabs_status',
                 'qris_raw_data',
                 'qris_nmid'
-            ]);
+            ];
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('pembayaran', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
 
         Schema::table('metode_pembayaran', function (Blueprint $table) {
-            $table->dropColumn(['is_paylabs', 'paylabs_channel_code', 'paylabs_channel_name']);
+            $columns = ['is_paylabs', 'paylabs_channel_code', 'paylabs_channel_name'];
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('metode_pembayaran', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
     }
 };

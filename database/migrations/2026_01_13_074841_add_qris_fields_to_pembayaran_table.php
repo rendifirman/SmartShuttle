@@ -40,7 +40,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('pembayaran', function (Blueprint $table) {
-            $table->dropColumn([
+            $columns = [
                 'paylabs_store_id',
                 'paylabs_request_id',
                 'qris_url',
@@ -60,11 +60,21 @@ return new class extends Migration
                 'success_time',
                 'expired_time',
                 'paylabs_raw_response'
-            ]);
+            ];
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('pembayaran', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
 
         Schema::table('metode_pembayaran', function (Blueprint $table) {
-            $table->dropColumn(['fee_type', 'product_info']);
+            if (Schema::hasColumn('metode_pembayaran', 'fee_type')) {
+                $table->dropColumn('fee_type');
+            }
+            if (Schema::hasColumn('metode_pembayaran', 'product_info')) {
+                $table->dropColumn('product_info');
+            }
         });
     }
 };

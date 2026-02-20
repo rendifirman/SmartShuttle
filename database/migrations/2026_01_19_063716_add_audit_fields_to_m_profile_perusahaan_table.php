@@ -33,17 +33,31 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('m_profile_perusahaan', function (Blueprint $table) {
-            // Drop foreign keys
-            $table->dropForeign(['created_by']);
-            $table->dropForeign(['updated_by']);
-            $table->dropForeign(['deleted_by']);
+            if (Schema::hasColumn('m_profile_perusahaan', 'created_by')) {
+                try { $table->dropForeign(['created_by']); } catch (\Exception $e) {}
+            }
+            if (Schema::hasColumn('m_profile_perusahaan', 'updated_by')) {
+                try { $table->dropForeign(['updated_by']); } catch (\Exception $e) {}
+            }
+            if (Schema::hasColumn('m_profile_perusahaan', 'deleted_by')) {
+                try { $table->dropForeign(['deleted_by']); } catch (\Exception $e) {}
+            }
 
             // Drop audit columns
-            $table->dropColumn(['created_by', 'updated_by', 'deleted_by']);
+            $columns = ['created_by', 'updated_by', 'deleted_by'];
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('m_profile_perusahaan', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
 
-            // Restore original string columns
-            $table->string('created_by', 50)->nullable()->after('status');
-            $table->string('updated_by', 50)->nullable()->after('created_by');
+            // Restore original string columns if not exists
+            if (!Schema::hasColumn('m_profile_perusahaan', 'created_by')) {
+                $table->string('created_by', 50)->nullable()->after('status');
+            }
+            if (!Schema::hasColumn('m_profile_perusahaan', 'updated_by')) {
+                $table->string('updated_by', 50)->nullable()->after('created_by');
+            }
         });
     }
 };

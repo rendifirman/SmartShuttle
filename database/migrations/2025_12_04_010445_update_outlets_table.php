@@ -39,20 +39,25 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('outlets', function (Blueprint $table) {
-            $table->string('kota')->nullable();
-            $table->dropForeign(['branch_id']);
-            $table->dropColumn('branch_id');
-            $table->renameColumn('alamat_lengkap', 'alamat');
-            $table->renameColumn('foto_outlet', 'gambar');
-            $table->dropColumn([
-                'tipe_outlet',
-                'kapasitas_parkir',
-                'tersedia_toilet',
-                'tersedia_musholla',
-                'tersedia_atm',
-                'tersedia_wifi',
-                'zona_pelayanan'
-            ]);
+            if (!Schema::hasColumn('outlets', 'kota')) {
+                $table->string('kota')->nullable();
+            }
+            if (Schema::hasColumn('outlets', 'branch_id')) {
+                $table->dropForeign(['branch_id']);
+                $table->dropColumn('branch_id');
+            }
+            if (Schema::hasColumn('outlets', 'alamat_lengkap')) {
+                $table->renameColumn('alamat_lengkap', 'alamat');
+            }
+            if (Schema::hasColumn('outlets', 'foto_outlet')) {
+                $table->renameColumn('foto_outlet', 'gambar');
+            }
+            $columns = ['tipe_outlet', 'kapasitas_parkir', 'tersedia_toilet', 'tersedia_musholla', 'tersedia_atm', 'tersedia_wifi', 'zona_pelayanan'];
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('outlets', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
     }
 };

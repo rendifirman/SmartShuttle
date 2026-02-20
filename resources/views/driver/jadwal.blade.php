@@ -1,972 +1,717 @@
 @extends('layouts.app-driver')
 
-@section('title', 'Jadwal Driver - Smart Shuttle')
-
-@section('page-title', 'Jadwal Saya')
+@section('title', 'Jadwal Saya - Driver')
 
 @push('styles')
 <style>
-    /* Define CSS Variables */
-    :root {
-        --primary: #3498db;
-        --secondary: #2c3e50;
-        --success: #2ecc71;
-        --warning: #f39c12;
-        --danger: #e74c3c;
-        --light: #f5f7fa;
-        --dark: #2c3e50;
-        --gray: #7f8c8d;
+    /* ===== CUSTOM CSS UNTUK HALAMAN JADWAL ===== */
+    /* Container dan Layout */
+    .container-fluid {
+        width: 100%;
+        padding: 0;
     }
-
-    /* Main Content Styling */
-    .page-header {
+    
+    /* Header Section */
+    .header-wrapper {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 30px;
-        flex-wrap: wrap;
-        gap: 15px;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e0e5ec;
     }
-
-    .page-title h1 {
-        font-size: 28px;
-        color: #2c3e50;
+    
+    .header-title h1 {
+        font-size: 26px;
+        font-weight: 700;
+        color: #0d3559;
+        margin-bottom: 8px;
+    }
+    
+    .header-title p {
+        font-size: 15px;
+        color: #7a7a7a;
+    }
+    
+    /* Button Style */
+    .btn-custom {
+        background: #ff6a00;
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-size: 15px;
         font-weight: 600;
-        margin-bottom: 5px;
-    }
-
-    .page-title p {
-        color: #7f8c8d;
-        margin: 0;
-    }
-
-    .btn {
-        padding: 10px 20px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
         cursor: pointer;
-        transition: all 0.3s;
+        transition: all 0.3s ease;
+        text-decoration: none;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        border: none;
-        text-decoration: none;
-        white-space: nowrap;
+        gap: 10px;
     }
-
-    .btn-primary {
-        background-color: #3498db;
-        color: white;
-    }
-
-    .btn-primary:hover {
-        background-color: #2980b9;
+    
+    .btn-custom:hover {
+        background: #e65c00;
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
-    }
-
-    .btn-sm {
-        padding: 6px 12px;
-        font-size: 12px;
-    }
-
-    .btn-success {
-        background-color: #2ecc71;
+        box-shadow: 0 5px 15px rgba(255, 106, 0, 0.3);
         color: white;
     }
-
-    .btn-success:hover {
-        background-color: #27ae60;
+    
+    .btn-secondary-custom {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
     }
-
-    .btn-danger {
-        background-color: #e74c3c;
+    
+    .btn-secondary-custom:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
         color: white;
     }
-
-    .btn-danger:hover {
-        background-color: #c0392b;
-    }
-
-    /* Tabs */
-    .tabs {
+    
+    /* Statistik Cards */
+    .row-stats {
         display: flex;
-        background: white;
-        border-radius: 10px;
-        padding: 5px;
-        margin-bottom: 25px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        gap: 25px;
+        margin-bottom: 30px;
         flex-wrap: wrap;
     }
-
-    .tab {
+    
+    .col-stats {
         flex: 1;
-        padding: 15px 20px;
-        text-align: center;
-        cursor: pointer;
-        border-radius: 8px;
-        transition: all 0.3s;
-        font-weight: 500;
-        color: #7f8c8d;
-        min-width: 120px;
+        min-width: 250px;
     }
-
-    .tab:hover {
-        background: rgba(52, 152, 219, 0.1);
-    }
-
-    .tab.active {
-        background: #3498db;
-        color: white;
-        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
-    }
-
-    .tab-content {
-        display: none;
-        animation: fadeIn 0.3s ease;
-    }
-
-    .tab-content.active {
-        display: block;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-
-    /* Schedule Cards */
-    .schedule-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-        gap: 25px;
-    }
-
-    .schedule-card {
+    
+    .stat-card {
         background: white;
         border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s;
-        border: 1px solid #e0e0e0;
+        padding: 25px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
         display: flex;
-        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.3s ease;
+        border-left: 5px solid;
     }
-
-    .schedule-card:hover {
+    
+    .stat-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
     }
-
-    .schedule-header {
-        padding: 20px;
+    
+    .stat-card-primary {
+        border-left-color: #0d3559;
+    }
+    
+    .stat-card-success {
+        border-left-color: #28a745;
+    }
+    
+    .stat-card-info {
+        border-left-color: #17a2b8;
+    }
+    
+    .stat-info {
+        flex: 1;
+    }
+    
+    .stat-label {
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+    
+    .stat-label-primary {
+        color: #0d3559;
+    }
+    
+    .stat-label-success {
+        color: #28a745;
+    }
+    
+    .stat-label-info {
+        color: #17a2b8;
+    }
+    
+    .stat-number {
+        font-size: 28px;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .stat-icon {
+        font-size: 45px;
+        color: #e0e5ec;
+    }
+    
+    /* Progress Bar */
+    .progress-wrapper {
+        margin-top: 10px;
+    }
+    
+    .progress {
+        background: #e9ecef;
+        height: 8px;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 5px;
+    }
+    
+    .progress-bar {
+        background: #0d3559;
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.5s ease;
+    }
+    
+    .progress-text {
+        font-size: 12px;
+        color: #7a7a7a;
+    }
+    
+    /* Alert Notifications */
+    .alert {
+        padding: 18px 25px;
+        border-radius: 10px;
+        margin-bottom: 25px;
         display: flex;
-        justify-content: space-between;
         align-items: center;
+        gap: 12px;
+        font-size: 15px;
+        position: relative;
+    }
+    
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border-left: 5px solid #28a745;
+    }
+    
+    .alert-danger {
+        background: #f8d7da;
+        color: #721c24;
+        border-left: 5px solid #dc3545;
+    }
+    
+    .alert i {
+        font-size: 18px;
+    }
+    
+    .btn-close {
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: inherit;
+        opacity: 0.7;
+    }
+    
+    .btn-close:hover {
+        opacity: 1;
+    }
+    
+    /* Card Utama */
+    .card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+    
+    .card-header {
+        padding: 20px 25px;
+        background: white;
+        border-bottom: 2px solid #f0f2f5;
+    }
+    
+    .card-header h6 {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0d3559;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0;
+    }
+    
+    .card-header i {
+        color: #ff6a00;
+    }
+    
+    .card-body {
+        padding: 25px;
+    }
+    
+    /* Table Styles */
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    table thead th {
+        background: #f8f9fc;
+        color: #0d3559;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 15px 12px;
+        border-bottom: 3px solid #e3e6f0;
+        text-align: left;
+    }
+    
+    table tbody td {
+        padding: 15px 12px;
+        border-bottom: 1px solid #e9ecef;
+        color: #4a4a4a;
+        font-size: 14px;
+        vertical-align: middle;
+    }
+    
+    table tbody tr:hover {
+        background: #f8f9fc;
+    }
+    
+    /* Badge Styles */
+    .badge {
+        display: inline-block;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 30px;
+        text-align: center;
+    }
+    
+    .badge-primary {
+        background: #0d3559;
         color: white;
     }
-
-    .schedule-header.active {
-        background: linear-gradient(135deg, #2ecc71, #27ae60);
+    
+    .badge-secondary {
+        background: #6c757d;
+        color: white;
     }
-
-    .schedule-header.completed {
-        background: linear-gradient(135deg, #7f8c8d, #95a5a6);
+    
+    .badge-success {
+        background: #28a745;
+        color: white;
     }
-
-    .schedule-header.cancelled {
-        background: linear-gradient(135deg, #e74c3c, #c0392b);
+    
+    .badge-warning {
+        background: #ffc107;
+        color: #333;
     }
-
-    .schedule-header.upcoming {
-        background: linear-gradient(135deg, #3498db, #2980b9);
+    
+    .badge-danger {
+        background: #dc3545;
+        color: white;
     }
-
-    .schedule-title {
-        font-size: 18px;
-        font-weight: 600;
-        flex: 1;
-        line-height: 1.4;
+    
+    .badge-info {
+        background: #17a2b8;
+        color: white;
     }
-
-    .schedule-status {
-        background: rgba(255, 255, 255, 0.2);
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 500;
-        text-transform: capitalize;
-        backdrop-filter: blur(10px);
-    }
-
-    .schedule-body {
-        padding: 20px;
-        flex: 1;
-    }
-
-    .schedule-info {
+    
+    /* Button Actions */
+    .btn-group {
         display: flex;
-        flex-direction: column;
-        gap: 15px;
+        gap: 5px;
     }
-
-    .info-row {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-    }
-
-    .info-icon {
-        width: 36px;
-        height: 36px;
+    
+    .btn-action {
+        width: 35px;
+        height: 35px;
         border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 16px;
-        color: white;
-        flex-shrink: 0;
-        margin-top: 2px;
-    }
-
-    .info-icon.route {
-        background: #3498db;
-    }
-
-    .info-icon.time {
-        background: #9b59b6;
-    }
-
-    .info-icon.price {
-        background: #2ecc71;
-    }
-
-    .info-icon.passenger {
-        background: #f39c12;
-    }
-
-    .info-icon.bus {
-        background: #e74c3c;
-    }
-
-    .info-text {
-        flex: 1;
-    }
-
-    .info-label {
-        font-size: 13px;
-        color: #7f8c8d;
-        margin-bottom: 3px;
-        font-weight: 500;
-    }
-
-    .info-value {
-        font-size: 15px;
-        font-weight: 500;
-        color: #2c3e50;
-        line-height: 1.4;
-    }
-
-    .schedule-footer {
-        padding: 15px 20px;
-        background: #f9f9f9;
-        border-top: 1px solid #eee;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .driver-info {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-shrink: 0;
-    }
-
-    .driver-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #3498db, #2980b9);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        font-weight: bold;
-    }
-
-    .driver-name {
-        font-size: 14px;
-        font-weight: 500;
-        color: #2c3e50;
-    }
-
-    .action-buttons {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .action-btn {
-        padding: 6px 12px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
         border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
         text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        white-space: nowrap;
     }
-
-    .action-btn.view {
-        background: #3498db;
+    
+    .btn-info {
+        background: #17a2b8;
         color: white;
     }
-
-    .action-btn.view:hover {
-        background: #2980b9;
-        transform: translateY(-2px);
-    }
-
-    .action-btn.edit {
-        background: #f39c12;
+    
+    .btn-info:hover {
+        background: #138496;
         color: white;
     }
-
-    .action-btn.edit:hover {
-        background: #e67e22;
-        transform: translateY(-2px);
-    }
-
-    .action-btn.complete {
-        background: #2ecc71;
+    
+    .btn-success {
+        background: #28a745;
         color: white;
     }
-
-    .action-btn.complete:hover {
-        background: #27ae60;
-        transform: translateY(-2px);
-    }
-
-    .action-btn.cancel {
-        background: #e74c3c;
+    
+    .btn-success:hover {
+        background: #218838;
         color: white;
     }
-
-    .action-btn.cancel:hover {
-        background: #c0392b;
-        transform: translateY(-2px);
+    
+    .btn-danger {
+        background: #dc3545;
+        color: white;
     }
-
+    
+    .btn-danger:hover {
+        background: #c82333;
+        color: white;
+    }
+    
     /* Empty State */
     .empty-state {
         text-align: center;
         padding: 60px 20px;
-        color: #7f8c8d;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        grid-column: 1 / -1;
     }
-
+    
     .empty-state i {
-        font-size: 48px;
-        margin-bottom: 20px;
-        color: #bdc3c7;
+        font-size: 70px;
+        color: #d1d3e2;
+        margin-bottom: 25px;
     }
-
-    .empty-state h3 {
-        color: #2c3e50;
-        margin-bottom: 10px;
-        font-size: 20px;
+    
+    .empty-state h4 {
+        font-size: 22px;
+        color: #5a5c69;
+        margin-bottom: 12px;
     }
-
+    
     .empty-state p {
-        color: #7f8c8d;
-        margin-bottom: 20px;
+        font-size: 15px;
+        color: #858796;
+        margin-bottom: 30px;
     }
-
-    /* Status Badge */
-    .status-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 500;
-        text-transform: capitalize;
+    
+    .btn-empty {
+        background: #ff6a00;
+        color: white;
+        padding: 14px 30px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 16px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        transition: all 0.3s ease;
     }
-
-    .status-active {
-        background: #d4edda;
-        color: #155724;
+    
+    .btn-empty:hover {
+        background: #e65c00;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 106, 0, 0.3);
+        color: white;
     }
-
-    .status-completed {
-        background: #e2e3e5;
-        color: #383d41;
-    }
-
-    .status-cancelled {
-        background: #f8d7da;
-        color: #721c24;
-    }
-
-    /* Form inline */
-    form.d-inline {
-        display: inline-block;
-        margin: 0;
-    }
-
+    
     /* Responsive */
-    @media (max-width: 768px) {
-        .schedule-container {
-            grid-template-columns: 1fr;
-        }
-
-        .page-header {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .page-title {
-            text-align: center;
-        }
-
-        .tabs {
-            flex-direction: column;
-        }
-
-        .tab {
-            padding: 12px 15px;
-            min-width: auto;
-        }
-
-        .schedule-footer {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 10px;
-        }
-
-        .action-buttons {
-            width: 100%;
-            justify-content: flex-start;
-        }
-
-        .driver-info {
-            width: 100%;
-            justify-content: center;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-            margin-bottom: 10px;
+    @media (max-width: 992px) {
+        .content {
+            margin-left: 260px;
+            padding: 30px;
         }
     }
-
-    @media (max-width: 480px) {
-        .schedule-card {
-            border-radius: 8px;
+    
+    @media (max-width: 768px) {
+        .content {
+            margin-left: 70px;
+            padding: 20px;
         }
         
-        .action-buttons {
+        .header-wrapper {
             flex-direction: column;
-            width: 100%;
+            align-items: flex-start;
+            gap: 15px;
         }
         
-        .action-btn {
+        .btn-custom, 
+        .btn-secondary-custom {
             width: 100%;
             justify-content: center;
-            padding: 10px;
         }
         
-        form.d-inline {
+        .col-stats {
+            min-width: 100%;
+        }
+        
+        table thead {
+            display: none;
+        }
+        
+        table tbody tr {
+            display: block;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        table tbody td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        table tbody td:last-child {
+            border-bottom: none;
+        }
+        
+        table tbody td:before {
+            content: attr(data-label);
+            font-weight: 700;
+            color: #0d3559;
+            margin-right: 15px;
+        }
+        
+        .btn-group {
             width: 100%;
+        }
+        
+        .btn-action {
+            flex: 1;
+            height: 40px;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .content {
+            margin-left: 0;
+            padding: 20px;
+            margin-top: 70px;
         }
     }
 </style>
 @endpush
 
 @section('content')
-@php
-    // Tambahkan fallback untuk mencegah error
-    $schedules = $schedules ?? collect();
-    $driver = $driver ?? auth()->user();
-@endphp
-
-<div class="page-header">
-    <div class="page-title">
-        <h1>Jadwal Saya</h1>
-        <p>Kelola jadwal perjalanan Anda</p>
-    </div>
-    <a href="{{ route('driver.available-schedules') }}" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Ambil Jadwal Baru
-    </a>
-</div>
-
-<!-- Tabs -->
-<div class="tabs">
-    <div class="tab active" data-tab="all">Semua Jadwal</div>
-    <div class="tab" data-tab="active">Aktif</div>
-    <div class="tab" data-tab="completed">Selesai</div>
-    <div class="tab" data-tab="cancelled">Dibatalkan</div>
-</div>
-
-<!-- All Schedules Tab -->
-<div class="tab-content active" id="all-tab">
-    <div class="schedule-container">
-        @forelse($schedules as $schedule)
-        <div class="schedule-card">
-            <div class="schedule-header {{ $schedule->status ?? 'active' }}">
-                <div class="schedule-title">
-                    {{ $schedule->rute->kota_asal ?? 'N/A' }} → {{ $schedule->rute->kota_tujuan ?? 'N/A' }}
-                </div>
-                <div class="schedule-status">
-                    @if(($schedule->status ?? 'active') == 'active')
-                        Aktif
-                    @elseif(($schedule->status ?? 'active') == 'completed')
-                        Selesai
-                    @elseif(($schedule->status ?? 'active') == 'cancelled')
-                        Dibatalkan
-                    @else
-                        {{ ucfirst($schedule->status ?? 'active') }}
-                    @endif
-                </div>
-            </div>
-            <div class="schedule-body">
-                <div class="schedule-info">
-                    <div class="info-row">
-                        <div class="info-icon route">
-                            <i class="fas fa-route"></i>
-                        </div>
-                        <div class="info-text">
-                            <div class="info-label">Rute</div>
-                            <div class="info-value">
-                                {{ $schedule->rute->nama_rute ?? 'Tidak diketahui' }}
-                                @if($schedule->rute && $schedule->rute->kota_asal && $schedule->rute->kota_tujuan)
-                                    ({{ $schedule->rute->kota_asal }} → {{ $schedule->rute->kota_tujuan }})
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-icon time">
-                            <i class="fas fa-calendar"></i>
-                        </div>
-                        <div class="info-text">
-                            <div class="info-label">Tanggal & Waktu</div>
-                            <div class="info-value">
-                                @if($schedule->tanggal_berangkat)
-                                    {{ \Carbon\Carbon::parse($schedule->tanggal_berangkat)->format('d M Y') }}
-                                @else
-                                    Belum ditentukan
-                                @endif
-                                | {{ $schedule->jam_berangkat ?? '00:00' }}
-                                @if($schedule->jam_kedatangan)
-                                    - {{ $schedule->jam_kedatangan }}
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-icon price">
-                            <i class="fas fa-money-bill"></i>
-                        </div>
-                        <div class="info-text">
-                            <div class="info-label">Harga</div>
-                            <div class="info-value">
-                                Rp {{ number_format($schedule->harga ?? 0, 0, ',', '.') }}
-                            </div>
-                        </div>
-                    </div>
-                    @if($schedule->rute && $schedule->rute->bus)
-                    <div class="info-row">
-                        <div class="info-icon bus">
-                            <i class="fas fa-bus"></i>
-                        </div>
-                        <div class="info-text">
-                            <div class="info-label">Armada</div>
-                            <div class="info-value">
-                                {{ $schedule->rute->bus->nama_bus ?? 'Tidak diketahui' }}
-                                @if($schedule->rute->bus->plat_nomor)
-                                    - {{ $schedule->rute->bus->plat_nomor }}
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                    @endif
-                </div>
-            </div>
-            <div class="schedule-footer">
-                <div class="driver-info">
-                    @php
-                        $driver = auth()->user();
-                        $driverInitials = '';
-                        if ($driver && $driver->name) {
-                            $nameParts = explode(' ', $driver->name);
-                            if (count($nameParts) >= 2) {
-                                $driverInitials = strtoupper(substr($nameParts[0], 0, 1) . substr($nameParts[1], 0, 1));
-                            } else {
-                                $driverInitials = strtoupper(substr($driver->name, 0, 2));
-                            }
-                        } else {
-                            $driverInitials = 'DR';
-                        }
-                    @endphp
-                    <div class="driver-avatar">{{ $driverInitials }}</div>
-                    <div class="driver-name">{{ $driver->name ?? 'Driver' }}</div>
-                </div>
-                <div class="action-buttons">
-                    <button class="action-btn view" onclick="showScheduleDetail({{ $schedule->id }})">
-                        <i class="fas fa-eye"></i> Detail
-                    </button>
-                    
-                    @if(($schedule->status ?? 'active') == 'active')
-                    <form action="{{ route('driver.schedule.update-status', $schedule->id) }}" method="POST" class="d-inline">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="status" value="completed">
-                        <button type="submit" class="action-btn complete">
-                            <i class="fas fa-check"></i> Tandai Selesai
-                        </button>
-                    </form>
-                    
-                    <form action="{{ route('driver.schedule.update-status', $schedule->id) }}" method="POST" class="d-inline">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="status" value="cancelled">
-                        <button type="submit" class="action-btn cancel" onclick="return confirm('Batalkan jadwal ini?')">
-                            <i class="fas fa-times"></i> Batalkan
-                        </button>
-                    </form>
-                    @endif
-                </div>
-            </div>
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="header-wrapper">
+        <div class="header-title">
+            <h1>Jadwal Saya</h1>
+            <p>Kelola jadwal yang telah Anda ambil</p>
         </div>
-        @empty
-        <div class="empty-state">
-            <i class="fas fa-shuttle-van"></i>
-            <h3>Belum ada jadwal</h3>
-            <p>Anda belum mengambil jadwal dari admin.</p>
-            <a href="{{ route('driver.available-schedules') }}" class="btn btn-primary mt-3">
-                <i class="fas fa-plus"></i> Ambil Jadwal
+        <div>
+            <a href="{{ route('driver.jadwal.tersedia') ?? '#' }}" class="btn-custom">
+                <i class="fas fa-plus"></i>
+                Ambil Jadwal Baru
             </a>
         </div>
-        @endforelse
     </div>
-</div>
 
-<!-- Active Tab -->
-<div class="tab-content" id="active-tab">
-    <div class="schedule-container">
-        @php 
-            $activeSchedules = $schedules->where('status', 'active');
-        @endphp
-        @forelse($activeSchedules as $schedule)
-        <div class="schedule-card">
-            <div class="schedule-header active">
-                <div class="schedule-title">
-                    {{ $schedule->rute->kota_asal ?? 'N/A' }} → {{ $schedule->rute->kota_tujuan ?? 'N/A' }}
-                </div>
-                <div class="schedule-status">Aktif</div>
-            </div>
-            <div class="schedule-body">
-                <div class="schedule-info">
-                    <div class="info-row">
-                        <div class="info-icon route">
-                            <i class="fas fa-route"></i>
+    <!-- Statistik -->
+    <div class="row-stats">
+        <div class="col-stats">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-info">
+                    <div class="stat-label stat-label-primary">Jadwal Bulan Ini</div>
+                    <div class="stat-number">{{ $jumlahJadwalBulanIni ?? 0 }}/20</div>
+                    <div class="progress-wrapper">
+                        <div class="progress">
+                            <div class="progress-bar" style="width: {{ min(($jumlahJadwalBulanIni ?? 0) * 5, 100) }}%;"></div>
                         </div>
-                        <div class="info-text">
-                            <div class="info-label">Rute</div>
-                            <div class="info-value">
-                                {{ $schedule->rute->nama_rute ?? 'Tidak diketahui' }}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-icon time">
-                            <i class="fas fa-calendar"></i>
-                        </div>
-                        <div class="info-text">
-                            <div class="info-label">Tanggal & Waktu</div>
-                            <div class="info-value">
-                                {{ \Carbon\Carbon::parse($schedule->tanggal_berangkat)->format('d M Y') }}
-                                {{ $schedule->jam_berangkat }}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-icon price">
-                            <i class="fas fa-money-bill"></i>
-                        </div>
-                        <div class="info-text">
-                            <div class="info-label">Harga</div>
-                            <div class="info-value">
-                                Rp {{ number_format($schedule->harga, 0, ',', '.') }}
-                            </div>
-                        </div>
+                        <div class="progress-text">Sisa kuota: {{ $sisaKuota ?? 20 - ($jumlahJadwalBulanIni ?? 0) }} jadwal</div>
                     </div>
                 </div>
-            </div>
-            <div class="schedule-footer">
-                <div class="driver-info">
-                    @php
-                        $driver = auth()->user();
-                        $driverInitials = '';
-                        if ($driver && $driver->name) {
-                            $nameParts = explode(' ', $driver->name);
-                            if (count($nameParts) >= 2) {
-                                $driverInitials = strtoupper(substr($nameParts[0], 0, 1) . substr($nameParts[1], 0, 1));
-                            } else {
-                                $driverInitials = strtoupper(substr($driver->name, 0, 2));
-                            }
-                        } else {
-                            $driverInitials = 'DR';
-                        }
-                    @endphp
-                    <div class="driver-avatar">{{ $driverInitials }}</div>
-                    <div class="driver-name">{{ $driver->name ?? 'Driver' }}</div>
-                </div>
-                <div class="action-buttons">
-                    <button class="action-btn view" onclick="showScheduleDetail({{ $schedule->id }})">
-                        Detail
-                    </button>
-                    <form action="{{ route('driver.schedule.update-status', $schedule->id) }}" method="POST" class="d-inline">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="status" value="completed">
-                        <button type="submit" class="action-btn edit">
-                            Tandai Selesai
-                        </button>
-                    </form>
-                    <form action="{{ route('driver.schedule.update-status', $schedule->id) }}" method="POST" class="d-inline">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="status" value="cancelled">
-                        <button type="submit" class="action-btn edit" onclick="return confirm('Batalkan jadwal ini?')">
-                            Batalkan
-                        </button>
-                    </form>
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-alt"></i>
                 </div>
             </div>
         </div>
-        @empty
-        <div class="empty-state">
-            <i class="fas fa-clock"></i>
-            <h3>Tidak ada jadwal aktif</h3>
-            <p>Tidak ada jadwal perjalanan yang aktif saat ini.</p>
+
+        <div class="col-stats">
+            <div class="stat-card stat-card-success">
+                <div class="stat-info">
+                    <div class="stat-label stat-label-success">Jadwal Aktif</div>
+                    <div class="stat-number">{{ $jadwalSaya ? $jadwalSaya->where('status', 'aktif')->count() : 0 }}</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+            </div>
         </div>
-        @endforelse
+
+        <div class="col-stats">
+            <div class="stat-card stat-card-info">
+                <div class="stat-info">
+                    <div class="stat-label stat-label-info">Total Jadwal</div>
+                    <div class="stat-number">{{ $jadwalSaya ? $jadwalSaya->count() : 0 }}</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
 
-<!-- Completed Tab -->
-<div class="tab-content" id="completed-tab">
-    <div class="schedule-container">
-        @php 
-            $completedSchedules = $schedules->where('status', 'completed');
-        @endphp
-        @forelse($completedSchedules as $schedule)
-        <div class="schedule-card">
-            <div class="schedule-header completed">
-                <div class="schedule-title">
-                    {{ $schedule->rute->kota_asal ?? 'N/A' }} → {{ $schedule->rute->kota_tujuan ?? 'N/A' }}
-                </div>
-                <div class="schedule-status">Selesai</div>
-            </div>
-            <div class="schedule-body">
-                <div class="schedule-info">
-                    <div class="info-row">
-                        <div class="info-icon route">
-                            <i class="fas fa-route"></i>
-                        </div>
-                        <div class="info-text">
-                            <div class="info-label">Rute</div>
-                            <div class="info-value">
-                                {{ $schedule->rute->nama_rute ?? 'Tidak diketahui' }}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-icon time">
-                            <i class="fas fa-calendar"></i>
-                        </div>
-                        <div class="info-text">
-                            <div class="info-label">Tanggal & Waktu</div>
-                            <div class="info-value">
-                                {{ \Carbon\Carbon::parse($schedule->tanggal_berangkat)->format('d M Y') }}
-                                {{ $schedule->jam_berangkat }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="schedule-footer">
-                <div class="driver-info">
-                    @php
-                        $driver = auth()->user();
-                        $driverInitials = '';
-                        if ($driver && $driver->name) {
-                            $nameParts = explode(' ', $driver->name);
-                            if (count($nameParts) >= 2) {
-                                $driverInitials = strtoupper(substr($nameParts[0], 0, 1) . substr($nameParts[1], 0, 1));
-                            } else {
-                                $driverInitials = strtoupper(substr($driver->name, 0, 2));
-                            }
-                        } else {
-                            $driverInitials = 'DR';
-                        }
-                    @endphp
-                    <div class="driver-avatar">{{ $driverInitials }}</div>
-                    <div class="driver-name">{{ $driver->name ?? 'Driver' }}</div>
-                </div>
-                <div class="action-buttons">
-                    <button class="action-btn view" onclick="showScheduleDetail({{ $schedule->id }})">
-                        Detail
-                    </button>
-                </div>
-            </div>
-        </div>
-        @empty
-        <div class="empty-state">
-            <i class="fas fa-check-circle"></i>
-            <h3>Tidak ada jadwal selesai</h3>
-            <p>Tidak ada jadwal perjalanan yang telah selesai.</p>
-        </div>
-        @endforelse
+    <!-- Notifikasi -->
+    @if(session('success'))
+    <div class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        {{ session('success') }}
+        <button type="button" class="btn-close" onclick="this.parentElement.style.display='none';">&times;</button>
     </div>
-</div>
+    @endif
 
-<!-- Cancelled Tab -->
-<div class="tab-content" id="cancelled-tab">
-    <div class="schedule-container">
-        @php 
-            $cancelledSchedules = $schedules->where('status', 'cancelled');
-        @endphp
-        @forelse($cancelledSchedules as $schedule)
-        <div class="schedule-card">
-            <div class="schedule-header cancelled">
-                <div class="schedule-title">
-                    {{ $schedule->rute->kota_asal ?? 'N/A' }} → {{ $schedule->rute->kota_tujuan ?? 'N/A' }}
-                </div>
-                <div class="schedule-status">Dibatalkan</div>
-            </div>
-            <div class="schedule-body">
-                <div class="schedule-info">
-                    <div class="info-row">
-                        <div class="info-icon route">
-                            <i class="fas fa-route"></i>
-                        </div>
-                        <div class="info-text">
-                            <div class="info-label">Rute</div>
-                            <div class="info-value">
-                                {{ $schedule->rute->nama_rute ?? 'Tidak diketahui' }}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-icon time">
-                            <i class="fas fa-calendar"></i>
-                        </div>
-                        <div class="info-text">
-                            <div class="info-label">Tanggal & Waktu</div>
-                            <div class="info-value">
-                                {{ \Carbon\Carbon::parse($schedule->tanggal_berangkat)->format('d M Y') }}
-                                {{ $schedule->jam_berangkat }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="schedule-footer">
-                <div class="driver-info">
-                    @php
-                        $driver = auth()->user();
-                        $driverInitials = '';
-                        if ($driver && $driver->name) {
-                            $nameParts = explode(' ', $driver->name);
-                            if (count($nameParts) >= 2) {
-                                $driverInitials = strtoupper(substr($nameParts[0], 0, 1) . substr($nameParts[1], 0, 1));
-                            } else {
-                                $driverInitials = strtoupper(substr($driver->name, 0, 2));
-                            }
-                        } else {
-                            $driverInitials = 'DR';
-                        }
-                    @endphp
-                    <div class="driver-avatar">{{ $driverInitials }}</div>
-                    <div class="driver-name">{{ $driver->name ?? 'Driver' }}</div>
-                </div>
-            </div>
+    @if(session('error'))
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-circle"></i>
+        {{ session('error') }}
+        <button type="button" class="btn-close" onclick="this.parentElement.style.display='none';">&times;</button>
+    </div>
+    @endif
+
+    <!-- Tabel Jadwal -->
+    <div class="card">
+        <div class="card-header">
+            <h6>
+                <i class="fas fa-calendar-alt"></i>
+                Daftar Jadwal Saya
+            </h6>
         </div>
-        @empty
-        <div class="empty-state">
-            <i class="fas fa-ban"></i>
-            <h3>Tidak ada jadwal dibatalkan</h3>
-            <p>Tidak ada jadwal perjalanan yang dibatalkan.</p>
+        <div class="card-body">
+            @if($jadwalSaya && $jadwalSaya->count() > 0)
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>ID Jadwal</th>
+                            <th>Rute</th>
+                            <th>Tanggal</th>
+                            <th>Waktu</th>
+                            <th>Armada</th>
+                            <th>Harga</th>
+                            <th>Kursi</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($jadwalSaya as $index => $jadwal)
+                        <tr>
+                            <td data-label="No">{{ $index + 1 }}</td>
+                            <td data-label="ID Jadwal">
+                                <span class="badge badge-secondary">{{ $jadwal->id_jadwal_driver ?? 'JD' . str_pad($index + 1, 4, '0', STR_PAD_LEFT) }}</span>
+                            </td>
+                            <td data-label="Rute">
+                                <strong>{{ $jadwal->rute ?? 'Jakarta - Bandung' }}</strong>
+                            </td>
+                            <td data-label="Tanggal">{{ $jadwal->tanggal_formatted ?? date('d/m/Y') }}</td>
+                            <td data-label="Waktu">
+                                {{ $jadwal->waktu_berangkat_formatted ?? '08:00' }} - 
+                                {{ $jadwal->waktu_tiba_formatted ?? '12:00' }}
+                            </td>
+                            <td data-label="Armada">{{ $jadwal->armada ?? 'Toyota Hiace' }}</td>
+                            <td data-label="Harga">
+                                <strong>{{ $jadwal->harga_formatted ?? 'Rp 150.000' }}</strong>
+                            </td>
+                            <td data-label="Kursi">
+                                <span class="badge {{ ($jadwal->kursi_terisi ?? 5) >= ($jadwal->total_kursi ?? 12) ? 'badge-danger' : 'badge-warning' }}">
+                                    {{ $jadwal->kursi_terisi ?? 5 }}/{{ $jadwal->total_kursi ?? 12 }}
+                                </span>
+                            </td>
+                            <td data-label="Status">
+                                @php
+                                    $status = $jadwal->status ?? 'aktif';
+                                @endphp
+                                @if($status == 'aktif')
+                                    <span class="badge badge-success">Aktif</span>
+                                @elseif($status == 'selesai')
+                                    <span class="badge badge-secondary">Selesai</span>
+                                @else
+                                    <span class="badge badge-danger">Dibatalkan</span>
+                                @endif
+                            </td>
+                            <td data-label="Aksi">
+                                <div class="btn-group">
+                                    <a href="{{ route('driver.jadwal.detail', $jadwal->id_jadwal_driver ?? 1) }}" 
+                                       class="btn-action btn-info" title="Detail">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    
+                                    @if(($jadwal->status ?? '') == 'aktif')
+                                    <form action="{{ route('driver.jadwal.update-status', $jadwal->id_jadwal_driver ?? 1) }}" 
+                                          method="POST" style="display: inline;">
+                                        @csrf
+                                        @method('PUT')
+                                        <input type="hidden" name="status" value="selesai">
+                                        <button type="submit" class="btn-action btn-success" 
+                                                onclick="return confirm('Tandai jadwal sebagai selesai?')"
+                                                title="Selesai">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </form>
+                                    
+                                    <form action="{{ route('driver.jadwal.batalkan', $jadwal->id_jadwal_driver ?? 1) }}" 
+                                          method="POST" style="display: inline;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn-action btn-danger"
+                                                onclick="return confirm('Batalkan jadwal ini?')"
+                                                title="Batalkan">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @else
+            <div class="empty-state">
+                <i class="fas fa-calendar-times"></i>
+                <h4>Belum ada jadwal</h4>
+                <p>Anda belum mengambil jadwal apapun.</p>
+                <a href="{{ route('driver.jadwal.tersedia') ?? '#' }}" class="btn-empty">
+                    <i class="fas fa-plus"></i>
+                    Ambil Jadwal Pertama
+                </a>
+            </div>
+            @endif
         </div>
-        @endforelse
     </div>
 </div>
 @endsection
 
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Tab functionality
-        const tabs = document.querySelectorAll('.tab');
-        const tabContents = document.querySelectorAll('.tab-content');
-
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                const tabId = this.getAttribute('data-tab');
-
-                // Remove active class from all tabs and contents
-                tabs.forEach(t => t.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
-
-                // Add active class to current tab and content
-                this.classList.add('active');
-                document.getElementById(`${tabId}-tab`).classList.add('active');
-            });
+    // Auto-hide alerts
+    setTimeout(function() {
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            alert.style.display = 'none';
         });
-
-        // Confirm before cancelling schedule
-        const cancelButtons = document.querySelectorAll('.action-btn.cancel, .action-btn.edit[onclick*="confirm"]');
-        cancelButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                if (!confirm('Apakah Anda yakin ingin membatalkan jadwal ini?')) {
-                    e.preventDefault();
-                }
-            });
-        });
-    });
-
-    // Show schedule detail function
-    function showScheduleDetail(scheduleId) {
-        // You can implement this function based on your requirements
-        // For now, we'll show an alert with the schedule ID
-        alert(`Detail jadwal ID: ${scheduleId}\nFitur detail sedang dalam pengembangan.`);
-        
-        // Alternatively, you can redirect to a detail page:
-        // window.location.href = `/driver/schedules/${scheduleId}`;
-    }
-
-    // Update schedule status function (if not using form submission)
-    function updateScheduleStatus(scheduleId, status) {
-        if (confirm(`Apakah Anda yakin ingin ${status === 'completed' ? 'menandai selesai' : 'membatalkan'} jadwal ini?`)) {
-            // You can implement AJAX call here or use form submission
-            // For form submission, we'll find and submit the corresponding form
-            const form = document.querySelector(`form[action*="${scheduleId}"] input[value="${status}"]`)?.closest('form');
-            if (form) {
-                form.submit();
-            }
-        }
-    }
+    }, 5000);
 </script>
 @endpush

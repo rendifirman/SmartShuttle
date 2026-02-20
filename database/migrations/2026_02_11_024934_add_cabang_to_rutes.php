@@ -37,12 +37,18 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('rutes', function (Blueprint $table) {
-            // Drop foreign key constraints first
-            $table->dropForeign(['cabang_asal_id']);
-            $table->dropForeign(['cabang_tujuan_id']);
+            if (Schema::hasColumn('rutes', 'cabang_asal_id')) {
+                // Drop foreign key constraints first
+                $table->dropForeign(['cabang_asal_id']);
+            }
+            if (Schema::hasColumn('rutes', 'cabang_tujuan_id')) {
+                $table->dropForeign(['cabang_tujuan_id']);
+            }
 
             // Drop columns
-            $table->dropColumn(['cabang_asal_id', 'cabang_tujuan_id']);
+            if (Schema::hasColumn('rutes', 'cabang_asal_id') || Schema::hasColumn('rutes', 'cabang_tujuan_id')) {
+                $table->dropColumn(['cabang_asal_id', 'cabang_tujuan_id']);
+            }
         });
     }
 };

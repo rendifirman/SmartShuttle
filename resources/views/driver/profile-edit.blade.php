@@ -32,6 +32,34 @@
         border-radius: 50%;
         object-fit: cover;
         border: 4px solid white;
+        transition: all 0.3s ease;
+    }
+
+    .profile-photo-edit {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        background: #ff6a00;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: 2px solid white;
+        z-index: 10;
+        transition: all 0.3s ease;
+    }
+
+    .profile-photo-edit:hover {
+        background: #e55e00;
+        transform: scale(1.1);
+    }
+
+    .profile-photo-edit i {
+        color: white;
+        font-size: 18px;
     }
 
     .profile-info {
@@ -182,9 +210,38 @@
     }
 
     .current-file {
-        margin-top: 5px;
+        margin-top: 10px;
+        width: 100%;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .current-file img {
+        width: 100%;
+        max-height: 100px;
+        object-fit: cover;
+        border-radius: 4px;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .file-info {
         font-size: 12px;
         color: #2ecc71;
+        margin-top: 5px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .remove-file {
+        color: #ff4d4d;
+        cursor: pointer;
+        font-size: 12px;
+        text-decoration: underline;
+    }
+
+    .remove-file:hover {
+        color: #ff0000;
     }
 
     .save-btn {
@@ -325,10 +382,14 @@
     <div class="profile-header">
         <div class="profile-photo">
             @if($driver && $driver->avatar)
-                <img src="{{ Storage::url($driver->avatar) }}" alt="Profile Photo">
+                <img src="{{ Storage::url($driver->avatar) }}" alt="Profile Photo" id="profilePhotoDisplay">
             @else
-                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile Photo">
+                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile Photo" id="profilePhotoDisplay">
             @endif
+            <div class="profile-photo-edit" id="editPhotoBtn">
+                <i class="fas fa-camera"></i>
+            </div>
+            <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;" name="avatar">
         </div>
         <div class="profile-info">
             <h2>{{ $driver ? $driver->name : 'Dimas Mahendra' }}</h2>
@@ -385,14 +446,27 @@
                     <div class="upload-section">
                         <div class="upload-box" id="ktpUploadBox">
                             <span>Upload File KTP</span>
-                            <input type="file" class="file-input" name="ktp_file" id="ktpInput" accept=".jpg,.jpeg,.png" onchange="handleFileUpload(this, 'ktpFileName')">
+                            <input type="file" class="file-input" name="ktp_file" id="ktpInput" accept=".jpg,.jpeg,.png" onchange="handleFileUpload(this, 'ktpFileName', 'ktpPreview')">
                         </div>
                         <div class="file-name" id="ktpFileName"></div>
+                        
                         @if($driver->ktp_file)
-                            <div class="current-file">
-                                File saat ini: {{ basename($driver->ktp_file) }}
+                        <div class="current-file" id="currentKtpContainer">
+                            <img src="{{ Storage::url($driver->ktp_file) }}" alt="Current KTP" id="ktpPreview">
+                            <div class="file-info">
+                                <span>File saat ini: {{ basename($driver->ktp_file) }}</span>
+                                <span class="remove-file" onclick="removeFile('ktp')">Hapus</span>
                             </div>
+                        </div>
+                        @else
+                        <div class="current-file" id="currentKtpContainer" style="display: none;">
+                            <img src="" alt="KTP Preview" id="ktpPreview">
+                            <div class="file-info">
+                                <span id="ktpFileNameText"></span>
+                            </div>
+                        </div>
                         @endif
+                        
                         @error('ktp_file')
                             <span class="error-text">{{ $message }}</span>
                         @enderror
@@ -437,14 +511,27 @@
                     <div class="upload-section">
                         <div class="upload-box" id="simUploadBox">
                             <span>Upload File SIM</span>
-                            <input type="file" class="file-input" name="sim_file" id="simInput" accept=".jpg,.jpeg,.png" onchange="handleFileUpload(this, 'simFileName')">
+                            <input type="file" class="file-input" name="sim_file" id="simInput" accept=".jpg,.jpeg,.png" onchange="handleFileUpload(this, 'simFileName', 'simPreview')">
                         </div>
                         <div class="file-name" id="simFileName"></div>
+                        
                         @if($driver->sim_file)
-                            <div class="current-file">
-                                File saat ini: {{ basename($driver->sim_file) }}
+                        <div class="current-file" id="currentSimContainer">
+                            <img src="{{ Storage::url($driver->sim_file) }}" alt="Current SIM" id="simPreview">
+                            <div class="file-info">
+                                <span>File saat ini: {{ basename($driver->sim_file) }}</span>
+                                <span class="remove-file" onclick="removeFile('sim')">Hapus</span>
                             </div>
+                        </div>
+                        @else
+                        <div class="current-file" id="currentSimContainer" style="display: none;">
+                            <img src="" alt="SIM Preview" id="simPreview">
+                            <div class="file-info">
+                                <span id="simFileNameText"></span>
+                            </div>
+                        </div>
                         @endif
+                        
                         @error('sim_file')
                             <span class="error-text">{{ $message }}</span>
                         @enderror
@@ -452,6 +539,11 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Hidden input untuk menghapus file -->
+        <input type="hidden" name="remove_ktp" id="removeKtp" value="0">
+        <input type="hidden" name="remove_sim" id="removeSim" value="0">
+        
         <button type="submit" class="save-btn" id="saveBtn">Simpan Perubahan</button>
     </form>
     @else
@@ -465,8 +557,31 @@
 
 @push('scripts')
 <script>
-    // Fungsi untuk handle upload file
-    function handleFileUpload(input, fileNameId) {
+    // Profile photo upload
+    document.getElementById('editPhotoBtn').addEventListener('click', function() {
+        document.getElementById('profilePhotoInput').click();
+    });
+
+    document.getElementById('profilePhotoInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file && isValidImage(file)) {
+            // Validasi ukuran
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Ukuran file terlalu besar! Maksimal 5MB.');
+                this.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                document.getElementById('profilePhotoDisplay').src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Fungsi untuk handle upload file dengan preview
+    function handleFileUpload(input, fileNameId, previewId) {
         const file = input.files[0];
         const fileNameElement = document.getElementById(fileNameId);
         
@@ -496,15 +611,78 @@
             uploadBox.style.borderColor = '#2ecc71';
             uploadBox.querySelector('span').textContent = 'File Terpilih';
             uploadBox.querySelector('span').style.color = '#2ecc71';
-        } else {
-            // Reset tampilan jika file dihapus
-            fileNameElement.style.display = 'none';
-            const uploadBox = input.parentElement;
-            uploadBox.style.backgroundColor = 'white';
-            uploadBox.style.borderColor = '#ddd';
-            uploadBox.querySelector('span').textContent = 'Upload File ' + (fileNameId === 'ktpFileName' ? 'KTP' : 'SIM');
-            uploadBox.querySelector('span').style.color = 'black';
+            
+            // Preview foto
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                // Tentukan container dan preview berdasarkan ID
+                if (previewId === 'ktpPreview') {
+                    const container = document.getElementById('currentKtpContainer');
+                    const preview = document.getElementById('ktpPreview');
+                    preview.src = event.target.result;
+                    container.style.display = 'block';
+                    
+                    // Update file info
+                    const fileInfo = container.querySelector('.file-info span:first-child');
+                    if (fileInfo) {
+                        fileInfo.textContent = `File baru: ${file.name}`;
+                    }
+                } else if (previewId === 'simPreview') {
+                    const container = document.getElementById('currentSimContainer');
+                    const preview = document.getElementById('simPreview');
+                    preview.src = event.target.result;
+                    container.style.display = 'block';
+                    
+                    // Update file info
+                    const fileInfo = container.querySelector('.file-info span:first-child');
+                    if (fileInfo) {
+                        fileInfo.textContent = `File baru: ${file.name}`;
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
         }
+    }
+
+    // Fungsi untuk menghapus file
+    function removeFile(type) {
+        if (confirm('Apakah Anda yakin ingin menghapus file ini?')) {
+            if (type === 'ktp') {
+                document.getElementById('currentKtpContainer').style.display = 'none';
+                document.getElementById('ktpInput').value = '';
+                document.getElementById('removeKtp').value = '1';
+                
+                // Reset upload box
+                const uploadBox = document.getElementById('ktpUploadBox');
+                uploadBox.style.backgroundColor = 'white';
+                uploadBox.style.borderColor = '#ddd';
+                uploadBox.querySelector('span').textContent = 'Upload File KTP';
+                uploadBox.querySelector('span').style.color = 'black';
+                document.getElementById('ktpFileName').style.display = 'none';
+                
+            } else if (type === 'sim') {
+                document.getElementById('currentSimContainer').style.display = 'none';
+                document.getElementById('simInput').value = '';
+                document.getElementById('removeSim').value = '1';
+                
+                // Reset upload box
+                const uploadBox = document.getElementById('simUploadBox');
+                uploadBox.style.backgroundColor = 'white';
+                uploadBox.style.borderColor = '#ddd';
+                uploadBox.querySelector('span').textContent = 'Upload File SIM';
+                uploadBox.querySelector('span').style.color = 'black';
+                document.getElementById('simFileName').style.display = 'none';
+            }
+        }
+    }
+
+    function isValidImage(file) {
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+        if (!validTypes.includes(file.type)) {
+            alert('Format file tidak didukung! Hanya JPG/PNG yang diperbolehkan.');
+            return false;
+        }
+        return true;
     }
 
     // Drag and drop functionality
@@ -531,7 +709,8 @@
             if (files.length > 0) {
                 input.files = files;
                 const fileNameId = input.id === 'ktpInput' ? 'ktpFileName' : 'simFileName';
-                handleFileUpload(input, fileNameId);
+                const previewId = input.id === 'ktpInput' ? 'ktpPreview' : 'simPreview';
+                handleFileUpload(input, fileNameId, previewId);
             }
         });
     });
@@ -621,13 +800,7 @@
                 
                 // Disable button and show loading
                 saveBtn.disabled = true;
-                saveBtn.innerHTML = `
-                    <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="#0d3559" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="#0d3559" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Menyimpan...
-                `;
+                saveBtn.innerHTML = 'Menyimpan...';
             });
         }
         
@@ -637,7 +810,7 @@
             phoneField.addEventListener('input', function(e) {
                 let value = e.target.value.replace(/\D/g, '');
                 if (value.length > 0) {
-                    value = value.match(/.{1,4}/g).join('-');
+                    value = value.match(/.{1,4}/g)?.join('-') || value;
                 }
                 e.target.value = value;
             });
@@ -647,54 +820,9 @@
         const nikField = document.querySelector('[name="nik"]');
         if (nikField) {
             nikField.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length > 16) {
-                    value = value.substring(0, 16);
-                }
-                e.target.value = value;
+                e.target.value = e.target.value.replace(/\D/g, '').substring(0, 16);
             });
         }
-        
-        // Auto-format date inputs for better UX
-        const dateFields = document.querySelectorAll('input[type="date"]');
-        dateFields.forEach(field => {
-            // Add placeholder-like behavior for unsupported browsers
-            if (field.type !== 'date') {
-                field.type = 'text';
-                field.addEventListener('focus', function() {
-                    this.type = 'date';
-                });
-                field.addEventListener('blur', function() {
-                    if (!this.value) {
-                        this.type = 'text';
-                    }
-                });
-            }
-        });
     });
-    
-    // Function to show error message
-    function showError(elementId, message) {
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.style.border = '2px solid #ff4d4d';
-            const error = document.createElement('span');
-            error.className = 'error-text';
-            error.textContent = message;
-            element.parentElement.appendChild(error);
-        }
-    }
-    
-    // Function to clear error
-    function clearError(elementId) {
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.style.border = 'none';
-            const error = element.parentElement.querySelector('.error-text');
-            if (error) {
-                error.remove();
-            }
-        }
-    }
 </script>
 @endpush

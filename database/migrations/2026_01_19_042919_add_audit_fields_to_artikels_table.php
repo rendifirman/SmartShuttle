@@ -29,10 +29,21 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('artikels', function (Blueprint $table) {
-            $table->dropForeign(['created_by']);
-            $table->dropForeign(['updated_by']);
-            $table->dropForeign(['deleted_by']);
-            $table->dropColumn(['created_by', 'updated_by', 'deleted_by', 'deleted_at']);
+            if (Schema::hasColumn('artikels', 'created_by')) {
+                try { $table->dropForeign(['created_by']); } catch (\Exception $e) {}
+            }
+            if (Schema::hasColumn('artikels', 'updated_by')) {
+                try { $table->dropForeign(['updated_by']); } catch (\Exception $e) {}
+            }
+            if (Schema::hasColumn('artikels', 'deleted_by')) {
+                try { $table->dropForeign(['deleted_by']); } catch (\Exception $e) {}
+            }
+            $columns = ['created_by', 'updated_by', 'deleted_by', 'deleted_at'];
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('artikels', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
     }
 };

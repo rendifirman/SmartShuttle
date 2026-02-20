@@ -19,12 +19,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('shuttles', function (Blueprint $table) {
-            $table->dropColumn([
-                'gambar_depan',
-                'gambar_samping',
-                'gambar_belakang',
-                'gambar_interior'
-            ]);
+            $columns = ['gambar_depan', 'gambar_samping', 'gambar_belakang', 'gambar_interior'];
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('shuttles', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
     }
 };

@@ -23,8 +23,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('kursi_terpesan', function (Blueprint $table) {
-            $table->dropForeign(['id_jadwal_driver']);
-            $table->dropColumn('id_jadwal_driver');
+            if (Schema::hasColumn('kursi_terpesan', 'id_jadwal_driver')) {
+                $table->dropForeign(['id_jadwal_driver']);
+                $table->dropColumn('id_jadwal_driver');
+            }
         });
     }
 };
