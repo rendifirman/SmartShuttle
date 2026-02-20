@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <title>Perjalanan - Smart Shuttle Driver</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -763,74 +764,74 @@
                 width: 70px;
                 padding: 15px 10px;
             }
-            
+
             .sidebar-title {
                 font-size: 14px;
                 margin-bottom: 25px;
             }
-            
+
             .menu-item span {
                 display: none;
             }
-            
+
             .menu-item {
                 justify-content: center;
                 padding: 15px 5px;
             }
-            
+
             .content {
                 margin-left: 90px;
                 padding: 20px;
             }
-            
+
             .card-aktif {
                 flex-direction: column;
             }
-            
+
             .card-left, .card-right {
                 width: 100%;
             }
-            
+
             .button-section {
                 margin-left: 0;
                 margin-top: 20px;
             }
-            
+
             .header-section {
                 flex-direction: column;
                 gap: 15px;
                 align-items: flex-start;
             }
-            
+
             .card-header {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 10px;
             }
-            
+
             .card-right {
                 flex-direction: column;
                 gap: 20px;
             }
-            
+
             .info-section {
                 width: 100%;
             }
-            
+
             .button-section {
                 width: 100%;
             }
-            
+
             .btn-primary, .btn-success, .btn-detail, .btn-back {
                 min-width: 100%;
             }
-            
+
             .penumpang-item {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 15px;
             }
-            
+
             .penumpang-seat {
                 text-align: left;
                 width: 100%;
@@ -838,7 +839,7 @@
                 justify-content: space-between;
                 align-items: center;
             }
-            
+
             .modal-content {
                 width: 95%;
                 margin: 20px;
@@ -878,7 +879,7 @@
         <div class="menu-icon"><i class="fas fa-calendar-alt"></i></div>
         <span>Jadwal</span>
     </a>
-    
+
     <a href="#" class="menu-item" id="laporan-link">
         <div class="menu-icon"><i class="fas fa-file-alt"></i></div>
         <span>Laporan</span>
@@ -1147,7 +1148,7 @@
             <p class="modal-subtitle">Lokasi bus akan berpindah ke titik berikutnya</p>
             <p class="modal-subtitle" style="margin-top: 10px; font-weight: 600;" id="modalNextLocation"></p>
         </div>
-        
+
         <div class="modal-buttons">
             <button class="btn-cancel" id="cancelUpdateBtn">Batal</button>
             <button class="btn-update" id="confirmUpdateBtn">Update</button>
@@ -1156,73 +1157,21 @@
 </div>
 
 <script>
-    // Data perjalanan - Bandung ke Jakarta dengan beberapa pemberhentian
-    const journeyData = {
+    // Server-provided trips data (generated in DriverController)
+    const tripsData = <?php echo json_encode($tripsData ?? []); ?>;
+    const currentDriverId = <?php echo json_encode($driver->id ?? null); ?>;
+
+    // Fallback journey data (used when route stop points are not available)
+    let journeyData = {
         currentStopIndex: 0,
         stops: [
-            {
-                name: "Bandung",
-                detail: "Terminal Bus Leuwipanjang",
-                type: "start"
-            },
-            {
-                name: "Rest Area KM 58",
-                detail: "Tol Padaleunyi",
-                type: "stop"
-            },
-            {
-                name: "Rest Area KM 97",
-                detail: "Tol Cipularang",
-                type: "stop"
-            },
-            {
-                name: "Jakarta Pusat",
-                detail: "Terminal Bus Kampung Rambutan",
-                type: "finish"
-            }
+            { name: "Start", detail: "Lokasi Awal", type: "start" },
+            { name: "Titik 1", detail: "Titik Pemberhentian 1", type: "stop" },
+            { name: "Titik 2", detail: "Titik Pemberhentian 2", type: "stop" },
+            { name: "Finish", detail: "Tujuan Akhir", type: "finish" }
         ],
-        travelTimes: ["3 jam 15 menit", "2 jam 30 menit", "1 jam 15 menit", "0 menit"],
-        distances: ["145 km", "100 km", "45 km", "0 km"]
-    };
-
-    // Data penumpang untuk setiap perjalanan
-    const penumpangData = {
-        1: [
-            { name: "Budi Santoso", phone: "0812-3456-7890", seat: "A01", status: "terverifikasi" },
-            { name: "Siti Rahmawati", phone: "0813-9876-5432", seat: "A02", status: "terdaftar" },
-            { name: "Ahmad Wijaya", phone: "0821-1122-3344", seat: "A03", status: "terverifikasi" },
-            { name: "Dewi Lestari", phone: "0815-6677-8899", seat: "A04", status: "terdaftar" },
-            { name: "Rudi Hartono", phone: "0822-5566-7788", seat: "A05", status: "terverifikasi" },
-            { name: "Maya Indah", phone: "0817-2233-4455", seat: "A06", status: "terdaftar" },
-            { name: "Hendra Pratama", phone: "0818-3344-5566", seat: "A07", status: "refund" },
-            { name: "Lisa Anggraeni", phone: "0819-4455-6677", seat: "A08", status: "terdaftar" },
-            { name: "Fajar Nugroho", phone: "0823-6677-8899", seat: "A09", status: "terverifikasi" },
-            { name: "Rina Marlina", phone: "0814-7788-9900", seat: "A10", status: "terdaftar" }
-        ],
-        2: [
-            { name: "Andi Susanto", phone: "0811-2233-4455", seat: "A01", status: "terverifikasi" },
-            { name: "Rina Wijaya", phone: "0812-3344-5566", seat: "A02", status: "terverifikasi" },
-            { name: "Bambang Setiawan", phone: "0813-4455-6677", seat: "A03", status: "terverifikasi" },
-            { name: "Sari Dewi", phone: "0814-5566-7788", seat: "A04", status: "terverifikasi" },
-            { name: "Agus Riyadi", phone: "0815-6677-8899", seat: "A05", status: "terverifikasi" },
-            { name: "Nurul Hasanah", phone: "0816-7788-9900", seat: "A06", status: "terverifikasi" },
-            { name: "Eko Prasetyo", phone: "0817-8899-0011", seat: "A07", status: "terverifikasi" },
-            { name: "Dian Purnama", phone: "0818-9900-1122", seat: "A08", status: "terverifikasi" },
-            { name: "Hari Santoso", phone: "0819-0011-2233", seat: "A09", status: "terverifikasi" },
-            { name: "Maya Sari", phone: "0820-1122-3344", seat: "A10", status: "terverifikasi" },
-            { name: "Joko Widodo", phone: "0821-2233-4455", seat: "A11", status: "terverifikasi" },
-            { name: "Ani Rahayu", phone: "0822-3344-5566", seat: "A12", status: "terverifikasi" }
-        ],
-        3: [
-            { name: "Rudi Hidayat", phone: "0811-9988-7766", seat: "A01", status: "terverifikasi" },
-            { name: "Sri Wahyuni", phone: "0812-8877-6655", seat: "A02", status: "terdaftar" },
-            { name: "Faisal Rahman", phone: "0813-7766-5544", seat: "A03", status: "terverifikasi" },
-            { name: "Desi Anggraini", phone: "0814-6655-4433", seat: "A04", status: "terdaftar" },
-            { name: "Ari Wibowo", phone: "0815-5544-3322", seat: "A05", status: "terverifikasi" },
-            { name: "Lina Marlina", phone: "0816-4433-2211", seat: "A06", status: "refund" },
-            { name: "Hendra Kurniawan", phone: "0817-3322-1100", seat: "A07", status: "terdaftar" },
-            { name: "Wulan Sari", phone: "0818-2211-0099", seat: "A08", status: "terverifikasi" }
-        ]
+        travelTimes: ["-", "-", "-", "-"],
+        distances: ["-", "-", "-", "-"]
     };
 
     // Variable untuk menyimpan ID perjalanan yang sedang aktif
@@ -1234,10 +1183,10 @@
         menuLinks.forEach(link => {
             link.classList.remove('menu-active');
         });
-        
+
         const currentPath = window.location.pathname;
         let activeLink = null;
-        
+
         if (currentPath.includes('dashboard')) {
             activeLink = document.getElementById('dashboard-link');
         } else if (currentPath.includes('perjalanan')) {
@@ -1253,14 +1202,88 @@
         } else if (currentPath.includes('bantuan')) {
             activeLink = document.getElementById('bantuan-link');
         }
-        
+
         if (!activeLink) {
             activeLink = document.getElementById('dashboard-link');
         }
-        
+
         if (activeLink) {
             activeLink.classList.add('menu-active');
         }
+    }
+
+    // ★★★ FUNGSI UNTUK MEMBANGUN JOURNEY DATA DARI STOP POINTS ★★★
+    function buildJourneyDataFromStopPoints(tripData) {
+        const stopPoints = tripData.stop_points || [];
+
+        // Inisialisasi struktur journey data
+        journeyData = {
+            currentStopIndex: 0,
+            stops: [],
+            travelTimes: [],
+            distances: []
+        };
+
+        // Tambahkan titik awal (start)
+        journeyData.stops.push({
+            name: tripData.from,
+            detail: `Titik Awal - ${tripData.from}`,
+            type: "start"
+        });
+        journeyData.travelTimes.push("-");
+        journeyData.distances.push("-");
+
+        // Tambahkan stops pemberhentian
+        if (Array.isArray(stopPoints) && stopPoints.length > 0) {
+            stopPoints.forEach((stop, index) => {
+                // Buat nama stop dari kota dan outlets
+                let stopName = stop.kota || `Stop ${index + 1}`;
+                let stopDetail = stop.branch_name || '';
+
+                // Tambahkan daftar outlets jika ada
+                if (stop.outlets && stop.outlets.length > 0) {
+                    const outletNames = stop.outlets.map(o => o.nama_outlet).join(', ');
+                    stopDetail = `${stopDetail} - ${outletNames}`;
+                }
+
+                journeyData.stops.push({
+                    name: stopName,
+                    detail: stopDetail,
+                    type: "stop",
+                    outlets: stop.outlets || [],
+                    duration: stop.durasi_singgah || 10
+                });
+
+                journeyData.travelTimes.push(`${stop.durasi_singgah || 10} menit singgah`);
+                journeyData.distances.push("-");
+            });
+        } else {
+            // Fallback jika tidak ada stop points - gunakan data default
+            journeyData.stops.push({
+                name: "Titik 1",
+                detail: "Titik Pemberhentian 1",
+                type: "stop"
+            });
+            journeyData.travelTimes.push("-");
+            journeyData.distances.push("-");
+
+            journeyData.stops.push({
+                name: "Titik 2",
+                detail: "Titik Pemberhentian 2",
+                type: "stop"
+            });
+            journeyData.travelTimes.push("-");
+            journeyData.distances.push("-");
+        }
+
+        // Tambahkan titik akhir (finish)
+        journeyData.stops.push({
+            name: tripData.to,
+            detail: `Tujuan Akhir - ${tripData.to}`,
+            type: "finish"
+        });
+        journeyData.travelTimes.push("-");
+        journeyData.distances.push("-");
     }
 
     // Fungsi untuk mengupdate tampilan perjalanan di halaman detail
@@ -1268,35 +1291,35 @@
         const currentStop = journeyData.stops[journeyData.currentStopIndex];
         const nextStop = journeyData.stops[journeyData.currentStopIndex + 1];
         const isLastStop = journeyData.currentStopIndex === journeyData.stops.length - 1;
-        
+
         // Update lokasi saat ini
         document.getElementById('currentLocation').textContent = currentStop.name;
         document.getElementById('currentLocationDetail').textContent = currentStop.detail;
         document.getElementById('mapLocation').textContent = currentStop.name;
-        
+
         // Update tujuan akhir
         const finalDestination = journeyData.stops[journeyData.stops.length - 1];
         document.getElementById('finalDestination').textContent = finalDestination.name;
         document.getElementById('finalDestinationDetail').textContent = finalDestination.detail;
-        
+
         // Update info perjalanan
         document.getElementById('travelTime').textContent = journeyData.travelTimes[journeyData.currentStopIndex];
         document.getElementById('distance').textContent = journeyData.distances[journeyData.currentStopIndex];
-        
+
         // Update titik selanjutnya
         if (!isLastStop) {
             document.getElementById('nextStop').textContent = nextStop.name;
         } else {
             document.getElementById('nextStop').textContent = "Tujuan Akhir";
         }
-        
+
         // Update progress bar
         const progressPercent = (journeyData.currentStopIndex / (journeyData.stops.length - 1)) * 100;
         document.getElementById('progressFill').style.width = `${progressPercent}%`;
-        
+
         // Update status titik pemberhentian
         updateStopPoints();
-        
+
         // Tampilkan/sembunyikan tombol selesaikan perjalanan
         const finishButton = document.getElementById('selesaiPerjalananBtn');
         if (isLastStop) {
@@ -1304,7 +1327,7 @@
         } else {
             finishButton.classList.add('hidden');
         }
-        
+
         // Update modal
         if (!isLastStop) {
             document.getElementById('modalNextLocation').textContent = `Menuju: ${nextStop.name}`;
@@ -1315,7 +1338,7 @@
     function updateStopPoints() {
         const stopPointsContainer = document.getElementById('stopPoints');
         stopPointsContainer.innerHTML = '';
-        
+
         // Hanya tampilkan titik pemberhentian yang sudah dilewati dan yang sedang aktif
         for (let i = 1; i < journeyData.stops.length - 1; i++) {
             const stop = journeyData.stops[i];
@@ -1324,13 +1347,13 @@
                 stopElement.className = 'location';
                 stopElement.innerHTML = `
                     <div class="loc-title">
-                        <i class="fa-solid fa-map-marker-alt"></i> 
+                        <i class="fa-solid fa-map-marker-alt"></i>
                         <span style="text-decoration: line-through; color: #888;">${stop.name}</span>
                     </div>
                     <div class="loc-sub" style="color: #888;">${stop.detail} (Telah dilewati)</div>
                 `;
                 stopPointsContainer.appendChild(stopElement);
-                
+
                 // Tambahkan garis pemisah
                 if (i < journeyData.stops.length - 2) {
                     const line = document.createElement('div');
@@ -1342,13 +1365,13 @@
                 stopElement.className = 'location';
                 stopElement.innerHTML = `
                     <div class="loc-title">
-                        <i class="fa-solid fa-map-marker-alt"></i> 
+                        <i class="fa-solid fa-map-marker-alt"></i>
                         <span style="color: #0095FF;">${stop.name}</span>
                     </div>
                     <div class="loc-sub" style="color: #0095FF;">${stop.detail} (Titik Selanjutnya)</div>
                 `;
                 stopPointsContainer.appendChild(stopElement);
-                
+
                 // Tambahkan garis pemisah
                 if (i < journeyData.stops.length - 2) {
                     const line = document.createElement('div');
@@ -1357,7 +1380,7 @@
                 }
             }
         }
-        
+
         // Update progress stops
         const progressStops = document.querySelectorAll('.progress-stop');
         progressStops.forEach((stop, index) => {
@@ -1377,10 +1400,10 @@
             alert('Anda sudah sampai di tujuan akhir!');
             return;
         }
-        
+
         const nextStop = journeyData.stops[journeyData.currentStopIndex + 1];
         document.getElementById('modalNextLocation').textContent = `Menuju: ${nextStop.name}`;
-        
+
         const modal = document.getElementById('updateLokasiModal');
         modal.style.display = 'flex';
     }
@@ -1393,25 +1416,74 @@
 
     // Fungsi untuk mengkonfirmasi update lokasi
     function confirmUpdateLokasi() {
-        // Pindah ke titik berikutnya
-        journeyData.currentStopIndex++;
-        
-        // Update tampilan
-        updateJourneyDisplay();
-        
-        // Tampilkan notifikasi
-        const currentStop = journeyData.stops[journeyData.currentStopIndex];
-        alert(`Lokasi berhasil diupdate! Sekarang berada di: ${currentStop.name}`);
-        
-        // Sembunyikan modal
-        hideUpdateLokasiModal();
-        
-        // Jika sudah sampai tujuan akhir, tampilkan konfirmasi
-        if (journeyData.currentStopIndex === journeyData.stops.length - 1) {
-            setTimeout(() => {
-                alert('Selamat! Anda telah sampai di tujuan akhir. Silakan selesaikan perjalanan.');
-            }, 500);
+        // Kirim update ke server via API
+        if (!currentTripId) {
+            alert('Tidak ada perjalanan aktif yang dipilih.');
+            return;
         }
+
+        // Tentukan titik berikutnya
+        const nextIndex = journeyData.currentStopIndex + 1;
+        if (nextIndex >= journeyData.stops.length) {
+            alert('Sudah mencapai tujuan akhir.');
+            hideUpdateLokasiModal();
+            return;
+        }
+
+        const nextStop = journeyData.stops[nextIndex];
+        const status = nextStop.type === 'finish' ? 'completed' : 'arrived';
+
+        const payload = {
+            id_jadwal_driver: parseInt(currentTripId),
+            location_name: nextStop.name,
+            location_detail: nextStop.detail || '',
+            latitude: null,
+            longitude: null,
+            stop_index: nextIndex,
+            status: status
+        };
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        fetch('<?php echo e(route("api.driver.location.update")); ?>', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify(payload)
+        }).then(r => r.json())
+        .then(result => {
+            if (result && result.success) {
+                // Perbarui state lokal
+                journeyData.currentStopIndex = nextIndex;
+                updateJourneyDisplay();
+
+                // Update status pada daftar perjalanan jika tersedia
+                if (currentTripId) {
+                    const statusElement = document.getElementById(`status-${currentTripId}`);
+                    if (statusElement) {
+                        if (status === 'completed') {
+                            statusElement.textContent = 'Selesai';
+                            statusElement.className = 'status-selesai';
+                        } else {
+                            statusElement.textContent = 'Dalam Perjalanan';
+                            statusElement.className = 'status';
+                        }
+                    }
+                }
+
+                hideUpdateLokasiModal();
+                alert(`Lokasi berhasil diupdate! Sekarang berada di: ${nextStop.name}`);
+            } else {
+                console.error('Update location failed', result);
+                alert('Gagal mengupdate lokasi. Silakan coba lagi.');
+            }
+        }).catch(err => {
+            console.error(err);
+            alert('Terjadi kesalahan saat mengirim data lokasi.');
+        });
     }
 
     // Fungsi untuk menyelesaikan perjalanan
@@ -1422,7 +1494,7 @@
                 document.querySelector('.card-title-detail i').style.color = "#2d572c";
                 document.querySelector('.card-title-detail i').className = "fa-solid fa-circle-check";
                 document.getElementById('tripTitle').textContent = "Perjalanan Selesai";
-                
+
                 // Update status di halaman daftar perjalanan
                 if (currentTripId) {
                     const statusElement = document.getElementById(`status-${currentTripId}`);
@@ -1431,7 +1503,7 @@
                         statusElement.className = "status-selesai";
                     }
                 }
-                
+
                 // Tambahkan ke riwayat
                 const currentDate = new Date();
                 const formattedDate = currentDate.toLocaleDateString('id-ID', {
@@ -1443,10 +1515,10 @@
                     hour: '2-digit',
                     minute: '2-digit'
                 });
-                
+
                 // Sembunyikan tombol
                 document.getElementById('selesaiPerjalananBtn').classList.add('hidden');
-                
+
                 alert('Perjalanan telah diselesaikan! Status telah diperbarui.');
             }
         } else {
@@ -1458,23 +1530,24 @@
     function generatePenumpangList(tripId) {
         const penumpangListElement = document.getElementById('penumpangList');
         const totalPenumpangElement = document.getElementById('totalPenumpang');
-        
+
         // Kosongkan daftar penumpang
         penumpangListElement.innerHTML = '';
-        
-        // Ambil data penumpang berdasarkan ID perjalanan
-        const passengers = penumpangData[tripId] || [];
-        
+
+        // Cari trip di data server
+        const trip = tripsData.find(t => parseInt(t.id_jadwal_driver) === parseInt(tripId));
+        const passengers = trip ? (trip.passengers || []) : [];
+
         // Update total penumpang
         totalPenumpangElement.textContent = passengers.length;
-        
+
         // Generate elemen untuk setiap penumpang
         passengers.forEach(passenger => {
             let statusClass = '';
             let statusText = '';
-            
+
             // Tentukan kelas dan teks status
-            switch(passenger.status) {
+            switch((passenger.status || '').toLowerCase()) {
                 case 'refund':
                     statusClass = 'status-refund';
                     statusText = 'Refund';
@@ -1491,21 +1564,21 @@
                     statusClass = 'status-terdaftar';
                     statusText = 'Terdaftar';
             }
-            
+
             // Buat elemen penumpang
             const penumpangItem = document.createElement('div');
             penumpangItem.className = 'penumpang-item';
             penumpangItem.innerHTML = `
                 <div class="penumpang-info">
                     <div class="penumpang-name">${passenger.name}</div>
-                    <div class="penumpang-phone">${passenger.phone}</div>
+                    <div class="penumpang-phone">${passenger.phone || ''}</div>
                 </div>
                 <div class="penumpang-seat">
-                    <div class="seat-number">${passenger.seat}</div>
+                    <div class="seat-number">${passenger.seat || 'N/A'}</div>
                     <span class="seat-status ${statusClass}">${statusText}</span>
                 </div>
             `;
-            
+
             // Tambahkan ke daftar
             penumpangListElement.appendChild(penumpangItem);
         });
@@ -1515,28 +1588,38 @@
     function showDetailPerjalanan(tripData) {
         // Sembunyikan halaman daftar
         document.getElementById('daftarPerjalananPage').classList.add('hidden');
-        
+
         // Tampilkan halaman detail
         document.getElementById('detailPerjalananPage').classList.remove('hidden');
-        
+
         // Simpan ID perjalanan yang sedang aktif
         currentTripId = tripData.id;
-        
+
         // Update judul perjalanan
         document.getElementById('tripTitle').textContent = `Perjalanan #${tripData.id} - ${tripData.from} → ${tripData.to}`;
-        
+
         // Update info penumpang sesuai data dari halaman daftar
         document.getElementById('passengerCount').textContent = tripData.seats;
-        
+
+        // ★★★ CARI FULL TRIP DATA DARI TRIPS DATA ★★★
+        const fullTripData = tripsData.find(t => parseInt(t.id_jadwal_driver) === parseInt(tripData.id));
+
+        // ★★★ BANGUN JOURNEY DATA DARI STOP POINTS ★★★
+        buildJourneyDataFromStopPoints({
+            from: tripData.from,
+            to: tripData.to,
+            stop_points: fullTripData ? fullTripData.stop_points : []
+        });
+
         // Reset data perjalanan untuk perjalanan baru
         journeyData.currentStopIndex = 0;
-        
+
         // Update tampilan perjalanan
         updateJourneyDisplay();
-        
+
         // Generate daftar penumpang berdasarkan ID perjalanan
         generatePenumpangList(parseInt(tripData.id));
-        
+
         // Cek status perjalanan
         const statusElement = document.getElementById(`status-${tripData.id}`);
         if (statusElement && statusElement.textContent === "Selesai") {
@@ -1551,7 +1634,7 @@
             document.querySelector('.card-title-detail i').className = "fa-solid fa-circle-play";
             document.getElementById('tripTitle').textContent = `Perjalanan #${tripData.id} - ${tripData.from} → ${tripData.to}`;
         }
-        
+
         // Scroll ke atas
         window.scrollTo(0, 0);
     }
@@ -1560,10 +1643,10 @@
     function backToDaftarPerjalanan() {
         // Sembunyikan halaman detail
         document.getElementById('detailPerjalananPage').classList.add('hidden');
-        
+
         // Tampilkan halaman daftar
         document.getElementById('daftarPerjalananPage').classList.remove('hidden');
-        
+
         // Scroll ke atas
         window.scrollTo(0, 0);
     }
@@ -1571,7 +1654,70 @@
     // Event listeners
     document.addEventListener('DOMContentLoaded', function() {
         setActiveMenu();
-        
+        // Render daftar perjalanan dari server data
+        function renderTripList() {
+            const containerCard = document.querySelector('#daftarPerjalananPage .card');
+            if (!containerCard) return;
+
+            const header = containerCard.querySelector('.card-header');
+            const listContainer = document.createElement('div');
+            listContainer.className = 'trip-list-container';
+
+            if (!tripsData || tripsData.length === 0) {
+                listContainer.innerHTML = '<div class="trip-item"><div class="trip-route">Tidak ada perjalanan</div></div>';
+            } else {
+                tripsData.forEach((t, idx) => {
+                    const tripId = t.id_jadwal_driver || '';
+                    const from = t.from || t.rute?.kota_asal || t.from || '-';
+                    const to = t.to || t.rute?.kota_tujuan || '-';
+                    const seats = (t.occupied_seats || 0) + '/' + (t.total_seats || 0);
+                    const passengers = (t.passengers || []).length || 0;
+                    const time = t.time || t.waktu_keberangkatan || '-';
+
+                    const statusText = t.status === 'selesai' ? 'Selesai' : (t.status || 'Akan Berangkat');
+
+                    const item = document.createElement('div');
+                    item.className = 'trip-item';
+                    item.setAttribute('data-trip-id', tripId);
+                    item.setAttribute('data-from', from);
+                    item.setAttribute('data-to', to);
+                    item.setAttribute('data-time', time);
+                    item.setAttribute('data-duration', t.estimated_duration || '-');
+                    item.setAttribute('data-seats', seats);
+                    item.setAttribute('data-passengers', passengers);
+
+                    item.innerHTML = `
+                        <div class="trip-header">
+                            <div class="trip-number">${idx + 1}</div>
+                            <div class="seat-info">${seats} kursi</div>
+                        </div>
+
+                        <div class="trip-route">${from} → ${to}</div>
+                        <div class="trip-time">${time} • ${t.estimated_duration || '-'}</div>
+
+                        <div class="status-badge">
+                            <span class="status" id="status-${tripId}">${statusText}</span>
+                        </div>
+
+                        <div style="text-align:right;">
+                            <button class="btn-detail">Lihat Detail</button>
+                        </div>
+                    `;
+
+                    listContainer.appendChild(item);
+                });
+            }
+
+            // Remove existing static trip items
+            const existingItems = containerCard.querySelectorAll('.trip-item');
+            existingItems.forEach(n => n.remove());
+
+            // Append generated list
+            header.insertAdjacentElement('afterend', listContainer);
+        }
+
+        renderTripList();
+
         // Event listener untuk tombol "Lihat Detail" pada setiap perjalanan
         document.querySelectorAll('.btn-detail').forEach(button => {
             button.addEventListener('click', function(e) {
@@ -1589,7 +1735,7 @@
                 showDetailPerjalanan(tripData);
             });
         });
-        
+
         // Event listener untuk klik pada item perjalanan (selain tombol)
         document.querySelectorAll('.trip-item').forEach(item => {
             item.addEventListener('click', function(e) {
@@ -1608,26 +1754,26 @@
                 }
             });
         });
-        
+
         // Event listener untuk tombol Update Lokasi di halaman detail
         document.getElementById('updateLokasiBtn').addEventListener('click', showUpdateLokasiModal);
-        
+
         // Event listener untuk tombol Batal di modal
         document.getElementById('cancelUpdateBtn').addEventListener('click', hideUpdateLokasiModal);
-        
+
         // Event listener untuk tombol Update di modal
         document.getElementById('confirmUpdateBtn').addEventListener('click', confirmUpdateLokasi);
-        
+
         // Event listener untuk tombol Selesaikan Perjalanan
         document.getElementById('selesaiPerjalananBtn').addEventListener('click', selesaikanPerjalanan);
-        
+
         // Event listener untuk tombol kembali
         document.getElementById('backButton').addEventListener('click', backToDaftarPerjalanan);
         document.getElementById('backToDaftar').addEventListener('click', function(e) {
             e.preventDefault();
             backToDaftarPerjalanan();
         });
-        
+
         // Event listener untuk menutup modal saat klik di luar modal
         document.getElementById('updateLokasiModal').addEventListener('click', function(e) {
             if (e.target === this) {

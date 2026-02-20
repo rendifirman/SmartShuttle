@@ -7,13 +7,15 @@ use Illuminate\Http\Request;
 use App\Models\Jadwal;
 use App\Models\Shuttle;
 use App\Models\Rute;
+use App\Models\User;
+use App\Models\Branch;
 use Carbon\Carbon;
 
 class JadwalController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Jadwal::with(['shuttle', 'rutes', 'driverJadwal'])
+        $query = Jadwal::with(['shuttle', 'rutes', 'driverJadwal', 'driverJadwal.driver', 'driver'])
             ->orderBy('tanggal_keberangkatan', 'desc')
             ->orderBy('waktu_keberangkatan', 'asc');
 
@@ -106,6 +108,9 @@ class JadwalController extends Controller
         $shuttles = Shuttle::all();
         $rutes = Rute::all();
 
+        // ★★★ Jangan load semua drivers di awal - akan di-populate via AJAX setelah rute dipilih ★★★
+        // Ini untuk performa yang lebih baik
+
         return view('admin.jadwal-create', compact('shuttles', 'rutes'));
     }
 
@@ -117,6 +122,7 @@ class JadwalController extends Controller
             'tanggal_keberangkatan' => 'required|date|after_or_equal:today',
             'waktu_keberangkatan' => 'required',
             'waktu_kedatangan' => 'required',
+            'driver_id' => 'nullable|exists:users,id'  // ★★★ Tambahkan validasi untuk driver_id
         ]);
 
         // Tidak ada validasi waktu keberangkatan harus lebih awal
@@ -129,14 +135,20 @@ class JadwalController extends Controller
         // Ambil harga dari rute (dari tarif yang dipilih)
         $hargaRute = $rute->harga_dasar ?? 0;
 
+        // ★★★ FITUR BARU: Tentukan apakah ini jadwal global atau assign ke driver ★★★
+        $isGlobal = empty($request->driver_id);
+
         $jadwal = Jadwal::create([
             'shuttle_id' => $request->shuttle_id,
+            'driver_id' => $request->driver_id ?? null,  // AUTO_ACCEPT: assign langsung ke driver
             'tanggal_keberangkatan' => $request->tanggal_keberangkatan,
             'waktu_keberangkatan' => $request->waktu_keberangkatan,
             'waktu_kedatangan' => $request->waktu_kedatangan,
             'harga_total' => $hargaRute,
             'kursi_tersedia' => $totalKursi,
             'status' => 'tersedia',
+            'is_global_schedule' => $isGlobal,  // MANUAL_CONFIRM: jadwal global
+            'status_admin' => $request->driver_id ? 'diambil' : null
         ]);
 
         $jadwal->rutes()->attach($request->rute_id, [
@@ -145,8 +157,16 @@ class JadwalController extends Controller
             'harga_segment' => $hargaRute,
         ]);
 
+        // ★★★ Jika ada driver yang di-assign, buat DriverJadwal langsung ★★★
+        if ($request->driver_id) {
+            $jadwal->storeDriverJadwal($request->driver_id);
+            $message = 'Jadwal berhasil dibuat dan ditugaskan ke driver!';
+        } else {
+            $message = 'Jadwal global berhasil dibuat! Dapat diambil oleh driver dengan mode MANUAL_CONFIRM.';
+        }
+
         return redirect()->route('admin.jadwal.index')
-            ->with('success', 'Jadwal berhasil dibuat!');
+            ->with('success', $message);
     }
 
     public function edit($id)
@@ -268,5 +288,84 @@ class JadwalController extends Controller
         }
 
         return view('admin.jadwal-penumpang', compact('jadwal', 'pemesanan'));
+    }
+
+    /**
+     * ★★★ Fetch drivers by route/branch (AJAX endpoint) ★★★
+     * Filter drivers yang berada di cabang asal rute yang dipilih
+     * Gunakan cabang_asal_id langsung dari rute (FK)
+     */
+    public function getDriversByRute(Request $request)
+    {
+        try {
+            $ruteId = $request->get('rute_id');
+
+            if (!$ruteId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Rute ID is required',
+                    'drivers' => []
+                ]);
+            }
+
+            // Get the route
+            $rute = Rute::findOrFail($ruteId);
+
+            // ★ Use cabang_asal_id directly (FK relationship)
+            if (!$rute->cabang_asal_id) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Route has no origin branch defined',
+                    'drivers' => [],
+                    'branch_id' => null
+                ]);
+            }
+
+            // Get branch by FK
+            $branch = Branch::where('id', $rute->cabang_asal_id)
+                ->where('status', 'aktif')
+                ->first();
+
+            if (!$branch) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Origin branch not found or inactive',
+                    'drivers' => [],
+                    'branch_id' => null
+                ]);
+            }
+
+            // Get drivers from the origin branch using Spatie Permission relationship
+            // Filter: branch matches AND has 'driver' role AND status active AND not MANUAL_CONFIRM mode
+            $drivers = User::where('branch_id', $branch->id)
+                ->where('status', 'active')
+                ->where('schedule_accept_mode', '!=', 'MANUAL_CONFIRM')
+                ->whereHas('roles', function($q) {
+                    $q->where('name', 'driver');
+                })
+                ->orderBy('name')
+                ->select('id', 'name', 'email')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'drivers' => $drivers,
+                'branch_id' => $branch->id,
+                'branch_name' => $branch->nama_cabang,
+                'message' => 'Drivers loaded successfully'
+            ]);
+        } catch (\Exception $e) {
+            // Log error untuk debugging
+            \Log::error('Error in getDriversByRute: ' . $e->getMessage(), [
+                'rute_id' => $request->get('rute_id'),
+                'exception' => $e
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading drivers: ' . $e->getMessage(),
+                'drivers' => []
+            ], 500);
+        }
     }
 }

@@ -598,6 +598,7 @@
                     <th>Armada</th>
                     <th>Waktu Keberangkatan</th>
                     <th>Waktu Kedatangan</th>
+                    <th>Driver</th>
                     <th>Harga</th>
                     <th>Kursi</th>
                     <th>Status</th>
@@ -647,6 +648,19 @@
                         <td>{{ $jadwal->shuttle->nama_shuttle ?? '-' }} ({{ $jadwal->shuttle->plat_nomor ?? '-' }})</td>
                         <td>{{ \Carbon\Carbon::parse($jadwal->waktu_keberangkatan)->format('H:i') }}</td>
                         <td>{{ \Carbon\Carbon::parse($jadwal->waktu_kedatangan)->format('H:i') }}</td>
+                        <td>
+                            @if(!empty($jadwal->driverJadwal) && $jadwal->driverJadwal->driver)
+                                <span style="font-weight: 600; color: var(--success-color);">
+                                    <i class="fas fa-check-circle"></i> {{ $jadwal->driverJadwal->driver->name ?? 'Tidak diketahui' }}
+                                </span>
+                            @elseif($jadwal->driver_id)
+                                <span style="font-weight: 600; color: var(--success-color);">
+                                    <i class="fas fa-check-circle"></i> {{ $jadwal->driver->name ?? 'Tidak diketahui' }}
+                                </span>
+                            @else
+                                <span style="color: var(--text-muted);">Belum ditugaskan</span>
+                            @endif
+                        </td>
                         <td>Rp {{ number_format($jadwal->harga_total, 0, ',', '.') }}</td>
                         <td>
                             <div class="seat-indicator">
@@ -680,7 +694,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="10" class="text-center" style="padding: 40px;">
+                        <td colspan="11" class="text-center" style="padding: 40px;">
                             <p style="color: var(--text-muted);">Tidak ada data jadwal.</p>
                         </td>
                     </tr>

@@ -13,13 +13,15 @@ class Jadwal extends Model
 
     protected $fillable = [
         'shuttle_id',
+        'driver_id',
         'tanggal_keberangkatan',
         'waktu_keberangkatan',
         'waktu_kedatangan',
         'harga_total',
         'kursi_tersedia',
         'status',
-        'status_admin'
+        'status_admin',
+        'is_global_schedule'
         // Jangan sertakan created_by, updated_by, deleted_by jika tidak ingin diisi
     ];
 
@@ -33,10 +35,28 @@ class Jadwal extends Model
         return $this->id;
     }
 
+    // Accessor untuk rute_pertama
+    public function getRutePertamaAttribute()
+    {
+        return $this->rutes()->first();
+    }
+
+    // Accessor untuk rute_terakhir
+    public function getRuteTerakhirAttribute()
+    {
+        return $this->rutes()->orderBy('rute_jadwals.urutan', 'desc')->first();
+    }
+
     // Relasi ke shuttle
     public function shuttle()
     {
         return $this->belongsTo(Shuttle::class, 'shuttle_id');
+    }
+
+    // ★★★ Relasi ke Driver (untuk AUTO_ACCEPT mode) ★★★
+    public function driver()
+    {
+        return $this->belongsTo(User::class, 'driver_id');
     }
 
     // Relasi ke rutes (many-to-many)
@@ -131,5 +151,86 @@ class Jadwal extends Model
         return $query->where('status', 'tersedia')
                     ->where('kursi_tersedia', '>', 0)
                     ->whereDate('tanggal_keberangkatan', '>=', now());
+    }
+
+    /**
+     * ★★★ SCOPE DAN METHOD UNTUK FITUR BARU ★★★
+     */
+
+    // Scope untuk jadwal global yang tersedia untuk driver MANUAL_CONFIRM
+    public function scopeJadwalGlobal($query)
+    {
+        return $query->where('is_global_schedule', true)
+                    ->whereNull('status_admin')
+                    ->where('status', 'tersedia')
+                    ->where('kursi_tersedia', '>', 0)
+                    ->whereDate('tanggal_keberangkatan', '>=', now()->toDateString());
+    }
+
+    // Scope untuk jadwal yang di-assign ke driver tertentu (AUTO_ACCEPT mode)
+    public function scopeJadwalAssigned($query)
+    {
+        return $query->whereNotNull('driver_id')
+                    ->where('status', 'tersedia')
+                    ->where('kursi_tersedia', '>', 0)
+                    ->whereDate('tanggal_keberangkatan', '>=', now()->toDateString());
+    }
+
+    // Method untuk cek apakah jadwal adalah jadwal global
+    public function isGlobalSchedule()
+    {
+        return $this->is_global_schedule === true;
+    }
+
+    // Method untuk cek apakah jadwal sudah di-assign ke driver
+    public function isAssignedToDriver()
+    {
+        return !is_null($this->driver_id);
+    }
+
+    // Method untuk assign jadwal ke driver (AUTO_ACCEPT mode)
+    public function assignToDriver($driverId)
+    {
+        $this->driver_id = $driverId;
+        $this->is_global_schedule = false;
+        $this->status_admin = 'diambil';
+        $this->save();
+
+        // Create DriverJadwal record
+        return $this->storeDriverJadwal($driverId);
+    }
+
+    // Method untuk membuat jadwal global
+    public function makeGlobal()
+    {
+        $this->is_global_schedule = true;
+        $this->driver_id = null;
+        $this->status_admin = null;
+        $this->save();
+    }
+
+    // Helper method untuk membuat DriverJadwal record
+    public function storeDriverJadwal($driverId)
+    {
+        $rute = $this->rutes->first();
+        $shuttle = $this->shuttle;
+
+        $totalKursi = $shuttle ? ($shuttle->kapasitas_kursi ?? $shuttle->total_kursi ?? 0) : 0;
+        $kursiTerisi = $totalKursi - $this->kursi_tersedia;
+
+        return DriverJadwal::create([
+            'id_jadwal' => $this->id,
+            'id_driver' => $driverId,
+            'rute' => $rute ? ($rute->nama_rute . ' (' . $rute->kota_asal . ' → ' . $rute->kota_tujuan . ')') : 'Rute Tidak Diketahui',
+            'tanggal' => $this->tanggal_keberangkatan,
+            'armada' => $shuttle ? $shuttle->nama_shuttle . ' (' . ($shuttle->plat_nomor ?? '-') . ')' : 'Armada Tidak Diketahui',
+            'waktu_keberangkatan' => $this->waktu_keberangkatan,
+            'waktu_kedatangan' => $this->waktu_kedatangan,
+            'harga' => $this->harga_total,
+            'total_kursi' => $totalKursi,
+            'kursi_terisi' => $kursiTerisi,
+            'status' => 'aktif',
+            'waktu_diambil' => \Carbon\Carbon::now(),
+        ]);
     }
 }

@@ -135,19 +135,45 @@ class PemesananController extends Controller
                     ->first();
 
                 if ($promo) {
-                    // Cek kuota
+                    // VALIDASI KOMPREHENSIF PROMO
+
+                    // 1. Cek kuota promo
                     if ($promo->kuota && $promo->terpakai >= $promo->kuota) {
                         throw new \Exception('Kuota promo sudah habis');
                     }
 
-                    // Cek minimal pembelian
+                    // 2. Cek minimal pembelian
                     if ($hargaTotal < $promo->minimal_pembelian) {
                         throw new \Exception('Minimal pembelian Rp ' . number_format($promo->minimal_pembelian, 0, ',', '.'));
                     }
 
-                    $diskon = $promo->hitungDiskon($hargaTotal);
+                    // 3. Cek requirement member (khusus_member)
+                    $userMembershipStatus = $request->user()->membership_status ?? 'non_member';
+                    $isMember = $userMembershipStatus === 'active';
+
+                    if ($promo->khusus_member && !$isMember) {
+                        throw new \Exception('Promo ini hanya berlaku untuk member aktif');
+                    }
+
+                    // 4. Cek kategori membership promo
+                    if ($promo->kategori_promo === 'membership' && !$isMember) {
+                        throw new \Exception('Promo membership hanya dapat digunakan oleh member');
+                    }
+
+                    // 5. Cek minimum tiket (kategori keluarga)
+                    if ($promo->kategori_promo === 'keluarga' && $promo->min_tiket) {
+                        if ($request->jumlah_penumpang < $promo->min_tiket) {
+                            throw new \Exception("Minimal {$promo->min_tiket} tiket untuk promo keluarga");
+                        }
+                    }
+
+                    // 6. Hitung diskon dengan method yang benar
+                    $diskon = $promo->calculateDiscount($hargaTotal);
                     $promoId = $promo->id;
                     $kodePromo = $promo->kode_promo;
+                } else {
+                    // Promo tidak ditemukan atau tidak aktif
+                    throw new \Exception('Kode promo tidak ditemukan atau tidak aktif');
                 }
             }
 
@@ -215,7 +241,7 @@ class PemesananController extends Controller
                     }
                     $driverJadwal->save();
                 }
-            } catch (\\Exception $e) {
+            } catch (\Exception $e) {
                 Log::warning('Gagal update DriverJadwal kursi_terisi: ' . $e->getMessage());
             }
 
@@ -346,7 +372,7 @@ class PemesananController extends Controller
                     }
                     $driverJadwal->save();
                 }
-            } catch (\\Exception $e) {
+            } catch (\Exception $e) {
                 Log::warning('Gagal update DriverJadwal kursi_terisi saat pembatalan: ' . $e->getMessage());
             }
 
@@ -770,7 +796,7 @@ class PemesananController extends Controller
             }
 
             // Hitung diskon
-            $diskon = $promo->hitungDiskon($request->total_amount);
+            $diskon = $promo->calculateDiscount($request->total_amount);
             $totalAfterDiscount = $request->total_amount - $diskon;
 
             return response()->json([

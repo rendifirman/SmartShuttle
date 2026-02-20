@@ -21,6 +21,27 @@
         </div>
     </div>
 
+    <!-- ★★★ MODE INFO ALERT ★★★ -->
+    @php
+        $driver = Auth::guard('driver')->user();
+    @endphp
+
+    @if($driver->schedule_accept_mode === 'AUTO_ACCEPT')
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <strong>Mode: Penerimaan Otomatis</strong> - Halaman ini menampilkan jadwal yang telah ditugaskan admin khusus untuk Anda.
+            Jadwal akan langsung aktif tanpa perlu konfirmasi lanjutan.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @else
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Mode: Konfirmasi Manual</strong> - Halaman ini menampilkan jadwal global yang telah dibuat admin.
+            Anda dapat berebut untuk mengambil jadwal pilihan Anda. Jadwal yang pertama diklaim akan menjadi milik Anda.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <!-- Notifikasi -->
     @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -45,7 +66,7 @@
             <div class="card h-100 shadow-sm">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
-                        {{ $jadwal->rutes->first()->kota_asal ?? '' }} → 
+                        {{ $jadwal->rutes->first()->kota_asal ?? '' }} →
                         {{ $jadwal->rutes->first()->kota_tujuan ?? '' }}
                     </h5>
                 </div>
@@ -106,11 +127,11 @@
                         </h5>
                     </div>
 
-                    <form action="{{ route('driver.jadwal.ambil', $jadwal->id) }}" method="POST" 
+                    <form action="{{ route('driver.jadwal.ambil', $jadwal->id) }}" method="POST"
                           onsubmit="return confirm('Apakah Anda yakin ingin mengambil jadwal ini?')">
                         @csrf
                         <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" 
+                            <input class="form-check-input" type="checkbox"
                                    id="konfirmasi{{ $jadwal->id }}" name="konfirmasi" required>
                             <label class="form-check-label" for="konfirmasi{{ $jadwal->id }}">
                                 Saya siap melayani jadwal ini

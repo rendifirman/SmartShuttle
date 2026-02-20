@@ -27,6 +27,12 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'phone',
         'nik',
+        'nomor_sim',
+        'masa_berlaku_sim',
+        'ktp_file',
+        'sim_file',
+        'photo_file',
+        'id_pengemudi',
         'tanggal_lahir',
         'jenis_kelamin',
         'avatar', // Kolom untuk menyimpan path avatar
@@ -44,7 +50,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'status',
         'google_id',
         'provider',
-        'branch_id'
+        'branch_id',
+        'schedule_accept_mode'
     ];
 
     protected $hidden = [
@@ -58,6 +65,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'member_point' => 'integer',
         'loyalty_point' => 'integer',
         'tanggal_lahir' => 'date',
+        'masa_berlaku_sim' => 'date',
         'membership_start_date' => 'date',
         'membership_end_date' => 'date',
         'membership_fee' => 'decimal:2'
@@ -73,7 +81,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'membership_level' => 'Bronze',
         'membership_status' => 'non_member',
         'google_id' => null,
-        'provider' => null
+        'provider' => null,
+        'schedule_accept_mode' => 'AUTO_ACCEPT'
     ];
 
     // Relasi

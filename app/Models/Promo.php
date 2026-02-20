@@ -158,9 +158,15 @@ class Promo extends Model
             ];
         }
 
+        // Hitung diskon jika valid
+        $diskon = $this->calculateDiscount($totalPembelian);
+        $totalSetelahDiskon = $totalPembelian - $diskon;
+
         return [
             'valid' => true,
-            'message' => 'Promo valid'
+            'message' => 'Promo valid',
+            'diskon' => $diskon,
+            'total_setelah_diskon' => $totalSetelahDiskon
         ];
     }
 

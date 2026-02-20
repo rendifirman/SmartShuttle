@@ -1639,12 +1639,6 @@
                                 Kursi yang Dipilih (<span id="selected-count">0</span>/<span id="max-seats">{{ $jumlahPenumpang }}</span>):
                             </h4>
                             <div class="selected-list" id="selected-list"></div>
-                            <div class="total-price" id="total-price-container" style="display:none;">
-                                <div class="d-flex justify-content-between">
-                                    <span>Total: </span>
-                                    <span class="total-amount" id="total-amount">Rp 0</span>
-                                </div>
-                            </div>
                         </div>
 
                         <div class="action-buttons">

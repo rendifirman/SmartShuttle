@@ -5,57 +5,35 @@
 @push('styles')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-    /* ================= THEME VARIABLES ================= */
+    /* ================= MINIMAL OPTIMIZED STYLES ================= */
     :root {
-        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        --success-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-        --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-        --danger-gradient: linear-gradient(135deg, #ff6a00 0%, #ee0979 100%);
-        --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        --dark-gradient: linear-gradient(135deg, #141e30 0%, #243b55 100%);
-        --light-gradient: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
-
         --primary-color: #667eea;
         --primary-hover: #5a67d8;
-        --secondary-color: #764ba2;
         --success-color: #43e97b;
-        --warning-color: #fa709a;
         --danger-color: #ff6a00;
+        --warning-color: #fa709a;
         --info-color: #4facfe;
-        --dark-color: #2d3748;
-        --light-color: #f7fafc;
-
         --text-primary: #2d3748;
         --text-secondary: #4a5568;
         --text-muted: #718096;
         --border-color: #e2e8f0;
         --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-        --card-shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.12);
-        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        --transition: all 0.3s ease;
     }
 
-    /* ================= GLOBAL STYLES ================= */
     body {
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        min-height: 100vh;
         margin: 0;
         color: var(--text-primary);
     }
 
-    /* ================= PAGE LAYOUT ================= */
     .page-wrapper {
         padding: 20px;
-        animation: fadeIn 0.5s ease-out;
+        max-width: 1000px;
+        margin: 0 auto;
     }
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ================= HEADER ================= */
     .page-header {
         display: flex;
         justify-content: space-between;
@@ -63,10 +41,9 @@
         margin-bottom: 30px;
         padding: 20px;
         background: white;
-        border-radius: 16px;
+        border-radius: 8px;
         box-shadow: var(--card-shadow);
         border-left: 6px solid var(--success-color);
-        animation: slideInLeft 0.6s ease-out;
     }
 
     .page-title {
@@ -76,247 +53,169 @@
     }
 
     .page-title h1 {
-        font-size: 28px;
+        font-size: 24px;
         font-weight: 700;
-        background: var(--success-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: var(--text-primary);
         margin: 0;
     }
 
+    .page-title p {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin: 5px 0 0 0;
+        line-height: 1.5;
+    }
+
     .page-title .icon-wrapper {
-        width: 50px;
-        height: 50px;
-        background: var(--success-gradient);
-        border-radius: 12px;
+        width: 45px;
+        height: 45px;
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
-        font-size: 22px;
-        box-shadow: 0 4px 15px rgba(67, 233, 123, 0.4);
+        font-size: 20px;
     }
 
-    /* ================= FORM CARD ================= */
     .form-card {
         background: white;
-        border-radius: 16px;
+        border-radius: 8px;
         padding: 30px;
         box-shadow: var(--card-shadow);
-        animation: slideInUp 0.7s ease-out;
     }
 
     .form-header {
         display: flex;
         align-items: center;
         gap: 12px;
-        margin-bottom: 30px;
-        padding-bottom: 20px;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
         border-bottom: 2px solid var(--border-color);
     }
 
     .form-header i {
-        color: var(--success-color);
-        font-size: 24px;
+        color: var(--primary-color);
+        font-size: 20px;
     }
 
     .form-header h3 {
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 600;
-        margin: 0;
         color: var(--text-primary);
+        margin: 0;
     }
 
-    /* ================= FORM STYLES ================= */
     .form-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 25px;
-        margin-bottom: 30px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-bottom: 20px;
     }
 
     .form-group {
-        margin-bottom: 0;
+        display: flex;
+        flex-direction: column;
     }
 
     .form-label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 600;
-        color: var(--text-secondary);
         font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
     }
 
     .form-label span {
         color: var(--danger-color);
+        margin-left: 2px;
     }
 
     .form-control {
-        width: 100%;
-        padding: 14px 16px;
-        border: 2px solid var(--border-color);
-        border-radius: 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
         font-size: 14px;
-        transition: var(--transition);
-        background: var(--light-color);
         font-family: inherit;
+        transition: var(--transition);
     }
 
     .form-control:focus {
         outline: none;
         border-color: var(--primary-color);
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        background: white;
-        transform: translateY(-1px);
     }
 
-    .form-control:hover {
-        border-color: var(--primary-color);
-    }
-
-    .input-group {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-
-    .input-group-prepend {
-        position: absolute;
-        left: 0;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        padding: 0 15px;
-        background: var(--light-color);
-        border-right: 1px solid var(--border-color);
-        border-radius: 10px 0 0 10px;
-        color: var(--text-muted);
-        font-weight: 500;
-    }
-
-    .input-group-prepend + .form-control {
-        padding-left: 60px;
-    }
-
-    /* ================= TIME INPUT GROUP ================= */
-    .time-group {
-        display: grid;
-        grid-template-columns: 1fr auto 1fr;
-        gap: 15px;
-        align-items: center;
-    }
-
-    .time-separator {
-        text-align: center;
-        color: var(--text-muted);
-        font-weight: 600;
-        font-size: 18px;
-    }
-
-    /* ================= SELECT STYLES ================= */
     .select-wrapper {
         position: relative;
     }
 
-    .select-wrapper::after {
-        content: '▼';
-        position: absolute;
-        right: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--text-muted);
-        pointer-events: none;
-        font-size: 12px;
-        transition: var(--transition);
-    }
-
-    .select-wrapper select:focus + ::after {
-        transform: translateY(-50%) rotate(180deg);
-    }
-
-    /* ================= BUTTONS ================= */
-    .btn {
-        padding: 12px 24px;
-        border-radius: 10px;
-        font-weight: 600;
+    .select-wrapper select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
         font-size: 14px;
-        border: none;
+        background-color: white;
         cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
         transition: var(--transition);
-        position: relative;
-        overflow: hidden;
     }
 
-    .btn::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 5px;
-        height: 5px;
-        background: rgba(255, 255, 255, 0.5);
-        opacity: 0;
-        border-radius: 100%;
-        transform: scale(1, 1) translate(-50%);
-        transform-origin: 50% 50%;
-    }
-
-    .btn:focus:not(:active)::after {
-        animation: ripple 1s ease-out;
-    }
-
-    @keyframes ripple {
-        0% { transform: scale(0, 0); opacity: 0.5; }
-        100% { transform: scale(20, 20); opacity: 0; }
-    }
-
-    .btn-primary {
-        background: var(--success-gradient);
-        color: white;
-        box-shadow: 0 4px 15px rgba(67, 233, 123, 0.3);
-    }
-
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(67, 233, 123, 0.4);
-    }
-
-    .btn-outline {
-        background: transparent;
-        color: var(--text-secondary);
-        border: 2px solid var(--border-color);
-    }
-
-    .btn-outline:hover {
-        background: var(--light-color);
+    .select-wrapper select:focus {
+        outline: none;
         border-color: var(--primary-color);
-        color: var(--primary-color);
-        transform: translateY(-2px);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
-    /* ================= FORM ACTIONS ================= */
-    .form-actions {
-        display: flex;
+    .time-group {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
         gap: 15px;
-        margin-top: 30px;
-        padding-top: 20px;
-        border-top: 1px solid var(--border-color);
+        align-items: flex-start;
     }
 
-    /* ================= INFO CARDS ================= */
+    .time-separator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-top: 40px;
+        color: var(--text-muted);
+        font-weight: bold;
+    }
+
+    .input-group {
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        overflow: hidden;
+        background: white;
+    }
+
+    .input-group-prepend {
+        padding: 10px 12px;
+        background: #f7fafc;
+        border-right: 1px solid var(--border-color);
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .input-group .form-control {
+        border: none;
+        margin: 0;
+        padding: 10px 12px;
+        flex: 1;
+    }
+
     .info-card {
         background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-        border-radius: 12px;
+        border-radius: 8px;
         padding: 20px;
-        margin-top: 20px;
+        margin: 25px 0;
         border-left: 4px solid var(--primary-color);
     }
 
     .info-card h4 {
-        font-size: 16px;
+        font-size: 14px;
         font-weight: 600;
         margin: 0 0 10px 0;
         color: var(--text-primary);
@@ -326,33 +225,95 @@
     }
 
     .info-card p {
-        font-size: 14px;
+        font-size: 13px;
         color: var(--text-muted);
         margin: 0;
+        line-height: 1.6;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .btn {
+        padding: 10px 24px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #5a67d8 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .btn-outline {
+        background: white;
+        border: 2px solid var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .btn-outline:hover {
+        background: #f7fafc;
+        border-color: var(--primary-color);
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .badge.bg-info {
+        background: linear-gradient(135deg, rgba(79, 172, 254, 0.2) 0%, rgba(0, 242, 254, 0.2) 100%);
+        color: var(--info-color);
+    }
+
+    small {
+        display: block;
+        margin-top: 6px;
+        color: var(--text-muted);
+        font-size: 12px;
         line-height: 1.5;
     }
 
-    /* ================= PRICE INPUT STYLE ================= */
-    .price-container {
-        position: relative;
-    }
-
-    .price-display {
-        position: absolute;
-        right: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 12px;
+    .text-muted {
         color: var(--text-muted);
-        background: var(--light-color);
-        padding: 4px 8px;
-        border-radius: 6px;
-        border: 1px solid var(--border-color);
-        min-width: 100px;
-        text-align: right;
     }
 
-    /* ================= RESPONSIVE DESIGN ================= */
+    .is-invalid {
+        border-color: var(--danger-color) !important;
+        background: linear-gradient(135deg, rgba(255, 106, 0, 0.05) 0%, rgba(238, 9, 121, 0.05) 100%) !important;
+    }
+
+    .is-valid {
+        border-color: var(--success-color) !important;
+    }
+
     @media (max-width: 768px) {
         .page-wrapper {
             padding: 15px;
@@ -361,17 +322,15 @@
         .page-header {
             flex-direction: column;
             align-items: flex-start;
-            gap: 20px;
+            gap: 15px;
         }
 
         .form-grid {
             grid-template-columns: 1fr;
-            gap: 20px;
         }
 
         .time-group {
             grid-template-columns: 1fr;
-            gap: 15px;
         }
 
         .time-separator {
@@ -387,101 +346,6 @@
             justify-content: center;
         }
     }
-
-    @media (max-width: 576px) {
-        .page-title h1 {
-            font-size: 24px;
-        }
-
-        .page-title .icon-wrapper {
-            width: 40px;
-            height: 40px;
-            font-size: 18px;
-        }
-
-        .form-card {
-            padding: 20px;
-        }
-
-        .form-header h3 {
-            font-size: 18px;
-        }
-    }
-
-    /* ================= VALIDATION STYLES ================= */
-    .is-invalid {
-        border-color: var(--danger-color) !important;
-        background: linear-gradient(135deg, rgba(255, 106, 0, 0.05) 0%, rgba(238, 9, 121, 0.05) 100%) !important;
-    }
-
-    .invalid-feedback {
-        color: var(--danger-color);
-        font-size: 12px;
-        margin-top: 5px;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-
-    .is-valid {
-        border-color: var(--success-color) !important;
-        background: linear-gradient(135deg, rgba(67, 233, 123, 0.05) 0%, rgba(56, 249, 215, 0.05) 100%) !important;
-    }
-
-    /* ================= ANIMATIONS ================= */
-    @keyframes slideInUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes slideInLeft {
-        from { opacity: 0; transform: translateX(-20px); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-
-    /* ================= SLIDER STYLES ================= */
-    .slider-container {
-        margin-top: 10px;
-    }
-
-    .slider {
-        width: 100%;
-        height: 8px;
-        border-radius: 4px;
-        background: var(--border-color);
-        outline: none;
-        -webkit-appearance: none;
-        margin: 15px 0;
-    }
-
-    .slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background: var(--primary-color);
-        cursor: pointer;
-        border: 2px solid white;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-
-    .slider::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background: var(--primary-color);
-        cursor: pointer;
-        border: 2px solid white;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-
-    .slider-info {
-        display: flex;
-        justify-content: space-between;
-        font-size: 12px;
-        color: var(--text-muted);
-        margin-top: 5px;
-    }
 </style>
 @endpush
 
@@ -495,7 +359,7 @@
             </div>
             <div>
                 <h1>Tambah Jadwal Baru</h1>
-                <p class="text-muted" style="margin: 5px 0 0 0; font-size: 14px;">
+                <p class="text-muted">
                     Buat jadwal perjalanan shuttle yang bisa diambil oleh driver
                 </p>
             </div>
@@ -552,6 +416,20 @@
                     </div>
                 </div>
 
+                <!-- Assign Driver (Optional) -->
+                <div class="form-group">
+                    <label class="form-label">Tugaskan ke Driver <span class="badge bg-info">Opsional</span></label>
+                    <div class="select-wrapper">
+                        <select name="driver_id" id="driver_select" class="form-control">
+                            <option value="">-- Tidak Ditugaskan (Jadwal Global) --</option>
+                        </select>
+                    </div>
+                    <small>
+                        <i class="fas fa-info-circle"></i> <strong>Ditugaskan:</strong> Jadwal langsung aktif tanpa konfirmasi.
+                        <strong>Tidak ditugaskan:</strong> Jadwal global untuk driver MANUAL_CONFIRM.
+                    </small>
+                </div>
+
                 <!-- Tanggal Keberangkatan -->
                 <div class="form-group">
                     <label class="form-label">Tanggal Keberangkatan <span>*</span></label>
@@ -566,19 +444,13 @@
                         <div>
                             <input type="time" name="waktu_keberangkatan" class="form-control"
                                    value="{{ old('waktu_keberangkatan', '06:00') }}" required>
-                            <small style="display: block; margin-top: 5px; color: var(--text-muted); font-size: 12px;">
-                                Waktu Keberangkatan (bisa melewati tengah malam)
-                            </small>
+                            <small>Waktu Keberangkatan (bisa melewati tengah malam)</small>
                         </div>
-                        <div class="time-separator">
-                            →
-                        </div>
+                        <div class="time-separator">→</div>
                         <div>
                             <input type="time" name="waktu_kedatangan" class="form-control"
                                    value="{{ old('waktu_kedatangan', '09:00') }}" required>
-                            <small style="display: block; margin-top: 5px; color: var(--text-muted); font-size: 12px;">
-                                Waktu Kedatangan (contoh: 21:00 → 03:30)
-                            </small>
+                            <small>Waktu Kedatangan (contoh: 21:00 → 03:30)</small>
                         </div>
                     </div>
                 </div>
@@ -586,16 +458,12 @@
                 <!-- Harga dari Rute (Readonly) -->
                 <div class="form-group">
                     <label class="form-label">Harga <span>*</span></label>
-                    <div class="price-container">
-                        <div class="input-group">
-                            <div class="input-group-prepend">Rp</div>
-                            <input type="text" id="harga_display" class="form-control"
-                                   readonly placeholder="Harga akan otomatis terisi sesuai rute">
-                        </div>
-                        <small style="display: block; margin-top: 8px; color: var(--text-muted); font-size: 12px;">
-                            <i class="fas fa-info-circle"></i> Harga diambil otomatis dari harga dasar rute yang dipilih
-                        </small>
+                    <div class="input-group">
+                        <div class="input-group-prepend">Rp</div>
+                        <input type="text" id="harga_display" class="form-control"
+                               readonly placeholder="Harga akan otomatis terisi sesuai rute">
                     </div>
+                    <small><i class="fas fa-info-circle"></i> Harga diambil dari harga dasar rute yang dipilih</small>
                 </div>
 
                 <!-- Kapasitas Kursi -->
@@ -603,9 +471,7 @@
                     <label class="form-label">Total Kursi</label>
                     <input type="text" id="total_kursi_display" class="form-control" readonly
                            placeholder="Otomatis sesuai armada">
-                    <small style="display: block; margin-top: 5px; color: var(--text-muted); font-size: 12px;">
-                        Kapasitas kursi akan menyesuaikan armada yang dipilih
-                    </small>
+                    <small>Kapasitas kursi akan menyesuaikan armada yang dipilih</small>
                 </div>
             </div>
 
@@ -641,7 +507,7 @@
     const today = new Date().toISOString().split('T')[0];
     document.querySelector('input[name="tanggal_keberangkatan"]').min = today;
 
-    // Update total kursi display based on selected shuttle
+    // ★ Update total kursi display
     const shuttleSelect = document.querySelector('select[name="shuttle_id"]');
     const kursiDisplay = document.getElementById('total_kursi_display');
 
@@ -651,14 +517,14 @@
         if (kapasitas) {
             kursiDisplay.value = kapasitas + ' kursi';
         } else {
-            kursiDisplay.value = 'Belum memilih armada';
+            kursiDisplay.value = '';
         }
     }
 
     shuttleSelect.addEventListener('change', updateKursiDisplay);
-    updateKursiDisplay(); // Initial call
+    updateKursiDisplay();
 
-    // Format harga display
+    // ★ Format dan update harga
     const hargaDisplay = document.getElementById('harga_display');
     const ruteSelect = document.getElementById('rute_select');
 
@@ -681,48 +547,9 @@
     }
 
     ruteSelect.addEventListener('change', updateHargaDisplay);
-    updateHargaDisplay(); // Initial call
+    updateHargaDisplay();
 
-    // Form validation
-    const form = document.getElementById('jadwalForm');
-    form.addEventListener('submit', function(e) {
-        const ruteId = ruteSelect.value;
-
-        if (!ruteId) {
-            e.preventDefault();
-            alert('Silakan pilih rute terlebih dahulu!');
-            return false;
-        }
-
-        // Show loading state
-        const submitBtn = form.querySelector('button[type="submit"]');
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
-        submitBtn.disabled = true;
-
-        return true;
-    });
-
-    // Real-time validation
-    const inputs = form.querySelectorAll('input[required], select[required]');
-    inputs.forEach(input => {
-        input.addEventListener('blur', function() {
-            if (!this.value.trim()) {
-                this.classList.add('is-invalid');
-            } else {
-                this.classList.remove('is-invalid');
-                this.classList.add('is-valid');
-            }
-        });
-
-        input.addEventListener('input', function() {
-            if (this.value.trim()) {
-                this.classList.remove('is-invalid');
-                this.classList.add('is-valid');
-            }
-        });
-    });
-
-    // Auto-fill waktu_kedatangan based on selected rute duration and waktu_keberangkatan
+    // ★ Auto-compute arrival time berdasarkan rute duration
     const waktuBerangkatInput = document.querySelector('input[name="waktu_keberangkatan"]');
     const waktuKedatanganInput = document.querySelector('input[name="waktu_kedatangan"]');
 
@@ -743,7 +570,6 @@
         if (jamMatch) minutes += parseInt(jamMatch[1], 10) * 60;
         if (menitMatch) minutes += parseInt(menitMatch[1], 10);
 
-        // If still zero and numeric, assume minutes
         if (minutes === 0 && !isNaN(parseInt(duration, 10))) {
             minutes = parseInt(duration, 10);
         }
@@ -752,7 +578,7 @@
     }
 
     function computeArrivalTime() {
-        const dep = waktuBerangkatInput.value; // HH:MM
+        const dep = waktuBerangkatInput.value;
         if (!dep) return;
         const selected = ruteSelect.options[ruteSelect.selectedIndex];
         const dur = selected ? selected.getAttribute('data-durasi') : null;
@@ -764,17 +590,82 @@
         let m = parseInt(parts[1], 10);
         let total = h * 60 + m + durMinutes;
 
-        // wrap around 24h
         total = total % (24 * 60);
         const ah = Math.floor(total / 60).toString().padStart(2, '0');
         const am = (total % 60).toString().padStart(2, '0');
         waktuKedatanganInput.value = `${ah}:${am}`;
     }
 
-    // Recompute when departure changes or route changes
     waktuBerangkatInput.addEventListener('change', computeArrivalTime);
     ruteSelect.addEventListener('change', computeArrivalTime);
-    // initial compute
     computeArrivalTime();
+
+    // ★ Load drivers by rute via AJAX
+    const driverSelect = document.getElementById('driver_select');
+
+    async function loadDriversByRute() {
+        const ruteId = ruteSelect.value;
+
+        if (!ruteId) {
+            driverSelect.innerHTML = '<option value="">-- Tidak Ditugaskan (Jadwal Global) --</option>';
+            return;
+        }
+
+        try {
+            console.log('🔄 Loading drivers for rute_id:', ruteId);
+            const response = await fetch('{{ route("admin.jadwal.driversByRute") }}?rute_id=' + ruteId);
+            const data = await response.json();
+
+            console.log('📋 Response data:', data);
+
+            if (data.success) {
+                let optionsHtml = '<option value="">-- Tidak Ditugaskan (Jadwal Global) --</option>';
+
+                if (data.drivers && data.drivers.length > 0) {
+                    if (data.branch_name) {
+                        optionsHtml += `<option value="" disabled style="color: #666; font-weight: bold;">═══ Branch ${data.branch_name} (${data.drivers.length} driver) ═══</option>`;
+                    }
+
+                    data.drivers.forEach(driver => {
+                        optionsHtml += `<option value="${driver.id}">${driver.name} (${driver.email})</option>`;
+                    });
+
+                    console.log('✅ Loaded', data.drivers.length, 'drivers');
+                } else {
+                    optionsHtml = '<option value="">-- Tidak ada driver di cabang asal (pesan: ' + (data.message || 'tidak diketahui') + ') --</option>';
+                    console.warn('⚠️ No drivers found:', data.message);
+                }
+
+                driverSelect.innerHTML = optionsHtml;
+            } else {
+                driverSelect.innerHTML = '<option value="">-- Error: ' + (data.message || 'unknown error') + ' --</option>';
+                console.error('❌ Error loading drivers:', data.message);
+            }
+        } catch (error) {
+            console.error('❌ Exception loading drivers:', error);
+            driverSelect.innerHTML = '<option value="">-- Error loading drivers --</option>';
+        }
+    }
+
+    ruteSelect.addEventListener('change', loadDriversByRute);
+    loadDriversByRute();
+
+    // ★ Form validation
+    const form = document.getElementById('jadwalForm');
+    form.addEventListener('submit', function(e) {
+        const ruteId = ruteSelect.value;
+
+        if (!ruteId) {
+            e.preventDefault();
+            alert('Silakan pilih rute terlebih dahulu!');
+            return false;
+        }
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+        submitBtn.disabled = true;
+
+        return true;
+    });
 </script>
 @endpush

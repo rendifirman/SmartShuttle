@@ -16,6 +16,10 @@ use App\Models\Promo;
 use App\Models\Outlet;
 use App\Models\Artikel;
 use App\Models\MasterTarif;
+use App\Models\Pemesanan;
+use App\Models\Jadwal;
+use App\Models\DetailPenumpang;
+use App\Models\Transaksi;
 
 class AdminController extends Controller
 {
@@ -126,6 +130,14 @@ class AdminController extends Controller
     {
         $kontak = MMasterKontak::getDataKontak();
         return view('admin.kontakperusahaan', compact('kontak'));
+    }
+
+    /**
+     * Admin live view for driver locations (polling-based)
+     */
+    public function driverLocationsLive()
+    {
+        return view('admin.driver_locations_live');
     }
 
     /**
@@ -1012,7 +1024,24 @@ class AdminController extends Controller
 
     public function perjalanan()
     {
-        return view('admin.transaksi.perjalanan');
+        $pemesanan = Pemesanan::with([
+            'jadwal.shuttle',
+            'jadwal.rutes',
+            'user',
+            'detailPenumpang'
+        ])
+        ->paginate(15);
+
+        $rutes = Rute::all();
+        $customers = User::whereHas('roles', function($q) {
+            $q->where('name', 'customer');
+        })->get();
+
+        return view('admin.transaksi.perjalanan', [
+            'pemesanan' => $pemesanan,
+            'rutes' => $rutes,
+            'customers' => $customers
+        ]);
     }
 
     public function armadaTransaksi()
@@ -1112,7 +1141,7 @@ class AdminController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:20',
             'role' => 'required|in:admin_pusat,admin_cabang,operator,driver,customer',
-            'branch_id' => 'required_if:role,admin_cabang|exists:branches,id',
+            'branch_id' => 'required_if:role,admin_cabang,driver|exists:branches,id',
             'nik' => 'nullable|string|max:20',
             'tanggal_lahir' => 'nullable|date',
             'jenis_kelamin' => 'nullable|in:L,P',
@@ -1128,8 +1157,8 @@ class AdminController extends Controller
         $data['password'] = Hash::make($request->password);
         $data['username'] = $request->email; // Use email as username
 
-        // Set branch_id only for admin_cabang
-        if ($request->role === 'admin_cabang') {
+        // Set branch_id for admin_cabang and driver
+        if (in_array($request->role, ['admin_cabang', 'driver'])) {
             $data['branch_id'] = $request->branch_id;
         }
 

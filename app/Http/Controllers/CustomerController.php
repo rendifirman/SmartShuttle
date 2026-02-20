@@ -1658,7 +1658,7 @@ public function showSearch(Request $request)
         if ($appliedPromo) {
             $promo = Promo::find($appliedPromo['id']);
             if ($promo && $promo->is_aktif && $totalHarga >= $promo->minimal_pembelian) {
-                $diskon = $promo->hitungDiskon($totalHarga);
+                $diskon = $promo->calculateDiscount($totalHarga);
                 $totalAfterDiscount = $totalHarga - $diskon;
             } else {
                 session()->forget('applied_promo');

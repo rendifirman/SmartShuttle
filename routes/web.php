@@ -36,6 +36,7 @@ use App\Http\Controllers\DriverJadwalController;
 
 use App\Http\Middleware\UpdateAvatarSession;
 use App\Http\Controllers\Admin\KontakPerusahaanController;
+use App\Http\Controllers\Admin\AdminPemesananController;
 
 /*
 |--------------------------------------------------------------------------
@@ -333,6 +334,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         // Jadwal Routes
         Route::get('/jadwal', [JadwalController::class, 'index'])->name('jadwal.index');
         Route::get('/jadwal/create', [JadwalController::class, 'create'])->name('jadwal.create');
+        Route::get('/jadwal/drivers-by-rute', [JadwalController::class, 'getDriversByRute'])->name('jadwal.driversByRute');
         Route::post('/jadwal', [JadwalController::class, 'store'])->name('jadwal.store');
         Route::get('/jadwal/{id}/edit', [JadwalController::class, 'edit'])->name('jadwal.edit');
         Route::put('/jadwal/{id}', [JadwalController::class, 'update'])->name('jadwal.update');
@@ -514,6 +516,21 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::delete('/artikel/{id}', [AdminController::class, 'destroyArtikel'])
             ->middleware('permission:manage_artikel')
             ->name('artikel.destroy');
+
+        // ★★★ ADMIN PEMESANAN API ROUTES ★★★
+        Route::get('/api/jadwal', [AdminPemesananController::class, 'getJadwal'])
+            ->middleware('permission:view_perjalanan_transaksi')
+            ->name('api.jadwal');
+        Route::get('/api/promo/validate', [AdminPemesananController::class, 'validatePromo'])
+            ->middleware('permission:view_perjalanan_transaksi')
+            ->name('api.promo.validate');
+        Route::post('/api/pemesanan/create', [AdminPemesananController::class, 'createPemesanan'])
+            ->middleware('permission:manage_perjalanan_transaksi')
+            ->name('api.pemesanan.create');
+        Route::delete('/api/pemesanan/{id}', [AdminPemesananController::class, 'deletePemesanan'])
+            ->middleware('permission:manage_perjalanan_transaksi')
+            ->name('api.pemesanan.delete');
+
     }); // Close admin.role middleware group
 
     // Logout Route (outside admin.role middleware)
@@ -531,7 +548,9 @@ Route::middleware(['auth:driver'])->prefix('driver')->name('driver.')->group(fun
     Route::get('/perjalanan', [DriverController::class, 'perjalanan'])->name('perjalanan');
     Route::get('/profile', [DriverController::class, 'profile'])->name('profile');
     Route::get('/profile/edit', [DriverController::class, 'profileEdit'])->name('profile.edit');
+    Route::post('/profile/update', [DriverController::class, 'updateProfile'])->name('profile.update');
     Route::get('/pengaturan', [DriverController::class, 'pengaturan'])->name('pengaturan');
+    Route::post('/pengaturan/update-schedule-accept-mode', [DriverController::class, 'updateScheduleAcceptMode'])->name('pengaturan.update-schedule-accept-mode');
     Route::get('/bantuan', [DriverController::class, 'bantuan'])->name('bantuan');
 
     // ★★★ ROUTES DRIVER JADWAL (FROM PROMPT) - Menggunakan DriverJadwalController ★★★
@@ -624,6 +643,20 @@ Route::prefix('api')->group(function () {
     Route::post('/validasi-kursi', [KursiController::class, 'validasiKursiAPI']);
     Route::get('/kursi-tersedia/{jadwalId}', [KursiController::class, 'getKursiTersediaAPI']);
     Route::post('/kursi-validate', [KursiController::class, 'validateSeatsAPI']);
+
+    // Driver location API (driver updates location during trip)
+    Route::post('/driver/location', [\App\Http\Controllers\API\DriverLocationController::class, 'updateLocation'])
+        ->name('api.driver.location.update');
+
+    Route::get('/driver/location/{driverId}/{tripId}/latest', [\App\Http\Controllers\API\DriverLocationController::class, 'getLatestLocation'])
+        ->name('api.driver.location.latest');
+
+    Route::get('/driver/location/{driverId}/{tripId}/all', [\App\Http\Controllers\API\DriverLocationController::class, 'getTripLocations'])
+        ->name('api.driver.location.trip.locations');
+
+    // Get active driver locations (for admin dashboard polling)
+    Route::get('/driver/locations/active', [\App\Http\Controllers\API\DriverLocationController::class, 'getActiveDriverLocations'])
+        ->name('api.driver.location.active');
 });
 
 // ★★★ ROUTE DEBUG (UNTUK TESTING) ★★★

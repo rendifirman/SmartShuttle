@@ -434,7 +434,7 @@
                     @error('branch_id')
                         <small class="text-danger">{{ $message }}</small>
                     @enderror
-                    <small>Field ini wajib diisi untuk role Admin Cabang</small>
+                    <small>Field ini wajib diisi untuk role Admin Cabang dan Driver</small>
                 </div>
                 <div class="form-group">
                     <!-- Spacer untuk menjaga grid -->
@@ -788,7 +788,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const branchSelect = document.getElementById('branch_id');
 
     function toggleBranchField() {
-        if (roleSelect.value === 'admin_cabang') {
+        // Tampilkan branch field untuk admin_cabang dan driver
+        if (['admin_cabang', 'driver'].includes(roleSelect.value)) {
             branchField.style.display = 'grid';
             branchSelect.setAttribute('required', 'required');
         } else {
@@ -972,7 +973,7 @@ function resetForm() {
         const branchSelect = document.getElementById('branch_id');
         const permissionsSection = document.getElementById('permissionsSection');
 
-        if (roleSelect.value === 'admin_cabang') {
+        if (['admin_cabang', 'driver'].includes(roleSelect.value)) {
             branchField.style.display = 'grid';
             branchSelect.setAttribute('required', 'required');
         } else {

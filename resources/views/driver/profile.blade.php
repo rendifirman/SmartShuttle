@@ -1,5 +1,3 @@
-profile 
-
 @extends('layouts.app-driver')
 
 @section('title', 'Profile Driver - Smart Shuttle')
@@ -67,6 +65,7 @@ profile
         cursor: pointer;
         font-size: 12px;
         transition: all 0.3s ease;
+        text-decoration: none;
     }
 
     .edit-profile-btn:hover {
@@ -112,23 +111,43 @@ profile
         display: block;
         margin-bottom: 8px;
         width: 100%;
+        font-weight: 500;
     }
 
-    .form-group input {
+    .form-group input,
+    .form-group textarea {
         width: 100%;
         margin-top: 6px;
         padding: 12px;
         border-radius: 8px;
-        border: none;
+        border: 1px solid #ddd;
         font-size: 15px;
         background: white;
         box-sizing: border-box;
         transition: all 0.3s ease;
+        color: #333;
     }
 
-    .form-group input:focus {
+    .form-group input:focus,
+    .form-group textarea:focus {
         outline: none;
         box-shadow: 0 0 0 2px #ff6a00;
+        border-color: #ff6a00;
+    }
+
+    .form-group input[readonly] {
+        background: #e9ecef;
+        cursor: not-allowed;
+        color: #666;
+    }
+
+    .missing-data {
+        background: #fff3cd;
+        color: #856404;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        margin-top: 4px;
     }
 
     .upload-section {
@@ -144,7 +163,7 @@ profile
         text-align: center;
         font-size: 14px;
         cursor: pointer;
-        border: 1px dashed #ddd;
+        border: 2px dashed #ddd;
         width: 100%;
         box-sizing: border-box;
         position: relative;
@@ -193,9 +212,23 @@ profile
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
-    input[readonly] {
-        background: #e9ecef;
-        cursor: not-allowed;
+    .existing-file {
+        margin-top: 8px;
+        padding: 8px 12px;
+        background: #e8f5e9;
+        border-radius: 4px;
+        font-size: 12px;
+        color: #2e7d32;
+    }
+
+    .existing-file a {
+        color: #1976d2;
+        text-decoration: none;
+        margin-left: 8px;
+    }
+
+    .existing-file a:hover {
+        text-decoration: underline;
     }
 
     /* Responsif untuk profile */
@@ -203,7 +236,7 @@ profile
         .form-grid {
             gap: 30px;
         }
-        
+
         .form-group {
             width: 90%;
         }
@@ -213,22 +246,22 @@ profile
         .profile-card {
             padding: 25px;
         }
-        
+
         .profile-header {
             flex-direction: column;
             text-align: center;
             gap: 20px;
         }
-        
+
         .form-grid {
             grid-template-columns: 1fr;
             gap: 20px;
         }
-        
+
         .form-group {
             width: 100%;
         }
-        
+
         .profile-id-section {
             justify-content: center;
         }
@@ -238,38 +271,79 @@ profile
         .profile-card {
             padding: 20px;
         }
-        
+
         .profile-photo img {
             width: 100px;
             height: 100px;
         }
-        
+
         .profile-info h2 {
             font-size: 20px;
         }
+    }
+
+    .alert {
+        padding: 12px 16px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .alert-warning {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
     }
 </style>
 @endpush
 
 @section('content')
 
-
 <h2>Profile Driver</h2>
 <hr>
+
+@if ($errors->any())
+    <div class="alert alert-warning">
+        <strong>Kesalahan:</strong>
+        <ul style="margin: 5px 0 0 20px;">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+@if (session('success'))
+    <div class="alert alert-success">
+        {{ session('success') }}
+    </div>
+@endif
 
 <div class="profile-card">
     <!-- PROFILE HEADER DENGAN FOTO DI SAMPING -->
     <div class="profile-header">
         <div class="profile-photo">
-            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile Photo">
+            @if ($driver->photo_file && Storage::disk('public')->exists($driver->photo_file))
+                <img src="{{ Storage::url($driver->photo_file) }}" alt="Foto Profil">
+            @else
+                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Foto Profil Default">
+            @endif
         </div>
         <div class="profile-info">
-            <h2>Dimas Mahendra</h2>
+            <h2>{{ $driver->name }}</h2>
             <div class="profile-id-section">
-                <div class="profile-id">ID Pengemudi: DRV-2023-001</div>
-                <a href="{{ route('driver.profile-edit') }}" class="edit-profile-btn">Edit Profile</a>
+                <div class="profile-id">ID Pengemudi: {{ $driver->id_pengemudi ?? 'Belum ada' }}</div>
+                <a href="{{ route('driver.profile.edit') }}" class="edit-profile-btn">Edit Profile</a>
             </div>
-            <div class="profile-status">Aktif</div>
+            <div class="profile-status">{{ ucfirst($driver->status) }}</div>
+            <div class="profile-id" style="font-size: 13px; margin-top: 8px;">
+                Bergabung: {{ $driver->created_at->format('d F Y') }}
+            </div>
         </div>
     </div>
 
@@ -278,33 +352,40 @@ profile
         <div class="form-column">
             <div class="form-group">
                 <label>Nama Lengkap</label>
-                <input type="text" value="Dimas Mahendra" readonly class="cursor-not-allowed bg-gray-200">
+                <input type="text" value="{{ $driver->name }}" readonly>
             </div>
 
             <div class="form-group">
                 <label>Email</label>
-                <input type="text" value="dimas.pratama.driver@gmail.com" readonly class="cursor-not-allowed bg-gray-200">
+                <input type="text" value="{{ $driver->email }}" readonly>
             </div>
 
             <div class="form-group">
                 <label>Nomor Telepon</label>
-                <input type="text" value="0812-7788-3344" readonly class="cursor-not-allowed bg-gray-200">
+                <input type="text" value="{{ $driver->phone ?? 'Belum diisi' }}" readonly>
+                @if (!$driver->phone)
+                    <div class="missing-data">⚠️ Data belum dilengkapi</div>
+                @endif
             </div>
 
             <div class="form-group">
                 <label>NIK (16 digit)</label>
-                <input type="text" value="3201152206970004" readonly class="cursor-not-allowed bg-gray-200">
+                <input type="text" value="{{ $driver->nik ?? 'Belum diisi' }}" readonly>
+                @if (!$driver->nik)
+                    <div class="missing-data">⚠️ Data belum dilengkapi</div>
+                @endif
             </div>
 
             <div class="form-group">
                 <label>Upload KTP<br><small>.JPG/PNG Max 5MB</small></label>
-                <div class="upload-section">
-                    <div class="upload-box" id="ktpUploadBox">
-                        <span>Upload File</span>
-                        <input type="file" class="file-input" id="ktpInput" accept=".jpg,.jpeg,.png" onchange="handleFileUpload(this, 'ktpFileName')">
+                @if ($driver->ktp_file && Storage::disk('public')->exists($driver->ktp_file))
+                    <div class="existing-file">
+                        ✓ File sudah diupload
+                        <a href="{{ Storage::url($driver->ktp_file) }}" target="_blank">Lihat File</a>
                     </div>
-                    <div class="file-name" id="ktpFileName"></div>
-                </div>
+                @else
+                    <div class="missing-data">⚠️ Belum ada file KTP</div>
+                @endif
             </div>
         </div>
 
@@ -312,136 +393,55 @@ profile
         <div class="form-column">
             <div class="form-group">
                 <label>Tanggal Bergabung</label>
-                <input type="text" value="12 Januari 2023" readonly class="cursor-not-allowed bg-gray-200">
+                <input type="text" value="{{ $driver->created_at->format('d F Y') }}" readonly>
             </div>
 
             <div class="form-group">
                 <label>ID Pengemudi</label>
-                <input type="text" value="DRV-2023-001" readonly class="cursor-not-allowed bg-gray-200">
+                <input type="text" value="{{ $driver->id_pengemudi ?? 'Akan dibuat otomatis' }}" readonly>
             </div>
 
             <div class="form-group">
                 <label>Nomor SIM</label>
-                <input type="text" value="A9876543210" readonly class="cursor-not-allowed bg-gray-200">
+                <input type="text" value="{{ $driver->nomor_sim ?? 'Belum diisi' }}" readonly>
+                @if (!$driver->nomor_sim)
+                    <div class="missing-data">⚠️ Data belum dilengkapi</div>
+                @endif
             </div>
 
             <div class="form-group">
                 <label>Masa Berlaku SIM</label>
-                <input type="text" value="12 Januari 2027" readonly class="cursor-not-allowed bg-gray-200">
+                <input type="text" value="{{ $driver->masa_berlaku_sim ? $driver->masa_berlaku_sim->format('d F Y') : 'Belum diisi' }}" readonly>
+                @if (!$driver->masa_berlaku_sim)
+                    <div class="missing-data">⚠️ Data belum dilengkapi</div>
+                @endif
             </div>
 
             <div class="form-group">
                 <label>Upload SIM<br><small>.JPG/PNG Max 5MB</small></label>
-                <div class="upload-section">
-                    <div class="upload-box" id="simUploadBox">
-                        <span>Upload File</span>
-                        <input type="file" class="file-input" id="simInput" accept=".jpg,.jpeg,.png" onchange="handleFileUpload(this, 'simFileName')">
+                @if ($driver->sim_file && Storage::disk('public')->exists($driver->sim_file))
+                    <div class="existing-file">
+                        ✓ File sudah diupload
+                        <a href="{{ Storage::url($driver->sim_file) }}" target="_blank">Lihat File</a>
                     </div>
-                    <div class="file-name" id="simFileName"></div>
-                </div>
+                @else
+                    <div class="missing-data">⚠️ Belum ada file SIM</div>
+                @endif
             </div>
         </div>
     </div>
 </div>
+
 @endsection
 
 @push('scripts')
 <script>
-    function handleFileUpload(input, fileNameId) {
-            const file = input.files[0];
-            const fileNameElement = document.getElementById(fileNameId);
-            
-            if (file) {
-                // Validasi ukuran file (max 5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('Ukuran file terlalu besar! Maksimal 5MB.');
-                    input.value = '';
-                    return;
-                }
-                
-                // Validasi tipe file
-                const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-                if (!validTypes.includes(file.type)) {
-                    alert('Format file tidak didukung! Hanya JPG/PNG yang diperbolehkan.');
-                    input.value = '';
-                    return;
-                }
-                
-                // Tampilkan nama file
-                fileNameElement.textContent = File terpilih: ${file.name};
-                fileNameElement.style.display = 'block';
-                
-                // Ubah tampilan upload box
-                const uploadBox = input.parentElement;
-                uploadBox.style.backgroundColor = '#e8f5e8';
-                uploadBox.style.borderColor = '#2ecc71';
-                uploadBox.querySelector('span').textContent = 'File Terpilih';
-                uploadBox.querySelector('span').style.color = '#2ecc71';
-            }
+    // Notifikasi jika ada data yang belum dilengkapi
+    document.addEventListener('DOMContentLoaded', function() {
+        const missingDataElements = document.querySelectorAll('.missing-data');
+        if (missingDataElements.length > 0) {
+            console.log('Data yang belum dilengkapi:', missingDataElements.length, 'field(s)');
         }
-
-    function saveChanges() {
-        const ktpFile = document.getElementById('ktpInput').files[0];
-        const simFile = document.getElementById('simInput').files[0];
-        
-        // Validasi jika file sudah dipilih
-        if (ktpFile || simFile) {
-            alert('Perubahan berhasil disimpan!');
-            
-            // Reset form (opsional)
-            document.getElementById('ktpInput').value = '';
-            document.getElementById('simInput').value = '';
-            
-            // Reset tampilan upload box
-            resetUploadBox('ktpUploadBox');
-            resetUploadBox('simUploadBox');
-            
-            // Sembunyikan nama file
-            document.getElementById('ktpFileName').style.display = 'none';
-            document.getElementById('simFileName').style.display = 'none';
-        } else {
-            alert('Perubahan berhasil disimpan!');
-        }
-    }
-
-    function resetUploadBox(boxId) {
-        const uploadBox = document.getElementById(boxId);
-        uploadBox.style.backgroundColor = 'white';
-        uploadBox.style.borderColor = '#ddd';
-        uploadBox.querySelector('span').textContent = 'Upload File';
-        uploadBox.querySelector('span').style.color = 'black';
-    }
-
-    // Optional: Drag and drop functionality
-    document.querySelectorAll('.upload-box').forEach(box => {
-        box.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            this.style.backgroundColor = '#f0f8ff';
-            this.style.borderColor = '#0d3559';
-        });
-        
-        box.addEventListener('dragleave', function(e) {
-            e.preventDefault();
-            this.style.backgroundColor = 'white';
-            this.style.borderColor = '#ddd';
-        });
-        
-        box.addEventListener('drop', function(e) {
-            e.preventDefault();
-            const input = this.querySelector('.file-input');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                input.files = files;
-                const fileNameId = input.id === 'ktpInput' ? 'ktpFileName' : 'simFileName';
-                handleFileUpload(input, fileNameId);
-            }
-        });
-    });
-
-    // Fungsi untuk edit profile
-    document.querySelector('.edit-profile-btn').addEventListener('click', function() {
-        alert('Fitur edit profile akan membuka form edit lengkap');
-        // Di sini bisa ditambahkan logika untuk membuka modal atau form edit
     });
 </script>
 @endpush
