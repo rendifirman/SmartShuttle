@@ -417,7 +417,7 @@ class CustomerController extends Controller
             $penumpangParam = (int) $request->get('penumpang', 1);
 
             // ★★★ GET FLOW MODE FOR FLOW MODE-BASED FILTERING ★★★
-            $flowMode = appSetting('jadwal_flow_mode', 'driver_confirmation');
+            $flowMode = \appSetting('jadwal_flow_mode', 'driver_confirmation');
 
             // Build query depending on flow mode
             if ($flowMode === 'driver_confirmation') {

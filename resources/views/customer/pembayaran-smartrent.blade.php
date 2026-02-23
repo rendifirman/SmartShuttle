@@ -969,7 +969,7 @@
                 <i class="fas fa-info-circle" style="margin-right:8px;"></i> Pilih metode pembayaran yang Anda inginkan, kemudian klik "Konfirmasi Pembayaran"
             </div>
 
-            <form action="{{ route('smartrent.payment.process') }}" method="POST" id="paymentForm">
+            <form action="{{ route('smartrent.process.payment') }}" method="POST" id="paymentForm">
                 @csrf
                 <input type="hidden" name="order_id" value="{{ isset($order_id) ? $order_id : '' }}">
                 <input type="hidden" name="order_number" value="{{ isset($order_number) ? $order_number : 'SR2026021230D448' }}">

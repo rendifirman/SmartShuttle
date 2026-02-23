@@ -571,7 +571,7 @@
         <!-- ACTION BUTTONS -->
         <div class="action-buttons">
             <!-- PERBAIKAN: Kembali ke detail kendaraan -->
-            <a href="{{ route('customer.smartrent-detail', $checkout['vehicle_id'] ?? 1) }}" class="btn-back">
+            <a href="{{ route('smartrent.detail', $checkout['vehicle_id'] ?? 1) }}" class="btn-back">
                 <i class="fas fa-arrow-left"></i>
                 Kembali ke Detail
             </a>

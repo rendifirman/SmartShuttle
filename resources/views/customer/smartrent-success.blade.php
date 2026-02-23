@@ -474,11 +474,11 @@
                 {{-- Kolom KIRI --}}
                 <div class="detail-item">
                     <span class="detail-label">Tanggal Mulai Sewa</span>
-                    <span class="detail-value">12-02-2026</span>
+                    <span class="detail-value">{{ $rent_date ?? '12-02-2026' }}</span>
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Lokasi/Outlet</span>
-                    <span class="detail-value">Jakarta</span>
+                    <span class="detail-value">{{ $customer_info['city'] ?? 'Jakarta' }}</span>
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Jam Mulai</span>
@@ -510,11 +510,11 @@
                 {{-- Baris 5 - Armada & No. Pesanan --}}
                 <div class="detail-item">
                     <span class="detail-label">Armada</span>
-                    <span class="detail-value">Isuzu Elf Long</span>
+                    <span class="detail-value">{{ $vehicle_name ?? 'Isuzu Elf Long' }}</span>
                 </div>
                 <div class="order-number-grid">
                     <span class="detail-label">No. Pesanan</span>
-                    <span class="detail-value">SR2026021229B558</span>
+                    <span class="detail-value">{{ $order_number ?? 'SR2026021229B558' }}</span>
                 </div>
             </div>
 
@@ -532,7 +532,7 @@
                     </div>
                     <div class="payment-method-detail">
                         <span class="payment-method-label">Metode Pembayaran</span>
-                        <span class="payment-method-name">BCA Virtual Account</span>
+                        <span class="payment-method-name">{{ strtoupper(str_replace('_', ' ', $payment_method ?? 'BCA Virtual Account')) }}</span>
                     </div>
                 </div>
                 <div class="payment-date-section">
@@ -541,7 +541,7 @@
                     </div>
                     <div class="payment-date-detail">
                         <span class="payment-date-label">Tanggal Pembayaran</span>
-                        <span class="payment-date-value">12/02/2026 09:08 WIB</span>
+                        <span class="payment-date-value">{{ session('smartrent_payment.payment_date') ?? now()->format('d/m/Y H:i') . ' WIB' }}</span>
                     </div>
                 </div>
             </div>
@@ -559,15 +559,15 @@
                 <div class="customer-info-grid">
                     <div class="customer-info-item">
                         <span class="customer-info-label">Nama Lengkap</span>
-                        <span class="customer-info-value">Haryantie Chinta Dewi</span>
+                        <span class="customer-info-value">{{ $customer_info['full_name'] ?? 'Nama Pemesan' }}</span>
                     </div>
                     <div class="customer-info-item">
                         <span class="customer-info-label">Nomor Telepon</span>
-                        <span class="customer-info-value">0895 4128 8286</span>
+                        <span class="customer-info-value">{{ $customer_info['phone'] ?? '-' }}</span>
                     </div>
                     <div class="customer-info-item full-width">
                         <span class="customer-info-label">Email</span>
-                        <span class="customer-info-value">haryantiechintadewi@gmail.com</span>
+                        <span class="customer-info-value">{{ $customer_info['email'] ?? '-' }}</span>
                     </div>
                 </div>
             </div>
@@ -588,9 +588,9 @@
 
             {{-- ===== TOMBOL KEMBALI KE BERANDA ===== --}}
             <div class="button-group">
-                <a href="{{ route('customer.smartrent') }}" class="btn-primary">
-                    <i class="fas fa-home"></i> Kembali ke Beranda
-                </a>
+                    <a href="{{ route('customer.riwayat') }}" class="btn-primary">
+                        <i class="fas fa-history"></i> Lihat Riwayat Pembayaran
+                    </a>
             </div>
         </div>
     </div>

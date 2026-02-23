@@ -1051,7 +1051,7 @@
                             Sewa Mobil
                         </button>
          {{-- Atau gunakan alias --}}
-<button class="btn-detail" onclick="window.location.href='{{ route('customer.smartrent-detail', ['id' => $vehicle['id']]) }}'">
+<button class="btn-detail" onclick="window.location.href='{{ route('smartrent.detail', ['id' => $vehicle['id']]) }}'">
     <i class="fas fa-info-circle"></i>
     Detail
 </button>

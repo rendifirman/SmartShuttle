@@ -1134,6 +1134,9 @@ Route::middleware(['web'])->prefix('smartrent')->name('smartrent.')->group(funct
     // Halaman konfirmasi
     Route::get('/confirmation', [SmartRentController::class, 'confirmation'])->name('confirmation');
 
+    // Halaman sukses pembayaran (PRG target)
+    Route::get('/success', [SmartRentController::class, 'success'])->name('success');
+
     // Form checkout (GET)
     Route::get('/smartrent/checkout', [SmartRentController::class, 'showCheckoutForm'])->name('checkout.form');
 
