@@ -296,7 +296,7 @@
     <!-- Top Profile untuk konten utama -->
     <div class="top-profile">
         <i class="fas fa-user-circle"></i>
-        <span>Dimas Mahendra</span>
+        <span>{{ auth()->guard('driver')->user()?->name ?? 'Driver' }}</span>
     </div>
 
     <!-- HEADER SECTION -->

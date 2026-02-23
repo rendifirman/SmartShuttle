@@ -336,6 +336,22 @@
         color: var(--status-almost-text);
     }
 
+    /* Driver status badges (align with driver view) */
+    .status-selesai {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-proses {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-batal {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
     /* Seat indicator */
     .seat-indicator {
         display: inline-flex;
@@ -602,6 +618,7 @@
                     <th>Harga</th>
                     <th>Kursi</th>
                     <th>Status</th>
+                    <th>Lokasi Terakhir</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -615,24 +632,57 @@
                             $dj = $jadwal->driverJadwal;
                             $totalKursi = $dj->total_kursi ?? $shuttleCapacity;
                             $kursiTerisi = $dj->kursi_terisi ?? ($totalKursi - $jadwal->kursi_tersedia);
-                            // status dari driver jadwal jika tersedia
-                            $statusSource = $dj->status ?? $jadwal->status;
+                            $statusDriverRaw = $dj->status ?? null;
+                            $statusFallbackSource = $jadwal->status;
+
+                            // Ambil lokasi terakhir driver
+                            $lastLocation = \App\Models\DriverLocation::where('id_jadwal_driver', $dj->id_jadwal_driver)
+                                ->latest('created_at')
+                                ->first();
                         } else {
                             $totalKursi = $shuttleCapacity;
                             $kursiTerisi = $totalKursi - $jadwal->kursi_tersedia;
-                            $statusSource = $jadwal->status;
+                            $statusDriverRaw = null;
+                            $statusFallbackSource = $jadwal->status;
+                            $lastLocation = null;
                         }
 
                         // Tentukan status tampilan (mengutamakan status dari driver jadwal jika ada)
-                        if ($statusSource == 'penuh' || ($totalKursi > 0 && $kursiTerisi >= $totalKursi) || ($jadwal->kursi_tersedia !== null && $jadwal->kursi_tersedia <= 0 && empty($jadwal->driverJadwal))) {
-                            $statusTampilan = 'penuh';
-                            $statusClass = 'status-penuh';
-                        } elseif ($totalKursi > 0 && (($totalKursi - $kursiTerisi) / $totalKursi) <= 0.2) {
-                            $statusTampilan = 'hampir penuh';
-                            $statusClass = 'status-hampir-penuh';
+                        if (!empty($statusDriverRaw)) {
+                            if ($statusDriverRaw == 'selesai') {
+                                $statusTampilan = 'selesai';
+                                $statusClass = 'status-selesai';
+                            } elseif ($statusDriverRaw == 'aktif' || $statusDriverRaw == 'dalam_perjalanan') {
+                                $statusTampilan = 'dalam proses';
+                                $statusClass = 'status-proses';
+                            } elseif ($statusDriverRaw == 'dibatalkan') {
+                                $statusTampilan = 'dibatalkan';
+                                $statusClass = 'status-batal';
+                            } else {
+                                // Unknown driver status: fall back to seat-based logic
+                                if ($statusFallbackSource == 'penuh' || ($totalKursi > 0 && $kursiTerisi >= $totalKursi) || ($jadwal->kursi_tersedia !== null && $jadwal->kursi_tersedia <= 0 && empty($jadwal->driverJadwal))) {
+                                    $statusTampilan = 'penuh';
+                                    $statusClass = 'status-penuh';
+                                } elseif ($totalKursi > 0 && (($totalKursi - $kursiTerisi) / $totalKursi) <= 0.2) {
+                                    $statusTampilan = 'hampir penuh';
+                                    $statusClass = 'status-hampir-penuh';
+                                } else {
+                                    $statusTampilan = 'tersedia';
+                                    $statusClass = 'status-tersedia';
+                                }
+                            }
                         } else {
-                            $statusTampilan = 'tersedia';
-                            $statusClass = 'status-tersedia';
+                            // Seat-based mapping as before
+                            if ($statusFallbackSource == 'penuh' || ($totalKursi > 0 && $kursiTerisi >= $totalKursi) || ($jadwal->kursi_tersedia !== null && $jadwal->kursi_tersedia <= 0 && empty($jadwal->driverJadwal))) {
+                                $statusTampilan = 'penuh';
+                                $statusClass = 'status-penuh';
+                            } elseif ($totalKursi > 0 && (($totalKursi - $kursiTerisi) / $totalKursi) <= 0.2) {
+                                $statusTampilan = 'hampir penuh';
+                                $statusClass = 'status-hampir-penuh';
+                            } else {
+                                $statusTampilan = 'tersedia';
+                                $statusClass = 'status-tersedia';
+                            }
                         }
                         @endphp
                     <tr>
@@ -675,6 +725,23 @@
                             </span>
                         </td>
                         <td>
+                            @if($lastLocation)
+                                <div style="font-size: 13px;">
+                                    <div style="font-weight: 600; color: var(--primary-color);">
+                                        📍 {{ $lastLocation->location_name }}
+                                    </div>
+                                    <div style="color: var(--text-muted); font-size: 12px; margin-top: 3px;">
+                                        {{ $lastLocation->location_detail ? $lastLocation->location_detail : '-' }}
+                                    </div>
+                                    <div style="color: var(--info-color); font-size: 11px; margin-top: 2px;">
+                                        {{ $lastLocation->created_at ? $lastLocation->created_at->diffForHumans() : '' }}
+                                    </div>
+                                </div>
+                            @else
+                                <span style="color: var(--text-muted);">-</span>
+                            @endif
+                        </td>
+                        <td>
                             <div style="display: flex; gap: 5px;">
                                 <a href="{{ route('admin.jadwal.penumpang', $jadwal->id) }}" class="btn-action btn-view" title="Lihat Penumpang">
                                     <i class="fas fa-users"></i> Penumpang
@@ -694,7 +761,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="11" class="text-center" style="padding: 40px;">
+                        <td colspan="12" class="text-center" style="padding: 40px;">
                             <p style="color: var(--text-muted);">Tidak ada data jadwal.</p>
                         </td>
                     </tr>

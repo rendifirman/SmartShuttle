@@ -12,6 +12,99 @@
         --text-dark: #333333;
     }
 
+    /* ================= FILTER BAR ================= */
+    .filter-bar {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: center;
+    }
+
+    .filter-bar label {
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .filter-bar select {
+        padding: 8px 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        color: var(--text-dark);
+        background: white;
+        cursor: pointer;
+    }
+
+    .filter-bar select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+
+    .filter-btn {
+        padding: 8px 20px;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+
+    .filter-btn:hover {
+        background: #1a4a7a;
+    }
+
+    /* ================= STATS CARDS ================= */
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+
+    .stat-card h5 {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .stat-card .value {
+        font-size: 28px;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+
+    .stat-card.perjalanan {
+        border-left: 4px solid var(--primary-color);
+    }
+
+    .stat-card.penumpang {
+        border-left: 4px solid #28a745;
+    }
+
+    .stat-card.paket {
+        border-left: 4px solid var(--secondary-color);
+    }
+
+    .stat-card.selesai {
+        border-left: 4px solid #17a2b8;
+    }
+
     /* ================= TAB MENU ================= */
     .tab-wrapper {
         background: var(--primary-color);
@@ -44,7 +137,7 @@
         background: var(--secondary-color);
     }
 
-    .add-btn {
+    .download-btn {
         margin-left: auto;
         background: white;
         color: black;
@@ -54,9 +147,12 @@
         border: 2px solid var(--secondary-color);
         font-weight: 600;
         transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    .add-btn:hover {
+    .download-btn:hover {
         background: var(--secondary-color);
         color: white;
     }
@@ -141,6 +237,19 @@
         display: table-row;
     }
 
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        color: #ddd;
+        margin-bottom: 15px;
+    }
+
     /* Pagination */
     .pagination {
         display: flex;
@@ -175,14 +284,28 @@
             gap: 10px;
         }
 
+        .filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .filter-bar select {
+            width: 100%;
+        }
+
+        .stats-container {
+            grid-template-columns: 1fr 1fr;
+        }
+
         table {
             display: block;
             overflow-x: auto;
         }
 
-        .add-btn {
+        .download-btn {
             margin-left: 0;
             width: 100%;
+            justify-content: center;
         }
     }
 
@@ -192,9 +315,13 @@
             font-size: 13px;
         }
 
-        .add-btn {
+        .download-btn {
             padding: 8px 15px;
             font-size: 13px;
+        }
+
+        .stats-container {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -205,19 +332,70 @@
 <h2>Laporan Driver</h2>
 <hr>
 
+<!-- FILTER BAR -->
+<form method="GET" action="{{ route('driver.laporan') }}" class="filter-bar">
+    <div>
+        <label for="bulan">Bulan:</label>
+        <select name="bulan" id="bulan">
+            @foreach($availableMonths as $month)
+                <option value="{{ $month['bulan'] }}" {{ $bulan == $month['bulan'] ? 'selected' : '' }}>
+                    {{ $month['label'] }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+    <div>
+        <label for="tahun">Tahun:</label>
+        <select name="tahun" id="tahun">
+            @php
+                $years = range(date('Y'), date('Y') - 5);
+            @endphp
+            @foreach($years as $year)
+                <option value="{{ $year }}" {{ $tahun == $year ? 'selected' : '' }}>
+                    {{ $year }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+    <button type="submit" class="filter-btn">Filter</button>
+</form>
+
+<!-- STATS CARDS -->
+<div class="stats-container">
+    <div class="stat-card perjalanan">
+        <h5>Total Perjalanan</h5>
+        <div class="value">{{ $totalPerjalanan ?? 0 }}</div>
+    </div>
+    <div class="stat-card penumpang">
+        <h5>Total Penumpang</h5>
+        <div class="value">{{ $totalPenumpang ?? 0 }}</div>
+    </div>
+    <div class="stat-card paket">
+        <h5>Total Paket</h5>
+        <div class="value">{{ $totalPaket ?? 0 }}</div>
+    </div>
+    <div class="stat-card selesai">
+        <h5>Selesai</h5>
+        <div class="value">{{ $totalSelesai ?? 0 }}</div>
+    </div>
+</div>
+
 <!-- TAB MENU -->
 <div class="tab-wrapper">
     <button class="tab-btn tab-active" data-filter="semua">Semua</button>
     <button class="tab-btn" data-filter="perjalanan">Perjalanan</button>
     <button class="tab-btn" data-filter="paket">Paket</button>
     <button class="tab-btn" data-filter="armada">Armada</button>
-    <button class="add-btn"><i class="fas fa-download"></i> Unduh Laporan</button>
+    <button class="download-btn" onclick="downloadLaporan()">
+        <i class="fas fa-download"></i> Unduh Laporan
+    </button>
 </div>
 
 <!-- TABLE -->
 <div class="table-container">
     <h4 class="table-title">DAFTAR LAPORAN PERJALANAN</h4>
 
+    @if(count($laporanData) > 0)
     <table>
         <thead>
             <tr>
@@ -232,78 +410,27 @@
         </thead>
 
         <tbody>
-            <!-- Data Semua (default tampil) -->
-            <tr class="data-semua data-perjalanan">
-                <td>1.</td>
-                <td>19 - 11 - 2025</td>
-                <td>Jakarta - Bandung</td>
-                <td>12</td>
-                <td>3</td>
-                <td>Bus A</td>
-                <td><span class="status-badge status-selesai">Selesai</span></td>
+            @foreach($laporanData as $index => $data)
+            <tr class="data-semua data-{{ $data['kategori'] }}">
+                <td>{{ $index + 1 }}.</td>
+                <td>{{ $data['tanggal'] }}</td>
+                <td>{{ $data['rute'] }}</td>
+                <td>{{ $data['penumpang'] }}</td>
+                <td>{{ $data['paket'] }}</td>
+                <td>{{ $data['armada'] }}</td>
+                <td>
+                    @if($data['status_raw'] == 'selesai')
+                        <span class="status-badge status-selesai">Selesai</span>
+                    @elseif($data['status_raw'] == 'aktif' || $data['status_raw'] == 'dalam_perjalanan')
+                        <span class="status-badge status-proses">Dalam Proses</span>
+                    @elseif($data['status_raw'] == 'dibatalkan')
+                        <span class="status-badge status-batal">Dibatalkan</span>
+                    @else
+                        <span class="status-badge">{{ $data['status'] }}</span>
+                    @endif
+                </td>
             </tr>
-
-            <tr class="data-semua data-perjalanan">
-                <td>2.</td>
-                <td>19 - 11 - 2025</td>
-                <td>Bandung - Jakarta</td>
-                <td>10</td>
-                <td>0</td>
-                <td>Bus A</td>
-                <td><span class="status-badge status-selesai">Selesai</span></td>
-            </tr>
-
-            <tr class="data-semua data-perjalanan">
-                <td>3.</td>
-                <td>20 - 11 - 2025</td>
-                <td>Jakarta - Surabaya</td>
-                <td>8</td>
-                <td>5</td>
-                <td>Bus B</td>
-                <td><span class="status-badge status-proses">Dalam Proses</span></td>
-            </tr>
-
-            <!-- Data Paket -->
-            <tr class="data-paket">
-                <td>4.</td>
-                <td>21 - 11 - 2025</td>
-                <td>Jakarta - Bandung</td>
-                <td>0</td>
-                <td>8</td>
-                <td>Truk C</td>
-                <td><span class="status-badge status-selesai">Selesai</span></td>
-            </tr>
-
-            <tr class="data-paket">
-                <td>5.</td>
-                <td>22 - 11 - 2025</td>
-                <td>Bandung - Surabaya</td>
-                <td>0</td>
-                <td>12</td>
-                <td>Truk D</td>
-                <td><span class="status-badge status-proses">Dalam Proses</span></td>
-            </tr>
-
-            <!-- Data Armada -->
-            <tr class="data-armada">
-                <td>6.</td>
-                <td>23 - 11 - 2025</td>
-                <td>Depo - Jakarta</td>
-                <td>0</td>
-                <td>0</td>
-                <td>Bus E</td>
-                <td><span class="status-badge status-selesai">Selesai</span></td>
-            </tr>
-
-            <tr class="data-armada">
-                <td>7.</td>
-                <td>24 - 11 - 2025</td>
-                <td>Jakarta - Depo</td>
-                <td>0</td>
-                <td>0</td>
-                <td>Bus F</td>
-                <td><span class="status-badge status-batal">Dibatalkan</span></td>
-            </tr>
+            @endforeach
         </tbody>
     </table>
 
@@ -315,6 +442,12 @@
         <button class="page-btn">3</button>
         <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
     </div>
+    @else
+    <div class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <p>Tidak ada data laporan untuk periode yang dipilih.</p>
+    </div>
+    @endif
 </div>
 
 @endsection
@@ -359,13 +492,36 @@
                 }
             });
         });
-
-        // Download button
-        const downloadBtn = document.querySelector('.add-btn');
-        downloadBtn.addEventListener('click', function() {
-            const activeTab = document.querySelector('.tab-active').getAttribute('data-filter');
-            alert(`Laporan ${activeTab} akan diunduh dalam format PDF`);
-        });
     });
+
+    // Download function
+    function downloadLaporan() {
+        const bulan = document.getElementById('bulan').value;
+        const tahun = document.getElementById('tahun').value;
+
+        // Create a simple CSV download
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "No,Tanggal,Rute,Penumpang,Paket,Armada,Status\n";
+
+        const rows = document.querySelectorAll('tbody tr');
+        rows.forEach((row, index) => {
+            if (row.style.display !== 'none') {
+                const cells = row.querySelectorAll('td');
+                let rowData = [];
+                cells.forEach(cell => {
+                    rowData.push(cell.innerText.replace(/\n/g, ' ').trim());
+                });
+                csvContent += (index + 1) + "," + rowData.join(",") + "\n";
+            }
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "laporan_driver_" + bulan + "_" + tahun + ".csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 </script>
 @endpush

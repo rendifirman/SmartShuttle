@@ -36,6 +36,59 @@ class Rute extends Model
     ];
 
     /**
+     * Normalise rute_pemberhentian when retrieving - handle double-encoded JSON.
+     */
+    public function getRutePemberhentianAttribute($value)
+    {
+        // If already an array, return as-is
+        if (is_array($value)) {
+            return $value;
+        }
+
+        // If it's null or empty, return empty array
+        if (is_null($value) || $value === '') {
+            return [];
+        }
+
+        // Try to decode JSON string
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        // Fallback: return empty array to avoid unexpected string values
+        return [];
+    }
+
+    /**
+     * Ensure rute_pemberhentian is stored as JSON string in DB.
+     */
+    public function setRutePemberhentianAttribute($value)
+    {
+        if (is_array($value)) {
+            $this->attributes['rute_pemberhentian'] = json_encode($value);
+            return;
+        }
+
+        if (is_string($value)) {
+            // If it's a JSON string, try to decode then re-encode to normalize
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $this->attributes['rute_pemberhentian'] = json_encode($decoded);
+                return;
+            }
+            // Otherwise store an empty array JSON to avoid raw strings
+            $this->attributes['rute_pemberhentian'] = json_encode([]);
+            return;
+        }
+
+        // For any other type, store empty array JSON
+        $this->attributes['rute_pemberhentian'] = json_encode([]);
+    }
+
+    /**
      * Relasi ke segments rute (untuk SmartSend)
      * Segments menentukan outlet mana yang bisa pickup/drop di rute ini
      */

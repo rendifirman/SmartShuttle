@@ -1,12 +1,9 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
-    <title>Perjalanan - Smart Shuttle Driver</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
+@extends('layouts.app-driver')
+
+@section('title', 'Perjalanan - Smart Shuttle Driver')
+
+@push('styles')
+<style>
         * {
             margin: 0;
             padding: 0;
@@ -267,13 +264,19 @@
             border-radius: 8px;
             border: none;
             font-weight: 600;
-            cursor: pointer;
+            cursor: pointer !important;
             transition: background 0.3s ease;
             font-size: 14px;
+            pointer-events: auto !important;
+            user-select: none;
         }
 
         .btn-detail:hover {
             background: #0a2b4a;
+        }
+
+        .btn-detail:active {
+            transform: scale(0.98);
         }
 
         .btn-back {
@@ -677,6 +680,7 @@
             z-index: 2000;
             justify-content: center;
             align-items: center;
+            pointer-events: auto;
         }
 
         .modal-content {
@@ -687,6 +691,8 @@
             padding: 25px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             animation: modalFadeIn 0.3s ease;
+            position: relative;
+            pointer-events: auto;
         }
 
         @keyframes modalFadeIn {
@@ -716,6 +722,8 @@
             display: flex;
             gap: 12px;
             margin-top: 25px;
+            position: relative;
+            z-index: 2001;
         }
 
         .btn-cancel {
@@ -728,6 +736,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: background 0.3s ease;
+            pointer-events: auto;
         }
 
         .btn-cancel:hover {
@@ -744,6 +753,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: background 0.3s ease;
+            pointer-events: auto;
         }
 
         .btn-update:hover {
@@ -855,48 +865,9 @@
             display: block !important;
         }
     </style>
-</head>
-<body>
+@endpush
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-    <div class="sidebar-title">SMART SHUTTLE DRIVER</div>
-
-    <a href="#" class="menu-item" id="profile-link">
-        <div class="menu-icon"><i class="fas fa-user"></i></div>
-        <span>Profile Saya</span>
-    </a>
-
-    <a href="#" class="menu-item" id="dashboard-link">
-        <div class="menu-icon"><i class="fas fa-chart-bar"></i></div>
-        <span>Dashboard</span>
-    </a>
-    <a href="#" class="menu-item menu-active" id="perjalanan-link">
-        <div class="menu-icon"><i class="fas fa-route"></i></div>
-        <span>Perjalanan</span>
-    </a>
-    <a href="#" class="menu-item" id="jadwal-link">
-        <div class="menu-icon"><i class="fas fa-calendar-alt"></i></div>
-        <span>Jadwal</span>
-    </a>
-
-    <a href="#" class="menu-item" id="laporan-link">
-        <div class="menu-icon"><i class="fas fa-file-alt"></i></div>
-        <span>Laporan</span>
-    </a>
-    <a href="#" class="menu-item" id="pengaturan-link">
-        <div class="menu-icon"><i class="fas fa-cog"></i></div>
-        <span>Pengaturan</span>
-    </a>
-    <a href="#" class="menu-item" id="bantuan-link">
-        <div class="menu-icon"><i class="fas fa-question-circle"></i></div>
-        <span>Bantuan</span>
-    </a>
-</div>
-
-<!-- MAIN CONTENT -->
-<main class="content">
-    <!-- ========================== -->
+@section('content')<!-- ========================== -->
     <!-- HALAMAN DAFTAR PERJALANAN -->
     <!-- ========================== -->
     <div id="daftarPerjalananPage" class="driver-page">
@@ -910,93 +881,69 @@
         <!-- Header -->
         <div class="header-section">
             <h1 class="page-title">Daftar Perjalanan</h1>
-            <div style="font-weight:500; color:#555;">👤 Dimas Mahendra</div>
+            <div style="font-weight:500; color:#555;">👤 {{ auth()->guard('driver')->user()?->name ?? "Driver" }}</div>
         </div>
 
         <!-- CARD DAFTAR PERJALANAN -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title">Daftar Perjalanan Hari Ini</div>
-                <div class="date-display">Tanggal: 03 Des 2025</div>
+                <div class="date-display">Tanggal: <span id="currentDateDisplay">{{ \Carbon\Carbon::today()->format('d M Y') }}</span></div>
             </div>
 
             <!-- LIST PERJALANAN -->
-            <!-- ITEM 1 -->
-            <div class="trip-item" data-trip-id="1" data-from="Jakarta" data-to="Bandung" data-time="08:00" data-duration="3 jam 15 menit" data-seats="10/12" data-passengers="10">
+            @forelse($tripsData as $trip)
+            <div class="trip-item" data-trip-id="{{ $trip['id_jadwal_driver'] }}" data-from="{{ $trip['from'] }}" data-to="{{ $trip['to'] }}" data-time="{{ $trip['time'] }}" data-eta="{{ $trip['eta'] ?? '' }}" data-duration="{{ $trip['estimated_duration'] }}" data-distance="{{ $trip['distance'] ?? '' }}" data-seats="{{ $trip['occupied_seats'] }}/{{ $trip['total_seats'] }}" data-passengers="{{ $trip['occupied_seats'] }}">
                 <div class="trip-header">
-                    <div class="trip-number">1</div>
-                    <div class="seat-info">10/12 kursi</div>
+                    <div class="trip-number">{{ $trip['trip_number'] }}</div>
+                    <div class="seat-info">{{ $trip['occupied_seats'] }}/{{ $trip['total_seats'] }} kursi</div>
                 </div>
 
-                <div class="trip-route">Jakarta → Bandung</div>
-                <div class="trip-time">08:00 • 3 jam 15 menit</div>
+                <div class="trip-route">{{ $trip['from'] }} → {{ $trip['to'] }}</div>
+                <div class="trip-time">{{ $trip['time'] }} • {{ $trip['estimated_duration'] ?? '-' }}</div>
 
                 <div class="status-badge">
-                    <span class="status" id="status-1">Akan Berangkat</span>
+                    <span class="status" id="status-{{ $trip['id_jadwal_driver'] }}">
+                        @php
+                            $status = $trip['status'] ?? 'belum_dimulai';
+                            $statusDisplay = match($status) {
+                                'belum_dimulai' => 'Akan Berangkat',
+                                'aktif' => 'Perjalanan Aktif',
+                                'selesai' => 'Selesai',
+                                default => ucfirst(str_replace('_', ' ', $status))
+                            };
+                        @endphp
+                        {{ $statusDisplay }}
+                    </span>
                 </div>
 
                 <div style="text-align:right;">
-                    <button class="btn-detail">Lihat Detail</button>
+                    <button type="button" class="btn-detail">Lihat Detail</button>
                 </div>
             </div>
-
-            <!-- ITEM 2 -->
-            <div class="trip-item" data-trip-id="2" data-from="Bandung" data-to="Jakarta" data-time="13:00" data-duration="3 jam 15 menit" data-seats="12/12" data-passengers="12">
-                <div class="trip-header">
-                    <div class="trip-number">2</div>
-                    <div class="seat-info">12/12 kursi</div>
-                </div>
-
-                <div class="trip-route">Bandung → Jakarta</div>
-                <div class="trip-time">13:00 • 3 jam 15 menit</div>
-
-                <div class="status-badge">
-                    <span class="status" id="status-2">Akan Berangkat</span>
-                </div>
-
-                <div style="text-align:right;">
-                    <button class="btn-detail">Lihat Detail</button>
-                </div>
+            @empty
+            <div style="padding: 30px; text-align: center; color: #999;">
+                <i class="fas fa-calendar-days" style="font-size: 40px; color: #ddd; margin-bottom: 15px; display: block;"></i>
+                <p style="margin: 0; font-size: 16px;">Tidak ada perjalanan hari ini</p>
+                <p style="margin: 5px 0; font-size: 13px;">Menunggu jadwal dari admin</p>
             </div>
-
-            <!-- ITEM 3 -->
-            <div class="trip-item" data-trip-id="3" data-from="Jakarta" data-to="Bandung" data-time="18:00" data-duration="3 jam 15 menit" data-seats="8/12" data-passengers="8">
-                <div class="trip-header">
-                    <div class="trip-number">3</div>
-                    <div class="seat-info">8/12 kursi</div>
-                </div>
-
-                <div class="trip-route">Jakarta → Bandung</div>
-                <div class="trip-time">18:00 • 3 jam 15 menit</div>
-
-                <div class="status-badge">
-                    <span class="status" id="status-3">Akan Berangkat</span>
-                </div>
-
-                <div style="text-align:right;">
-                    <button class="btn-detail">Lihat Detail</button>
-                </div>
-            </div>
+            @endforelse
         </div>
 
         <!-- RIWAYAT PERJALANAN (DI HALAMAN AWAL) -->
         <div class="card">
             <div class="history-filter">
                 <div class="card-title">Riwayat Perjalanan</div>
-                <select class="filter-select">
+                <select class="filter-select" id="historyFilterSelect">
+                    <option>Semua</option>
                     <option>Minggu ini</option>
                     <option>Bulan ini</option>
                     <option>3 bulan terakhir</option>
                 </select>
             </div>
 
-            <div class="history-item">
-                <div class="history-route">Jakarta → Bandung</div>
-                <div class="history-date">20-11-2025 | 08:00</div>
-                <div class="history-footer">
-                    <div class="passenger-count">10 penumpang</div>
-                    <span class="status-completed">Selesai</span>
-                </div>
+            <div id="historyItemsContainer">
+                <!-- History items akan dirender oleh JavaScript -->
             </div>
         </div>
     </div>
@@ -1022,7 +969,7 @@
             </div>
             <div class="profile-box">
                 <i class="fas fa-user"></i>
-                <span>Dimas Mahendra</span>
+                <span>{{ auth()->guard('driver')->user()?->name ?? "Driver" }}</span>
             </div>
         </div>
 
@@ -1102,7 +1049,10 @@
                 </div>
 
                 <div class="button-section">
-                    <button class="btn-primary" id="updateLokasiBtn">
+                    <button class="btn-success" id="mulaiPerjalananBtn">
+                        <i class="fa-solid fa-play"></i> Mulai Perjalanan
+                    </button>
+                    <button class="btn-primary hidden" id="updateLokasiBtn">
                         <i class="fa-solid fa-location-arrow"></i> Update Lokasi
                     </button>
                     <button class="btn-success hidden" id="selesaiPerjalananBtn">
@@ -1140,6 +1090,8 @@
     </div>
 </main>
 
+@endsection
+
 <!-- MODAL UPDATE LOKASI -->
 <div class="modal-overlay" id="updateLokasiModal">
     <div class="modal-content">
@@ -1147,6 +1099,12 @@
             <h3 class="modal-title">Update Lokasi</h3>
             <p class="modal-subtitle">Lokasi bus akan berpindah ke titik berikutnya</p>
             <p class="modal-subtitle" style="margin-top: 10px; font-weight: 600;" id="modalNextLocation"></p>
+
+            <!-- ★★★ OUTLETS INFO SECTION ★★★ -->
+            <div id="modalOutletsInfo" style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px; display: none;">
+                <p style="font-weight: 600; margin-bottom: 10px; color: #333;">Outlets di Pemberhentian:</p>
+                <div id="modalOutletsList" style="margin-left: 15px;"></div>
+            </div>
         </div>
 
         <div class="modal-buttons">
@@ -1156,10 +1114,36 @@
     </div>
 </div>
 
+@push('scripts')
 <script>
     // Server-provided trips data (generated in DriverController)
-    const tripsData = <?php echo json_encode($tripsData ?? []); ?>;
-    const currentDriverId = <?php echo json_encode($driver->id ?? null); ?>;
+    const tripsData = {!! json_encode($tripsData ?? []) !!};
+    const completedTrips = {!! json_encode($completedTrips ?? []) !!};
+    const currentDriverId = {!! json_encode(auth()->guard('driver')->user()?->id ?? null) !!};
+
+    // ★★★ DEBUG: LOG DATA YANG DITERIMA ★★★
+    console.log('%c=== PERJALANAN DATA DEBUG ===', 'color: blue; font-weight: bold; font-size: 14px;');
+    console.log('Total Jadwal Aktif:', tripsData.length);
+    console.log('Total Jadwal Selesai:', completedTrips.length);
+    console.log('Driver ID:', currentDriverId);
+
+    if (tripsData.length > 0) {
+        console.log('%cJADWAL AKTIF:', 'color: green; font-weight: bold;');
+        tripsData.forEach((t, idx) => {
+            console.log(`  ${idx + 1}. [${t.id_jadwal_driver}] ${t.from} → ${t.to} | ${t.date} | ${t.time} | Status: ${t.status}`);
+        });
+    }
+
+    if (completedTrips.length > 0) {
+        console.log('%cJADWAL SELESAI:', 'color: orange; font-weight: bold;');
+        completedTrips.forEach((t, idx) => {
+            console.log(`  ${idx + 1}. [${t.id_jadwal_driver}] ${t.from} → ${t.to} | ${t.date || t.tanggal} | Status: ${t.status}`);
+        });
+    }
+    console.log('%c==============================', 'color: blue; font-weight: bold;');
+
+    // ★★★ JOURNEY START STATE TRACKING ★★★
+    let journeyStarted = {}; // Tracks which trips have been started: { tripId: true/false }
 
     // Fallback journey data (used when route stop points are not available)
     let journeyData = {
@@ -1224,66 +1208,240 @@
             distances: []
         };
 
-        // Tambahkan titik awal (start)
-        journeyData.stops.push({
-            name: tripData.from,
-            detail: `Titik Awal - ${tripData.from}`,
-            type: "start"
-        });
-        journeyData.travelTimes.push("-");
-        journeyData.distances.push("-");
+        // ★★★ PERBAIKAN: MEMBUAT SATU ENTRY PER OUTLET, BUKAN PER BRANCH ★★★
+        // Ini memastikan perpindahan antar outlet dalam branch yang sama terdeteksi sebagai update
 
-        // Tambahkan stops pemberhentian
+        // STEP 1: Ambil titik awal - buat entry untuk SETIAP outlet di stop point pertama
         if (Array.isArray(stopPoints) && stopPoints.length > 0) {
-            stopPoints.forEach((stop, index) => {
-                // Buat nama stop dari kota dan outlets
-                let stopName = stop.kota || `Stop ${index + 1}`;
-                let stopDetail = stop.branch_name || '';
+            const firstStop = stopPoints[0];
 
-                // Tambahkan daftar outlets jika ada
-                if (stop.outlets && stop.outlets.length > 0) {
-                    const outletNames = stop.outlets.map(o => o.nama_outlet).join(', ');
-                    stopDetail = `${stopDetail} - ${outletNames}`;
-                }
+            if (firstStop.outlets && firstStop.outlets.length > 0) {
+                // ★★★ PERBEDAAN: Loop setiap outlet dan buat entry terpisah ★★★
+                firstStop.outlets.forEach((outlet, outletIdx) => {
+                    const isFirstOutlet = outletIdx === 0;
+                    journeyData.stops.push({
+                        name: outlet.nama_outlet,
+                        detail: `${firstStop.branch_name} (Awal)`,
+                        type: isFirstOutlet ? "start" : "stop",
+                        outlet_id: outlet.id,
+                        outlet_detail: outlet,
+                        branch_id: firstStop.branch_id,
+                        kota: firstStop.kota,
+                        is_starting_outlet: true,
+                        is_outlet: true
+                    });
 
-                journeyData.stops.push({
-                    name: stopName,
-                    detail: stopDetail,
-                    type: "stop",
-                    outlets: stop.outlets || [],
-                    duration: stop.durasi_singgah || 10
+                    journeyData.travelTimes.push("-");
+                    journeyData.distances.push("-");
                 });
-
-                journeyData.travelTimes.push(`${stop.durasi_singgah || 10} menit singgah`);
+            } else {
+                // Fallback jika first stop tidak punya outlets
+                journeyData.stops.push({
+                    name: tripData.from,
+                    detail: `Titik Awal - ${tripData.from}`,
+                    type: "start",
+                    is_outlet: false
+                });
+                journeyData.travelTimes.push("-");
                 journeyData.distances.push("-");
-            });
+            }
         } else {
-            // Fallback jika tidak ada stop points - gunakan data default
+            // Fallback jika tidak ada stop points sama sekali
             journeyData.stops.push({
-                name: "Titik 1",
-                detail: "Titik Pemberhentian 1",
-                type: "stop"
-            });
-            journeyData.travelTimes.push("-");
-            journeyData.distances.push("-");
-
-            journeyData.stops.push({
-                name: "Titik 2",
-                detail: "Titik Pemberhentian 2",
-                type: "stop"
+                name: tripData.from,
+                detail: `Titik Awal - ${tripData.from}`,
+                type: "start",
+                is_outlet: false
             });
             journeyData.travelTimes.push("-");
             journeyData.distances.push("-");
         }
 
-        // Tambahkan titik akhir (finish)
-        journeyData.stops.push({
-            name: tripData.to,
-            detail: `Tujuan Akhir - ${tripData.to}`,
-            type: "finish"
+        // STEP 2: Tambahkan outlets pemberhentian - buat entry untuk SETIAP outlet di setiap stop
+        if (Array.isArray(stopPoints) && stopPoints.length > 1) {
+            // Skip stop pertama (index 0) karena sudah diproses
+            for (let stopIdx = 1; stopIdx < stopPoints.length; stopIdx++) {
+                const stop = stopPoints[stopIdx];
+
+                // ★★★ PERBEDAAN: Loop setiap outlet dan buat entry terpisah ★★★
+                if (stop.outlets && stop.outlets.length > 0) {
+                    stop.outlets.forEach((outlet, outletIdx) => {
+                        journeyData.stops.push({
+                            name: outlet.nama_outlet,
+                            detail: `${stop.branch_name} | ${stop.durasi_singgah || 10} menit singgah`,
+                            type: "stop",
+                            outlet_id: outlet.id,
+                            outlet_detail: outlet,
+                            branch_id: stop.branch_id,
+                            kota: stop.kota,
+                            duration: stop.durasi_singgah || 10,
+                            is_outlet: true,
+                            stop_point_index: stopIdx
+                        });
+
+                        journeyData.travelTimes.push(`${stop.durasi_singgah || 10} menit singgah`);
+                        journeyData.distances.push("-");
+                    });
+                } else {
+                    // Fallback jika stop tidak punya outlets
+                    journeyData.stops.push({
+                        name: stop.kota || `Stop ${stopIdx}`,
+                        detail: stop.branch_name || '',
+                        type: "stop",
+                        duration: stop.durasi_singgah || 10,
+                        is_outlet: false,
+                        stop_point_index: stopIdx
+                    });
+
+                    journeyData.travelTimes.push(`${stop.durasi_singgah || 10} menit singgah`);
+                    journeyData.distances.push("-");
+                }
+            }
+        } else if (Array.isArray(stopPoints) && stopPoints.length === 1) {
+            // Jika hanya 1 stop point, itu adalah final destination
+            const lastStop = stopPoints[0];
+            if (lastStop.outlets && lastStop.outlets.length > 0) {
+                lastStop.outlets.forEach((outlet, outletIdx) => {
+                    journeyData.stops.push({
+                        name: outlet.nama_outlet,
+                        detail: `${lastStop.branch_name} (Tujuan Akhir)`,
+                        type: outletIdx === lastStop.outlets.length - 1 ? "finish" : "stop",
+                        outlet_id: outlet.id,
+                        outlet_detail: outlet,
+                        branch_id: lastStop.branch_id,
+                        kota: lastStop.kota,
+                        duration: lastStop.durasi_singgah || 10,
+                        is_outlet: true,
+                        is_final_outlet: true
+                    });
+
+                    journeyData.travelTimes.push("-");
+                    journeyData.distances.push("-");
+                });
+            }
+        } else {
+            // Fallback jika tidak ada stop points sama sekali
+            journeyData.stops.push({
+                name: "Titik 1",
+                detail: "Titik Pemberhentian 1",
+                type: "stop",
+                is_outlet: false
+            });
+            journeyData.travelTimes.push("-");
+            journeyData.distances.push("-");
+        }
+
+        // STEP 3: Tambahkan titik akhir jika ada stop points
+        if (Array.isArray(stopPoints) && stopPoints.length > 1) {
+            const lastStop = stopPoints[stopPoints.length - 1];
+
+            // ★★★ PERBEDAAN: Buat entry untuk SETIAP outlet di stop point terakhir ★★★
+            if (lastStop.outlets && lastStop.outlets.length > 0) {
+                lastStop.outlets.forEach((outlet, outletIdx) => {
+                    const isLastOutlet = outletIdx === lastStop.outlets.length - 1;
+                    journeyData.stops.push({
+                        name: outlet.nama_outlet,
+                        detail: `${lastStop.branch_name} (Tujuan Akhir)`,
+                        type: isLastOutlet ? "finish" : "stop",
+                        outlet_id: outlet.id,
+                        outlet_detail: outlet,
+                        branch_id: lastStop.branch_id,
+                        kota: lastStop.kota,
+                        is_outlet: true,
+                        is_final_outlet: true
+                    });
+
+                    journeyData.travelTimes.push("-");
+                    journeyData.distances.push("-");
+                });
+            } else {
+                // Fallback jika last stop tidak punya outlets
+                journeyData.stops.push({
+                    name: tripData.to,
+                    detail: `Tujuan Akhir - ${tripData.to}`,
+                    type: "finish",
+                    is_outlet: false
+                });
+                journeyData.travelTimes.push("-");
+                journeyData.distances.push("-");
+            }
+        }
+
+        console.log('✅ Journey data built dengan struktur per-OUTLET (bukan per-branch)', journeyData);
+    }
+
+    // ★★★ FUNGSI UNTUK CEK DAN LOG DATA OUTLETS ★★★
+    function debugOutletsData(tripData) {
+        console.log('═══════════════════════════════════════════════════════');
+        console.log('📊 DEBUG: OUTLETS DATA UNTUK TRIP', tripData.id_jadwal_driver);
+        console.log('═══════════════════════════════════════════════════════');
+
+        // Log stop points
+        const stopPoints = tripData.stop_points || [];
+        console.log(`\n📍 Total Stop Points: ${stopPoints.length}`);
+
+        stopPoints.forEach((stop, index) => {
+            console.log(`\n--- Stop ${index} ---`);
+            console.log(`  Kota: ${stop.kota}`);
+            console.log(`  Branch: ${stop.branch_name} (ID: ${stop.branch_id})`);
+            console.log(`  Durasi Singgah: ${stop.durasi_singgah} menit`);
+
+            if (stop.outlets && stop.outlets.length > 0) {
+                console.log(`  📦 Outlets (${stop.outlets.length}):`);
+                stop.outlets.forEach((outlet, outletIdx) => {
+                    console.log(`     [${outletIdx + 1}] ${outlet.nama_outlet}`);
+                    console.log(`         Alamat: ${outlet.alamat}`);
+                    console.log(`         Kota: ${outlet.kota}`);
+                });
+            } else {
+                console.log(`  ⚠️ No outlets data!`);
+            }
         });
-        journeyData.travelTimes.push("-");
-        journeyData.distances.push("-");
+
+        // Log journey structure after processing
+        console.log('\n═══════════════════════════════════════════════════════');
+        console.log('🚌 JOURNEY STRUCTURE SETELAH DIPROSES:');
+        console.log('═══════════════════════════════════════════════════════');
+
+        journeyData.stops.forEach((stop, index) => {
+            console.log(`\n[${index}] ${stop.type.toUpperCase()} - ${stop.name}`);
+            console.log(`    Detail: ${stop.detail}`);
+            if (stop.outlets && stop.outlets.length > 0) {
+                console.log(`    Outlets (${stop.outlets.length}):`);
+                stop.outlets.forEach(outlet => {
+                    console.log(`      • ${outlet.nama_outlet} - ${outlet.alamat}`);
+                });
+            }
+        });
+
+        console.log('\n═══════════════════════════════════════════════════════');
+        console.log('✅ Debug selesai. Cek konsol browser untuk detail outlet.');
+        console.log('═══════════════════════════════════════════════════════\n');
+    }
+
+    // ★★★ FUNGSI UNTUK VALIDASI OUTLETS COMPLETENESS ★★★
+    function validateOutletsCompleteness() {
+        console.log('\n--- VALIDASI OUTLETS COMPLETENESS ---');
+        let issues = [];
+        let warnings = [];
+
+        journeyData.stops.forEach((stop, index) => {
+            if (!stop.outlets || stop.outlets.length === 0) {
+                if (stop.type !== 'finish' && stop.type !== 'start') {
+                    warnings.push(`Stop ${index} (${stop.name}) tidak punya outlets data`);
+                }
+            } else {
+                console.log(`✓ Stop ${index} (${stop.name}): ${stop.outlets.length} outlet(s)`);
+            }
+        });
+
+        if (warnings.length > 0) {
+            console.warn('⚠️ Warnings:', warnings);
+        }
+
+        if (issues.length === 0 && warnings.length === 0) {
+            console.log('✅ Semua outlet data lengkap!');
+        }
     }
 
     // Fungsi untuk mengupdate tampilan perjalanan di halaman detail
@@ -1294,17 +1452,82 @@
 
         // Update lokasi saat ini
         document.getElementById('currentLocation').textContent = currentStop.name;
-        document.getElementById('currentLocationDetail').textContent = currentStop.detail;
+
+        // ★★★ PERBAIKAN: Struktur sekarang per-OUTLET, bukan per-branch ★★★
+        // Jadi kita tampilkan outlet detail langsung, bukan loop outlets array
+        const currentLocationDetailEl = document.getElementById('currentLocationDetail');
+        if (currentStop.is_outlet && currentStop.outlet_detail) {
+            let html = '';
+            if (currentStop.detail) html += `<strong>${currentStop.detail}</strong>`;
+            html += `<div style="font-size:13px; color:#666; margin-top:6px;">`;
+            html += `<div style="margin-bottom:6px;"><strong>${currentStop.outlet_detail.nama_outlet}</strong>`;
+            if (currentStop.outlet_detail.alamat) {
+                html += `<div style="font-size:11px; color:#666;">${currentStop.outlet_detail.alamat}</div>`;
+            }
+            html += `</div></div>`;
+            currentLocationDetailEl.innerHTML = html;
+        } else {
+            currentLocationDetailEl.textContent = currentStop.detail || '';
+        }
         document.getElementById('mapLocation').textContent = currentStop.name;
 
         // Update tujuan akhir
         const finalDestination = journeyData.stops[journeyData.stops.length - 1];
         document.getElementById('finalDestination').textContent = finalDestination.name;
-        document.getElementById('finalDestinationDetail').textContent = finalDestination.detail;
+        const finalDestinationEl = document.getElementById('finalDestinationDetail');
+        if (finalDestination.is_outlet && finalDestination.outlet_detail) {
+            let html = '';
+            if (finalDestination.detail) html += `<strong>${finalDestination.detail}</strong>`;
+            html += `<div style="font-size:13px; color:#666; margin-top:6px;">`;
+            html += `<div style="margin-bottom:6px;"><strong>${finalDestination.outlet_detail.nama_outlet}</strong>`;
+            if (finalDestination.outlet_detail.alamat) {
+                html += `<div style="font-size:11px; color:#666;">${finalDestination.outlet_detail.alamat}</div>`;
+            }
+            html += `</div></div>`;
+            finalDestinationEl.innerHTML = html;
+        } else {
+            finalDestinationEl.textContent = finalDestination.detail || '';
+        }
 
-        // Update info perjalanan
-        document.getElementById('travelTime').textContent = journeyData.travelTimes[journeyData.currentStopIndex];
-        document.getElementById('distance').textContent = journeyData.distances[journeyData.currentStopIndex];
+        // ★★★ PERBAIKAN: Gunakan data dari tripsData untuk info utama ★★★
+        // Cari trip data yang sedang aktif
+        const activeTrip = tripsData.find(t => parseInt(t.id_jadwal_driver) === parseInt(currentTripId));
+
+        if (activeTrip) {
+            // Waktu Tempuh:优先使用 estimated_duration
+            const travelEl = document.getElementById('travelTime');
+            if (activeTrip.estimated_duration && activeTrip.estimated_duration !== '-') {
+                travelEl.textContent = activeTrip.estimated_duration;
+            } else if (activeTrip.time && activeTrip.eta) {
+                travelEl.textContent = `${activeTrip.time} - ${activeTrip.eta}`;
+            } else {
+                travelEl.textContent = journeyData.travelTimes[journeyData.currentStopIndex] || '-';
+            }
+
+            // Jarak: 使用 distance dari trip data
+            const distEl = document.getElementById('distance');
+            if (activeTrip.distance) {
+                distEl.textContent = typeof activeTrip.distance === 'number' ? `${activeTrip.distance} km` : activeTrip.distance;
+            } else {
+                distEl.textContent = journeyData.distances[journeyData.currentStopIndex] || '-';
+            }
+
+            // Penumpang: 使用 occupied_seats dan total_seats
+            const passengerEl = document.getElementById('passengerCount');
+            if (passengerEl) {
+                passengerEl.textContent = `${activeTrip.occupied_seats || 0}/${activeTrip.total_seats || 0}`;
+            }
+
+            // Total Penumpang di section bawah
+            const totalPenumpangEl = document.getElementById('totalPenumpang');
+            if (totalPenumpangEl) {
+                totalPenumpangEl.textContent = activeTrip.passengers ? activeTrip.passengers.length : 0;
+            }
+        } else {
+            // Fallback jika tidak ada data
+            document.getElementById('travelTime').textContent = journeyData.travelTimes[journeyData.currentStopIndex] || '-';
+            document.getElementById('distance').textContent = journeyData.distances[journeyData.currentStopIndex] || '-';
+        }
 
         // Update titik selanjutnya
         if (!isLastStop) {
@@ -1313,9 +1536,41 @@
             document.getElementById('nextStop').textContent = "Tujuan Akhir";
         }
 
-        // Update progress bar
-        const progressPercent = (journeyData.currentStopIndex / (journeyData.stops.length - 1)) * 100;
-        document.getElementById('progressFill').style.width = `${progressPercent}%`;
+        // Build progress nodes based on outlets sequence
+        const progressContainer = document.querySelector('.progress-stops');
+        if (progressContainer) {
+            progressContainer.innerHTML = '';
+
+            // ★★★ PERBAIKAN: Struktur sudah per-outlet, jadi cukup loop stops sekali saja ★★★
+            const progressNodes = [];
+            if (journeyData.stops.length > 0) {
+                journeyData.stops.forEach((stop, idx) => {
+                    // Setiap stop sudah berupa outlet individual, tidak perlu nested loop
+                    progressNodes.push({
+                        label: stop.name,
+                        type: stop.type,
+                        is_outlet: stop.is_outlet
+                    });
+                });
+            }
+
+            // Render progress stops
+            progressNodes.forEach((node, pIdx) => {
+                const div = document.createElement('div');
+                div.className = 'progress-stop';
+                div.textContent = node.label;
+                if (pIdx === journeyData.currentStopIndex) {
+                    div.classList.add('active');
+                } else if (pIdx < journeyData.currentStopIndex) {
+                    div.classList.add('completed');
+                }
+                progressContainer.appendChild(div);
+            });
+
+            // Update progress bar width
+            const progressPercent = (journeyData.currentStopIndex / Math.max(1, (progressNodes.length - 1))) * 100;
+            document.getElementById('progressFill').style.width = `${progressPercent}%`;
+        }
 
         // Update status titik pemberhentian
         updateStopPoints();
@@ -1345,12 +1600,27 @@
             if (i <= journeyData.currentStopIndex) {
                 const stopElement = document.createElement('div');
                 stopElement.className = 'location';
+                // Build detail as separate outlets if available
+                let detailHtmlPassed = '';
+                if (stop.outlets && stop.outlets.length > 0) {
+                    if (stop.detail) detailHtmlPassed += `<strong>${stop.detail}</strong>`;
+                    detailHtmlPassed += '<div style="font-size:13px; color:#888; margin-top:6px;">';
+                    stop.outlets.forEach(o => {
+                        detailHtmlPassed += `<div style="margin-bottom:6px;"><strong>${o.nama_outlet}</strong>`;
+                        if (o.alamat) detailHtmlPassed += `<div style="font-size:11px; color:#888;">${o.alamat}</div>`;
+                        detailHtmlPassed += `</div>`;
+                    });
+                    detailHtmlPassed += '</div>';
+                } else {
+                    detailHtmlPassed = stop.detail || '';
+                }
+
                 stopElement.innerHTML = `
                     <div class="loc-title">
                         <i class="fa-solid fa-map-marker-alt"></i>
                         <span style="text-decoration: line-through; color: #888;">${stop.name}</span>
                     </div>
-                    <div class="loc-sub" style="color: #888;">${stop.detail} (Telah dilewati)</div>
+                    <div class="loc-sub" style="color: #888;">${detailHtmlPassed} (Telah dilewati)</div>
                 `;
                 stopPointsContainer.appendChild(stopElement);
 
@@ -1363,12 +1633,26 @@
             } else if (i === journeyData.currentStopIndex + 1) {
                 const stopElement = document.createElement('div');
                 stopElement.className = 'location';
+                let detailHtmlNext = '';
+                if (stop.outlets && stop.outlets.length > 0) {
+                    if (stop.detail) detailHtmlNext += `<strong>${stop.detail}</strong>`;
+                    detailHtmlNext += '<div style="font-size:13px; color:#0095FF; margin-top:6px;">';
+                    stop.outlets.forEach(o => {
+                        detailHtmlNext += `<div style="margin-bottom:6px;"><strong>${o.nama_outlet}</strong>`;
+                        if (o.alamat) detailHtmlNext += `<div style="font-size:11px; color:#0095FF;">${o.alamat}</div>`;
+                        detailHtmlNext += `</div>`;
+                    });
+                    detailHtmlNext += '</div>';
+                } else {
+                    detailHtmlNext = stop.detail || '';
+                }
+
                 stopElement.innerHTML = `
                     <div class="loc-title">
                         <i class="fa-solid fa-map-marker-alt"></i>
                         <span style="color: #0095FF;">${stop.name}</span>
                     </div>
-                    <div class="loc-sub" style="color: #0095FF;">${stop.detail} (Titik Selanjutnya)</div>
+                    <div class="loc-sub" style="color: #0095FF;">${detailHtmlNext} (Titik Selanjutnya)</div>
                 `;
                 stopPointsContainer.appendChild(stopElement);
 
@@ -1393,8 +1677,105 @@
         });
     }
 
+    // ★★★ FUNGSI UNTUK MEMULAI PERJALANAN ★★★
+    function mulaiPerjalanan() {
+        if (!currentTripId) {
+            alert('Tidak ada perjalanan yang dipilih!');
+            return;
+        }
+        // Optimistic UI update while persisting start to server
+        const startBtn = document.getElementById('mulaiPerjalananBtn');
+        const updateBtn = document.getElementById('updateLokasiBtn');
+        const statusElement = document.getElementById(`status-${currentTripId}`);
+
+        // Temporarily update UI
+        journeyStarted[currentTripId] = true;
+        if (startBtn) startBtn.classList.add('hidden');
+        if (updateBtn) updateBtn.classList.remove('hidden');
+        if (statusElement) {
+            statusElement.textContent = 'Dalam Perjalanan';
+            statusElement.className = 'status';
+        }
+
+        // Prepare payload
+        const payload = {
+            id_jadwal_driver: parseInt(currentTripId),
+            total_stops: journeyData && journeyData.stops ? journeyData.stops.length : 0
+        };
+
+        // Get CSRF token (try meta, input, or window.Laravel)
+        let csrfToken = null;
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        if (csrfMeta) csrfToken = csrfMeta.getAttribute('content');
+        if (!csrfToken) {
+            const csrfInput = document.querySelector('input[name="_token"]');
+            if (csrfInput) csrfToken = csrfInput.value;
+        }
+        if (!csrfToken && window.Laravel && window.Laravel.csrfToken) csrfToken = window.Laravel.csrfToken;
+
+        if (!csrfToken) {
+            console.error('CSRF token not found when starting journey');
+            alert('Terjadi kesalahan keamanan. Silakan refresh halaman dan coba lagi.');
+            // revert optimistic UI
+            journeyStarted[currentTripId] = false;
+            if (startBtn) startBtn.classList.remove('hidden');
+            if (updateBtn) updateBtn.classList.add('hidden');
+            if (statusElement) {
+                statusElement.textContent = 'Menunggu';
+                statusElement.className = '';
+            }
+            return;
+        }
+
+        fetch('{{ route("api.driver.journey.start") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(result => {
+            if (result && result.success) {
+                console.log('Journey started persisted:', result.data);
+                alert('Perjalanan dimulai! Anda sekarang bisa mengupdate lokasi.');
+            } else {
+                console.error('Failed to persist journey start', result);
+                alert('Gagal memulai perjalanan di server. Coba lagi.');
+                // revert optimistic UI
+                journeyStarted[currentTripId] = false;
+                if (startBtn) startBtn.classList.remove('hidden');
+                if (updateBtn) updateBtn.classList.add('hidden');
+                if (statusElement) {
+                    statusElement.textContent = 'Menunggu';
+                    statusElement.className = '';
+                }
+            }
+        })
+        .catch(err => {
+            console.error('Error starting journey:', err);
+            alert('Terjadi kesalahan saat memulai perjalanan. Periksa koneksi Anda.');
+            // revert optimistic UI
+            journeyStarted[currentTripId] = false;
+            if (startBtn) startBtn.classList.remove('hidden');
+            if (updateBtn) updateBtn.classList.add('hidden');
+            if (statusElement) {
+                statusElement.textContent = 'Menunggu';
+                statusElement.className = '';
+            }
+        });
+    }
+
     // Fungsi untuk menampilkan modal update lokasi
     function showUpdateLokasiModal() {
+        // ★★★ CEK APAKAH PERJALANAN SUDAH DIMULAI ★★★
+        if (!journeyStarted[currentTripId]) {
+            alert('Anda harus memulai perjalanan terlebih dahulu!');
+            return;
+        }
+
         // Cek apakah sudah sampai tujuan akhir
         if (journeyData.currentStopIndex >= journeyData.stops.length - 1) {
             alert('Anda sudah sampai di tujuan akhir!');
@@ -1403,6 +1784,40 @@
 
         const nextStop = journeyData.stops[journeyData.currentStopIndex + 1];
         document.getElementById('modalNextLocation').textContent = `Menuju: ${nextStop.name}`;
+
+        // ★★★ PERBAIKAN: Setiap stop sekarang adalah per-OUTLET, bukan per-branch ★★★
+        // Jadi kita tampilkan detail outlet dari stop saat ini
+        const outletsInfo = document.getElementById('modalOutletsInfo');
+        const outletsList = document.getElementById('modalOutletsList');
+
+        if (nextStop.is_outlet && nextStop.outlet_detail) {
+            // Tampilkan informasi outlet yang akan dituju
+            outletsInfo.style.display = 'block';
+            outletsList.innerHTML = '';
+
+            const outletItem = document.createElement('div');
+            outletItem.style.cssText = 'margin-bottom: 10px; padding: 12px; background: white; border-radius: 4px; border-left: 4px solid #22c55e;';
+            outletItem.innerHTML = `
+                <strong style="color: #22c55e;">📍 ${nextStop.outlet_detail.nama_outlet}</strong><br>
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    ${nextStop.outlet_detail.alamat || 'Alamat tidak tersedia'}
+                </small>
+                <small style="color: #999; display: block; margin-top: 3px;">
+                    Kota: ${nextStop.kota || nextStop.outlet_detail.kota || '-'}
+                </small>
+            `;
+            outletsList.appendChild(outletItem);
+
+            // Log untuk debugging
+            console.log('✅ Menampilkan outlet untuk update:', {
+                outlet_name: nextStop.outlet_detail.nama_outlet,
+                stop_index: journeyData.currentStopIndex + 1,
+                branch: nextStop.detail
+            });
+        } else {
+            // Fallback jika tidak ada outlet detail
+            outletsInfo.style.display = 'none';
+        }
 
         const modal = document.getElementById('updateLokasiModal');
         modal.style.display = 'flex';
@@ -1416,8 +1831,19 @@
 
     // Fungsi untuk mengkonfirmasi update lokasi
     function confirmUpdateLokasi() {
+        console.log('🔄 confirmUpdateLokasi dipanggil...');
+
+        // ★★★ CEK APAKAH PERJALANAN SUDAH DIMULAI ★★★
+        if (!journeyStarted[currentTripId]) {
+            console.warn('⚠️ Perjalanan belum dimulai untuk trip:', currentTripId);
+            alert('Anda harus memulai perjalanan terlebih dahulu!');
+            hideUpdateLokasiModal();
+            return;
+        }
+
         // Kirim update ke server via API
         if (!currentTripId) {
+            console.error('❌ currentTripId kosong');
             alert('Tidak ada perjalanan aktif yang dipilih.');
             return;
         }
@@ -1425,6 +1851,7 @@
         // Tentukan titik berikutnya
         const nextIndex = journeyData.currentStopIndex + 1;
         if (nextIndex >= journeyData.stops.length) {
+            console.log('✅ Sudah mencapai tujuan akhir');
             alert('Sudah mencapai tujuan akhir.');
             hideUpdateLokasiModal();
             return;
@@ -1433,19 +1860,59 @@
         const nextStop = journeyData.stops[nextIndex];
         const status = nextStop.type === 'finish' ? 'completed' : 'arrived';
 
+        // ★★★ PERBAIKAN: Kirim informasi outlet dan stop_index yang akurat ★★★
         const payload = {
             id_jadwal_driver: parseInt(currentTripId),
-            location_name: nextStop.name,
-            location_detail: nextStop.detail || '',
+            location_name: nextStop.name,  // Nama outlet
+            location_detail: nextStop.detail || '',  // Branch name + durasi
             latitude: null,
             longitude: null,
-            stop_index: nextIndex,
-            status: status
+            stop_index: nextIndex,  // Ini sekarang adalah per-outlet, bukan per-branch
+            status: status,
+            // ★★★ TAMBAHKAN INFO TAMBAHAN UNTUK TRACKING ★★★
+            outlet_id: nextStop.outlet_id || null,
+            kota: nextStop.kota || null,
+            branch_id: nextStop.branch_id || null
         };
 
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        console.log('📤 Mengirim update lokasi:', {
+            outlet: nextStop.name,
+            stop_index: nextIndex,
+            type: nextStop.type,
+            is_outlet: nextStop.is_outlet
+        });
 
-        fetch('<?php echo e(route("api.driver.location.update")); ?>', {
+        // ★★★ AMBIL CSRF TOKEN DENGAN ERROR HANDLING ★★★
+        let csrfToken = null;
+
+        // Cara 1: Dari meta tag
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        if (csrfMeta) {
+            csrfToken = csrfMeta.getAttribute('content');
+        }
+
+        // Cara 2: Dari input hidden field jika meta tidak ada
+        if (!csrfToken) {
+            const csrfInput = document.querySelector('input[name="_token"]');
+            if (csrfInput) {
+                csrfToken = csrfInput.value;
+            }
+        }
+
+        // Cara 3: Dari window object jika tersedia
+        if (!csrfToken && window.Laravel && window.Laravel.csrfToken) {
+            csrfToken = window.Laravel.csrfToken;
+        }
+
+        // Jika masih tidak ada CSRF token, tampilkan error
+        if (!csrfToken) {
+            console.error('❌ CSRF Token tidak ditemukan!');
+            alert('Terjadi kesalahan keamanan. Silakan refresh halaman dan coba lagi.');
+            hideUpdateLokasiModal();
+            return;
+        }
+
+        fetch('{{ route("api.driver.location.update") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1475,7 +1942,37 @@
                 }
 
                 hideUpdateLokasiModal();
-                alert(`Lokasi berhasil diupdate! Sekarang berada di: ${nextStop.name}`);
+                console.log('✅ Update lokasi berhasil: ' + nextStop.name);
+
+                // ★★★ PERBAIKAN: OTOMATIS SELESAIKAN PERJALANAN JIKA SAMPAI OUTLET AKHIR ★★★
+                if (status === 'completed' || nextStop.type === 'finish') {
+                    console.log('🎉 Perjalanan Selesai! Outlet tujuan tercapai:', nextStop.name);
+
+                    // Update UI untuk status selesai
+                    const detailIcon = document.querySelector('.card-title-detail i');
+                    if (detailIcon) {
+                        detailIcon.style.color = "#2d572c";
+                        detailIcon.className = "fa-solid fa-circle-check";
+                    }
+
+                    document.getElementById('tripTitle').textContent = "✅ Perjalanan Selesai";
+
+                    // Hide Update Lokasi button
+                    const updateBtn = document.getElementById('updateLokasiBtn');
+                    if (updateBtn) updateBtn.classList.add('hidden');
+
+                    // Hide Mulai Perjalanan button
+                    const mulaiBtn = document.getElementById('mulaiPerjalananBtn');
+                    if (mulaiBtn) mulaiBtn.classList.add('hidden');
+
+                    // Hide Selesaikan Perjalanan button
+                    const selesaiBtn = document.getElementById('selesaiPerjalananBtn');
+                    if (selesaiBtn) selesaiBtn.classList.add('hidden');
+
+                    alert(`✅ Selamat! Perjalanan selesai. Anda telah sampai di ${nextStop.name}`);
+                } else {
+                    alert(`Lokasi berhasil diupdate! Sekarang di: ${nextStop.name}`);
+                }
             } else {
                 console.error('Update location failed', result);
                 alert('Gagal mengupdate lokasi. Silakan coba lagi.');
@@ -1490,61 +1987,173 @@
     function selesaikanPerjalanan() {
         if (journeyData.currentStopIndex === journeyData.stops.length - 1) {
             if (confirm('Apakah Anda yakin ingin menyelesaikan perjalanan?')) {
-                // Update status di halaman detail
-                document.querySelector('.card-title-detail i').style.color = "#2d572c";
-                document.querySelector('.card-title-detail i').className = "fa-solid fa-circle-check";
-                document.getElementById('tripTitle').textContent = "Perjalanan Selesai";
+                console.log('🎉 Selesaikan perjalanan ID:', currentTripId);
 
-                // Update status di halaman daftar perjalanan
-                if (currentTripId) {
-                    const statusElement = document.getElementById(`status-${currentTripId}`);
-                    if (statusElement) {
-                        statusElement.textContent = "Selesai";
-                        statusElement.className = "status-selesai";
+                // Ambil CSRF token
+                let csrfToken = null;
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                if (csrfMeta) {
+                    csrfToken = csrfMeta.getAttribute('content');
+                }
+
+                if (!csrfToken) {
+                    const csrfInput = document.querySelector('input[name="_token"]');
+                    if (csrfInput) {
+                        csrfToken = csrfInput.value;
                     }
                 }
 
-                // Tambahkan ke riwayat
-                const currentDate = new Date();
-                const formattedDate = currentDate.toLocaleDateString('id-ID', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                });
-                const formattedTime = currentDate.toLocaleTimeString('id-ID', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
+                if (!csrfToken) {
+                    alert('Terjadi kesalahan keamanan. Silakan refresh halaman dan coba lagi.');
+                    return;
+                }
 
-                // Sembunyikan tombol
-                document.getElementById('selesaiPerjalananBtn').classList.add('hidden');
+                // Kirim request ke server untuk update status
+                fetch('{{ route("api.driver.trip.complete") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        id_jadwal_driver: parseInt(currentTripId)
+                    })
+                })
+                .then(r => r.json())
+                .then(result => {
+                    if (result && result.success) {
+                        console.log('✅ Perjalanan berhasil diselesaikan di database');
 
-                alert('Perjalanan telah diselesaikan! Status telah diperbarui.');
+                        // Update status di halaman detail
+                        document.querySelector('.card-title-detail i').style.color = "#2d572c";
+                        document.querySelector('.card-title-detail i').className = "fa-solid fa-circle-check";
+                        document.getElementById('tripTitle').textContent = "✅ Perjalanan Selesai";
+
+                        // Update status di halaman daftar perjalanan
+                        if (currentTripId) {
+                            const statusElement = document.getElementById(`status-${currentTripId}`);
+                            if (statusElement) {
+                                statusElement.textContent = "Selesai";
+                                statusElement.className = "status-selesai";
+                            }
+                        }
+
+                        // Sembunyikan tombol
+                        document.getElementById('selesaiPerjalananBtn').classList.add('hidden');
+                        const updateBtn = document.getElementById('updateLokasiBtn');
+                        if (updateBtn) updateBtn.classList.add('hidden');
+                        const mulaiBtn = document.getElementById('mulaiPerjalananBtn');
+                        if (mulaiBtn) mulaiBtn.classList.add('hidden');
+
+                        alert('✅ Perjalanan telah diselesaikan! Status telah disimpan ke database.');
+                    } else {
+                        console.error('Gagal menyelesaikan perjalanan:', result);
+                        alert('Gagal menyelesaikan perjalanan. Silakan coba lagi.');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('Terjadi kesalahan saat menghubungi server.');
+                });
             }
         } else {
-            alert('Anda belum sampai di tujuan akhir!');
+            alert('Anda belum mencapai tujuan akhir. Lanjutkan update lokasi hingga tujuan.');
         }
     }
 
-    // Fungsi untuk menampilkan daftar penumpang berdasarkan ID perjalanan
-    function generatePenumpangList(tripId) {
+    // ★★★ FUNGSI UNTUK ALIGN KURSI DARI OUTLETS PEMBERHENTIAN ★★★
+    function alignSeatsFromStopPoints() {
+        // Jika ada stop points dengan outlets, kita bisa align kursi di sini
+        // Untuk sekarang, kita akan display stops dengan outlet info
+        if (journeyData.stops && journeyData.stops.length > 0) {
+            journeyData.stops.forEach((stop, index) => {
+                if (stop.outlets && stop.outlets.length > 0) {
+                    // Outlets sudah tersedia dari stop points
+                    console.log(`Stop ${index}: ${stop.name} - Outlets: ${stop.outlets.map(o => o.nama_outlet).join(', ')}`);
+                }
+            });
+        }
+    }
+
+    // ★★★ VARIABLE GLOBAL UNTUK AUTO-REFRESH DATA PENUMPANG ★★★
+    let passengerRefreshInterval = null;
+    let lastPassengerCount = 0; // Track perubahan jumlah penumpang
+
+    // ★★★ FUNGSI UNTUK FETCH DATA PENUMPANG REAL-TIME DARI API ★★★
+    async function fetchPassengersRealtime(tripId) {
+        try {
+            const route = "{{ route('driver.api.passengers.realtime', ':tripId') }}".replace(':tripId', tripId);
+            const response = await fetch(route, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            });
+
+            if (!response.ok) {
+                console.warn(`❌ Gagal fetch data penumpang real-time (Status: ${response.status})`);
+                return null;
+            }
+
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                console.log('✅ Data penumpang real-time berhasil di-fetch:', {
+                    total_passengers: result.data.total_passengers,
+                    occupied_seats: result.data.occupied_seats,
+                    timestamp: result.data.timestamp
+                });
+
+                // Check jika ada perubahan jumlah penumpang
+                if (result.data.total_passengers !== lastPassengerCount) {
+                    console.log(`📊 Ada perubahan jumlah penumpang! ${lastPassengerCount} → ${result.data.total_passengers}`);
+                    lastPassengerCount = result.data.total_passengers;
+                }
+
+                return result.data;
+            } else {
+                console.warn('❌ Response tidak valid:', result);
+                return null;
+            }
+        } catch (error) {
+            console.error('❌ Error fetching passengers realtime:', error);
+            return null;
+        }
+    }
+
+    // ★★★ FUNGSI UNTUK UPDATE PENUMPANG DARI DATA REAL-TIME ★★★
+    function updatePassengersFromRealtime(passengersData) {
+        if (!passengersData || !passengersData.passengers) {
+            console.warn('⚠️ Data penumpang tidak valid');
+            return;
+        }
+
         const penumpangListElement = document.getElementById('penumpangList');
         const totalPenumpangElement = document.getElementById('totalPenumpang');
+        const passengerCountEl = document.getElementById('passengerCount');
 
-        // Kosongkan daftar penumpang
+        if (!penumpangListElement) return;
+
+        // Bersihkan list lama
         penumpangListElement.innerHTML = '';
 
-        // Cari trip di data server
-        const trip = tripsData.find(t => parseInt(t.id_jadwal_driver) === parseInt(tripId));
-        const passengers = trip ? (trip.passengers || []) : [];
-
         // Update total penumpang
-        totalPenumpangElement.textContent = passengers.length;
+        if (totalPenumpangElement) {
+            totalPenumpangElement.textContent = passengersData.total_passengers;
+        }
 
-        // Generate elemen untuk setiap penumpang
-        passengers.forEach(passenger => {
-            let statusClass = '';
-            let statusText = '';
+        // Update info penumpang di header
+        if (passengerCountEl) {
+            passengerCountEl.textContent = `${passengersData.occupied_seats}/${passengersData.total_seats}`;
+        }
+
+        // Render setiap penumpang
+        passengersData.passengers.forEach(passenger => {
+            let statusClass = 'status-terverifikasi';
+            let statusText = 'Terverifikasi';
 
             // Tentukan kelas dan teks status
             switch((passenger.status || '').toLowerCase()) {
@@ -1579,8 +2188,71 @@
                 </div>
             `;
 
-            // Tambahkan ke daftar
             penumpangListElement.appendChild(penumpangItem);
+        });
+
+        console.log(`✅ Penumpang diupdate: ${passengersData.total_passengers} penumpang`);
+    }
+
+    // ★★★ FUNGSI UNTUK SETUP AUTO-REFRESH DATA PENUMPANG ★★★
+    function setupPassengerAutoRefresh(tripId) {
+        // Clear interval lama jika ada
+        if (passengerRefreshInterval) {
+            clearInterval(passengerRefreshInterval);
+        }
+
+        // Initial load
+        fetchPassengersRealtime(tripId).then(data => {
+            if (data) {
+                updatePassengersFromRealtime(data);
+            }
+        });
+
+        // Setup auto-refresh setiap 5 detik
+        passengerRefreshInterval = setInterval(async () => {
+            const data = await fetchPassengersRealtime(tripId);
+            if (data) {
+                updatePassengersFromRealtime(data);
+            }
+        }, 5000); // Refresh setiap 5 detik
+
+        console.log('✅ Auto-refresh data penumpang diaktifkan (update setiap 5 detik)');
+    }
+
+    // Fungsi untuk menampilkan daftar penumpang berdasarkan ID perjalanan
+    function generatePenumpangList(tripId) {
+        // ★★★ PERBAIKAN: Gunakan real-time data dari API daripada dari initial data ★★★
+        // Setup auto-refresh dan fetch data real-time
+        setupPassengerAutoRefresh(tripId);
+    }
+
+    // Fungsi untuk mengambil state perjalanan dari server dan mengembalikan promise
+    function fetchJourneyState(tripId) {
+        return new Promise((resolve, reject) => {
+            if (!tripId) return resolve(null);
+
+            // Ambil CSRF token jika diperlukan (GET biasanya tidak perlu, tapi keep for consistency)
+            let url = `{{ url('/api/driver/journey') }}`;
+            // Use named route URL
+            url = '{{ route("api.driver.journey.state", ["tripId" => "__TRIPID__"]) }}'.replace('__TRIPID__', tripId);
+
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            }).then(r => r.json())
+            .then(result => {
+                if (result && result.success) {
+                    resolve(result.data);
+                } else {
+                    resolve(null);
+                }
+            }).catch(err => {
+                console.error('Error fetching journey state:', err);
+                resolve(null);
+            });
         });
     }
 
@@ -1604,35 +2276,119 @@
         // ★★★ CARI FULL TRIP DATA DARI TRIPS DATA ★★★
         const fullTripData = tripsData.find(t => parseInt(t.id_jadwal_driver) === parseInt(tripData.id));
 
+        // Jika server menyediakan data lengkap, gunakan nilai tersebut untuk info utama
+        if (fullTripData) {
+            // ★★★ PENUMPANG: Dari kursi yang terisi di jadwal ★★★
+            const passengerCountEl = document.getElementById('passengerCount');
+            if (passengerCountEl) {
+                passengerCountEl.textContent = `${fullTripData.occupied_seats || 0}/${fullTripData.total_seats || 0}`;
+            }
+
+            // ★★★ WAKTU TEMPUH: Dari waktu berangkat sampai waktu sampat ★★★
+            const travelEl = document.getElementById('travelTime');
+            if (travelEl) {
+                let travelText = '-';
+                if (fullTripData.time && fullTripData.eta) {
+                    // Format: HH:MM - HH:MM (durasi)
+                    travelText = `${fullTripData.time} - ${fullTripData.eta}`;
+                    if (fullTripData.estimated_duration && fullTripData.estimated_duration !== '-') {
+                        travelText += ` (${fullTripData.estimated_duration})`;
+                    }
+                } else if (fullTripData.estimated_duration && fullTripData.estimated_duration !== '-') {
+                    travelText = fullTripData.estimated_duration;
+                }
+                travelEl.textContent = travelText;
+            }
+
+            // ★★★ JARAK: Dari data rute yang ada di jadwal ★★★
+            const distEl = document.getElementById('distance');
+            if (distEl && fullTripData.distance) {
+                const distanceText = (typeof fullTripData.distance === 'number') ? `${fullTripData.distance} km` : fullTripData.distance;
+                distEl.textContent = distanceText;
+            }
+        }
+
         // ★★★ BANGUN JOURNEY DATA DARI STOP POINTS ★★★
         buildJourneyDataFromStopPoints({
             from: tripData.from,
             to: tripData.to,
-            stop_points: fullTripData ? fullTripData.stop_points : []
+            stop_points: fullTripData ? fullTripData.stop_points : [],
+            id_jadwal_driver: tripData.id
         });
+
+        // ★★★ CEK DATA OUTLETS (LOG KE CONSOLE) ★★★
+        if (fullTripData && fullTripData.stop_points) {
+            debugOutletsData(fullTripData);
+            validateOutletsCompleteness();
+        }
 
         // Reset data perjalanan untuk perjalanan baru
         journeyData.currentStopIndex = 0;
 
-        // Update tampilan perjalanan
-        updateJourneyDisplay();
+        // ★★★ RESET JOURNEY START STATE (default) ★★★
+        journeyStarted[tripData.id] = false;
+
+        // Try to restore journey state from server (in case page was reloaded)
+        fetchJourneyState(tripData.id).then(state => {
+            if (state) {
+                // state can be an object or model; normalize
+                const status = state.status || (state.data && state.data.status) || 'not_started';
+                const idx = state.current_stop_index ?? state.data?.current_stop_index ?? 0;
+                journeyStarted[tripData.id] = (status === 'in_progress');
+                journeyData.currentStopIndex = parseInt(idx) || 0;
+                // Update UI accordingly
+                updateJourneyDisplay();
+            } else {
+                updateJourneyDisplay();
+            }
+        }).catch(() => {
+            updateJourneyDisplay();
+        });
 
         // Generate daftar penumpang berdasarkan ID perjalanan
         generatePenumpangList(parseInt(tripData.id));
 
-        // Cek status perjalanan
-        const statusElement = document.getElementById(`status-${tripData.id}`);
-        if (statusElement && statusElement.textContent === "Selesai") {
+        // Reset button visibility based on journey state
+        const mulaiBtn = document.getElementById('mulaiPerjalananBtn');
+        const updateBtn = document.getElementById('updateLokasiBtn');
+
+        // ★★★ CEK STATUS DARI SERVER DATA, BUKAN HANYA DARI DOM ELEMENT ★★★
+        let tripStatus = 'aktif'; // Default status
+        if (fullTripData && fullTripData.status) {
+            tripStatus = fullTripData.status;
+        } else {
+            // Fallback: cek dari DOM element jika server data tidak ada
+            const statusElement = document.getElementById(`status-${tripData.id}`);
+            if (statusElement && statusElement.textContent === "Selesai") {
+                tripStatus = 'selesai';
+            }
+        }
+
+        // Update UI berdasarkan status dari database
+        if (tripStatus === 'selesai') {
             // Jika perjalanan sudah selesai
             document.querySelector('.card-title-detail i').style.color = "#2d572c";
             document.querySelector('.card-title-detail i').className = "fa-solid fa-circle-check";
-            document.getElementById('tripTitle').textContent = "Perjalanan Selesai";
+            document.getElementById('tripTitle').textContent = "✅ Perjalanan Selesai";
             document.getElementById('selesaiPerjalananBtn').classList.add('hidden');
+            if (mulaiBtn) mulaiBtn.classList.add('hidden');
+            if (updateBtn) updateBtn.classList.add('hidden');
         } else {
             // Jika perjalanan masih aktif
             document.querySelector('.card-title-detail i').style.color = "#36B35A";
             document.querySelector('.card-title-detail i').className = "fa-solid fa-circle-play";
             document.getElementById('tripTitle').textContent = `Perjalanan #${tripData.id} - ${tripData.from} → ${tripData.to}`;
+
+            // Show "Mulai Perjalanan" if not started yet
+            if (journeyStarted[tripData.id]) {
+                // Journey already started
+                if (mulaiBtn) mulaiBtn.classList.add('hidden');
+                if (updateBtn) updateBtn.classList.remove('hidden');
+            } else {
+                // Journey not started yet
+                if (mulaiBtn) mulaiBtn.classList.remove('hidden');
+                if (updateBtn) updateBtn.classList.add('hidden');
+            }
         }
 
         // Scroll ke atas
@@ -1641,6 +2397,13 @@
 
     // Fungsi untuk kembali ke halaman daftar perjalanan
     function backToDaftarPerjalanan() {
+        // ★★★ CLEANUP: Hentikan auto-refresh data penumpang ★★★
+        if (passengerRefreshInterval) {
+            clearInterval(passengerRefreshInterval);
+            passengerRefreshInterval = null;
+            console.log('✅ Auto-refresh data penumpang dimatikan');
+        }
+
         // Sembunyikan halaman detail
         document.getElementById('detailPerjalananPage').classList.add('hidden');
 
@@ -1651,9 +2414,178 @@
         window.scrollTo(0, 0);
     }
 
+    // ★★★ FUNGSI UNTUK RENDER RIWAYAT PERJALANAN (HANYA YANG SELESAI) ★★★
+    function renderCompletedTripsHistory() {
+        const container = document.getElementById('historyItemsContainer');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        if (!completedTrips || completedTrips.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Belum ada riwayat perjalanan</div>';
+            return;
+        }
+
+        // ★★★ FILTER: Ambil hanya perjalanan dengan status 'selesai' ★★★
+        const finishedTrips = completedTrips.filter(trip => trip.status === 'selesai' || trip.status === 'completed');
+
+        if (finishedTrips.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Belum ada riwayat perjalanan yang selesai</div>';
+            return;
+        }
+
+        // ★★★ RENDER SETIAP COMPLETED TRIP ★★★
+        finishedTrips.forEach(trip => {
+            const tripDate = trip.tanggal ? new Date(trip.tanggal) : null;
+            const formattedDate = tripDate ? tripDate.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            }) : 'N/A';
+
+            const time = trip.waktu_keberangkatan || trip.time || '-';
+            const from = trip.asal || trip.from || trip.jadwal?.asal || trip.masterRute?.kota_asal || '-';
+            const to = trip.tujuan || trip.to || trip.jadwal?.tujuan || trip.masterRute?.kota_tujuan || '-';
+
+            // Hitung jumlah penumpang dari bookings jika tersedia
+            let passengerCount = 0;
+            if (trip.bookings && Array.isArray(trip.bookings)) {
+                trip.bookings.forEach(booking => {
+                    const details = booking.detail_penumpang || booking.detailPenumpang || [];
+                    if (Array.isArray(details)) {
+                        passengerCount += details.length;
+                    } else if (typeof details === 'object') {
+                        passengerCount += Object.keys(details).length;
+                    }
+                });
+            }
+            // Fallback: gunakan occupied_seats jika tersedia
+            if (passengerCount === 0 && trip.occupied_seats) {
+                passengerCount = trip.occupied_seats;
+            }
+
+            const displayRoute = trip.route_name || (trip.rute && trip.rute.nama_rute) || (trip.jadwal && trip.jadwal.rutes && trip.jadwal.rutes[0] && trip.jadwal.rutes[0].nama_rute) || `${from} → ${to}`;
+
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `
+                <div class="history-route">${displayRoute}</div>
+                <div class="history-date">${formattedDate} | ${time}</div>
+                <div class="history-footer">
+                    <div class="passenger-count">${passengerCount} penumpang</div>
+                    <span class="status-completed">Selesai</span>
+                </div>
+            `;
+
+            container.appendChild(item);
+        });
+    }
+
+    // ★★★ FILTER RIWAYAT BERDASARKAN PERIODE ★★★
+    function filterCompletedTripsHistory(filterValue) {
+        const container = document.getElementById('historyItemsContainer');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        if (!completedTrips || completedTrips.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Belum ada riwayat perjalanan</div>';
+            return;
+        }
+
+        // Filter trips yang selesai
+        let filteredTrips = completedTrips.filter(trip => trip.status === 'selesai' || trip.status === 'completed');
+
+        // Apply date filter
+        if (filterValue && filterValue !== 'Semua') {
+            const now = new Date();
+            filteredTrips = filteredTrips.filter(trip => {
+                const tripDate = trip.tanggal ? new Date(trip.tanggal) : null;
+                if (!tripDate) return false;
+
+                switch (filterValue) {
+                    case 'Minggu ini':
+                        const weekStart = new Date(now);
+                        weekStart.setDate(now.getDate() - now.getDay());
+                        return tripDate >= weekStart && tripDate <= now;
+                    case 'Bulan ini':
+                        return tripDate.getMonth() === now.getMonth() && tripDate.getFullYear() === now.getFullYear();
+                    case '3 bulan terakhir':
+                        const threeMonthsAgo = new Date(now);
+                        threeMonthsAgo.setMonth(now.getMonth() - 3);
+                        return tripDate >= threeMonthsAgo && tripDate <= now;
+                    default:
+                        return true;
+                }
+            });
+        }
+
+        if (filteredTrips.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Tidak ada riwayat perjalanan dalam periode yang dipilih</div>';
+            return;
+        }
+
+        // Render filtered trips
+        filteredTrips.forEach(trip => {
+            const tripDate = trip.tanggal ? new Date(trip.tanggal) : null;
+            const formattedDate = tripDate ? tripDate.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            }) : 'N/A';
+
+            const time = trip.waktu_keberangkatan || trip.time || '-';
+            const from = trip.asal || trip.from || trip.jadwal?.asal || trip.masterRute?.kota_asal || '-';
+            const to = trip.tujuan || trip.to || trip.jadwal?.tujuan || trip.masterRute?.kota_tujuan || '-';
+
+            // Hitung jumlah penumpang
+            let passengerCount = 0;
+            if (trip.bookings && Array.isArray(trip.bookings)) {
+                trip.bookings.forEach(booking => {
+                    const details = booking.detail_penumpang || booking.detailPenumpang || [];
+                    if (Array.isArray(details)) {
+                        passengerCount += details.length;
+                    } else if (typeof details === 'object') {
+                        passengerCount += Object.keys(details).length;
+                    }
+                });
+            }
+            if (passengerCount === 0 && trip.occupied_seats) {
+                passengerCount = trip.occupied_seats;
+            }
+
+            const displayRoute = trip.route_name || (trip.rute && trip.rute.nama_rute) || (trip.jadwal && trip.jadwal.rutes && trip.jadwal.rutes[0] && trip.jadwal.rutes[0].nama_rute) || `${from} → ${to}`;
+
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `
+                <div class="history-route">${displayRoute}</div>
+                <div class="history-date">${formattedDate} | ${time}</div>
+                <div class="history-footer">
+                    <div class="passenger-count">${passengerCount} penumpang</div>
+                    <span class="status-completed">Selesai</span>
+                </div>
+            `;
+
+            container.appendChild(item);
+        });
+    }
+
     // Event listeners
     document.addEventListener('DOMContentLoaded', function() {
         setActiveMenu();
+
+        // ★★★ RENDER RIWAYAT PERJALANAN SAAT PAGE LOAD ★★★
+        renderCompletedTripsHistory();
+
+        // ★★★ ADD EVENT LISTENER UNTUK FILTER RIWAYAT ★★★
+        const historyFilter = document.getElementById('historyFilterSelect');
+        if (historyFilter) {
+            historyFilter.addEventListener('change', function() {
+                filterCompletedTripsHistory(this.value);
+            });
+        }
+
         // Render daftar perjalanan dari server data
         function renderTripList() {
             const containerCard = document.querySelector('#daftarPerjalananPage .card');
@@ -1666,13 +2598,24 @@
             if (!tripsData || tripsData.length === 0) {
                 listContainer.innerHTML = '<div class="trip-item"><div class="trip-route">Tidak ada perjalanan</div></div>';
             } else {
-                tripsData.forEach((t, idx) => {
+                // ★★★ PERBAIKAN: PISAHKAN JADWAL AKTIF DAN SELESAI ★★★
+                const activeTrips = tripsData.filter(t => t.status !== 'selesai');
+                const completedDisplayTrips = tripsData.filter(t => t.status === 'selesai');
+
+                // Gabungkan: aktif dulu, baru selesai
+                const sortedTrips = [...activeTrips, ...completedDisplayTrips];
+
+                console.log(`📊 Total jadwal: ${tripsData.length} (Aktif: ${activeTrips.length}, Selesai: ${completedDisplayTrips.length})`);
+
+                sortedTrips.forEach((t, idx) => {
                     const tripId = t.id_jadwal_driver || '';
                     const from = t.from || t.rute?.kota_asal || t.from || '-';
                     const to = t.to || t.rute?.kota_tujuan || '-';
                     const seats = (t.occupied_seats || 0) + '/' + (t.total_seats || 0);
                     const passengers = (t.passengers || []).length || 0;
                     const time = t.time || t.waktu_keberangkatan || '-';
+                    const eta = t.eta || t.waktu_kedatangan || '-';
+                    const distance = t.distance ? (typeof t.distance === 'number' ? `${t.distance} km` : t.distance) : '-';
 
                     const statusText = t.status === 'selesai' ? 'Selesai' : (t.status || 'Akan Berangkat');
 
@@ -1682,9 +2625,17 @@
                     item.setAttribute('data-from', from);
                     item.setAttribute('data-to', to);
                     item.setAttribute('data-time', time);
+                    item.setAttribute('data-eta', eta);
                     item.setAttribute('data-duration', t.estimated_duration || '-');
+                    item.setAttribute('data-distance', distance);
                     item.setAttribute('data-seats', seats);
                     item.setAttribute('data-passengers', passengers);
+                    item.setAttribute('data-status', t.status);
+                    item.setAttribute('data-date', t.date);
+
+                    // ★★★ TAMPILKAN: Waktu berangkat - waktu sampat (durasi) ★★★
+                    const travelTimeDisplay = time && eta ? `${time} - ${eta}` : time || '-';
+                    const durationDisplay = t.estimated_duration ? ` (${t.estimated_duration})` : '';
 
                     item.innerHTML = `
                         <div class="trip-header">
@@ -1693,14 +2644,15 @@
                         </div>
 
                         <div class="trip-route">${from} → ${to}</div>
-                        <div class="trip-time">${time} • ${t.estimated_duration || '-'}</div>
+                        <div class="trip-time">${travelTimeDisplay}${durationDisplay}</div>
+                        <div style="font-size: 12px; color: #999; margin-top: 5px;">📅 ${t.date}</div>
 
                         <div class="status-badge">
                             <span class="status" id="status-${tripId}">${statusText}</span>
                         </div>
 
                         <div style="text-align:right;">
-                            <button class="btn-detail">Lihat Detail</button>
+                            <button type="button" class="btn-detail">Lihat Detail</button>
                         </div>
                     `;
 
@@ -1716,72 +2668,277 @@
             header.insertAdjacentElement('afterend', listContainer);
         }
 
-        renderTripList();
+        // ★★★ SETUP EVENT LISTENER SEBELUM RENDER ★★★
+        // Ini memastikan listener siap kapan saja tombol diklik
+        // Gunakan setTimeout kecil untuk memastikan DOM fully ready
+        setTimeout(() => {
+            setupDetailButtonListener();
+            renderTripList();
+        }, 100);
 
-        // Event listener untuk tombol "Lihat Detail" pada setiap perjalanan
-        document.querySelectorAll('.btn-detail').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const tripItem = this.closest('.trip-item');
-                const tripData = {
-                    id: tripItem.dataset.tripId,
-                    from: tripItem.dataset.from,
-                    to: tripItem.dataset.to,
-                    time: tripItem.dataset.time,
-                    duration: tripItem.dataset.duration,
-                    seats: tripItem.dataset.seats,
-                    passengers: tripItem.dataset.passengers
-                };
-                showDetailPerjalanan(tripData);
-            });
-        });
+        // ★★★ FUNCTION UNTUK SETUP EVENT LISTENER BUTTON DETAIL ★★★
+        function setupDetailButtonListener() {
+        try {
+            console.log('%c⚙️ Setup Event Listener untuk Button Detail', 'color: purple; font-weight: bold; font-size: 12px;');
 
-        // Event listener untuk klik pada item perjalanan (selain tombol)
-        document.querySelectorAll('.trip-item').forEach(item => {
-            item.addEventListener('click', function(e) {
-                // Jangan trigger jika klik pada tombol detail
-                if (!e.target.closest('.btn-detail')) {
-                    const tripData = {
-                        id: this.dataset.tripId,
-                        from: this.dataset.from,
-                        to: this.dataset.to,
-                        time: this.dataset.time,
-                        duration: this.dataset.duration,
-                        seats: this.dataset.seats,
-                        passengers: this.dataset.passengers
-                    };
-                    showDetailPerjalanan(tripData);
+            // Gunakan capturing phase untuk memastikan event terdeteksi
+            document.addEventListener('click', function(e) {
+                // Check apakah yang diklik adalah button dengan tag BUTTON dan class .btn-detail
+                const button = e.target.closest('button.btn-detail');
+
+                if (button && button.closest('.trip-item')) {
+                    console.log('%c🔘 BUTTON DETAIL DIKLIK!', 'color: #ff6a00; font-weight: bold; font-size: 13px;');
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    try {
+                        const tripItem = button.closest('.trip-item');
+
+                        if (tripItem) {
+                            console.log('✅ Trip item ditemukan');
+
+                            // Ambil trip ID dari data attribute
+                            const tripId = tripItem.getAttribute('data-trip-id');
+
+                            if (!tripId) {
+                                console.error('❌ data-trip-id tidak ditemukan!', tripItem.outerHTML.substring(0, 200));
+                                return;
+                            }
+
+                            // Siapkan data dari attributes
+                            const tripDataToShow = {
+                                id: tripId,
+                                from: tripItem.getAttribute('data-from') || 'N/A',
+                                to: tripItem.getAttribute('data-to') || 'N/A',
+                                time: tripItem.getAttribute('data-time') || 'N/A',
+                                eta: tripItem.getAttribute('data-eta') || 'N/A',
+                                duration: tripItem.getAttribute('data-duration') || 'N/A',
+                                distance: tripItem.getAttribute('data-distance') || 'N/A',
+                                seats: tripItem.getAttribute('data-seats') || 'N/A',
+                                passengers: tripItem.getAttribute('data-passengers') || '0'
+                            };
+
+                            console.log('%cData ditampilkan:', 'color: green; font-weight: bold;', tripDataToShow);
+
+                            // Panggil function
+                            showDetailPerjalanan(tripDataToShow);
+                        }
+                    } catch (err) {
+                        console.error('❌ Error:', err);
+                    }
                 }
-            });
-        });
+            }, true); // Capturing phase
 
-        // Event listener untuk tombol Update Lokasi di halaman detail
-        document.getElementById('updateLokasiBtn').addEventListener('click', showUpdateLokasiModal);
+            console.log('%c✅ Event listener button detail ready', 'color: green; font-weight: bold;');
+        } catch (error) {
+            console.error('❌ Error di setupDetailButtonListener:', error);
+        }
+    }
 
-        // Event listener untuk tombol Batal di modal
-        document.getElementById('cancelUpdateBtn').addEventListener('click', hideUpdateLokasiModal);
+    // ★★★ EVENT LISTENER UNTUK BUTTON LAINNYA ★★★
+        document.addEventListener('click', function(e) {
+            // Handle Mulai Perjalanan button
+            if (e.target?.id === 'mulaiPerjalananBtn' || e.target?.closest('#mulaiPerjalananBtn')) {
+                console.log('🔘 Tombol Mulai Perjalanan diklik');
+                mulaiPerjalanan();
+            }
 
-        // Event listener untuk tombol Update di modal
-        document.getElementById('confirmUpdateBtn').addEventListener('click', confirmUpdateLokasi);
+            // Handle Update Lokasi button
+            if (e.target?.id === 'updateLokasiBtn' || e.target?.closest('#updateLokasiBtn')) {
+                console.log('🔘 Tombol Update Lokasi diklik');
+                showUpdateLokasiModal();
+            }
 
-        // Event listener untuk tombol Selesaikan Perjalanan
-        document.getElementById('selesaiPerjalananBtn').addEventListener('click', selesaikanPerjalanan);
-
-        // Event listener untuk tombol kembali
-        document.getElementById('backButton').addEventListener('click', backToDaftarPerjalanan);
-        document.getElementById('backToDaftar').addEventListener('click', function(e) {
-            e.preventDefault();
-            backToDaftarPerjalanan();
-        });
-
-        // Event listener untuk menutup modal saat klik di luar modal
-        document.getElementById('updateLokasiModal').addEventListener('click', function(e) {
-            if (e.target === this) {
+            // Handle Cancel button
+            if (e.target?.id === 'cancelUpdateBtn' || e.target?.closest('#cancelUpdateBtn')) {
+                console.log('🔘 Tombol Batal diklik');
                 hideUpdateLokasiModal();
             }
+
+            // Handle Confirm Update button - PENTING!
+            if (e.target?.id === 'confirmUpdateBtn' || e.target?.closest('#confirmUpdateBtn')) {
+                console.log('🔘 Tombol Update (Confirm) diklik');
+                e.preventDefault();
+                confirmUpdateLokasi();
+            }
+
+            // Handle Selesaikan Perjalanan button
+            if (e.target?.id === 'selesaiPerjalananBtn' || e.target?.closest('#selesaiPerjalananBtn')) {
+                console.log('🔘 Tombol Selesaikan Perjalanan diklik');
+                selesaikanPerjalanan();
+            }
+
+            // Handle Back button
+            if (e.target?.id === 'backButton' || e.target?.closest('#backButton')) {
+                console.log('🔘 Tombol Kembali diklik');
+                backToDaftarPerjalanan();
+            }
         });
+
+        // Fallback: Direct event listeners untuk kompatibilitas lebih baik
+        const mulaiBtn = document.getElementById('mulaiPerjalananBtn');
+        if (mulaiBtn) {
+            mulaiBtn.addEventListener('click', mulaiPerjalanan);
+            console.log('✅ Direct listener untuk mulaiPerjalananBtn');
+        }
+
+        const updateBtn = document.getElementById('updateLokasiBtn');
+        if (updateBtn) {
+            updateBtn.addEventListener('click', showUpdateLokasiModal);
+            console.log('✅ Direct listener untuk updateLokasiBtn');
+        }
+
+        const cancelBtn = document.getElementById('cancelUpdateBtn');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', hideUpdateLokasiModal);
+            console.log('✅ Direct listener untuk cancelUpdateBtn');
+        }
+
+        const confirmBtn = document.getElementById('confirmUpdateBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', confirmUpdateLokasi);
+            console.log('✅ Direct listener untuk confirmUpdateBtn');
+        }
+
+        const selesaiBtn = document.getElementById('selesaiPerjalananBtn');
+        if (selesaiBtn) {
+            selesaiBtn.addEventListener('click', selesaikanPerjalanan);
+            console.log('✅ Direct listener untuk selesaiPerjalananBtn');
+        }
+
+        const backBtn = document.getElementById('backButton');
+        if (backBtn) {
+            backBtn.addEventListener('click', backToDaftarPerjalanan);
+            console.log('✅ Direct listener untuk backButton');
+        }
+
+        const backToDaftarLink = document.getElementById('backToDaftar');
+        if (backToDaftarLink) {
+            backToDaftarLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                backToDaftarPerjalanan();
+            });
+            console.log('✅ Direct listener untuk backToDaftar');
+        }
+
+        // Event listener untuk menutup modal saat klik di luar modal
+        const modal = document.getElementById('updateLokasiModal');
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    console.log('🔴 Menutup modal - klik di luar');
+                    hideUpdateLokasiModal();
+                }
+            });
+            console.log('✅ Direct listener untuk updateLokasiModal close');
+        }
+
+        console.log('✅✅✅ Semua event listeners (delegation + direct) berhasil setup');
+
+        // ----- Real-time listeners via Laravel Echo (jika tersedia) -----
+        // Listen to journey started/completed events for each trip so UI updates automatically
+        function handleJourneyStartedEvent(payload) {
+            try {
+                const tripId = String(payload.trip_id || payload.tripId || payload.data?.trip_id || payload.data?.tripId);
+                console.log('🔔 Received DriverJourneyStarted for', tripId, payload);
+
+                // Update tripsData status
+                const idx = tripsData.findIndex(t => String(t.id_jadwal_driver) === String(tripId));
+                if (idx !== -1) {
+                    tripsData[idx].status = 'dalam_perjalanan';
+                }
+
+                // If the trip exists in completedTrips (edge-case), remove it
+                const completedIdx = completedTrips.findIndex(t => String(t.id_jadwal_driver) === String(tripId));
+                if (completedIdx !== -1) {
+                    completedTrips.splice(completedIdx, 1);
+                }
+
+                // Rerender lists
+                renderTripList();
+                renderCompletedTripsHistory();
+
+                // If the trip is open in detail page, update buttons/UI
+                if (currentTripId && String(currentTripId) === String(tripId)) {
+                    journeyStarted[currentTripId] = true;
+                    const mulaiBtn = document.getElementById('mulaiPerjalananBtn');
+                    const updateBtn = document.getElementById('updateLokasiBtn');
+                    if (mulaiBtn) mulaiBtn.classList.add('hidden');
+                    if (updateBtn) updateBtn.classList.remove('hidden');
+                    const statusEl = document.getElementById(`status-${tripId}`);
+                    if (statusEl) { statusEl.textContent = 'Dalam Perjalanan'; statusEl.className = 'status'; }
+                }
+            } catch (err) {
+                console.error('Error handling DriverJourneyStarted event:', err);
+            }
+        }
+
+        function handleJourneyCompletedEvent(payload) {
+            try {
+                const tripId = String(payload.trip_id || payload.tripId || payload.data?.trip_id || payload.data?.tripId);
+                console.log('🔔 Received DriverJourneyCompleted for', tripId, payload);
+
+                // Move trip from tripsData to completedTrips
+                const idx = tripsData.findIndex(t => String(t.id_jadwal_driver) === String(tripId));
+                if (idx !== -1) {
+                    const tripObj = tripsData.splice(idx, 1)[0];
+                    tripObj.status = 'selesai';
+                    completedTrips.unshift(tripObj);
+                } else {
+                    // If not found in tripsData, ensure it's marked completed in completedTrips
+                    const cidx = completedTrips.findIndex(t => String(t.id_jadwal_driver) === String(tripId));
+                    if (cidx === -1) {
+                        completedTrips.unshift({ id_jadwal_driver: tripId, status: 'selesai' });
+                    }
+                }
+
+                // Rerender lists
+                renderTripList();
+                renderCompletedTripsHistory();
+
+                // If currently viewing detail of this trip, navigate back to daftar
+                if (currentTripId && String(currentTripId) === String(tripId)) {
+                    alert('Perjalanan telah selesai dan dipindahkan ke Riwayat. Anda akan kembali ke daftar perjalanan.');
+                    backToDaftarPerjalanan();
+                }
+            } catch (err) {
+                console.error('Error handling DriverJourneyCompleted event:', err);
+            }
+        }
+
+        // Subscribe to channels if Echo is available
+        if (window.Echo) {
+            try {
+                // Subscribe to per-trip channels
+                tripsData.forEach(t => {
+                    const tripId = t.id_jadwal_driver;
+                    if (!tripId) return;
+
+                    try {
+                        window.Echo.private(`trip.journey.${tripId}`)
+                            .listen('DriverJourneyStarted', (e) => handleJourneyStartedEvent(e))
+                            .listen('DriverJourneyCompleted', (e) => handleJourneyCompletedEvent(e));
+                    } catch (e) {
+                        console.warn('Echo subscription error for trip', tripId, e);
+                    }
+                });
+
+                // Also listen to admin/global channel for any journey events
+                try {
+                    window.Echo.private('admin.driver-journeys')
+                        .listen('DriverJourneyStarted', (e) => handleJourneyStartedEvent(e))
+                        .listen('DriverJourneyCompleted', (e) => handleJourneyCompletedEvent(e));
+                } catch (e) {
+                    console.warn('Echo subscription error for admin.driver-journeys', e);
+                }
+
+                console.log('✅ Real-time Echo listeners registered for journey events');
+            } catch (err) {
+                console.warn('Failed to initialize Echo listeners', err);
+            }
+        } else {
+            console.log('ℹ️ Laravel Echo not found; real-time journey updates are disabled in this browser');
+        }
     });
 </script>
-
-</body>
-</html>
+@endpush

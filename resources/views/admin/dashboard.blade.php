@@ -290,44 +290,44 @@
     .dashboard {
         padding: 20px 24px 32px;
     }
-    
+
     .summary {
         grid-template-columns: repeat(3, 1fr);
         gap: 20px;
     }
-    
+
     .summary-card {
         padding: 32px 24px;
     }
-    
+
     .content-grid {
         flex-direction: row;
         gap: 20px;
     }
-    
+
     .content-grid > .card {
         flex: 1;
     }
-    
+
     .chart-header {
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
     }
-    
+
     .chart-filters {
         overflow-x: visible;
     }
-    
+
     .chart-stats {
         flex-direction: row;
         gap: 20px;
     }
-    
+
     .stat-value {
         margin-left: 4px;
     }
-    
+
     .branch-info {
         text-align: left;
         padding: 12px 16px;
@@ -339,32 +339,32 @@
     .dashboard {
         padding: 24px 32px 40px;
     }
-    
+
     .content-grid {
         display: grid;
         grid-template-columns: 4fr 3fr;
         gap: 22px;
     }
-    
+
     .summary {
         gap: 22px;
         margin-bottom: 28px;
     }
-    
+
     .summary-card {
         padding: 42px;
     }
-    
+
     .dashboard-header {
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
     }
-    
+
     .search-box {
         max-width: 300px;
     }
-    
+
     .table {
         min-width: 100%;
     }
@@ -383,18 +383,18 @@
         padding: 10px 16px;
         font-size: 13px;
     }
-    
+
     .table th,
     .table td {
         padding: 10px 12px;
         font-size: 12px;
     }
-    
+
     .badge {
         padding: 6px 12px;
         font-size: 11px;
     }
-    
+
     .route-list li {
         font-size: 13px;
         padding: 10px 0;
@@ -406,15 +406,15 @@
     .summary-card {
         padding: 20px;
     }
-    
+
     .card {
         padding: 16px;
     }
-    
+
     .chart-container {
         height: 220px;
     }
-    
+
     .stat-item {
         font-size: 11px;
     }
@@ -538,14 +538,6 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td>08:00</td>
-                        <td>Jakarta → Bandung</td>
-                        <td>S-001</td>
-                        <td>Dimas Mahendra</td>
-                        <td>10/12</td>
-                        <td><span class="badge departed">Berangkat</span></td>
-                    </tr>
-                    <tr>
                         <td>10:30</td>
                         <td>Bandung → Jakarta</td>
                         <td>S-002</td>
@@ -561,14 +553,6 @@
                         <td>12/12</td>
                         <td><span class="badge completed">Selesai</span></td>
                     </tr>
-                    <tr>
-                        <td>15:30</td>
-                        <td>Jakarta → Bandung</td>
-                        <td>S-001</td>
-                        <td>Dimas Mahendra</td>
-                        <td>6/12</td>
-                        <td><span class="badge scheduled">Terjadwal</span></td>
-                    </tr>
                 </tbody>
             </table>
         </div>
@@ -580,7 +564,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Get canvas element
     const ctx = document.getElementById('salesChart').getContext('2d');
-    
+
     // Adjust chart for mobile
     const isMobile = window.innerWidth < 768;
     const chartHeight = isMobile ? 220 : 250;

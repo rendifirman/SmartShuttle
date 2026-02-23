@@ -417,6 +417,24 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/pegawai', [AdminController::class, 'pegawai'])
             ->middleware('permission:view_pegawai')
             ->name('pegawai');
+        Route::get('/pegawai/create', [AdminController::class, 'createPegawai'])
+            ->middleware('permission:manage_pegawai')
+            ->name('pegawai.create');
+        Route::post('/pegawai', [AdminController::class, 'storePegawai'])
+            ->middleware('permission:manage_pegawai')
+            ->name('pegawai.store');
+        Route::get('/pegawai/{id}', [AdminController::class, 'showPegawai'])
+            ->middleware('permission:view_pegawai')
+            ->name('pegawai.show');
+        Route::get('/pegawai/{id}/edit', [AdminController::class, 'editPegawai'])
+            ->middleware('permission:manage_pegawai')
+            ->name('pegawai.edit');
+        Route::put('/pegawai/{id}', [AdminController::class, 'updatePegawai'])
+            ->middleware('permission:manage_pegawai')
+            ->name('pegawai.update');
+        Route::delete('/pegawai/{id}', [AdminController::class, 'destroyPegawai'])
+            ->middleware('permission:manage_pegawai')
+            ->name('pegawai.destroy');
         // Rute Routes
         Route::get('/rute', [RuteController::class, 'index'])
             ->middleware('permission:view_rute')
@@ -553,6 +571,9 @@ Route::middleware(['auth:driver'])->prefix('driver')->name('driver.')->group(fun
     Route::post('/pengaturan/update-schedule-accept-mode', [DriverController::class, 'updateScheduleAcceptMode'])->name('pengaturan.update-schedule-accept-mode');
     Route::get('/bantuan', [DriverController::class, 'bantuan'])->name('bantuan');
 
+    // ★★★ API ENDPOINT: Ambil data penumpang real-time untuk trip tertentu ★★★
+    Route::get('/api/passengers/{tripId}', [DriverController::class, 'getPassengersRealtime'])->name('api.passengers.realtime');
+
     // ★★★ ROUTES DRIVER JADWAL (FROM PROMPT) - Menggunakan DriverJadwalController ★★★
     Route::get('/dashboard', [DriverJadwalController::class, 'dashboard'])->name('dashboard');
 
@@ -647,6 +668,20 @@ Route::prefix('api')->group(function () {
     // Driver location API (driver updates location during trip)
     Route::post('/driver/location', [\App\Http\Controllers\API\DriverLocationController::class, 'updateLocation'])
         ->name('api.driver.location.update');
+
+    // Start journey endpoint (driver clicks "Mulai Perjalanan")
+    Route::post('/driver/journey/start', [\App\Http\Controllers\API\DriverLocationController::class, 'startJourney'])
+        ->name('api.driver.journey.start');
+
+    // Get journey state for a trip (driver-only)
+    Route::get('/driver/journey/{tripId}/state', [\App\Http\Controllers\API\DriverLocationController::class, 'getJourneyState'])
+        ->name('api.driver.journey.state');
+
+    Route::post('/driver/journey/start', [\App\Http\Controllers\API\DriverLocationController::class, 'startJourney'])
+        ->name('api.driver.journey.start');
+
+    Route::post('/driver/trip/complete', [\App\Http\Controllers\API\DriverLocationController::class, 'completeTrip'])
+        ->name('api.driver.trip.complete');
 
     Route::get('/driver/location/{driverId}/{tripId}/latest', [\App\Http\Controllers\API\DriverLocationController::class, 'getLatestLocation'])
         ->name('api.driver.location.latest');

@@ -43,7 +43,7 @@ class AdminPemesananController extends Controller
             // Get jadwals with matching date and available seats
             $jadwals = Jadwal::whereIn('id', $jadwalIds)
                 ->whereDate('tanggal_keberangkatan', $tanggal)
-                ->with(['shuttle', 'rute_pertama', 'rute_terakhir'])
+                ->with(['shuttle', 'rutes'])
                 ->where('kursi_tersedia', '>', 0)
                 ->get();
 
@@ -221,7 +221,7 @@ class AdminPemesananController extends Controller
                 'telepon_pemesan' => $validated['telepon_pemesan'],
                 'email_pemesan' => $validated['email_pemesan'],
                 'jumlah_penumpang' => $validated['jumlah_penumpang'],
-                'total_harga' => $hargaTotal,
+                'harga_total' => (int) $hargaTotal,
                 'diskon' => $diskon,
                 'promo_id' => $promoId,
                 'total_bayar' => $totalAfterDiscount,

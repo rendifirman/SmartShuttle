@@ -9,10 +9,12 @@ use App\Models\User;
 use App\Models\DriverSchedule; // Tambahkan ini
 use App\Models\DriverJadwal;
 use App\Models\DriverLocation;
+use App\Models\DriverJourneyState;
 use App\Models\Pemesanan;
 use App\Models\Rute;
 use App\Models\Outlet;
 use App\Models\Branch;
+use App\Models\KursiTerpesan;
 
 class DriverController extends Controller
 {
@@ -152,7 +154,8 @@ class DriverController extends Controller
                 }
             })->count();
 
-            $jadwalAktif = $allSchedules->where('status', 'aktif')->count();
+            // Count schedules that are either 'aktif' or 'dalam_perjalanan' as active
+            $jadwalAktif = $allSchedules->whereIn('status', ['aktif', 'dalam_perjalanan'])->count();
             $jadwalSelesai = $allSchedules->where('status', 'selesai')->count();
             $totalJadwal = $allSchedules->count();
         } else {
@@ -195,9 +198,148 @@ class DriverController extends Controller
     /**
      * Show driver reports
      */
-    public function laporan()
+    public function laporan(Request $request)
     {
-        return view('driver.laporan');
+        $driver = Auth::guard('driver')->user();
+
+        if (!$driver) {
+            return redirect()->route('driver.login');
+        }
+
+        // Get filter parameters
+        $bulan = $request->input('bulan', date('m'));
+        $tahun = $request->input('tahun', date('Y'));
+
+        // Query all schedules for this driver with filters
+        $query = DriverJadwal::with(['jadwal', 'masterRute', 'jadwal.rutes'])
+            ->where('id_driver', $driver->id);
+
+        // Filter by month and year if provided
+        if ($bulan && $tahun) {
+            $query->whereMonth('tanggal', $bulan)
+                  ->whereYear('tanggal', $tahun);
+        }
+
+        // Get all schedules sorted by date descending
+        $allSchedules = $query->orderBy('tanggal', 'desc')
+            ->orderBy('waktu_keberangkatan', 'desc')
+            ->get();
+
+        // Process data for each schedule
+        $laporanData = [];
+        foreach ($allSchedules as $schedule) {
+            // Get route info (from -> to)
+            $from = null;
+            $to = null;
+
+            // Try from masterRute first
+            if ($schedule->masterRute) {
+                $from = $schedule->masterRute->kota_asal;
+                $to = $schedule->masterRute->kota_tujuan;
+            }
+
+            // Fallback from jadwal->rutes
+            if (empty($from) && $schedule->jadwal && $schedule->jadwal->rutes->isNotEmpty()) {
+                $firstRute = $schedule->jadwal->rutes->first();
+                $from = $firstRute->kota_asal;
+                $to = $firstRute->kota_tujuan;
+            }
+
+            // Fallback from string route
+            if (empty($from)) {
+                $ruteString = $schedule->rute ?? '';
+                if (preg_match('/\(([^→]+)→([^)]+)\)/', $ruteString, $matches)) {
+                    $from = trim($matches[1]);
+                    $to = trim($matches[2]);
+                } else {
+                    $from = $ruteString ?: 'N/A';
+                    $to = 'N/A';
+                }
+            }
+
+            // Get passenger count from Pemesanan
+            $penumpangCount = Pemesanan::where('id_jadwal_driver', $schedule->id_jadwal_driver)
+                ->whereIn('status', ['dibayar', 'diproses', 'selesai'])
+                ->with('detailPenumpang')
+                ->get()
+                ->sum(function($booking) {
+                    return $booking->detailPenumpang->count();
+                });
+
+            // Get paket count (packages - this could be from additional services or separate table)
+            // For now, we'll calculate from Pemesanan - assuming paket is separate from passengers
+            // If there's no specific column for paket, we'll set it to 0 for now
+            $paketCount = 0;
+
+            // Determine category type
+            $kategori = 'perjalanan'; // Default is perjalanan (passenger)
+            if ($penumpangCount == 0 && $schedule->status == 'selesai') {
+                $kategori = 'armada'; // Empty passenger might be armada movement
+            }
+
+            // Format date
+            $tanggal = $schedule->tanggal ? $schedule->tanggal->format('d-m-Y') : 'N/A';
+
+            // Status badge
+            $statusBadge = '';
+            switch ($schedule->status) {
+                case 'selesai':
+                    $statusBadge = 'Selesai';
+                    break;
+                case 'aktif':
+                case 'dalam_perjalanan':
+                    $statusBadge = 'Dalam Proses';
+                    break;
+                case 'dibatalkan':
+                    $statusBadge = 'Dibatalkan';
+                    break;
+                default:
+                    $statusBadge = ucfirst($schedule->status ?? 'N/A');
+            }
+
+            $laporanData[] = [
+                'id_jadwal_driver' => $schedule->id_jadwal_driver,
+                'tanggal' => $tanggal,
+                'rute' => ($from && $to) ? "$from - $to" : ($schedule->rute ?? 'N/A'),
+                'from' => $from,
+                'to' => $to,
+                'penumpang' => $penumpangCount,
+                'paket' => $paketCount,
+                'armada' => $schedule->armada ?? 'Bus A',
+                'status' => $statusBadge,
+                'status_raw' => $schedule->status,
+                'kategori' => $kategori,
+                'waktu_keberangkatan' => $schedule->waktu_keberangkatan ?? 'N/A',
+            ];
+        }
+
+        // Get available months for filter (last 12 months)
+        $availableMonths = [];
+        for ($i = 0; $i < 12; $i++) {
+            $date = \Carbon\Carbon::now()->subMonths($i);
+            $availableMonths[] = [
+                'bulan' => $date->format('m'),
+                'tahun' => $date->format('Y'),
+                'label' => $date->translatedFormat('F Y')
+            ];
+        }
+
+        // Statistics
+        $totalPerjalanan = collect($laporanData)->where('kategori', 'perjalanan')->count();
+        $totalPenumpang = collect($laporanData)->sum('penumpang');
+        $totalPaket = collect($laporanData)->sum('paket');
+        $totalSelesai = collect($laporanData)->where('status_raw', 'selesai')->count();
+
+        return view('driver.laporan', compact(
+            'laporanData',
+            'availableMonths',
+            'bulan',
+            'tahun',
+            'totalPerjalanan',
+            'totalPenumpang',
+            'totalPaket',
+            'totalSelesai'
+        ));
     }
 
     /**
@@ -211,35 +353,162 @@ class DriverController extends Controller
             return redirect()->route('driver.login');
         }
 
-        // Ambil data jadwal driver untuk hari ini dan masa depan
-        $today = \Carbon\Carbon::today();
-        $trips = DriverJadwal::with(['jadwal', 'masterRute', 'jadwal.rutes'])
+        // Ambil data jadwal driver - TANPA FILTER KETAT agar semua jadwal bisa dilihat
+        // Query DriverJadwal dengan relationship yang diperlukan
+        $query = DriverJadwal::with(['jadwal', 'masterRute', 'jadwal.rutes'])
             ->where('id_driver', $driver->id)
-            ->where('tanggal', '>=', $today)
+            // ★★★ PERBAIKAN: Tampilkan semua jadwal tanpa filter tanggal/status
+            // Ini memastikan driver bisa lihat semua jadwal yang di-assign
             ->orderBy('tanggal', 'asc')
-            ->orderBy('waktu_keberangkatan', 'asc')
-            ->get();
+            ->orderBy('waktu_keberangkatan', 'asc');
 
-        // Ambil history perjalanan (selesai)
-        $completedTrips = DriverJadwal::with(['jadwal', 'masterRute'])
+        // ★★★ CATATAN: Filter dilakukan SETELAH data di-load untuk fleksibilitas
+        // Jangan filter di sini agar semua jadwal bisa dilihat driver
+
+        $trips = $query->get();
+
+        // Ambil history perjalanan (selesai) - SEMUA riwayat tanpa batas
+        $completedTrips = DriverJadwal::with(['jadwal', 'masterRute', 'jadwal.rutes'])
             ->where('id_driver', $driver->id)
             ->where('status', 'selesai')
             ->orderBy('tanggal', 'desc')
-            ->limit(10)
-            ->get();
+            ->orderBy('waktu_keberangkatan', 'desc')
+            ->get(); // ★★★ Tanpa limit() agar semua riwayat bisa dilihat
 
-            // Ambil data penumpang untuk setiap trip
-            // PERBAIKAN: Kolom yang benar adalah 'STATUS' (bukan status_pembayaran)
-            // Nilai yang valid: menunggu_pembayaran, menunggu_konfirmasi, diproses, dibayar, selesai, dibatalkan
-            // Kita gunakan 'dibayar' karena itu ekivalen dengan 'lunas'
-            $tripsData = [];
-            foreach ($trips as $trip) {
+        // Map completed trips into a simplified array so view JS can reliably access
+        // route name, from and to fields (previously these were sometimes missing)
+        $completedTrips = $completedTrips->map(function($trip) {
+            $from = null;
+            $to = null;
+            $routeName = null;
+
+            if ($trip->masterRute) {
+                $from = $trip->masterRute->kota_asal;
+                $to = $trip->masterRute->kota_tujuan;
+                $routeName = $trip->masterRute->nama_rute ?? null;
+            }
+
+            if (empty($from) && $trip->jadwal && $trip->jadwal->rutes->isNotEmpty()) {
+                $firstRute = $trip->jadwal->rutes->first();
+                $from = $firstRute->kota_asal;
+                $to = $firstRute->kota_tujuan;
+                $routeName = $routeName ?? ($firstRute->nama_rute ?? null);
+            }
+
+            if (empty($from)) {
+                $ruteString = $trip->rute ?? '';
+                if (preg_match('/^(.+?)\s*\(([^→]+)→([^)]+)\)/', $ruteString, $matches)) {
+                    $routeName = trim($matches[1]);
+                    $from = trim($matches[2]);
+                    $to = trim($matches[3]);
+                } elseif (preg_match('/\(([^→]+)→([^)]+)\)/', $ruteString, $matches)) {
+                    $from = trim($matches[1]);
+                    $to = trim($matches[2]);
+                } else {
+                    $from = $ruteString ?: 'N/A';
+                    $to = 'N/A';
+                }
+            }
+
+            if (empty($from)) {
+                $from = $trip->kota_asal ?? $trip->asal ?? 'N/A';
+                $to = $trip->kota_tujuan ?? $trip->tujuan ?? 'N/A';
+            }
+
+            return [
+                'id_jadwal_driver' => $trip->id_jadwal_driver,
+                'from' => $from,
+                'to' => $to,
+                'route_name' => $routeName,
+                'tanggal' => $trip->tanggal ? $trip->tanggal->format('Y-m-d') : null,
+                'waktu_keberangkatan' => $trip->waktu_keberangkatan ?? null,
+                'status' => $trip->status ?? null,
+                'occupied_seats' => $trip->kursi_terisi ?? 0,
+                // include minimal nested relations for backward compatibility
+                'masterRute' => $trip->masterRute ? [
+                    'kota_asal' => $trip->masterRute->kota_asal ?? null,
+                    'kota_tujuan' => $trip->masterRute->kota_tujuan ?? null,
+                    'nama_rute' => $trip->masterRute->nama_rute ?? null,
+                ] : null,
+                'jadwal' => $trip->jadwal ? [
+                    'rutes' => $trip->jadwal->rutes->map(function($r){
+                        return [
+                            'kota_asal' => $r->kota_asal ?? null,
+                            'kota_tujuan' => $r->kota_tujuan ?? null,
+                            'nama_rute' => $r->nama_rute ?? null,
+                        ];
+                    })->toArray(),
+                ] : null,
+            ];
+        })->toArray();
+
+        // Ambil data penumpang untuk setiap trip
+        // PERBAIKAN: Kolom yang benar adalah 'STATUS' (bukan status_pembayaran)
+        // Nilai yang valid: menunggu_pembayaran, menunggu_konfirmasi, diproses, dibayar, selesai, dibatalkan
+        // Kita gunakan 'dibayar' karena itu ekivalen dengan 'lunas'
+        $tripsData = [];
+        foreach ($trips as $trip) {
+            // ★★★ AMBIL DATA DARI JADWAL DAN RUTE ★★★
+            // Prioritas: masterRute (rute_id) -> jadwal.rutes -> string rute
+
+            // Inisialisasi variabel
+            $from = null;
+            $to = null;
+            $routeName = null;
+
+            // Coba ambil dari masterRute (tabel Rute via rute_id)
+            if ($trip->masterRute) {
+                $from = $trip->masterRute->kota_asal;
+                $to = $trip->masterRute->kota_tujuan;
+                $routeName = $trip->masterRute->nama_rute;
+            }
+
+            // Fallback: coba dari jadwal (ambil rute pertama dari relasi rutes)
+            if (empty($from) && $trip->jadwal && $trip->jadwal->rutes->isNotEmpty()) {
+                $firstRute = $trip->jadwal->rutes->first();
+                $from = $firstRute->kota_asal;
+                $to = $firstRute->kota_tujuan;
+                $routeName = $routeName ?? $firstRute->nama_rute;
+            }
+
+            // Fallback terakhir: dari kolom rute string
+            if (empty($from)) {
+                $ruteString = $trip->rute ?? '';
+                // Parse format: "Rute Name (Kota Asal → Kota Tujuan)"
+                if (preg_match('/^(.+?)\s*\(([^→]+)→([^)]+)\)/', $ruteString, $matches)) {
+                    // Format: "Nama Rute (Kota Asal → Kota Tujuan)"
+                    $routeName = trim($matches[1]);
+                    $from = trim($matches[2]);
+                    $to = trim($matches[3]);
+                } elseif (preg_match('/\(([^→]+)→([^)]+)\)/', $ruteString, $matches)) {
+                    // Format: "(Kota Asal → Kota Tujuan)"
+                    $from = trim($matches[1]);
+                    $to = trim($matches[2]);
+                } else {
+                    // Tidak ada format yang cocok, gunakan string langsung
+                    $from = $ruteString ?: 'N/A';
+                    $to = 'N/A';
+                }
+            }
+
+            // Jika masih kosong, gunakan data dari driver_jadwal itu sendiri
+            if (empty($from)) {
+                $from = $trip->kota_asal ?? $trip->asal ?? 'N/A';
+                $to = $trip->kota_tujuan ?? $trip->tujuan ?? 'N/A';
+            }
+
+            // ★★★ PERBAIKAN: Gunakan kursi_terisi dari database sebagai sumber utama ★★★
+            // Ini menyamarakan dengan Riwayat Perjalanan yang menggunakan $trip->kursi_terisi
+            $occupiedSeats = $trip->kursi_terisi ?? 0;
+
+            // Ambil data passengers untuk ditampilkan di detail
             $bookings = Pemesanan::with(['detailPenumpang', 'kursiTerpesan'])
                     ->where('id_jadwal_driver', $trip->id_jadwal_driver)
-                    ->whereIn('status', ['dibayar'])
+                    ->whereIn('status', ['dibayar', 'diproses', 'menunggu_pembayaran', 'menunggu_konfirmasi'])
                     ->get();
 
             $passengers = [];
+
             foreach ($bookings as $booking) {
                 // PERBAIKAN: Pastikan detailPenumpang adalah Collection, bukan array
                 $detailPenumpangs = $booking->detailPenumpang;
@@ -248,27 +517,88 @@ class DriverController extends Controller
                 }
 
                 foreach ($detailPenumpangs as $passenger) {
-                    $seat = $booking->kursiTerpesan()
+                    // ★★★ PERBAIKAN: Query langsung ke tabel KursiTerposez ★★★
+                    // Menggunakan id_jadwal_driver untuk pencarian yang lebih akurat
+                    $seat = KursiTerpesan::where('pemesanan_id', $booking->id)
                         ->where('detail_penumpang_id', $passenger->id)
                         ->first();
 
+                    // Fallback: coba cari berdasarkan jadwal_id jika tidak ketemu
+                    if (!$seat && $trip->id_jadwal) {
+                        $seat = KursiTerpesan::where('jadwal_id', $trip->id_jadwal)
+                            ->where('detail_penumpang_id', $passenger->id)
+                            ->first();
+                    }
+
                     $passengers[] = [
                         'id' => $passenger->id,
-                        'name' => $passenger->nama_penumpang,
-                        'phone' => $passenger->nomor_telepon ?? $booking->telepon_pemesan,
-                        'seat' => $seat ? $seat->nomor_kursi : 'N/A',
-                        'status' => $passenger->status_verifikasi ?? 'terverifikasi',
+                        'name' => $passenger->nama_lengkap,
+                        'phone' => $passenger->telepon ?? $booking->telepon_pemesan,
+                        'seat' => $seat ? $seat->nomor_kursi : ($passenger->nomor_kursi ?? 'N/A'),
+                        'status' => 'terverifikasi',
                     ];
                 }
             }
 
-            // Ambil rute asal-tujuan
-            $route = $trip->masterRute ?? $trip->rute;
-            $from = $trip->jadwal?->asal ?? 'N/A';
-            $to = $trip->jadwal?->tujuan ?? 'N/A';
-
             // ★★★ AMBIL PEMBERHENTIAN DARI JADWAL/RUTE ★★★
             $stopPoints = $this->getStopPointsFromSchedule($trip);
+
+            // ★★★ AMBIL STARTING OUTLET DARI STOP POINT PERTAMA ★★★
+            $startingOutlet = null;
+            if (!empty($stopPoints) && is_array($stopPoints) && isset($stopPoints[0])) {
+                $firstStop = $stopPoints[0];
+                if (isset($firstStop['outlets']) && !empty($firstStop['outlets'])) {
+                    $startingOutlet = [
+                        'kota' => $firstStop['kota'] ?? null,
+                        'branch_id' => $firstStop['branch_id'] ?? null,
+                        'branch_name' => $firstStop['branch_name'] ?? null,
+                        'outlets' => $firstStop['outlets']
+                    ];
+                }
+            }
+
+            // ★★★ AMBIL DURASI DAN JARAK DARI MASTER RUTE ★★★
+            $estimatedDuration = '-';
+            $distance = null;
+
+            // Ambil dari masterRute jika ada
+            if ($trip->masterRute) {
+                // Ambil durasi - gunakan formatted_durasi jika ada, sonst直接从durasi
+                $estimatedDuration = $trip->masterRute->formatted_durasi ?? $trip->masterRute->durasi ?? '-';
+                // Ambil jarak
+                $distance = $trip->masterRute->jarak;
+            }
+
+            // Fallback: coba ambil dari jadwal->rutes jika masterRute tidak punya data
+            if (($estimatedDuration === '-' || $estimatedDuration === null) && $trip->jadwal) {
+                $jadwalRutes = $trip->jadwal->rutes;
+                if ($jadwalRutes && $jadwalRutes->isNotEmpty()) {
+                    $firstRute = $jadwalRutes->first();
+                    $estimatedDuration = $firstRute->formatted_durasi ?? $firstRute->durasi ?? '-';
+                    $distance = $distance ?? $firstRute->jarak;
+                }
+            }
+
+            // Jika masih null, gunakan default
+            if ($distance === null) {
+                $distance = $trip->jadwal?->jarak ?? null;
+            }
+
+            // Periksa apakah ada journey state di DB untuk perjalanan ini (mis. setelah driver mulai)
+            $journeyState = DriverJourneyState::where('id_jadwal_driver', $trip->id_jadwal_driver)
+                ->where('id_driver', $driver->id)
+                ->first();
+
+            // Tentukan status final yang akan dikirim ke view. Jika ada journey state in_progress,
+            // override status jadwal agar tampilan menampilkan "Dalam Perjalanan" setelah reload.
+            $finalStatus = $trip->status ?? 'belum_dimulai';
+            if ($journeyState) {
+                if ($journeyState->status === 'in_progress') {
+                    $finalStatus = 'dalam_perjalanan';
+                } elseif ($journeyState->status === 'completed') {
+                    $finalStatus = 'selesai';
+                }
+            }
 
             $tripsData[] = [
                 'id_jadwal_driver' => $trip->id_jadwal_driver,
@@ -279,11 +609,16 @@ class DriverController extends Controller
                 'time' => $trip->waktu_keberangkatan ?? 'N/A',
                 'eta' => $trip->waktu_kedatangan ?? 'N/A',
                 'total_seats' => $trip->total_kursi ?? 0,
-                'occupied_seats' => $trip->kursi_terisi ?? 0,
-                'status' => $trip->status ?? 'belum_dimulai',
+                'occupied_seats' => $occupiedSeats,
+                'status' => $finalStatus,
+                'acceptance_status' => $trip->acceptance_status ?? 'accepted',
                 'passengers' => $passengers,
-                'estimated_duration' => $this->calculateDuration($from, $to),
+                'estimated_duration' => $estimatedDuration,
                 'stop_points' => $stopPoints, // ★★★ TAMBAHKAN TITIK PEMBERHENTIAN ★★★
+                'starting_outlet' => $startingOutlet, // ★★★ TAMBAHKAN STARTING OUTLET ★★★
+                // Ambil jarak dari masterRute
+                'distance' => $distance,
+                'route_name' => $routeName,
             ];
         }
 
@@ -508,5 +843,84 @@ class DriverController extends Controller
     public function bantuan()
     {
         return view('driver.bantuan');
+    }
+
+    /**
+     * ★★★ API ENDPOINT: Ambil data penumpang real-time untuk trip tertentu ★★★
+     * Digunakan untuk update penumpang tanpa perlu reload halaman
+     */
+    public function getPassengersRealtime($tripId)
+    {
+        try {
+            $driver = Auth::guard('driver')->user();
+
+            if (!$driver) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+
+            // Ambil trip data
+            $trip = DriverJadwal::with(['jadwal', 'masterRute', 'jadwal.rutes'])
+                ->where('id_jadwal_driver', $tripId)
+                ->where('id_driver', $driver->id)
+                ->first();
+
+            if (!$trip) {
+                return response()->json(['error' => 'Trip tidak ditemukan'], 404);
+            }
+
+            // Ambil semua bookings untuk trip ini dengan status aktif
+            $bookings = Pemesanan::with(['detailPenumpang', 'kursiTerpesan'])
+                ->where('id_jadwal_driver', $tripId)
+                ->whereIn('status', ['dibayar', 'diproses', 'menunggu_pembayaran', 'menunggu_konfirmasi'])
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            $passengers = [];
+            $occupiedSeats = 0;
+
+            foreach ($bookings as $booking) {
+                // Pastikan detailPenumpang adalah Collection
+                $detailPenumpangs = $booking->detailPenumpang;
+                if (!($detailPenumpangs instanceof \Illuminate\Database\Eloquent\Collection)) {
+                    $detailPenumpangs = collect($detailPenumpangs);
+                }
+
+                foreach ($detailPenumpangs as $passenger) {
+                    $occupiedSeats++;
+
+                    $seat = $booking->kursiTerpesan()
+                        ->where('detail_penumpang_id', $passenger->id)
+                        ->first();
+
+                    $passengers[] = [
+                        'id' => $passenger->id,
+                        'name' => $passenger->nama_lengkap,
+                        'phone' => $passenger->telepon ?? $booking->telepon_pemesan,
+                        'seat' => $seat ? $seat->nomor_kursi : 'N/A',
+                        'status' => 'terverifikasi',
+                    ];
+                }
+            }
+
+            // Hitung total kursi
+            $totalSeats = $trip->total_kursi ?? 0;
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'trip_id' => $tripId,
+                    'total_passengers' => count($passengers),
+                    'occupied_seats' => $occupiedSeats,
+                    'total_seats' => $totalSeats,
+                    'available_seats' => $totalSeats - $occupiedSeats,
+                    'passengers' => $passengers,
+                    'timestamp' => now()->toIso8601String()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error getting passengers realtime: ' . $e->getMessage());
+            return response()->json(['error' => 'Server error'], 500);
+        }
     }
 }

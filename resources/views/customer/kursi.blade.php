@@ -1440,7 +1440,7 @@
                                                 </div>
                                             </div>
                                             @php
-                                                $stops = json_decode($rute->rute_pemberhentian, true) ?? [];
+                                                $stops = is_string($rute->rute_pemberhentian) ? (json_decode($rute->rute_pemberhentian, true) ?? []) : ($rute->rute_pemberhentian ?? []);
                                                 $currentTime = \Carbon\Carbon::parse($jadwal->waktu_keberangkatan);
                                                 $showLimit = 2;
                                             @endphp

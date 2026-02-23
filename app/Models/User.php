@@ -51,7 +51,29 @@ class User extends Authenticatable implements MustVerifyEmail
         'google_id',
         'provider',
         'branch_id',
-        'schedule_accept_mode'
+        'schedule_accept_mode',
+        'tempat_lahir',
+        'alamat',
+        'agama',
+        'status_pernikahan',
+        'kontak_darurat',
+        'tanggal_bergabung',
+        'status_pegawai',
+        'masa_kerja',
+        'posisi',
+        'lokasi_kerja',
+        'foto',
+        // Pendidikan & Keahlian
+        'pendidikan_terakhir',
+        'institusi',
+        'tahun_lulus',
+        'keahlian',
+        'pengalaman_kerja',
+        // Dokumen
+        'dokumen_ktp',
+        'dokumen_ijazah',
+        'dokumen_npwp',
+        'dokumen_skck'
     ];
 
     protected $hidden = [

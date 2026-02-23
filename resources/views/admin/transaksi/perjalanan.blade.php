@@ -468,7 +468,7 @@
                         <span style="font-weight: 600;">{{ $transaksi->jumlah_penumpang ?? 1 }} Orang</span>
                     </td>
                     <td>
-                        <strong style="color: #FF581E;">Rp {{ number_format($transaksi->total_harga ?? 0, 0, ',', '.') }}</strong>
+                        <strong style="color: #FF581E;">Rp {{ number_format($transaksi->total_bayar ?? $transaksi->harga_total ?? 0, 0, ',', '.') }}</strong>
                     </td>
                     <td>
                         @if($transaksi->status == 'pending')
@@ -664,6 +664,9 @@
         </div>
     </div>
 </div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
     // Initialize datepicker if needed
@@ -1001,8 +1004,5 @@
         });
     });
 </script>
-
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 @endsection

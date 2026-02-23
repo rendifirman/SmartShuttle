@@ -7,9 +7,11 @@ use App\Models\Rute;
 use App\Models\MLayanan;
 use App\Models\MasterTarif;
 use App\Models\Branch;
+use App\Models\Outlet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class RuteController extends Controller
 {
@@ -116,6 +118,14 @@ class RuteController extends Controller
 
         $data = $request->all();
 
+        // Normalize rute_pemberhentian: if provided as JSON string, decode to array
+        if (isset($data['rute_pemberhentian']) && is_string($data['rute_pemberhentian'])) {
+            $decoded = json_decode($data['rute_pemberhentian'], true);
+            if (is_array($decoded)) {
+                $data['rute_pemberhentian'] = $decoded;
+            }
+        }
+
         // Auto-fill kota_asal dan kota_tujuan dari cabang
         $cabangAsal = Branch::with('outlets')->find($data['cabang_asal_id']);
         $cabangTujuan = Branch::with('outlets')->find($data['cabang_tujuan_id']);
@@ -129,34 +139,53 @@ class RuteController extends Controller
 
         // Auto-fill rute_pemberhentian dengan outlets dari cabang asal dan tujuan
         $rutePemberhentian = [];
-        if ($cabangAsal && $cabangAsal->outlets) {
-            $outletAsalList = $cabangAsal->outlets->where('status', 'aktif')->pluck('nama_outlet')->toArray();
-            if (!empty($outletAsalList)) {
+
+        if ($cabangAsal) {
+            // Ambil outlets yang aktif dari cabang asal menggunakan query
+            $outletAsalData = Outlet::where('branch_id', $cabangAsal->id)
+                ->where('status', 'aktif')
+                ->pluck('nama_outlet')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            if (!empty($outletAsalData)) {
                 $rutePemberhentian[] = [
                     'kota' => $cabangAsal->kota,
                     'cabang' => $cabangAsal->nama_cabang,
-                    'outlets' => $outletAsalList,
+                    'outlets' => $outletAsalData,
                     'durasi_singgah' => 0,
                     'jenis' => 'asal'
                 ];
-            }
-        }
-        if ($cabangTujuan && $cabangTujuan->outlets) {
-            $outletTujuanList = $cabangTujuan->outlets->where('status', 'aktif')->pluck('nama_outlet')->toArray();
-            if (!empty($outletTujuanList)) {
-                $rutePemberhentian[] = [
-                    'kota' => $cabangTujuan->kota,
-                    'cabang' => $cabangTujuan->nama_cabang,
-                    'outlets' => $outletTujuanList,
-                    'durasi_singgah' => 0,
-                    'jenis' => 'tujuan'
-                ];
+                Log::debug('Outlets dari cabang asal', ['cabang' => $cabangAsal->nama_cabang, 'outlets' => $outletAsalData]);
             }
         }
 
-        if (!empty($rutePemberhentian)) {
-            $data['rute_pemberhentian'] = json_encode($rutePemberhentian, JSON_UNESCAPED_UNICODE);
+        if ($cabangTujuan) {
+            // Ambil outlets yang aktif dari cabang tujuan menggunakan query
+            $outletTujuanData = Outlet::where('branch_id', $cabangTujuan->id)
+                ->where('status', 'aktif')
+                ->pluck('nama_outlet')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            if (!empty($outletTujuanData)) {
+                $rutePemberhentian[] = [
+                    'kota' => $cabangTujuan->kota,
+                    'cabang' => $cabangTujuan->nama_cabang,
+                    'outlets' => $outletTujuanData,
+                    'durasi_singgah' => 0,
+                    'jenis' => 'tujuan'
+                ];
+                Log::debug('Outlets dari cabang tujuan', ['cabang' => $cabangTujuan->nama_cabang, 'outlets' => $outletTujuanData]);
+            }
         }
+
+        // Simpan sebagai array — model `Rute` sudah melakukan cast ke array
+        // Logging untuk debugging: tampilkan isi pemberhentian sebelum simpan
+        Log::debug('Final rute_pemberhentian', ['rute_pemberhentian' => $rutePemberhentian]);
+        $data['rute_pemberhentian'] = $rutePemberhentian;
 
         // Bersihkan format harga_dasar (hapus titik/koma)
         $data['harga_dasar'] = str_replace(['.', ','], '', $data['harga_dasar']);
@@ -250,6 +279,14 @@ class RuteController extends Controller
 
         $data = $request->all();
 
+        // Normalize rute_pemberhentian: if provided as JSON string, decode to array
+        if (isset($data['rute_pemberhentian']) && is_string($data['rute_pemberhentian'])) {
+            $decoded = json_decode($data['rute_pemberhentian'], true);
+            if (is_array($decoded)) {
+                $data['rute_pemberhentian'] = $decoded;
+            }
+        }
+
         // Auto-fill kota_asal dan kota_tujuan dari cabang
         $cabangAsal = Branch::with('outlets')->find($data['cabang_asal_id']);
         $cabangTujuan = Branch::with('outlets')->find($data['cabang_tujuan_id']);
@@ -263,34 +300,51 @@ class RuteController extends Controller
 
         // Auto-fill rute_pemberhentian dengan outlets dari cabang asal dan tujuan
         $rutePemberhentian = [];
-        if ($cabangAsal && $cabangAsal->outlets) {
-            $outletAsalList = $cabangAsal->outlets->where('status', 'aktif')->pluck('nama_outlet')->toArray();
-            if (!empty($outletAsalList)) {
+
+        if ($cabangAsal) {
+            // Ambil outlets yang aktif dari cabang asal menggunakan query
+            $outletAsalData = Outlet::where('branch_id', $cabangAsal->id)
+                ->where('status', 'aktif')
+                ->pluck('nama_outlet')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            if (!empty($outletAsalData)) {
                 $rutePemberhentian[] = [
                     'kota' => $cabangAsal->kota,
                     'cabang' => $cabangAsal->nama_cabang,
-                    'outlets' => $outletAsalList,
+                    'outlets' => $outletAsalData,
                     'durasi_singgah' => 0,
                     'jenis' => 'asal'
                 ];
-            }
-        }
-        if ($cabangTujuan && $cabangTujuan->outlets) {
-            $outletTujuanList = $cabangTujuan->outlets->where('status', 'aktif')->pluck('nama_outlet')->toArray();
-            if (!empty($outletTujuanList)) {
-                $rutePemberhentian[] = [
-                    'kota' => $cabangTujuan->kota,
-                    'cabang' => $cabangTujuan->nama_cabang,
-                    'outlets' => $outletTujuanList,
-                    'durasi_singgah' => 0,
-                    'jenis' => 'tujuan'
-                ];
+                Log::debug('Outlets dari cabang asal (update)', ['cabang' => $cabangAsal->nama_cabang, 'outlets' => $outletAsalData]);
             }
         }
 
-        if (!empty($rutePemberhentian)) {
-            $data['rute_pemberhentian'] = json_encode($rutePemberhentian, JSON_UNESCAPED_UNICODE);
+        if ($cabangTujuan) {
+            // Ambil outlets yang aktif dari cabang tujuan menggunakan query
+            $outletTujuanData = Outlet::where('branch_id', $cabangTujuan->id)
+                ->where('status', 'aktif')
+                ->pluck('nama_outlet')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            if (!empty($outletTujuanData)) {
+                $rutePemberhentian[] = [
+                    'kota' => $cabangTujuan->kota,
+                    'cabang' => $cabangTujuan->nama_cabang,
+                    'outlets' => $outletTujuanData,
+                    'durasi_singgah' => 0,
+                    'jenis' => 'tujuan'
+                ];
+                Log::debug('Outlets dari cabang tujuan (update)', ['cabang' => $cabangTujuan->nama_cabang, 'outlets' => $outletTujuanData]);
+            }
         }
+
+        // Simpan sebagai array — model `Rute` sudah melakukan cast ke array
+        $data['rute_pemberhentian'] = $rutePemberhentian;
 
         // Bersihkan format harga_dasar (hapus titik/koma)
         $data['harga_dasar'] = str_replace(['.', ','], '', $data['harga_dasar']);

@@ -830,9 +830,299 @@ class AdminController extends Controller
         return view('admin.driver');
     }
 
-    public function pegawai()
+    public function pegawai(Request $request)
     {
-        return view('admin.pegawai');
+        // Get all users with specific roles
+        $query = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->with('roles', 'branch');
+
+        // Apply search filter
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('email', 'like', "%$search%")
+                  ->orWhere('phone', 'like', "%$search%")
+                  ->orWhere('nik', 'like', "%$search%");
+            });
+        }
+
+        // Apply role filter
+        if ($request->filled('role')) {
+            $query->whereHas('roles', function ($q) use ($request) {
+                $q->where('name', $request->role);
+            });
+        }
+
+        // Apply status filter
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $pegawais = $query->paginate(15);
+
+        // Get statistics
+        $totalPegawai = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->count();
+
+        $adminPusat = User::whereHas('roles', function ($q) {
+            $q->where('name', 'admin_pusat');
+        })->count();
+
+        $adminCabang = User::whereHas('roles', function ($q) {
+            $q->where('name', 'admin_cabang');
+        })->count();
+
+        $driver = User::whereHas('roles', function ($q) {
+            $q->where('name', 'driver');
+        })->count();
+
+        $activePegawai = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->where('status', 'active')->count();
+
+        return view('admin.pegawai', compact(
+            'pegawais',
+            'totalPegawai',
+            'adminPusat',
+            'adminCabang',
+            'driver',
+            'activePegawai'
+        ));
+    }
+
+    /**
+     * Show form for creating new pegawai
+     */
+    public function createPegawai()
+    {
+        $branches = Branch::where('status', 'aktif')->get();
+        return view('admin.pegawai-create', compact('branches'));
+    }
+
+    /**
+     * Store new pegawai
+     */
+    public function storePegawai(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'nik' => 'required|string|max:16|unique:users,nik',
+            'email' => 'nullable|email|unique:users,email',
+            'phone' => 'required|string|max:20',
+            'tempat_lahir' => 'nullable|string',
+            'tanggal_lahir' => 'nullable|date',
+            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+            'alamat' => 'nullable|string',
+            'agama' => 'nullable|string',
+            'status_pernikahan' => 'nullable|string',
+            'kontak_darurat' => 'nullable|string',
+            'tanggal_bergabung' => 'required|date',
+            'status_pegawai' => 'required|in:Tetap,Kontrak,Magang',
+            'masa_kerja' => 'nullable|string',
+            'posisi' => 'required|in:Admin Pusat,Admin Cabrera,Driver,Manager',
+            'branch_id' => 'required|exists:branches,id',
+            // Pendidikan & Keahlian
+            'pendidikan_terakhir' => 'nullable|string',
+            'institusi' => 'nullable|string',
+            'tahun_lulus' => 'nullable|string',
+            'keahlian' => 'nullable|string',
+            'pengalaman_kerja' => 'nullable|string',
+            // Dokumen
+            'dokumen_ktp' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'dokumen_ijazah' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'dokumen_npwp' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'dokumen_skck' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $data = $request->except(['foto', 'dokumen_ktp', 'dokumen_ijazah', 'dokumen_npwp', 'dokumen_skck']);
+
+        // Handle file upload - Foto Profil
+        if ($request->hasFile('foto')) {
+            $imagePath = $request->file('foto')->store('pegawai', 'public');
+            $data['foto'] = $imagePath;
+        }
+
+        // Handle file upload - Dokumen KTP
+        if ($request->hasFile('dokumen_ktp')) {
+            $dokumenPath = $request->file('dokumen_ktp')->store('pegawai/dokumen', 'public');
+            $data['dokumen_ktp'] = $dokumenPath;
+        }
+
+        // Handle file upload - Dokumen Ijazah
+        if ($request->hasFile('dokumen_ijazah')) {
+            $dokumenPath = $request->file('dokumen_ijazah')->store('pegawai/dokumen', 'public');
+            $data['dokumen_ijazah'] = $dokumenPath;
+        }
+
+        // Handle file upload - Dokumen NPWP
+        if ($request->hasFile('dokumen_npwp')) {
+            $dokumenPath = $request->file('dokumen_npwp')->store('pegawai/dokumen', 'public');
+            $data['dokumen_npwp'] = $dokumenPath;
+        }
+
+        // Handle file upload - Dokumen SKCK
+        if ($request->hasFile('dokumen_skck')) {
+            $dokumenPath = $request->file('dokumen_skck')->store('pegawai/dokumen', 'public');
+            $data['dokumen_skck'] = $dokumenPath;
+        }
+
+        $data['password'] = bcrypt('password123');
+        $data['status'] = 'active';
+
+        $user = User::create($data);
+
+        // Assign role based on posisi
+        $roleMapping = [
+            'Admin Pusat' => 'admin_pusat',
+            'Admin Cabang' => 'admin_cabang',
+            'Driver' => 'driver',
+            'Manager' => 'admin_pusat',
+        ];
+
+        $role = $roleMapping[$request->posisi] ?? 'driver';
+        $user->assignRole($role);
+
+        return redirect()->route('admin.pegawai')->with('success', 'Pegawai berhasil ditambahkan.');
+    }
+
+    /**
+     * Show pegawai details
+     */
+    public function showPegawai($id)
+    {
+        $pegawai = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->findOrFail($id);
+
+        return view('admin.pegawai-show', compact('pegawai'));
+    }
+
+    /**
+     * Show edit pegawai form
+     */
+    public function editPegawai($id)
+    {
+        $pegawai = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->findOrFail($id);
+
+        $branches = Branch::where('status', 'aktif')->get();
+        return view('admin.pegawai-edit', compact('pegawai', 'branches'));
+    }
+
+    /**
+     * Update pegawai
+     */
+    public function updatePegawai(Request $request, $id)
+    {
+        $pegawai = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'nik' => 'required|string|max:16|unique:users,nik,' . $id,
+            'email' => 'nullable|email|unique:users,email,' . $id,
+            'phone' => 'required|string|max:20',
+            'tempat_lahir' => 'nullable|string',
+            'tanggal_lahir' => 'nullable|date',
+            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+            'alamat' => 'nullable|string',
+            'agama' => 'nullable|string',
+            'status_pernikahan' => 'nullable|string',
+            'kontak_darurat' => 'nullable|string',
+            'tanggal_bergabung' => 'nullable|date',
+            'status_pegawai' => 'nullable|in:Tetap,Kontrak,Magang',
+            'masa_kerja' => 'nullable|string',
+            'posisi' => 'nullable|in:Admin Pusat,Admin Cabang,Driver,Manager',
+            'lokasi_kerja' => 'nullable|string',
+            // Pendidikan & Keahlian
+            'pendidikan_terakhir' => 'nullable|string',
+            'institusi' => 'nullable|string',
+            'tahun_lulus' => 'nullable|string',
+            'keahlian' => 'nullable|string',
+            'pengalaman_kerja' => 'nullable|string',
+            // Dokumen
+            'dokumen_ktp' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'dokumen_ijazah' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'dokumen_npwp' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'dokumen_skck' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $data = $request->except(['foto', 'dokumen_ktp', 'dokumen_ijazah', 'dokumen_npwp', 'dokumen_skck']);
+
+        // Handle file upload - Foto Profil
+        if ($request->hasFile('foto')) {
+            if ($pegawai->foto && Storage::disk('public')->exists($pegawai->foto)) {
+                Storage::disk('public')->delete($pegawai->foto);
+            }
+            $imagePath = $request->file('foto')->store('pegawai', 'public');
+            $data['foto'] = $imagePath;
+        }
+
+        // Handle file upload - Dokumen KTP
+        if ($request->hasFile('dokumen_ktp')) {
+            if ($pegawai->dokumen_ktp && Storage::disk('public')->exists($pegawai->dokumen_ktp)) {
+                Storage::disk('public')->delete($pegawai->dokumen_ktp);
+            }
+            $dokumenPath = $request->file('dokumen_ktp')->store('pegawai/dokumen', 'public');
+            $data['dokumen_ktp'] = $dokumenPath;
+        }
+
+        // Handle file upload - Dokumen Ijazah
+        if ($request->hasFile('dokumen_ijazah')) {
+            if ($pegawai->dokumen_ijazah && Storage::disk('public')->exists($pegawai->dokumen_ijazah)) {
+                Storage::disk('public')->delete($pegawai->dokumen_ijazah);
+            }
+            $dokumenPath = $request->file('dokumen_ijazah')->store('pegawai/dokumen', 'public');
+            $data['dokumen_ijazah'] = $dokumenPath;
+        }
+
+        // Handle file upload - Dokumen NPWP
+        if ($request->hasFile('dokumen_npwp')) {
+            if ($pegawai->dokumen_npwp && Storage::disk('public')->exists($pegawai->dokumen_npwp)) {
+                Storage::disk('public')->delete($pegawai->dokumen_npwp);
+            }
+            $dokumenPath = $request->file('dokumen_npwp')->store('pegawai/dokumen', 'public');
+            $data['dokumen_npwp'] = $dokumenPath;
+        }
+
+        // Handle file upload - Dokumen SKCK
+        if ($request->hasFile('dokumen_skck')) {
+            if ($pegawai->dokumen_skck && Storage::disk('public')->exists($pegawai->dokumen_skck)) {
+                Storage::disk('public')->delete($pegawai->dokumen_skck);
+            }
+            $dokumenPath = $request->file('dokumen_skck')->store('pegawai/dokumen', 'public');
+            $data['dokumen_skck'] = $dokumenPath;
+        }
+
+        $pegawai->update($data);
+
+        return redirect()->route('admin.pegawai')->with('success', 'Pegawai berhasil diperbarui.');
+    }
+
+    /**
+     * Delete pegawai
+     */
+    public function destroyPegawai($id)
+    {
+        $pegawai = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->findOrFail($id);
+
+        // Delete photo if exists
+        if ($pegawai->foto && Storage::disk('public')->exists($pegawai->foto)) {
+            Storage::disk('public')->delete($pegawai->foto);
+        }
+
+        $pegawai->delete();
+
+        return redirect()->route('admin.pegawai')->with('success', 'Pegawai berhasil dihapus.');
     }
 
     public function rute(Request $request)
