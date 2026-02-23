@@ -198,6 +198,45 @@ main {
     border-bottom: 2px dashed #d9d9d9;
 }
 
+/* Tarif Tambahan Section – Style Sama Seperti Kursi */
+.tarif-tambahan-box {
+    background-color: #fef3f2;
+    border-left: 4px solid #FF581E;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin: 12px 0;
+}
+
+.tarif-tambahan-title {
+    font-weight: 600;
+    color: #FF581E;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.tarif-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #fde5e0;
+    font-size: 13px;
+}
+
+.tarif-item:last-child {
+    border-bottom: none;
+}
+
+.tarif-name {
+    color: #333;
+    font-weight: 500;
+}
+
+.tarif-price {
+    color: #FF581E;
+    font-weight: 600;
+}
+
     </style>
 </head>
 
@@ -319,26 +358,93 @@ main {
 
                 <!-- Detail harga -->
                 <h3 class="font-bold text-lg mb-3">RINCIAN HARGA</h3>
+
+                @php
+                    // Hitung harga dasar per orang
+                    // Gunakan sumber harga yang sama dengan `detail_pesanan.blade.php`:
+                    // prioritas: jadwal->harga_total (per-seat yang dihitung dari route/master tarif),
+                    // fallback ke pemesanan->harga_total jika jadwal tidak tersedia.
+                    $hargaPerOrang = $pemesanan->jadwal->harga_total ?? $pemesanan->harga_total ?? 0;
+                    $jumlahPenumpang = $pemesanan->jumlah_penumpang ?? 1;
+
+                    // Total tarif tambahan
+                    $totalTarif = $totalTarif ?? 0;
+                    if ((empty($totalTarif) || $totalTarif == 0) && isset($availableTarifs) && is_array($availableTarifs) && count($availableTarifs) > 0) {
+                        $calc = 0;
+                        foreach($availableTarifs as $t) {
+                            $nilai = $t['final_price'] ?? $t['harga_dasar'] ?? 0;
+                            $calc += ($nilai * $jumlahPenumpang);
+                        }
+                        $totalTarif = $calc;
+                    }
+
+                    $subtotal = ($hargaPerOrang * $jumlahPenumpang) + $totalTarif;
+                    $diskon = $diskon ?? 0;
+                    $totalHarga = max(0, $subtotal - $diskon);
+                @endphp
+
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between">
                         <span>Harga tiket</span>
-                        <span>Rp {{ number_format($pemesanan->harga_total / $pemesanan->jumlah_penumpang, 0, ',', '.') }}</span>
+                        <span>Rp {{ number_format($hargaPerOrang, 0, ',', '.') }}</span>
                     </div>
 
                     <div class="flex justify-between">
                         <span>Jumlah penumpang</span>
-                        <span>X {{ $pemesanan->jumlah_penumpang }}</span>
+                        <span>X {{ $jumlahPenumpang }}</span>
                     </div>
 
                     <div class="flex justify-between">
                         <span>Sub total</span>
-                        <span>Rp {{ number_format($pemesanan->harga_total, 0, ',', '.') }}</span>
+                        <span>Rp {{ number_format($hargaPerOrang * $jumlahPenumpang, 0, ',', '.') }}</span>
                     </div>
 
-                    @if($pemesanan->diskon > 0)
+                    {{-- Tarif Tambahan --}}
+                    @if(!empty($availableTarifs) && count($availableTarifs) > 0)
+                        <div class="tarif-tambahan-box">
+                            <div class="tarif-tambahan-title">
+                                <i class="fas fa-plus-circle"></i> Tarif Tambahan (per tiket):
+                            </div>
+                            @foreach($availableTarifs as $tarif)
+                                @php
+                                    $nama = $tarif['nama_tarif'] ?? ($tarif['nama'] ?? 'Biaya Tambahan');
+                                    $nilai = $tarif['final_price'] ?? $tarif['harga_dasar'] ?? 0;
+                                @endphp
+                                <div class="tarif-item">
+                                    <span class="tarif-name">{{ $nama }}</span>
+                                    <span class="tarif-price">Rp {{ number_format($nilai, 0, ',', '.') }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        {{-- Rincian jika ada tarif tambahan --}}
+                        @if($totalTarif > 0)
+                            <div style="padding:8px 0; border-bottom:1px solid #e0e0e0; font-size:12px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span style="color:#666;">Harga Dasar × {{ $jumlahPenumpang }}:</span>
+                                    <span class="fw-bold">Rp {{ number_format($hargaPerOrang * $jumlahPenumpang, 0, ',', '.') }}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between;">
+                                    <span style="color:#666;">+ Total Tarif Tambahan:</span>
+                                    <span class="fw-bold" style="color:#FF581E;">
+                                        Rp {{ number_format($totalTarif, 0, ',', '.') }}
+                                    </span>
+                                </div>
+                            </div>
+                        @endif
+                    @endif
+
+                    <div class="dashed my-2"></div>
+
+                    <div style="display:flex; justify-content:space-between; padding:8px 0; font-weight:600; font-size:14px; color:#0b2a4a;">
+                        <span>Subtotal</span>
+                        <span>Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
+                    </div>
+
+                    @if($diskon > 0)
                     <div class="flex justify-between text-green-600">
                         <span>Diskon voucher</span>
-                        <span>-Rp {{ number_format($pemesanan->diskon, 0, ',', '.') }}</span>
+                        <span>-Rp {{ number_format($diskon, 0, ',', '.') }}</span>
                     </div>
                     @endif
 
@@ -346,7 +452,7 @@ main {
 
                     <div class="flex justify-between font-bold text-lg text-[#FF581E]">
                         <span>Total harga</span>
-                        <span>Rp {{ number_format($total, 0, ',', '.') }}</span>
+                        <span>Rp {{ number_format($totalHarga, 0, ',', '.') }}</span>
                     </div>
                 </div>
 
@@ -576,7 +682,7 @@ main {
                             <!-- Nominal -->
                             <div class="mb-4 p-4 bg-white border border-yellow-200 rounded-lg shadow-sm w-full max-w-md">
                                 <p class="text-sm text-gray-600 mb-1">Total Pembayaran</p>
-                                <p class="font-bold text-2xl text-[#00215E]">Rp {{ number_format($total, 0, ',', '.') }}</p>
+                                <p class="font-bold text-2xl text-[#00215E]">Rp {{ number_format($totalHarga, 0, ',', '.') }}</p>
                             </div>
 
                             <p class="text-sm text-gray-500 text-center mb-4">Scan QR Code dengan aplikasi yang mendukung QRIS</p>
@@ -610,7 +716,7 @@ main {
                                 <li>Buka aplikasi e-wallet atau mobile banking Anda</li>
                                 <li>Pilih menu "Scan QR Code" atau "Bayar dengan QRIS"</li>
                                 <li>Arahkan kamera ke QR Code di atas</li>
-                                <li>Pastikan nominal sudah sesuai: <span class="font-semibold">Rp {{ number_format($total, 0, ',', '.') }}</span></li>
+                                <li>Pastikan nominal sudah sesuai: <span class="font-semibold">Rp {{ number_format($totalHarga, 0, ',', '.') }}</span></li>
                                 <li>Konfirmasi dan selesaikan pembayaran</li>
                             </ol>
                         </div>
@@ -644,8 +750,8 @@ main {
                             <div>
                                 <label class="text-sm font-semibold block mb-2">Total Pembayaran</label>
                                 <div class="border-2 border-yellow-300 rounded-lg p-4 font-semibold flex justify-between items-center bg-yellow-50 shadow-sm">
-                                    <span class="text-2xl text-[#00215E]">Rp {{ number_format($total, 0, ',', '.') }}</span>
-                                    <button type="button" onclick="copyToClipboard('{{ $total }}')"
+                                    <span class="text-2xl text-[#00215E]">Rp {{ number_format($totalHarga, 0, ',', '.') }}</span>
+                                    <button type="button" onclick="copyToClipboard('{{ $totalHarga }}')"
                                             class="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-lg hover:bg-yellow-200 transition">
                                         <i class="fas fa-copy mr-1"></i> Salin
                                     </button>
@@ -673,7 +779,7 @@ main {
                                 </div>
                                 <div class="flex items-start">
                                     <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">4</span>
-                                    <p>Konfirmasi nominal: <span class="font-semibold">Rp {{ number_format($total, 0, ',', '.') }}</span></p>
+                                    <p>Konfirmasi nominal: <span class="font-semibold">Rp {{ number_format($totalHarga, 0, ',', '.') }}</span></p>
                                 </div>
                                 <div class="flex items-start">
                                     <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3 flex-shrink-0">5</span>
@@ -711,8 +817,8 @@ main {
                             <div>
                                 <label class="text-sm font-semibold block mb-2">Total Pembayaran</label>
                                 <div class="border-2 border-yellow-300 rounded-lg p-4 font-semibold flex justify-between items-center bg-yellow-50 shadow-sm">
-                                    <span class="text-2xl text-[#00215E]">Rp {{ number_format($total, 0, ',', '.') }}</span>
-                                    <button type="button" onclick="copyToClipboard('{{ $total }}')"
+                                    <span class="text-2xl text-[#00215E]">Rp {{ number_format($totalHarga, 0, ',', '.') }}</span>
+                                    <button type="button" onclick="copyToClipboard('{{ $totalHarga }}')"
                                             class="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-lg hover:bg-yellow-200 transition">
                                         <i class="fas fa-copy mr-1"></i> Salin
                                     </button>

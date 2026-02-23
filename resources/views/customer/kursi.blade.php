@@ -1,8 +1,10 @@
+{{-- resources/views/customer/kursi.blade.php --}}
 @extends('layouts.app')
 
 @section('title', 'Smart Shuttle - Pilih Kursi')
 
 @push('styles')
+{{-- SALIN SEMUA CSS DARI FILE KURSI.BLADE.PHP ASLI --}}
 <style>
     /* Main Container */
     .tiket-page {
@@ -865,6 +867,7 @@
         filter: grayscale(80%);
         position: relative;
         pointer-events: none;
+        overflow: visible;
     }
 
     .seat.sold::before,
@@ -877,14 +880,17 @@
         height: 3px;
         background: #ff4444;
         transform: translate(-50%, -50%);
+        z-index: 10;
     }
 
     .seat.sold::before {
         transform: translate(-50%, -50%) rotate(45deg);
+        z-index: 10;
     }
 
     .seat.sold::after {
         transform: translate(-50%, -50%) rotate(-45deg);
+        z-index: 10;
     }
 
     .seat.sold .seat-number {
@@ -1235,7 +1241,7 @@
 @endpush
 
 @section('content')
-<!-- ALERT NOTIFICATION - FIXED: Tidak mempengaruhi konten utama -->
+{{-- ALERT NOTIFICATION --}}
 @if(session('alert-type'))
     <div class="global-alert-container">
         <div class="global-alert alert-{{ session('alert-type') }}">
@@ -1261,125 +1267,124 @@
             <div class="alert-progress"></div>
         </div>
     </div>
+@elseif(session('error'))
+    <div class="global-alert-container">
+        <div class="global-alert alert-error">
+            <div class="alert-content">
+                <i class="alert-icon fas fa-exclamation-circle"></i>
+                <div class="alert-message">
+                    <strong>Gagal Memilih Kursi</strong>
+                    <span>{{ session('error') }}</span>
+                </div>
+                <button class="alert-close" onclick="this.parentElement.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="alert-progress"></div>
+        </div>
+    </div>
+@elseif(session('success'))
+    <div class="global-alert-container">
+        <div class="global-alert alert-success">
+            <div class="alert-content">
+                <i class="alert-icon fas fa-check-circle"></i>
+                <div class="alert-message">
+                    <strong>Sukses</strong>
+                    <span>{{ session('success') }}</span>
+                </div>
+                <button class="alert-close" onclick="this.parentElement.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="alert-progress"></div>
+        </div>
+    </div>
+@elseif($errors->any())
+    <div class="global-alert-container">
+        <div class="global-alert alert-error">
+            <div class="alert-content">
+                <i class="alert-icon fas fa-exclamation-circle"></i>
+                <div class="alert-message">
+                    <strong>Validasi Gagal</strong>
+                    <span>
+                        @foreach($errors->all() as $error)
+                            • {{ $error }}<br>
+                        @endforeach
+                    </span>
+                </div>
+                <button class="alert-close" onclick="this.parentElement.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="alert-progress"></div>
+        </div>
+    </div>
 @endif
 
-<!-- Main Content -->
+@php
+    // ======================================================================
+    //   INISIALISASI DATA HARGA – SINKRON DENGAN PESAN.BLADE.PHP
+    // ======================================================================
+    // Pastikan data pemesanan tersedia
+    if (!isset($pemesanan) || !$pemesanan) {
+        echo '<div class="alert alert-danger">Data pemesanan tidak ditemukan. <a href="'.route('customer.search').'">Kembali ke pencarian</a></div>';
+        return;
+    }
+
+    $jadwal           = $pemesanan->jadwal;
+    $jumlahPenumpang  = $pemesanan->jumlah_penumpang;
+
+    // 1. Harga per tiket = harga_total dari jadwal (sama seperti di pesan.blade.php)
+    $hargaPerOrang    = $jadwal->harga_total ?? 0;
+
+    // 2. Total tarif tambahan (dikirim oleh controller, fallback 0)
+    $totalTarif       = $totalTarif ?? 0;
+
+    // 3. Subtotal = (harga per orang * jumlah penumpang) + total tarif
+    $subtotal         = ($hargaPerOrang * $jumlahPenumpang) + $totalTarif;
+
+    // 4. Diskon (dikirim controller, fallback dari pemesanan)
+    $diskon           = $diskon ?? ($pemesanan->diskon ?? 0);
+
+    // 5. Total bayar setelah diskon
+    $totalBayar       = max(0, $subtotal - $diskon);
+
+    // 6. Tarif per kursi untuk perhitungan proporsional di JavaScript
+    $tarifPerKursi    = $jumlahPenumpang > 0 ? $totalTarif / $jumlahPenumpang : 0;
+@endphp
+
 <main class="tiket-container">
     <div class="tiket-layout">
 
-        <!-- Left Column - DETAIL PERJALANAN -->
+        {{-- LEFT COLUMN – DETAIL PERJALANAN --}}
         <div class="left-column">
-            <!-- DETAIL PERJALANAN -->
             <div class="detail-card">
                 <div class="card-content">
                     <h2 class="card-title">DETAIL PERJALANAN</h2>
 
                     <div class="journey-info">
                         <h3 class="route-title" id="route-title">
-                            @if(isset($pemesanan) && $pemesanan->jadwal)
-                                {{ $pemesanan->jadwal->rute_pertama->kota_asal ?? 'Kota Asal' }} →
-                                {{ $pemesanan->jadwal->rute_terakhir->kota_tujuan ?? 'Kota Tujuan' }}
-                            @else
-                                {{ request('kota_asal', 'Jakarta') }} → {{ request('kota_tujuan', 'Jatinangor') }}
-                            @endif
+                            {{ $jadwal->rute_pertama->kota_asal ?? 'Kota Asal' }} →
+                            {{ $jadwal->rute_terakhir->kota_tujuan ?? 'Kota Tujuan' }}
                         </h3>
                         <p class="journey-detail" id="journey-date">
-                            @if(isset($pemesanan) && $pemesanan->jadwal)
-                                @php
-                                    $date = \Carbon\Carbon::parse($pemesanan->jadwal->tanggal_keberangkatan);
-                                    $hari = [
-                                        'Sunday' => 'Minggu',
-                                        'Monday' => 'Senin',
-                                        'Tuesday' => 'Selasa',
-                                        'Wednesday' => 'Rabu',
-                                        'Thursday' => 'Kamis',
-                                        'Friday' => 'Jumat',
-                                        'Saturday' => 'Sabtu'
-                                    ];
-                                    $hariIndo = $hari[$date->format('l')];
-
-                                    $bulan = [
-                                        'January' => 'Januari',
-                                        'February' => 'Februari',
-                                        'March' => 'Maret',
-                                        'April' => 'April',
-                                        'May' => 'Mei',
-                                        'June' => 'Juni',
-                                        'July' => 'Juli',
-                                        'August' => 'Agustus',
-                                        'September' => 'September',
-                                        'October' => 'Oktober',
-                                        'November' => 'November',
-                                        'December' => 'Desember'
-                                    ];
-                                    $bulanIndo = $bulan[$date->format('F')];
-
-                                    echo $hariIndo . ', ' . $date->format('d') . ' ' . $bulanIndo . ' ' . $date->format('Y');
-                                @endphp
-                            @else
-                                @php
-                                    $departureDate = request('departure_date');
-                                    if ($departureDate) {
-                                        $date = \Carbon\Carbon::parse($departureDate);
-                                        $hari = [
-                                            'Sunday' => 'Minggu',
-                                            'Monday' => 'Senin',
-                                            'Tuesday' => 'Selasa',
-                                            'Wednesday' => 'Rabu',
-                                            'Thursday' => 'Kamis',
-                                            'Friday' => 'Jumat',
-                                            'Saturday' => 'Sabtu'
-                                        ];
-                                        $hariIndo = $hari[$date->format('l')];
-
-                                        $bulan = [
-                                            'January' => 'Januari',
-                                            'February' => 'Februari',
-                                            'March' => 'Maret',
-                                            'April' => 'April',
-                                            'May' => 'Mei',
-                                            'June' => 'Juni',
-                                            'July' => 'Juli',
-                                            'August' => 'Agustus',
-                                            'September' => 'September',
-                                            'October' => 'Oktober',
-                                            'November' => 'November',
-                                            'December' => 'Desember'
-                                        ];
-                                        $bulanIndo = $bulan[$date->format('F')];
-
-                                        echo $hariIndo . ', ' . $date->format('d') . ' ' . $bulanIndo . ' ' . $date->format('Y');
-                                    } else {
-                                        echo 'Sabtu, 15 November 2025';
-                                    }
-                                @endphp
-                            @endif
+                            {{ \Carbon\Carbon::parse($jadwal->tanggal_keberangkatan)->locale('id')->isoFormat('dddd, D MMMM YYYY') }}
                         </p>
                         <p class="journey-detail" id="journey-time">
-                            @if(isset($pemesanan) && $pemesanan->jadwal)
-                                {{ \Carbon\Carbon::parse($pemesanan->jadwal->waktu_keberangkatan)->format('H:i') }} WIB
-                            @else
-                                09:00 WIB
-                            @endif
+                            {{ \Carbon\Carbon::parse($jadwal->waktu_keberangkatan)->format('H:i') }} WIB
                         </p>
                         <p class="journey-detail" id="passenger-count">
-                            @if(isset($pemesanan))
-                                {{ $pemesanan->jumlah_penumpang }} Penumpang
-                            @else
-                                {{ request('passengers', 1) }} Penumpang
-                            @endif
+                            {{ $jumlahPenumpang }} Penumpang
                         </p>
                     </div>
 
-                    <!-- Rute Perjalanan -->
+                    {{-- Rute Perjalanan --}}
                     <div class="route-section">
                         <h4 class="section-subtitle">Rute perjalanan</h4>
                         <div class="route-timeline" id="route-timeline">
-                            @if(isset($pemesanan) && $pemesanan->jadwal && $pemesanan->jadwal->rutes)
-                                @php
-                                    $waktu = \Carbon\Carbon::parse($pemesanan->jadwal->waktu_keberangkatan);
-                                @endphp
-                                @foreach($pemesanan->jadwal->rutes as $index => $rute)
+                            @if($jadwal && $jadwal->rutes)
+                                @php $waktu = \Carbon\Carbon::parse($jadwal->waktu_keberangkatan); @endphp
+                                @foreach($jadwal->rutes as $index => $rute)
                                     <div class="route-point">
                                         <div class="point-marker"></div>
                                         <div class="point-info">
@@ -1390,7 +1395,7 @@
                                     <div class="route-connector"></div>
                                     @php
                                         $durasiParts = explode(':', $rute->durasi);
-                                        $durasiMenit = ((int)$durasiParts[0] * 60) + ((int)($durasiParts[1] ?? 0));
+                                        $durasiMenit = ((int)($durasiParts[0] ?? 0) * 60) + ((int)($durasiParts[1] ?? 0));
                                         $waktu->addMinutes($durasiMenit);
                                     @endphp
                                     <div class="route-point">
@@ -1400,77 +1405,47 @@
                                             <p class="point-time">{{ $waktu->format('H:i') }}</p>
                                         </div>
                                     </div>
-                                    @if($index < count($pemesanan->jadwal->rutes) - 1)
+                                    @if($index < count($jadwal->rutes) - 1)
                                         <div class="route-connector"></div>
                                     @endif
                                 @endforeach
                             @else
-                                <!-- Default route jika tidak ada data -->
-                                <div class="route-point">
-                                    <div class="point-marker"></div>
-                                    <div class="point-info">
-                                        <p class="point-location">Jakarta Pusat</p>
-                                        <p class="point-time">09.00 WIB</p>
-                                    </div>
-                                </div>
-                                <div class="route-connector"></div>
-                                <div class="route-point">
-                                    <div class="point-marker"></div>
-                                    <div class="point-info">
-                                        <p class="point-location">Rest Area Bush Batu</p>
-                                        <p class="point-time">11.30 WIB</p>
-                                    </div>
-                                </div>
-                                <div class="route-connector"></div>
-                                <div class="route-point">
-                                    <div class="point-marker"></div>
-                                    <div class="point-info">
-                                        <p class="point-location">Jatinangor</p>
-                                        <p class="point-time">12.30 WIB</p>
-                                    </div>
-                                </div>
+                                {{-- Fallback --}}
+                                <div class="route-point">...</div>
                             @endif
                         </div>
 
-                        <!-- Route Details Toggle Button -->
                         <div class="route-details-toggle">
                             <button class="btn-route-toggle" onclick="toggleRouteDetails()">
                                 <i class="fas fa-chevron-down"></i> Lihat Rute Detail
                             </button>
                         </div>
 
-                        <!-- Route Details Dropdown -->
                         <div class="route-details-dropdown" id="route-details-dropdown">
                             <div class="route-details-content">
-                                @if(isset($pemesanan) && $pemesanan->jadwal && $pemesanan->jadwal->rutes && $pemesanan->jadwal->rutes->count() > 0)
-                                    @foreach($pemesanan->jadwal->rutes as $index => $rute)
+                                @if($jadwal && $jadwal->rutes && $jadwal->rutes->count() > 0)
+                                    @foreach($jadwal->rutes as $index => $rute)
                                         <div class="route-detail-item">
                                             <div class="route-detail-title">
                                                 <i class="fas fa-route"></i> {{ $rute->nama_rute ?? 'Rute ' . ($index + 1) }}
                                             </div>
-
-                                            <!-- Origin -->
+                                            {{-- Origin --}}
                                             <div class="route-stop">
                                                 <div class="stop-marker origin"></div>
                                                 <div class="stop-info">
                                                     <div class="stop-name">{{ $rute->kota_asal }}</div>
                                                     <div class="stop-time">
-                                                        Keberangkatan: {{ \Carbon\Carbon::parse($pemesanan->jadwal->waktu_keberangkatan)->format('H:i') }}
+                                                        Keberangkatan: {{ \Carbon\Carbon::parse($jadwal->waktu_keberangkatan)->format('H:i') }}
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            <!-- Stops (Simplified - show only first 2 stops if many) -->
                                             @php
-                                                $stops = json_decode($rute->rute_pemberhentian, true) ?? [];
-                                                $currentTime = \Carbon\Carbon::parse($pemesanan->jadwal->waktu_keberangkatan);
+                                                $stops = is_string($rute->rute_pemberhentian) ? (json_decode($rute->rute_pemberhentian, true) ?? []) : ($rute->rute_pemberhentian ?? []);
+                                                $currentTime = \Carbon\Carbon::parse($jadwal->waktu_keberangkatan);
                                                 $showLimit = 2;
                                             @endphp
-
                                             @foreach(array_slice($stops, 0, $showLimit) as $stopIndex => $stop)
-                                                @php
-                                                    $currentTime->addMinutes(30);
-                                                @endphp
+                                                @php $currentTime->addMinutes(30); @endphp
                                                 <div class="route-stop">
                                                     <div class="stop-marker stop"></div>
                                                     <div class="stop-info">
@@ -1481,18 +1456,13 @@
                                                         @if(!empty($stop['outlets']))
                                                         <div class="stop-outlet">
                                                             Outlet: {{ is_array($stop['outlets']) ? implode(', ', array_slice($stop['outlets'], 0, 2)) : $stop['outlets'] }}
-                                                            @if(count($stop['outlets']) > 2)
-                                                                +{{ count($stop['outlets']) - 2 }} lainnya
-                                                            @endif
+                                                            @if(count($stop['outlets']) > 2) +{{ count($stop['outlets']) - 2 }} lainnya @endif
                                                         </div>
                                                         @endif
                                                     </div>
                                                 </div>
-                                                @php
-                                                    $currentTime->addMinutes($stop['durasi_singgah'] ?? 10);
-                                                @endphp
+                                                @php $currentTime->addMinutes($stop['durasi_singgah'] ?? 10); @endphp
                                             @endforeach
-
                                             @if(count($stops) > $showLimit)
                                                 <div class="route-stop">
                                                     <div class="stop-marker stop"></div>
@@ -1501,11 +1471,7 @@
                                                     </div>
                                                 </div>
                                             @endif
-
-                                            <!-- Destination -->
-                                            @php
-                                                $currentTime->addMinutes(30);
-                                            @endphp
+                                            @php $currentTime->addMinutes(30); @endphp
                                             <div class="route-stop">
                                                 <div class="stop-marker destination"></div>
                                                 <div class="stop-info">
@@ -1529,14 +1495,14 @@
             </div>
         </div>
 
-        <!-- Right Column - INFORMASI KURSI DAN DATA KURSI -->
+        {{-- RIGHT COLUMN – INFORMASI KURSI & DATA KURSI --}}
         <div class="right-column">
-            <!-- INFORMASI KURSI - DIPINDAHKAN KE ATAS DATA KURSI -->
+
+            {{-- INFORMASI KURSI + RINGKASAN HARGA --}}
             <div class="info-card" style="margin-bottom: 24px;">
                 <div class="card-content">
                     <h2 class="card-title">INFORMASI KURSI</h2>
 
-                    <!-- Kotak warna seukuran data kursi - DIPERBAIKI -->
                     <div class="seat-legend">
                         <div class="legend-item">
                             <div class="seat-box available"></div>
@@ -1557,78 +1523,37 @@
                             <i class="fas fa-info-circle"></i> <strong>Kursi berwarna abu-abu</strong> sudah dipesan oleh penumpang lain dan <strong>tidak dapat dipilih</strong>.
                         </p>
                         <p class="notice-text" style="margin-top: 8px;">
-                            <i class="fas fa-exclamation-triangle"></i> Pastikan Anda memilih kursi sesuai jumlah penumpang ({{ $pemesanan->jumlah_penumpang ?? 1 }} kursi).
+                            <i class="fas fa-exclamation-triangle"></i> Pastikan Anda memilih kursi sesuai jumlah penumpang ({{ $jumlahPenumpang }} kursi).
                         </p>
                         <p class="notice-text" style="margin-top: 8px;">
                             <i class="fas fa-clock"></i> Anda memiliki waktu <strong>5 menit</strong> untuk menyelesaikan pemilihan kursi sebelum kunci kursi dilepas.
                         </p>
                     </div>
 
-                    <!-- Info Harga - ENHANCED DESIGN -->
-                    @if(isset($pemesanan))
-                    <div class="price-summary">
-                        <div class="price-item">
-                            <span class="price-label">Harga Dasar:</span>
-                            <span class="price-value">
-                                Rp {{ number_format($pemesanan->harga_total, 0, ',', '.') }}
-                                <span class="price-breakdown">/orang</span>
-                            </span>
-                        </div>
-                        <div class="price-item">
-                            <span class="price-label">Total Penumpang:</span>
-                            <span class="price-value">{{ $pemesanan->jumlah_penumpang }} orang</span>
-                        </div>
-                        <div class="price-item">
-                            <span class="price-label">Subtotal:</span>
-                            <span class="price-value">
-                                Rp {{ number_format($pemesanan->harga_total * $pemesanan->jumlah_penumpang, 0, ',', '.') }}
-                                <span class="price-breakdown">
-                                    ({{ $pemesanan->jumlah_penumpang }} × {{ number_format($pemesanan->harga_total, 0, ',', '.') }})
-                                </span>
-                            </span>
-                        </div>
-                        @if($pemesanan->diskon > 0)
-                        <div class="price-item discount">
-                            <span class="price-label">Diskon:</span>
-                            <span class="price-value">- Rp {{ number_format($pemesanan->diskon, 0, ',', '.') }}</span>
-                        </div>
-                        @endif
-                        <div class="price-item total">
-                            <span class="price-label">Total Bayar:</span>
-                            <span class="price-value">Rp {{ number_format($pemesanan->total_bayar, 0, ',', '.') }}</span>
-                        </div>
-                    </div>
-                    @endif
-                </div>
-            </div>
+<br></br>
 
-            <!-- DATA KURSI -->
+            {{-- DATA KURSI --}}
             <div class="seat-card">
                 <div class="card-content">
                     <h2 class="card-title">DATA KURSI</h2>
 
-                    @if(!isset($pemesanan))
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle"></i> Data pemesanan tidak ditemukan.
-                            <a href="{{ route('customer.search') }}" class="alert-link">Kembali ke pencarian</a>
-                        </div>
-                    @else
-                    <!-- Informasi Shuttle dengan Fasilitas Badges -->
                     <div class="shuttle-info-summary">
-                        <div class="shuttle-name" id="shuttle-name">{{ $pemesanan->jadwal->shuttle->nama_shuttle ?? 'Smart Shuttle Standard 2' }}</div>
-
+                        @php
+                            // Determine shuttle object based on flow
+                            $shuttle_obj = $usesDriverJadwal ? $driverJadwal?->shuttle : $jadwal?->shuttle;
+                            $shuttle_name = $shuttle_obj?->nama_shuttle ?? 'Smart Shuttle Standard 2';
+                            $shuttle_fasilitas = $shuttle_obj?->fasilitas ?? null;
+                        @endphp
+                        <div class="shuttle-name" id="shuttle-name">{{ $shuttle_name }}</div>
                         <div class="shuttle-detail" id="shuttle-detail">
-                            @if(isset($pemesanan->jadwal->shuttle->fasilitas))
-                                @php
-                                    $fasilitasArray = explode(',', $pemesanan->jadwal->shuttle->fasilitas);
-                                @endphp
+                            @if(!empty($shuttle_fasilitas))
+                                @php $fasilitasArray = explode(',', $shuttle_fasilitas); @endphp
                                 <div class="fasilitas-badges">
                                     @foreach($fasilitasArray as $fasilitas)
                                         <span class="badge-fasilitas">{{ trim($fasilitas) }}</span>
                                     @endforeach
                                 </div>
                             @else
-                                <!-- Fallback jika tidak ada data fasilitas -->
                                 <div class="fasilitas-badges">
                                     <span class="badge-fasilitas">Share Shuttle</span>
                                     <span class="badge-fasilitas">AC</span>
@@ -1640,14 +1565,14 @@
                                 </div>
                             @endif
                         </div>
-
                         <div class="price-info">
-                            <span class="price" id="shuttle-price">Rp {{ number_format($pemesanan->harga_total, 0, ',', '.') }}</span>
+                            <span class="price" id="shuttle-price">
+                                Rp {{ number_format($hargaPerOrang, 0, ',', '.') }}
+                            </span>
                             <span class="per-seat">/kursi</span>
                         </div>
                     </div>
 
-                    <!-- Bagian Pengemudi -->
                     <div class="driver-section">
                         <div class="driver-indicator">
                             <i class="fas fa-steering-wheel"></i>
@@ -1655,27 +1580,25 @@
                         </div>
                     </div>
 
-                    <!-- Form untuk memilih kursi -->
                     <form id="kursi-form" action="{{ route('customer.kursi.proses') }}" method="POST">
                         @csrf
                         <input type="hidden" name="pemesanan_id" value="{{ $pemesanan->id }}">
+                        @if($pemesanan->id_jadwal_driver)
+                            <input type="hidden" name="id_jadwal_driver" value="{{ $pemesanan->id_jadwal_driver }}">
+                        @endif
 
-                        <!-- Seat Grid - Layout dari Controller -->
+                        {{-- GRID KURSI --}}
                         <div class="seat-grid" id="seat-grid">
                             @if(!empty($layoutKursi) && is_array($layoutKursi))
-                                <!-- TAMPILKAN SEMUA KURSI DARI LAYOUT -->
                                 @foreach($layoutKursi as $kursi)
                                     @php
-                                        $seatClass = $kursi['class'] ?? 'available';
+                                        $seatClass  = $kursi['class'] ?? 'available';
                                         $seatStatus = $kursi['status'] ?? 'tersedia';
-                                        $seatIcon = $kursi['icon'] ?? 'fa-check';
+                                        $seatIcon   = $kursi['icon'] ?? 'fa-check';
                                         $seatNumber = $kursi['nomor'] ?? '';
-
-                                        // Tentukan apakah kursi bisa diklik
+                                        $hargaKursi = $hargaPerOrang + ($kursi['harga_tambahan'] ?? 0);
                                         $isClickable = ($seatClass === 'available' || $seatClass === 'selected');
                                         $onclick = $isClickable ? "selectSeat(this, '{$seatNumber}')" : "";
-
-                                        // Tentukan title berdasarkan status
                                         if ($seatClass === 'sold' && $seatStatus === 'terpesan') {
                                             $title = 'Sudah dipesan penumpang lain';
                                         } elseif ($seatClass === 'sold' && $seatStatus === 'dikunci') {
@@ -1686,97 +1609,47 @@
                                             $title = 'Tersedia';
                                         }
                                     @endphp
-
-                                    <div class="seat {{ $seatClass }}"
+                                     <div class="seat {{ $seatClass }}"
                                          data-seat="{{ $seatNumber }}"
-                                         data-harga="{{ $pemesanan->harga_total + ($kursi['harga_tambahan'] ?? 0) }}"
+                                         data-harga="{{ $hargaKursi }}"
                                          data-status="{{ $seatStatus }}"
                                          data-nomor="{{ $seatNumber }}"
-                                         onclick="{{ $onclick }}"
+                                         @if($isClickable) onclick="selectSeat(this, '{{ $seatNumber }}')" @endif
                                          title="{{ $title }}"
-                                         @if($seatClass === 'sold')
-                                            style="pointer-events: none; cursor: not-allowed;"
-                                         @endif>
-
+                                         @if($seatClass === 'sold') aria-disabled="true" data-disabled="1" style="pointer-events:none; cursor:not-allowed;" @endif>
                                         <span class="seat-number">{{ $seatNumber }}</span>
-
                                         @if(isset($kursi['tipe']) && $kursi['tipe'] === 'premium')
                                             <small class="seat-premium-badge">PREMIUM</small>
                                         @endif
-
-                                        @if(isset($kursi['harga_tambahan']) && $kursi['harga_tambahan'] > 0)
-                                            <small class="seat-price-extra">+{{ number_format($kursi['harga_tambahan'], 0, ',', '.') }}</small>
+                                        @if(!empty($kursi['harga_tambahan']))
+                                            <small class="seat-price-extra">
+                                                +{{ number_format($kursi['harga_tambahan'],0,',','.') }}
+                                            </small>
                                         @endif
-
-                                        <!-- Icon status -->
                                         <i class="fas {{ $seatIcon }} seat-status-icon"></i>
                                     </div>
                                 @endforeach
-                            @else
-                                <!-- FALLBACK: Generate 9 kursi default (jika layout kosong) -->
-                                @php
-                                    $totalKursi = $pemesanan->jadwal->shuttle->total_kursi ?? 9;
-                                    $rows = ceil($totalKursi / 3);
-                                    $kursiCounter = 1;
-                                @endphp
-
-                                @for($row = 1; $row <= $rows; $row++)
-                                    @for($col = 1; $col <= 3; $col++)
-                                        @if($kursiCounter <= $totalKursi)
-                                            @php
-                                                $seatNumber = $row . chr(64 + $col);
-                                                $seatClass = 'available';
-                                            @endphp
-
-                                            <div class="seat {{ $seatClass }}"
-                                                 data-seat="{{ $seatNumber }}"
-                                                 data-harga="{{ $pemesanan->harga_total }}"
-                                                 data-status="tersedia"
-                                                 data-nomor="{{ $seatNumber }}"
-                                                 onclick="selectSeat(this, '{{ $seatNumber }}')"
-                                                 title="Tersedia">
-
-                                                <span class="seat-number">{{ $seatNumber }}</span>
-                                                <i class="fas fa-check seat-status-icon"></i>
-                                            </div>
-
-                                            @php $kursiCounter++; @endphp
-                                        @endif
-                                    @endfor
-                                @endfor
                             @endif
                         </div>
 
-                        <!-- Input hidden untuk menyimpan kursi yang dipilih -->
-                        <div id="selected-seats-inputs">
-                            <!-- Akan diisi oleh JavaScript -->
-                        </div>
+                        <div id="selected-seats-inputs"></div>
 
-                        <!-- Informasi kursi yang dipilih -->
                         <div class="selected-seats">
-                            <h4 class="selected-title">Kursi yang Dipilih (<span id="selected-count">0</span>/<span id="max-seats">{{ $pemesanan->jumlah_penumpang }}</span>):</h4>
-                            <div class="selected-list" id="selected-list">
-                                <!-- Akan diisi oleh JavaScript -->
-                            </div>
-                            <div class="total-price" id="total-price-container" style="display: none;">
-                                <div class="d-flex justify-content-between">
-                                    <span>Total: </span>
-                                    <span class="total-amount" id="total-amount">Rp 0</span>
-                                </div>
-                            </div>
+                            <h4 class="selected-title">
+                                Kursi yang Dipilih (<span id="selected-count">0</span>/<span id="max-seats">{{ $jumlahPenumpang }}</span>):
+                            </h4>
+                            <div class="selected-list" id="selected-list"></div>
                         </div>
 
-                        <!-- Action Button -->
                         <div class="action-buttons">
                             <button type="button" class="btn-secondary" onclick="window.history.back()">
                                 <i class="fas fa-arrow-left"></i> Kembali
                             </button>
                             <button type="submit" class="payment-btn" id="payment-btn" disabled>
-                                 Lanjutkan ke Detail Pesanan
+                                Lanjutkan ke Detail Pesanan
                             </button>
                         </div>
                     </form>
-                    @endif
                 </div>
             </div>
         </div>
@@ -1786,16 +1659,82 @@
 
 @push('scripts')
 <script>
+// =====================================================
+//   FORM SUBMISSION HANDLER - ANTI-DOUBLE-CLICK & LOADING
+// =====================================================
 document.addEventListener('DOMContentLoaded', function() {
-    let selectedSeats = [];
-    const maxSeats = {{ $pemesanan->jumlah_penumpang ?? 1 }};
-    const hargaPerKursi = {{ $pemesanan->harga_total ?? 0 }};
+    const form = document.getElementById('kursi-form');
+    const submitBtn = document.getElementById('payment-btn');
+    let isSubmitting = false;
 
-    // Inisialisasi kursi yang sudah dipilih sebelumnya
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // PREVENT DOUBLE SUBMIT
+            if (isSubmitting) {
+                e.preventDefault();
+                return false;
+            }
+
+            // VALIDATE BEFORE SUBMIT
+            const selectedSeatsInputs = document.querySelectorAll('#selected-seats-inputs input[type="hidden"]');
+            const jumlahPenumpang = parseInt(document.getElementById('max-seats').textContent);
+
+            if (selectedSeatsInputs.length !== jumlahPenumpang) {
+                e.preventDefault();
+                showAlert('error', 'Kursi Tidak Lengkap', `Anda harus memilih ${jumlahPenumpang} kursi sebelum melanjutkan.`);
+                return false;
+            }
+
+            // MARK AS SUBMITTING
+            isSubmitting = true;
+
+            // DISABLE BUTTON & SHOW LOADING
+            submitBtn.disabled = true;
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+            submitBtn.style.opacity = '0.6';
+            submitBtn.style.cursor = 'wait';
+
+            // SET TIMEOUT TO PREVENT INFINITE LOADING (allow form to submit)
+            setTimeout(() => {
+                if (isSubmitting) {
+                    console.warn('Form submission still pending...');
+                    // Jangan reset, biar form submit sesuai response dari server
+                }
+            }, 30000); // 30 second timeout
+
+            // NORMAL FORM SUBMISSION - tidak perlu preventDefault
+            // Form akan submit secara normal dan redirect akan handle di server
+            return true;
+        });
+    }
+
+    // NOTE: Removed beforeunload handler to avoid browser showing
+    // the default "Changes you made may not be saved." dialog.
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    // =====================================================
+    //   DATA HARGA DARI SERVER – SINKRON DENGAN PESAN
+    // =====================================================
+    const hargaPerKursi     = {{ $hargaPerOrang ?? 0 }};
+    const jumlahPenumpang   = {{ $jumlahPenumpang ?? 1 }};
+    const totalTarifServer  = {{ $totalTarif ?? 0 }};      // total tarif tambahan (untuk semua tiket)
+    const diskonServer      = {{ $diskon ?? 0 }};          // diskon absolut
+    const subtotalServer    = {{ $subtotal ?? 0 }};        // (harga * jumlah) + totalTarif
+    const totalBayarServer  = {{ $totalBayar ?? 0 }};      // subtotal - diskon
+    const tarifPerKursi     = {{ $tarifPerKursi ?? 0 }};   // tarif per kursi (untuk proporsi)
+
+    // State kursi yang dipilih
+    let selectedSeats = [];
+
+    const pemesananId = {{ $pemesanan->id }};
+    const csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '{{ csrf_token() }}';
+
+    // Inisialisasi kursi yang sudah terpilih sebelumnya
     document.querySelectorAll('.seat.selected').forEach(seatElement => {
         const seatId = seatElement.getAttribute('data-seat');
         const seatNumber = seatElement.querySelector('.seat-number')?.textContent || seatId;
-
         selectedSeats.push({
             id: seatId,
             number: seatNumber,
@@ -1803,254 +1742,351 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Fungsi pilih kursi (HANYA DI FRONTEND)
+    // =====================================================
+    //   FUNGSI-FUNGSI UTAMA (PERBAIKAN VALIDASI KETAT)
+    // =====================================================
     window.selectSeat = function(seatElement, seatNumber) {
-        const seatId = seatElement.getAttribute('data-seat');
-        const seatStatus = seatElement.getAttribute('data-status');
-
-        // JANGAN izinkan pilih kursi yang sudah terpesan
-        if (seatStatus === 'terpesan') {
-            showAlert('error', 'Kursi Tidak Tersedia', `Kursi ${seatNumber} sudah dipesan oleh penumpang lain!`);
-            return;
+        // SAFETY CHECK 1: Pastikan element valid
+        if (!seatElement || !seatElement.classList) {
+            console.error('Invalid seat element');
+            return false;
         }
 
-        const seatIndex = selectedSeats.findIndex(seat => seat.id === seatId);
+        // SAFETY CHECK 2: Triple-check kursi adalah SOLD - HARUS BLOCK!
+        if (seatElement.classList.contains('sold')) {
+            console.warn('Attempt to select SOLD seat:', seatNumber);
+            showAlert('error', 'Kursi Tidak Tersedia', `Kursi ${seatNumber} sudah dipesan dan TIDAK dapat dipilih.`);
+            return false;
+        }
 
-        if (seatIndex > -1) {
-            // Batalkan pilihan
-            selectedSeats.splice(seatIndex, 1);
-            updateSeatUI(seatElement, 'available', 'tersedia', 'fa-check');
-            showAlert('info', 'Kursi Dibatalkan', `Kursi ${seatNumber} tidak lagi dipilih.`);
+        // SAFETY CHECK 3: Check pointer-events CSS
+        const computedStyle = window.getComputedStyle(seatElement);
+        if (computedStyle.pointerEvents === 'none') {
+            console.warn('Attempt to select seat with pointer-events:none:', seatNumber);
+            showAlert('error', 'Kursi Tidak Tersedia', `Kursi ${seatNumber} sudah dipesan.`);
+            return false;
+        }
+
+        // SAFETY CHECK 4: Check data attributes
+        const seatId = seatElement.getAttribute('data-seat');
+        const seatStatus = seatElement.getAttribute('data-status');
+        const seatDisabled = seatElement.getAttribute('data-disabled') === '1' || seatElement.getAttribute('aria-disabled') === 'true';
+
+        if (seatStatus === 'terpesan') {
+            console.warn('Attempt to select seat with status=terpesan:', seatNumber);
+            showAlert('error', 'Kursi Tidak Tersedia', `Kursi ${seatNumber} sudah dipesan oleh penumpang lain.`);
+            return false;
+        }
+
+        if (seatDisabled) {
+            console.warn('Attempt to select disabled seat:', seatNumber);
+            showAlert('error', 'Kursi Tidak Tersedia', `Kursi ${seatNumber} tidak dapat dipilih.`);
+            return false;
+        }
+
+        // SAFETY CHECK 5: Kursi harus ada class 'available' atau 'selected'
+        if (!seatElement.classList.contains('available') && !seatElement.classList.contains('selected')) {
+            console.warn('Seat does not have available/selected class:', seatNumber, 'Current classes:', seatElement.className);
+            showAlert('error', 'Kursi Tidak Tersedia', `Kursi ${seatNumber} tidak dalam kondisi tersedia.`);
+            return false;
+        }
+
+        // ===== SEMUANYA OK, LANJUTKAN LOGIKA NORMAL =====
+        const index = selectedSeats.findIndex(s => s.id === seatId);
+
+        if (index > -1) {
+            // Batalkan pilihan -> unlock via AJAX first
+            fetch("{{ route('customer.kursi.unlock') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ pemesanan_id: pemesananId, nomor_kursi: seatNumber })
+            }).then(r => r.json()).then(res => {
+                if (res.success) {
+                    selectedSeats.splice(index, 1);
+                    updateSeatUI(seatElement, 'available', 'tersedia', 'fa-check');
+                    showAlert('info', 'Kursi Dibatalkan', `Kursi ${seatNumber} tidak lagi dipilih.`);
+                    updateSelectedSeatsDisplay();
+                    updateFormInputs();
+                    updatePaymentButton();
+                } else {
+                    showAlert('error', 'Gagal', res.message || 'Gagal membatalkan kursi');
+                }
+            }).catch(err => {
+                console.error(err);
+                showAlert('error', 'Gagal', 'Terjadi kesalahan jaringan saat membatalkan kursi');
+            });
         } else {
-            // Cek apakah sudah mencapai batas maksimal
-            if (selectedSeats.length >= maxSeats) {
-                showAlert('warning', 'Maksimal Kursi', `Anda hanya dapat memilih maksimal ${maxSeats} kursi!`);
-                return;
+            // Tambah pilihan -> lock via AJAX first
+            if (selectedSeats.length >= jumlahPenumpang) {
+                showAlert('warning', 'Maksimal Kursi', `Anda hanya dapat memilih maksimal ${jumlahPenumpang} kursi!`);
+                return false;
             }
 
-            // Tambahkan pilihan
-            selectedSeats.push({
-                id: seatId,
-                number: seatNumber,
-                price: hargaPerKursi
+            fetch("{{ route('customer.kursi.lock') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ pemesanan_id: pemesananId, nomor_kursi: seatNumber })
+            }).then(r => r.json()).then(res => {
+                if (res.success) {
+                    selectedSeats.push({ id: seatId, number: seatNumber, price: hargaPerKursi });
+                    updateSeatUI(seatElement, 'selected', 'selected', 'fa-user-check');
+                    showAlert('success', 'Kursi Dipilih', `Kursi ${seatNumber} berhasil dipilih!`);
+                    updateSelectedSeatsDisplay();
+                    updateFormInputs();
+                    updatePaymentButton();
+                } else {
+                    showAlert('error', 'Gagal', res.message || 'Gagal mengunci kursi');
+                }
+            }).catch(err => {
+                console.error(err);
+                showAlert('error', 'Gagal', 'Terjadi kesalahan jaringan saat memilih kursi');
             });
-            updateSeatUI(seatElement, 'selected', 'selected', 'fa-user-check');
-            showAlert('success', 'Kursi Dipilih', `Kursi ${seatNumber} berhasil dipilih!`);
         }
 
         updateSelectedSeatsDisplay();
         updateFormInputs();
         updatePaymentButton();
+
+        return false; // Prevent any default action
     };
 
-    function updateSeatUI(seatElement, cssClass, status, icon) {
-        seatElement.classList.remove('available', 'selected', 'sold');
-        seatElement.classList.add(cssClass);
-        seatElement.setAttribute('data-status', status);
+    function updateSeatUI(seat, cssClass, status, icon) {
+        seat.classList.remove('available', 'selected', 'sold');
+        seat.classList.add(cssClass);
+        seat.setAttribute('data-status', status);
+        const iconEl = seat.querySelector('.seat-status-icon');
+        if (iconEl) iconEl.className = `fas ${icon} seat-status-icon`;
+    }
 
-        // Update icon
-        const iconElement = seatElement.querySelector('.seat-status-icon');
-        if (iconElement) {
-            iconElement.className = `fas ${icon} seat-status-icon`;
-        }
+    function formatCurrency(amount) {
+        return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    // Update ringkasan harga berdasarkan jumlah kursi yang dipilih
+    function updateSummaryForSelection(selectedCount) {
+        // Subtotal = (harga per kursi + tarif per kursi) * jumlah dipilih
+        const subtotal = Math.round((hargaPerKursi + tarifPerKursi) * selectedCount);
+        // Diskon proporsional
+        const diskonProporsional = Math.round(diskonServer * (selectedCount / (jumlahPenumpang || 1)));
+        const totalAfter = Math.max(0, subtotal - diskonProporsional);
+
+        // Update elemen di kolom kiri (jika ada di halaman ini)
+        const subtotalEl = document.getElementById('subtotal-amount-left');
+        const discountEl = document.getElementById('discount-amount-left');
+        const totalLeftEl = document.getElementById('total-amount-left');
+
+        if (subtotalEl) subtotalEl.textContent = `Rp ${formatCurrency(subtotal)}`;
+        if (discountEl) discountEl.textContent = `- Rp ${formatCurrency(diskonProporsional)}`;
+        if (totalLeftEl) totalLeftEl.textContent = `Rp ${formatCurrency(totalAfter)}`;
+
+        // Update total kecil di bawah kursi yang dipilih
+        const totalAmountSpan = document.getElementById('total-amount');
+        if (totalAmountSpan) totalAmountSpan.textContent = `Rp ${formatCurrency(totalAfter)}`;
     }
 
     function updateSelectedSeatsDisplay() {
-        const selectedCount = document.getElementById('selected-count');
-        const selectedList = document.getElementById('selected-list');
-        const totalPriceContainer = document.getElementById('total-price-container');
-        const totalAmount = document.getElementById('total-amount');
+        const selectedCount = selectedSeats.length;
+        const selectedCountEl = document.getElementById('selected-count');
+        if (selectedCountEl) selectedCountEl.textContent = selectedCount;
 
-        selectedCount.textContent = selectedSeats.length;
-        selectedList.innerHTML = '';
-
+        const list = document.getElementById('selected-list');
+        if (list) list.innerHTML = '';
         selectedSeats.forEach(seat => {
             const badge = document.createElement('span');
             badge.className = 'seat-badge-item';
-            badge.innerHTML = `${seat.number}`;
-            selectedList.appendChild(badge);
+            badge.innerHTML = seat.number;
+            if (list) list.appendChild(badge);
         });
 
-        if (selectedSeats.length > 0) {
-            const finalTotal = hargaPerKursi * selectedSeats.length;
-            totalAmount.textContent = `Rp ${finalTotal.toLocaleString('id-ID')}`;
-            totalPriceContainer.style.display = 'block';
+        const totalPriceContainer = document.getElementById('total-price-container');
+        if (selectedCount > 0) {
+            updateSummaryForSelection(selectedCount);
+            if (totalPriceContainer) totalPriceContainer.style.display = 'block';
         } else {
-            totalPriceContainer.style.display = 'none';
+            // Kembalikan ke nilai server (semua penumpang)
+            const subtotalEl = document.getElementById('subtotal-amount-left');
+            const discountEl = document.getElementById('discount-amount-left');
+            const totalLeftEl = document.getElementById('total-amount-left');
+            const totalAmountSpan = document.getElementById('total-amount');
+
+            if (subtotalEl) subtotalEl.textContent = `Rp ${formatCurrency(subtotalServer)}`;
+            if (discountEl) discountEl.textContent = `- Rp ${formatCurrency(diskonServer)}`;
+            if (totalLeftEl) totalLeftEl.textContent = `Rp ${formatCurrency(totalBayarServer)}`;
+            if (totalAmountSpan) totalAmountSpan.textContent = `Rp ${formatCurrency(totalBayarServer)}`;
+            if (totalPriceContainer) totalPriceContainer.style.display = 'none';
         }
     }
 
     function updateFormInputs() {
         const container = document.getElementById('selected-seats-inputs');
+        if (!container) return;
         container.innerHTML = '';
-
-        selectedSeats.forEach((seat, index) => {
+        selectedSeats.forEach((seat, idx) => {
             const input = document.createElement('input');
             input.type = 'hidden';
-            input.name = `kursi[${index}]`;
+            input.name = `kursi[${idx}]`;
             input.value = seat.id;
             container.appendChild(input);
         });
     }
 
     function updatePaymentButton() {
-        const paymentBtn = document.getElementById('payment-btn');
-        paymentBtn.disabled = selectedSeats.length !== maxSeats;
+        const btn = document.getElementById('payment-btn');
+        if (!btn) return;
+        btn.disabled = selectedSeats.length !== jumlahPenumpang;
     }
 
-    // Fungsi untuk toggle route details - VERSI DIPERBAIKI
+    // =====================================================
+    //   ALERT & UTILITY
+    // =====================================================
+    window.showAlert = function(type, title, message) {
+        const existing = document.querySelector('.global-alert-container');
+        if (existing) existing.remove();
+
+        const container = document.createElement('div');
+        container.className = 'global-alert-container';
+
+        const alert = document.createElement('div');
+        alert.className = `global-alert alert-${type}`;
+
+        let icon = '';
+        switch(type) {
+            case 'success': icon = 'fa-check-circle'; break;
+            case 'error':   icon = 'fa-exclamation-circle'; break;
+            case 'warning': icon = 'fa-exclamation-triangle'; break;
+            case 'info':    icon = 'fa-info-circle'; break;
+        }
+
+        alert.innerHTML = `
+            <div class="alert-content">
+                <i class="alert-icon fas ${icon}"></i>
+                <div class="alert-message">
+                    <strong>${title}</strong>
+                    <span>${message}</span>
+                </div>
+                <button class="alert-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="alert-progress"></div>
+        `;
+
+        container.appendChild(alert);
+        document.body.appendChild(container);
+
+        const closeBtn = alert.querySelector('.alert-close');
+        closeBtn.addEventListener('click', function() {
+            alert.classList.add('fade-out');
+            setTimeout(() => container.remove(), 300);
+        });
+
+        setTimeout(() => {
+            if (alert.parentElement) {
+                alert.classList.add('fade-out');
+                setTimeout(() => container.remove(), 300);
+            }
+        }, 5000);
+    };
+
     window.toggleRouteDetails = function() {
         const dropdown = document.getElementById('route-details-dropdown');
         const button = document.querySelector('.btn-route-toggle');
-
         if (dropdown.classList.contains('show')) {
-            // Sembunyikan dropdown
             dropdown.classList.remove('show');
             button.classList.remove('active');
             button.innerHTML = '<i class="fas fa-chevron-down"></i> Lihat Rute Detail';
         } else {
-            // Tampilkan dropdown
             dropdown.classList.add('show');
             button.classList.add('active');
             button.innerHTML = '<i class="fas fa-chevron-up"></i> Sembunyikan Rute Detail';
-
-            // Optional: Scroll ke dropdown untuk mobile
-            if (window.innerWidth < 768) {
-                setTimeout(() => {
-                    dropdown.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 300);
-            }
         }
     };
 
-    // Inisialisasi
-    updateSelectedSeatsDisplay();
-    updateFormInputs();
-    updatePaymentButton();
-});
+    // ===== ANTI-CLICK HANDLER UNTUK KURSI SOLD =====
+    // Block SEMUA kursi dengan class 'sold' agar TIDAK BISA diklik
+    function blockSoldSeats() {
+        const soldSeats = document.querySelectorAll('.seat.sold');
 
-// Fungsi untuk menampilkan alert baru
-function showAlert(type, title, message) {
-    // Remove existing alerts
-    const existingContainer = document.querySelector('.global-alert-container');
-    if (existingContainer) {
-        existingContainer.remove();
-    }
+        soldSeats.forEach(seat => {
+            // Remove onclick attribute jika ada
+            // Hapus onclick agar tidak memanggil `selectSeat` dari atribut inline
+            seat.removeAttribute('onclick');
 
-    // Create new alert
-    const alertContainer = document.createElement('div');
-    alertContainer.className = 'global-alert-container';
+            // Pastikan kursi relatif sehingga overlay dapat diposisikan di atasnya
+            if (window.getComputedStyle(seat).position === 'static') {
+                seat.style.position = 'relative';
+            }
 
-    const alert = document.createElement('div');
-    alert.className = `global-alert alert-${type}`;
+            // Tambahkan overlay penuh yang menangkap semua event pointer untuk kursi yang sold
+            // Overlay ini mencegah anak-elemen menerima event klik/touch, sehingga kursi benar-benar tidak bisa dipilih
+            const overlay = document.createElement('div');
+            overlay.className = 'seat-overlay';
+            overlay.style.position = 'absolute';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.right = '0';
+            overlay.style.bottom = '0';
+            overlay.style.zIndex = '25';
+            overlay.style.cursor = 'not-allowed';
 
-    let iconClass = '';
-    switch(type) {
-        case 'success':
-            iconClass = 'fas fa-check-circle';
-            break;
-        case 'error':
-            iconClass = 'fas fa-exclamation-circle';
-            break;
-        case 'warning':
-            iconClass = 'fas fa-exclamation-triangle';
-            break;
-        case 'info':
-            iconClass = 'fas fa-info-circle';
-            break;
-    }
+            // Tangani berbagai event pada overlay sebagai fallback
+            const blockHandler = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                showAlert('error', 'Kursi Tidak Tersedia', 'Kursi ' + (seat.getAttribute('data-seat') || 'ini') + ' sudah dipesan oleh penumpang lain.');
+                return false;
+            };
 
-    alert.innerHTML = `
-        <div class="alert-content">
-            <i class="alert-icon ${iconClass}"></i>
-            <div class="alert-message">
-                <strong>${title}</strong>
-                <span>${message}</span>
-            </div>
-            <button class="alert-close">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="alert-progress"></div>
-    `;
+            overlay.addEventListener('click', blockHandler, { capture: true });
+            overlay.addEventListener('mousedown', blockHandler, { capture: true });
+            overlay.addEventListener('touchstart', blockHandler, { capture: true });
 
-    alertContainer.appendChild(alert);
-    document.body.appendChild(alertContainer);
+            // Pastikan semua anak-elemen tidak menerima pointer (fallback tambahan)
+            seat.querySelectorAll('*').forEach(child => {
+                child.style.pointerEvents = 'none';
+            });
 
-    // Close button
-    const closeBtn = alert.querySelector('.alert-close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
-            alert.classList.add('fade-out');
-            setTimeout(() => {
-                if (alertContainer.parentElement) {
-                    alertContainer.remove();
-                }
-            }, 300);
+            // Tambahkan atribut aksesibilitas dan gaya
+            seat.setAttribute('aria-disabled', 'true');
+            seat.setAttribute('data-disabled', '1');
+            seat.style.setProperty('cursor', 'not-allowed', 'important');
+
+            // Sisipkan overlay di akhir isi kursi
+            seat.appendChild(overlay);
         });
     }
 
-    // Auto-hide setelah 5 detik
-    setTimeout(() => {
-        if (alert && alert.parentElement) {
-            alert.classList.add('fade-out');
-            setTimeout(() => {
-                if (alertContainer.parentElement) {
-                    alertContainer.remove();
-                }
-            }, 300);
-        }
-    }, 5000);
-}
+    // Inisialisasi
+    blockSoldSeats(); // BLOCK KURSI SOLD DULU
+    updateSelectedSeatsDisplay();
+    updateFormInputs();
+    updatePaymentButton();
 
-// Auto-hide untuk alert dari session
-document.addEventListener('DOMContentLoaded', function() {
-    const alertContainers = document.querySelectorAll('.global-alert-container');
+    // Submit form validation
+    document.getElementById('kursi-form').addEventListener('submit', function(e) {
+        console.log('=== FORM SUBMISSION DEBUG ===');
+        console.log('Selected Seats:', selectedSeats);
+        console.log('Required:', jumlahPenumpang);
+        console.log('Form Hidden Inputs:', document.querySelectorAll('#selected-seats-inputs input'));
 
-    alertContainers.forEach(container => {
-        const alert = container.querySelector('.global-alert');
-
-        // Auto-hide setelah 5 detik
-        setTimeout(() => {
-            if (alert && container.parentElement) {
-                alert.classList.add('fade-out');
-                setTimeout(() => {
-                    if (container.parentElement) {
-                        container.remove();
-                    }
-                }, 300);
-            }
-        }, 5000);
-
-        // Close button functionality
-        const closeBtn = container.querySelector('.alert-close');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', function() {
-                const alert = this.closest('.global-alert');
-                const container = this.closest('.global-alert-container');
-
-                if (alert) {
-                    alert.classList.add('fade-out');
-                    setTimeout(() => {
-                        if (container && container.parentElement) {
-                            container.remove();
-                        }
-                    }, 300);
-                }
-            });
+        if (selectedSeats.length !== jumlahPenumpang) {
+            e.preventDefault();
+            console.warn('✗ Validation FAILED: ' + selectedSeats.length + ' != ' + jumlahPenumpang);
+            showAlert('warning', 'Peringatan', `Anda harus memilih tepat ${jumlahPenumpang} kursi untuk melanjutkan.`);
+            return false;
+        } else {
+            console.log('✓ Validation PASSED - Form will submit');
+            // Form submit langsung tanpa confirmation
+            return true;
         }
     });
-});
-
-// Handle form submission
-document.getElementById('kursi-form').addEventListener('submit', function(e) {
-    const selectedSeatsCount = document.getElementById('selected-count').textContent;
-    const maxSeats = {{ $pemesanan->jumlah_penumpang ?? 1 }};
-
-    if (parseInt(selectedSeatsCount) !== parseInt(maxSeats)) {
-        e.preventDefault();
-        showAlert('warning', 'Peringatan', `Anda harus memilih tepat ${maxSeats} kursi untuk melanjutkan.`);
-    }
 });
 </script>
 @endpush

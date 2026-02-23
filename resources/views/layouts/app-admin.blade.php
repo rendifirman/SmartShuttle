@@ -545,14 +545,17 @@
     <!-- Navigation -->
     <div class="sidebar-nav">
         <!-- Dashboard -->
+        @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_dashboard'))
         <a href="{{ route('admin.dashboard') }}" class="menu-item" id="dashboard-link">
             <div class="menu-left">
                 <i class="fas fa-chart-bar menu-icon"></i>
                 <span>Dashboard</span>
             </div>
         </a>
+        @endif
 
         <!-- Master Data (with submenu) -->
+        @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_master_data'))
         <div class="menu-item" id="master-data-toggle">
             <div class="menu-left">
                 <i class="fas fa-database menu-icon"></i>
@@ -563,56 +566,87 @@
 
         <div class="submenu" id="master-data-submenu">
             <!-- PROFILE PERUSAHAAN - Ditambahkan di paling atas -->
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_profile_perusahaan'))
             <a href="{{ route('admin.profileperusahaan') }}" class="submenu-item" id="profile-perusahaan-link">
                 <i class="fas fa-building submenu-icon"></i>
                 <span>Profile Perusahaan</span>
             </a>
+            @endif
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_cabang'))
             <a href="{{ route('admin.cabangperusahaan') }}" class="submenu-item" id="cabang-link">
                 <i class="fas fa-code-branch submenu-icon"></i>
                 <span>Cabang</span>
             </a>
+            @endif
 
             <!-- MENU BARU YANG DITAMBAHKAN -->
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_outlet'))
             <a href="{{ route('admin.outletperusahaan') }}" class="submenu-item" id="outlet-link">
                 <i class="fas fa-store submenu-icon"></i>
                 <span>Outlet</span>
             </a>
+            @endif
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_promo'))
             <a href="{{ route('admin.promo') }}" class="submenu-item" id="promo-link">
                 <i class="fas fa-tag submenu-icon"></i>
                 <span>Promo</span>
             </a>
+            @endif
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_tarif'))
+            <a href="{{ route('admin.master-tarif.index') }}" class="submenu-item" id="tarif-link">
+                <i class="fas fa-money-bill-wave submenu-icon"></i>
+                <span>Tarif</span>
+            </a>
+            @endif
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_kontak'))
             <a href="{{ route('admin.kontakperusahaan') }}" class="submenu-item" id="kontak-link">
                 <i class="fas fa-address-book submenu-icon"></i>
                 <span>Kontak</span>
             </a>
+            @endif
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_artikel'))
             <a href="{{ route('admin.artikel.index') }}" class="submenu-item" id="artikel-link">
                 <i class="fas fa-newspaper submenu-icon"></i>
                 <span>Artikel</span>
             </a>
+            @endif
 
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_armada'))
             <a href="{{ route('admin.armada') }}" class="submenu-item" id="armada-link">
                 <i class="fas fa-bus submenu-icon"></i>
                 <span>Armada</span>
             </a>
+            @endif
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_driver'))
             <a href="{{ route('admin.driver') }}" class="submenu-item" id="driver-link">
                 <i class="fas fa-user-tie submenu-icon"></i>
                 <span>Driver</span>
             </a>
+            @endif
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_pegawai'))
             <a href="{{ route('admin.pegawai') }}" class="submenu-item" id="pegawai-link">
                 <i class="fas fa-users submenu-icon"></i>
                 <span>Pegawai</span>
             </a>
-            <a href="{{ route('admin.rute') }}" class="submenu-item" id="rute-link">
+            @endif
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_rute'))
+            <a href="{{ route('admin.rute.index') }}" class="submenu-item" id="rute-link">
                 <i class="fas fa-route submenu-icon"></i>
                 <span>Rute</span>
             </a>
-            <a href="{{ route('admin.jadwal') }}" class="submenu-item" id="jadwal-link">
+            @endif
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_jadwal'))
+            <!-- ★★★ PERBAIKAN DI SINI: Ubah route('admin.jadwal') menjadi route('admin.jadwal.index') ★★★ -->
+            <a href="{{ route('admin.jadwal.index') }}" class="submenu-item" id="jadwal-link">
                 <i class="fas fa-calendar-alt submenu-icon"></i>
                 <span>Jadwal</span>
             </a>
+            @endif
         </div>
+        @endif
 
         <!-- Transaksi (with submenu) -->
+        @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_transaksi'))
         <div class="menu-item" id="transaksi-toggle">
             <div class="menu-left">
                 <i class="fas fa-exchange-alt menu-icon"></i>
@@ -622,21 +656,29 @@
         </div>
 
         <div class="submenu" id="transaksi-submenu">
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_smartsend_transaksi'))
             <a href="{{ route('admin.smartsend-transaksi') }}" class="submenu-item" id="smartsend-transaksi-link">
                 <i class="fas fa-shopping-cart submenu-icon"></i>
                 <span>Smartsend</span>
             </a>
+            @endif
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_perjalanan_transaksi'))
             <a href="{{ route('admin.perjalanan') }}" class="submenu-item" id="perjalanan-link">
                 <i class="fas fa-route submenu-icon"></i>
                 <span>Perjalanan</span>
             </a>
+            @endif
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_armada_transaksi'))
             <a href="{{ route('admin.armada-transaksi') }}" class="submenu-item" id="armada-transaksi-link">
                 <i class="fas fa-bus submenu-icon"></i>
                 <span>Armada</span>
             </a>
+            @endif
         </div>
+        @endif
 
         <!-- SmartSend (with submenu) -->
+        @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_smartsend'))
         <div class="menu-item" id="smartsend-toggle">
             <div class="menu-left">
                 <i class="fas fa-shipping-fast menu-icon"></i>
@@ -646,37 +688,49 @@
         </div>
 
         <div class="submenu" id="smartsend-submenu">
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_smartsend_tiket'))
             <a href="{{ route('admin.smartsend-tiket') }}" class="submenu-item" id="smartsend-tiket-link">
                 <i class="fas fa-ticket-alt submenu-icon"></i>
                 <span>Tiket</span>
             </a>
+            @endif
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_smartsend_perjalanan'))
             <a href="{{ route('admin.smartsend-perjalanan') }}" class="submenu-item" id="smartsend-perjalanan-link">
                 <i class="fas fa-route submenu-icon"></i>
                 <span>Perjalanan</span>
             </a>
+            @endif
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_smartsend_armada'))
             <a href="{{ route('admin.smartsend-armada') }}" class="submenu-item" id="smartsend-armada-link">
                 <i class="fas fa-bus submenu-icon"></i>
                 <span>Armada</span>
             </a>
+            @endif
         </div>
+        @endif
 
         <!-- SmartRent -->
+        @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_smartrent'))
         <a href="{{ route('admin.smartrent') }}" class="menu-item" id="smartrent-link">
             <div class="menu-left">
                 <i class="fas fa-car menu-icon"></i>
                 <span>SmartRent</span>
             </div>
         </a>
+        @endif
 
         <!-- Laporan -->
+        @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_laporan'))
         <a href="{{ route('admin.laporan') }}" class="menu-item" id="laporan-link">
             <div class="menu-left">
                 <i class="fas fa-file-alt menu-icon"></i>
                 <span>Laporan</span>
             </div>
         </a>
+        @endif
 
         <!-- Setting/Menu (with submenu) -->
+        @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_pengaturan'))
         <div class="menu-item" id="setting-toggle">
             <div class="menu-left">
                 <i class="fas fa-cog menu-icon"></i>
@@ -686,15 +740,21 @@
         </div>
 
         <div class="submenu" id="setting-submenu">
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_user'))
             <a href="{{ route('admin.user') }}" class="submenu-item" id="user-link">
                 <i class="fas fa-user-cog submenu-icon"></i>
                 <span>User</span>
             </a>
+            @endif
+
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_menu'))
             <a href="{{ route('admin.menu') }}" class="submenu-item" id="menu-link">
                 <i class="fas fa-bars submenu-icon"></i>
                 <span>Menu</span>
             </a>
+            @endif
         </div>
+        @endif
     </div>
 
     <!-- User Profile di Sidebar -->
@@ -745,6 +805,7 @@
         'promo': { title: 'Master Data - Promo', icon: 'fas fa-tag' },
         'kontak': { title: 'Master Data - Kontak', icon: 'fas fa-address-book' },
         'artikel': { title: 'Master Data - Artikel', icon: 'fas fa-newspaper' },
+        'tarif': { title: 'Master Data - Tarif', icon: 'fas fa-money-bill-wave' },
         'armada': { title: 'Master Data - Armada', icon: 'fas fa-bus' },
         'driver': { title: 'Master Data - Driver', icon: 'fas fa-user-tie' },
         'pegawai': { title: 'Master Data - Pegawai', icon: 'fas fa-users' },
@@ -962,8 +1023,8 @@
             updatePageTitle('smartsend-transaksi'); // Key diubah
         }
         // Transaksi - Perjalanan
-        else if (currentPath.includes('perjalanan') && 
-                !currentPath.includes('tiket-perjalanan') && 
+        else if (currentPath.includes('perjalanan') &&
+                !currentPath.includes('tiket-perjalanan') &&
                 !currentPath.includes('smartsend-perjalanan')) {
             // Buka submenu transaksi
             const transaksiSubmenu = document.getElementById('transaksi-submenu');
@@ -1104,16 +1165,21 @@
 
     // Fungsi untuk logout
     function logout() {
-        // Di sini Anda bisa menambahkan logika logout yang sesuai
-        // Contoh: Menggunakan Laravel's built-in logout
+        // Buat form untuk logout dan submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ route("admin.logout") }}';
 
-        // Untuk saat ini, kita hanya akan menunjukkan pesan
-        alert('Logout berhasil! Mengarahkan ke halaman login...');
+        // Tambahkan CSRF token
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = '_token';
+        csrfToken.value = '{{ csrf_token() }}';
+        form.appendChild(csrfToken);
 
-        // Simulasi redirect ke halaman login setelah 1 detik
-        setTimeout(() => {
-            window.location.href = '/customer/login'; // Ganti dengan route login Anda
-        }, 1000);
+        // Tambahkan ke body dan submit
+        document.body.appendChild(form);
+        form.submit();
     }
 
     document.addEventListener('DOMContentLoaded', function() {

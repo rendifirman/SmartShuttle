@@ -100,6 +100,15 @@ textarea {
     font-size: 12px;
 }
 
+select[multiple] {
+    padding: 10px;
+}
+
+select[multiple] option {
+    padding: 8px;
+    margin: 3px 0;
+}
+
 /* ================= ALERT ================= */
 .alert {
     padding: 15px 20px;
@@ -218,7 +227,7 @@ textarea {
     <!-- HEADER -->
     <div class="page-header">
         <h2>Edit Data Rute</h2>
-        <a href="{{ route('admin.rute') }}" class="btn-back">
+        <a href="{{ route('admin.rute.index') }}" class="btn-back">
             <i class="fas fa-arrow-left"></i> Kembali ke Daftar Rute
         </a>
     </div>
@@ -256,11 +265,45 @@ textarea {
                 </div>
 
                 <div class="form-group">
+                    <label for="cabang_asal_id">Cabang Asal (Branch Asal) <span style="color: red">*</span></label>
+                    <select name="cabang_asal_id" id="cabang_asal_id" required>
+                        <option value="">-- Pilih Cabang Asal --</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" data-outlets="{{ json_encode($branch->outlets) }}" {{ (old('cabang_asal_id', $rute->cabang_asal_id) == $branch->id) ? 'selected' : '' }}>
+                                {{ $branch->nama_cabang }} ({{ $branch->kode_cabang }})
+                            </option>
+                        @endforeach
+                    </select>
+                    <div id="outlets_asal_container" style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 5px; display: none;">
+                        <small style="font-weight: bold;">Outlets:</small>
+                        <div id="outlets_asal_list" style="margin-top: 8px; font-size: 13px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="cabang_tujuan_id">Cabang Tujuan (Branch Tujuan) <span style="color: red">*</span></label>
+                    <select name="cabang_tujuan_id" id="cabang_tujuan_id" required>
+                        <option value="">-- Pilih Cabang Tujuan --</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" data-outlets="{{ json_encode($branch->outlets) }}" {{ (old('cabang_tujuan_id', $rute->cabang_tujuan_id) == $branch->id) ? 'selected' : '' }}>
+                                {{ $branch->nama_cabang }} ({{ $branch->kode_cabang }})
+                            </option>
+                        @endforeach
+                    </select>
+                    <div id="outlets_tujuan_container" style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 5px; display: none;">
+                        <small style="font-weight: bold;">Outlets:</small>
+                        <div id="outlets_tujuan_list" style="margin-top: 8px; font-size: 13px;"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label for="kode_rute">Kode Rute <span style="color: red">*</span></label>
                     <input type="text" name="kode_rute" id="kode_rute"
                            value="{{ old('kode_rute', $rute->kode_rute) }}"
                            placeholder="Contoh: JKT-BAL-001" required>
-                    <small>Format: KOTAASAL-KOTATUJUAN-001</small>
+                    <small>Format: CABANG-CABANG-001</small>
                 </div>
             </div>
 
@@ -270,22 +313,6 @@ textarea {
                     <input type="text" name="nama_rute" id="nama_rute"
                            value="{{ old('nama_rute', $rute->nama_rute) }}"
                            placeholder="Contoh: Jakarta - Bali" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="kota_asal">Kota Asal <span style="color: red">*</span></label>
-                    <input type="text" name="kota_asal" id="kota_asal"
-                           value="{{ old('kota_asal', $rute->kota_asal) }}"
-                           placeholder="Contoh: Jakarta" required>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="kota_tujuan">Kota Tujuan <span style="color: red">*</span></label>
-                    <input type="text" name="kota_tujuan" id="kota_tujuan"
-                           value="{{ old('kota_tujuan', $rute->kota_tujuan) }}"
-                           placeholder="Contoh: Bali" required>
                 </div>
 
                 <div class="form-group">
@@ -329,6 +356,26 @@ textarea {
             </div>
 
             <div class="form-group">
+                <label>Pilih Tarif <span style="color: red">*</span></label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; padding: 10px 0;">
+                    @foreach($tarifs as $tarif)
+                        <div style="display: flex; align-items: center; padding: 10px; border: 1px solid #e0e0e0; border-radius: 5px;">
+                            <input type="checkbox"
+                                   name="master_tarif_ids[]"
+                                   value="{{ $tarif->id }}"
+                                   id="tarif_{{ $tarif->id }}"
+                                   {{ in_array($tarif->id, old('master_tarif_ids', $rute->masterTarifs->pluck('id')->toArray())) ? 'checked' : '' }}>
+                            <label for="tarif_{{ $tarif->id }}" style="margin-left: 10px; margin-bottom: 0; cursor: pointer; flex-grow: 1;">
+                                <strong>{{ $tarif->nama_tarif }}</strong><br>
+                                <small style="color: #666;">{{ $tarif->kode_tarif }} - Rp {{ number_format($tarif->harga_dasar, 0, ',', '.') }}</small>
+                            </label>
+                        </div>
+                    @endforeach
+                </div>
+                <small style="display: block; margin-top: 10px;">Pilih satu atau lebih tarif untuk rute ini.</small>
+            </div>
+
+            <div class="form-group">
                 <label for="rute_pemberhentian">Rute Pemberhentian (JSON)</label>
                 <div class="rute-pemberhentian-container">
                     <textarea name="rute_pemberhentian" id="rute_pemberhentian" rows="5"
@@ -344,7 +391,7 @@ textarea {
                 <button type="reset" class="btn-reset" onclick="resetForm()">
                     <i class="fas fa-redo"></i> Reset Form
                 </button>
-                <a href="{{ route('admin.rute') }}" class="btn-cancel">
+                <a href="{{ route('admin.rute.index') }}" class="btn-cancel">
                     <i class="fas fa-times"></i> Batal
                 </a>
             </div>
@@ -354,6 +401,60 @@ textarea {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle branch selection and outlets display
+    const cabangAsalSelect = document.getElementById('cabang_asal_id');
+    const cabangTujuanSelect = document.getElementById('cabang_tujuan_id');
+    const outletAsalContainer = document.getElementById('outlets_asal_container');
+    const outletTujuanContainer = document.getElementById('outlets_tujuan_container');
+    const outletAsalList = document.getElementById('outlets_asal_list');
+    const outletTujuanList = document.getElementById('outlets_tujuan_list');
+    const form = document.querySelector('form');
+
+    function displayOutlets(selectElement, container, listElement) {
+        selectElement.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const outletData = selectedOption.getAttribute('data-outlets');
+
+            if (outletData && outletData !== 'null') {
+                try {
+                    const outlets = JSON.parse(outletData);
+                    if (outlets && outlets.length > 0) {
+                        let outletHTML = '';
+                        outlets.forEach(outlet => {
+                            if (outlet.status === 'aktif') {
+                                outletHTML += `<div style="padding: 5px 0; border-bottom: 1px solid #e0e0e0;">
+                                    <i class="fas fa-location-dot" style="color: #ff6a00;"></i>
+                                    ${outlet.nama_outlet} <small style="color: #999;">(${outlet.tipe_outlet})</small>
+                                </div>`;
+                            }
+                        });
+                        if (outletHTML) {
+                            listElement.innerHTML = outletHTML;
+                            container.style.display = 'block';
+                        } else {
+                            container.style.display = 'none';
+                        }
+                    } else {
+                        container.style.display = 'none';
+                    }
+                } catch (e) {
+                    console.error('Error parsing outlets:', e);
+                    container.style.display = 'none';
+                }
+            } else {
+                container.style.display = 'none';
+            }
+        });
+
+        // Trigger if already selected
+        if (selectElement.value) {
+            selectElement.dispatchEvent(new Event('change'));
+        }
+    }
+
+    displayOutlets(cabangAsalSelect, outletAsalContainer, outletAsalList);
+    displayOutlets(cabangTujuanSelect, outletTujuanContainer, outletTujuanList);
+
     // Format harga input
     const hargaInput = document.getElementById('harga_dasar');
 
@@ -389,6 +490,43 @@ document.addEventListener('DOMContentLoaded', function() {
             this.focus();
         }
     });
+
+    // Auto-check tarif dengan nama tertentu (administrasi, bahan bakar, asuransi, perawatan)
+    function autoCheckTarifs() {
+        const keywords = ['administrasi', 'bahan bakar', 'asuransi', 'perawatan'];
+        const tarifCheckboxes = document.querySelectorAll('input[name="master_tarif_ids[]"]');
+
+        tarifCheckboxes.forEach(checkbox => {
+            const label = document.querySelector(`label[for="${checkbox.id}"]`);
+            if (label) {
+                const labelText = label.textContent.toLowerCase();
+                // Check if label contains any of the keywords
+                if (keywords.some(keyword => labelText.includes(keyword))) {
+                    checkbox.checked = true;
+                }
+            }
+        });
+    }
+
+    // Auto-check tarifs on page load (in case they're not already checked from database)
+    // This will only check if they match the keywords
+    autoCheckTarifs();
+
+    // Validasi dan cleanup sebelum submit
+    form.addEventListener('submit', function(e) {
+        // Validasi tarif dipilih
+        const tarifCheckboxes = document.querySelectorAll('input[name="master_tarif_ids[]"]');
+        const tarifChecked = Array.from(tarifCheckboxes).some(checkbox => checkbox.checked);
+
+        if (!tarifChecked) {
+            e.preventDefault();
+            alert('Silakan pilih minimal satu tarif untuk rute ini.');
+            return false;
+        }
+
+        // Bersihkan format harga sebelum submit
+        hargaInput.value = hargaInput.value.replace(/[^\d]/g, '');
+    });
 });
 
 // Fungsi untuk reset form
@@ -403,6 +541,13 @@ function resetForm() {
         if (numericValue) {
             hargaInput.value = parseInt(numericValue).toLocaleString('id-ID');
         }
+
+        // Re-trigger outlets display
+        document.getElementById('cabang_asal_id').dispatchEvent(new Event('change'));
+        document.getElementById('cabang_tujuan_id').dispatchEvent(new Event('change'));
+
+        // Re-apply auto-check on tarifs
+        autoCheckTarifs();
     }
 }
 </script>

@@ -146,7 +146,7 @@ class PemesananController extends Controller
                         throw new \Exception('Minimal pembelian Rp ' . number_format($promo->minimal_pembelian, 0, ',', '.'));
                     }
 
-                    $diskon = $promo->hitungDiskon($hargaTotal);
+                    $diskon = $promo->calculateDiscount($hargaTotal);
                     $promoId = $promo->id;
                     $kodePromo = $promo->kode_promo;
                 }
@@ -878,7 +878,7 @@ class PemesananController extends Controller
             }
 
             // Hitung diskon
-            $diskon = $promo->hitungDiskon($request->total_amount);
+            $diskon = $promo->calculateDiscount($request->total_amount);
             $totalAfterDiscount = $request->total_amount - $diskon;
 
             return response()->json([

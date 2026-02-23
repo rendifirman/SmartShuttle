@@ -2335,104 +2335,82 @@
             <div class="left-panel spacing-top">
                 <div class="search-section">
                     <h4 class="mb-0" style="color: var(--primary-color); margin-bottom: 16px !important; font-weight: 600; font-size: 16px;">Cari Shuttle</h4>
-                    <form id="search-form" action="{{ route('customer.search') }}" method="GET">
-                        <!-- Outlet Asal dengan Combo Box -->
-                        <div class="form-group combo-dropdown">
-                            <label class="form-label">Outlet Asal</label>
-                            <div class="combo-input-wrapper">
-                                <input type="text"
-                                       class="form-control combo-input"
-                                       id="departure-outlet-input"
-                                       placeholder="Pilih outlet asal..."
-                                       value="{{ isset($validated['departure_outlet_data']) ? $validated['departure_outlet_data']->nama_outlet : '' }}"
-                                       readonly
-                                       required>
-                                <input type="hidden" id="departure-outlet" name="departure_outlet" value="{{ isset($validated['departure_outlet']) ? $validated['departure_outlet'] : request('departure_outlet') }}">
-
-                                <button type="button" class="combo-clear-btn" id="clear-departure-combo">
-                                    <i class="fas fa-times"></i>
-                                </button>
-
-                                <button type="button" class="combo-dropdown-toggle" id="toggle-departure-dropdown">
-                                    <i class="fas fa-chevron-down"></i>
-                                </button>
-                            </div>
-
-                            <!-- Dropdown untuk outlet asal -->
-                            <div class="combo-dropdown-results" id="departure-dropdown">
-                                <div class="combo-search-input">
-                                    <input type="text"
-                                           id="departure-search"
-                                           placeholder="Cari outlet asal..."
-                                           autocomplete="off">
-                                </div>
-                                <div class="combo-options" id="departure-options">
-                                    <!-- Options akan diisi oleh JavaScript -->
-                                </div>
-                            </div>
-
-                            @if(isset($validated['departure_outlet_data']))
-                                <small class="text-muted" style="font-size: 11px; display: block; margin-top: 4px;">
-                                    <i class="fas fa-map-marker-alt"></i> {{ $validated['departure_outlet_data']->alamat_lengkap }}
-                                </small>
-                            @endif
+                    <form id="search-form" action="{{ route('customer.showSearch') }}" method="GET">
+                        <!-- Kota Asal -->
+                        <div class="form-group">
+                            <label class="form-label">Kota Asal</label>
+                            <select class="form-control form-control-select" id="departure-city" name="asal" required>
+                                <option value="">Pilih Kota Asal</option>
+                                @if(isset($outletsGrouped) && $outletsGrouped->isNotEmpty())
+                                    @foreach($outletsGrouped as $city => $outlets)
+                                        <optgroup label="{{ $city }}">
+                                            @foreach($outlets as $outlet)
+                                                @php $cityVal = $outlet->branch->kota ?? $outlet->kota ?? ''; @endphp
+                                                <option value="{{ $cityVal }}"
+                                                    {{ (isset($validated['asal']) && $validated['asal'] == $cityVal) ||
+                                                       (isset($validated['departure_city']) && $validated['departure_city'] == $cityVal) ? 'selected' : '' }}>
+                                                    {{ $outlet->nama_outlet }} @if($outlet->branch) - {{ $outlet->branch->kota }} @endif
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
+                                @else
+                                    @foreach($kotaAsalList as $kota)
+                                        <option value="{{ $kota }}"
+                                            {{ (isset($validated['asal']) && $validated['asal'] == $kota) ||
+                                               (isset($validated['departure_city']) && $validated['departure_city'] == $kota) ? 'selected' : '' }}>
+                                            {{ $kota }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
                         </div>
 
-                        <!-- Outlet Tujuan dengan Combo Box -->
-                        <div class="form-group combo-dropdown">
-                            <label class="form-label">Outlet Tujuan</label>
-                            <div class="combo-input-wrapper">
-                                <input type="text"
-                                       class="form-control combo-input"
-                                       id="destination-outlet-input"
-                                       placeholder="Pilih outlet tujuan..."
-                                       value="{{ isset($validated['destination_outlet_data']) ? $validated['destination_outlet_data']->nama_outlet : '' }}"
-                                       readonly
-                                       required>
-                                <input type="hidden" id="destination-outlet" name="destination_outlet" value="{{ isset($validated['destination_outlet']) ? $validated['destination_outlet'] : request('destination_outlet') }}">
-
-                                <button type="button" class="combo-clear-btn" id="clear-destination-combo">
-                                    <i class="fas fa-times"></i>
-                                </button>
-
-                                <button type="button" class="combo-dropdown-toggle" id="toggle-destination-dropdown">
-                                    <i class="fas fa-chevron-down"></i>
-                                </button>
-                            </div>
-
-                            <!-- Dropdown untuk outlet tujuan -->
-                            <div class="combo-dropdown-results" id="destination-dropdown">
-                                <div class="combo-search-input">
-                                    <input type="text"
-                                           id="destination-search"
-                                           placeholder="Cari outlet tujuan..."
-                                           autocomplete="off">
-                                </div>
-                                <div class="combo-options" id="destination-options">
-                                    <!-- Options akan diisi oleh JavaScript -->
-                                </div>
-                            </div>
-
-                            @if(isset($validated['destination_outlet_data']))
-                                <small class="text-muted" style="font-size: 11px; display: block; margin-top: 4px;">
-                                    <i class="fas fa-map-marker-alt"></i> {{ $validated['destination_outlet_data']->alamat_lengkap }}
-                                </small>
-                            @endif
+                        <!-- Kota Tujuan -->
+                        <div class="form-group">
+                            <label class="form-label">Kota Tujuan</label>
+                            <select class="form-control form-control-select" id="destination-city" name="tujuan" required>
+                                <option value="">Pilih Kota Tujuan</option>
+                                @if(isset($outletsGrouped) && $outletsGrouped->isNotEmpty())
+                                    @foreach($outletsGrouped as $city => $outlets)
+                                        <optgroup label="{{ $city }}">
+                                            @foreach($outlets as $outlet)
+                                                @php $cityVal = $outlet->branch->kota ?? $outlet->kota ?? ''; @endphp
+                                                <option value="{{ $cityVal }}"
+                                                    {{ (isset($validated['tujuan']) && $validated['tujuan'] == $cityVal) ||
+                                                       (isset($validated['destination_city']) && $validated['destination_city'] == $cityVal) ? 'selected' : '' }}>
+                                                    {{ $outlet->nama_outlet }} @if($outlet->branch) - {{ $outlet->branch->kota }} @endif
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
+                                @else
+                                    @foreach($kotaTujuanList as $kota)
+                                        <option value="{{ $kota }}"
+                                            {{ (isset($validated['tujuan']) && $validated['tujuan'] == $kota) ||
+                                               (isset($validated['destination_city']) && $validated['destination_city'] == $kota) ? 'selected' : '' }}>
+                                            {{ $kota }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Tanggal</label>
-                            <input type="date" class="form-control" id="departure-date" name="departure_date"
-                                   value="{{ isset($validated['departure_date']) ? $validated['departure_date'] :
-                                           (request('departure_date') ? request('departure_date') : \Carbon\Carbon::today()->format('Y-m-d')) }}"
+                            <input type="date" class="form-control" id="departure-date" name="tanggal"
+                                   value="{{ isset($validated['tanggal']) ? $validated['tanggal'] :
+                                           (isset($validated['departure_date']) ? $validated['departure_date'] :
+                                           (request('tanggal') ? request('tanggal') : \Carbon\Carbon::today()->format('Y-m-d'))) }}"
                                    min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" required>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Penumpang</label>
-                            <input type="number" class="form-control" id="passenger-count" name="passenger_count"
-                                   value="{{ isset($validated['passenger_count']) ? $validated['passenger_count'] :
-                                           (request('passenger_count') ? request('passenger_count') : 1) }}" min="1" max="10" required>
+                            <input type="number" class="form-control" id="passenger-count" name="penumpang"
+                                   value="{{ isset($validated['penumpang']) ? $validated['penumpang'] :
+                                           (isset($validated['passenger_count']) ? $validated['passenger_count'] :
+                                           (request('penumpang') ? request('penumpang') : 1)) }}" min="1" max="10" required>
                         </div>
 
                         <button type="submit" class="btn-search" id="search-button">
@@ -2448,7 +2426,7 @@
                 <div class="right-panel-content">
                     <div id="results-container">
                         <!-- Summary Pencarian -->
-                        @if(isset($validated) && isset($validated['departure_outlet_data']) && isset($validated['destination_outlet_data']))
+                        @if(isset($validated) && ((isset($validated['asal']) && isset($validated['tujuan'])) || (isset($validated['departure_city']) && isset($validated['destination_city']))))
                         <div class="outlet-selection">
                             <div class="outlet-info">
                                 <!-- Outlet Asal -->
@@ -2457,8 +2435,8 @@
                                         <i class="fas fa-map-marker-alt"></i>
                                     </div>
                                     <div class="outlet-details">
-                                        <h5>{{ $validated['departure_outlet_data']->nama_outlet ?? 'Outlet Asal' }}</h5>
-                                        <p>{{ $validated['departure_outlet_data']->alamat_lengkap ?? '' }}</p>
+                                        <h5>{{ $validated['asal'] ?? $validated['departure_city'] ?? 'Kota Asal' }}</h5>
+                                        <p>Kota Keberangkatan</p>
                                     </div>
                                 </div>
 
@@ -2473,8 +2451,8 @@
                                         <i class="fas fa-flag-checkered"></i>
                                     </div>
                                     <div class="outlet-details">
-                                        <h5>{{ $validated['destination_outlet_data']->nama_outlet ?? 'Outlet Tujuan' }}</h5>
-                                        <p>{{ $validated['destination_outlet_data']->alamat_lengkap ?? '' }}</p>
+                                        <h5>{{ $validated['tujuan'] ?? $validated['destination_city'] ?? 'Kota Tujuan' }}</h5>
+                                        <p>Kota Tujuan</p>
                                     </div>
                                 </div>
                             </div>
@@ -2483,11 +2461,11 @@
                             <div class="search-meta">
                                 <div class="meta-item">
                                     <i class="far fa-calendar"></i>
-                                    <span>{{ \Carbon\Carbon::parse($validated['departure_date'])->locale('id')->isoFormat('dddd, D MMMM YYYY') }}</span>
+                                    <span>{{ \Carbon\Carbon::parse($validated['tanggal'] ?? $validated['departure_date'])->locale('id')->isoFormat('dddd, D MMMM YYYY') }}</span>
                                 </div>
                                 <div class="meta-item">
                                     <i class="fas fa-users"></i>
-                                    <span>{{ $validated['passenger_count'] }} Penumpang</span>
+                                    <span>{{ $validated['penumpang'] ?? $validated['passenger_count'] }} Penumpang</span>
                                 </div>
                             </div>
                         </div>
@@ -2502,6 +2480,14 @@
                                     <button class="filter-btn" data-filter="afternoon">Siang (12:00-18:00)</button>
                                     <button class="filter-btn" data-filter="evening">Malam (18:00-24:00)</button>
                                 </div>
+                            </div>
+
+                            <!-- Info Rute Toggle -->
+                            <div class="filter-section" style="margin-top: 16px; border-top: 1px solid #e9ecef; padding-top: 16px;">
+                                <div class="filter-title">Info Rute</div>
+                                <button class="btn-filter" id="toggle-all-shuttle-info" style="width: 100%; background: var(--secondary-color); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                                    <i class="fas fa-info-circle"></i> Tampilkan Info Shuttle
+                                </button>
                             </div>
                         </div>
                         @endif
@@ -2518,32 +2504,28 @@
                                 <h3 class="info-title spacing-top">Shuttle Tersedia</h3>
                                 <div id="search-results">
                                     @if(isset($validated))
-                                        @if(!isset($jadwals) || $jadwals->isEmpty())
+                                        @if(!isset($driverJadwals) || $driverJadwals->isEmpty())
                                             <div class="empty-state" id="no-results-state">
                                                 <i class="fas fa-times-circle"></i>
-                                                <h3>Jadwal Tidak Tersedia</h3>
-                                                @if(isset($validated) && isset($validated['departure_outlet_data']) && isset($validated['destination_outlet_data']))
-                                                    <p>Maaf, tidak ada jadwal shuttle yang tersedia dari
-                                                        {{ $validated['departure_outlet_data']->nama_outlet }} ke
-                                                        {{ $validated['destination_outlet_data']->nama_outlet }}
-                                                        pada tanggal {{ \Carbon\Carbon::parse($validated['departure_date'])->isoFormat('D MMM YYYY') }}.</p>
-                                                @endif
-                                                <p style="font-size: 13px; margin-top: 8px;">Silakan pilih outlet lain atau tanggal lain.</p>
-                                                <button onclick="window.location.reload()" style="margin-top: 16px; background: var(--secondary-color); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
-                                                    <i class="fas fa-redo"></i> Cari Ulang
-                                                </button>
+                                                <h3>Tidak ada jadwal tersedia</h3>
+                                                <p>Coba ubah parameter pencarian atau pilih tanggal yang berbeda.</p>
                                             </div>
                                         @else
                                             <!-- Results Counter -->
                                             <div style="margin-bottom: 16px; color: var(--muted-text); font-size: 14px;">
-                                                {{ $jadwals->count() }} jadwal tersedia
+                                                {{ $driverJadwals->count() }} jadwal tersedia
                                             </div>
 
-                                            @foreach($jadwals as $jadwal)
+                                            @foreach($driverJadwals as $jadwal)
                                             @php
-                                                $shuttle = $jadwal->shuttle;
+                                                $shuttle = $jadwal->jadwal->shuttle ?? null;
                                                 $fasilitasArray = $shuttle->fasilitas_array ?? [];
+                                                $detailRute = $jadwal->getDetailRute();
+                                                $kotaAsalJadwal = $detailRute['kota_asal'] ?? $validated['asal'] ?? '';
+                                                $kotaTujuanJadwal = $detailRute['kota_tujuan'] ?? $validated['tujuan'] ?? '';
+                                                $sisaKursi = $jadwal->total_kursi - $jadwal->kursi_terisi;
                                             @endphp
+
                                             <div class="result-card" data-departure-time="{{ \Carbon\Carbon::parse($jadwal->waktu_keberangkatan)->format('H:i') }}">
                                                 <div class="shuttle-header">
                                                     <div class="shuttle-info">
@@ -2552,9 +2534,9 @@
                                                         <!-- Route Tags -->
                                                         <div style="margin-bottom: 8px;">
                                                             <span class="route-tag direct">
-                                                                <i class="fas fa-bus"></i> {{ $jadwal->rute_string ?? 'Rute Tidak Diketahui' }}
+                                                                <i class="fas fa-bus"></i> {{ $jadwal->rute ?? 'Rute Tidak Diketahui' }}
                                                             </span>
-                                                            @if($shuttle->tipe_shuttle)
+                                                            @if($shuttle && $shuttle->tipe_shuttle)
                                                             <span class="route-tag">
                                                                 <i class="fas fa-star"></i> {{ $shuttle->tipe_shuttle }}
                                                             </span>
@@ -2565,7 +2547,7 @@
                                                             <div class="time-info" style="font-size: 16px;">
                                                                 {{ \Carbon\Carbon::parse($jadwal->waktu_keberangkatan)->format('H:i') }}
                                                                 <span style="font-size: 12px; color: var(--muted-text); margin-left: 4px;">
-                                                                    {{ $validated['departure_city'] }}
+                                                                    {{ $kotaAsalJadwal }}
                                                                 </span>
                                                             </div>
                                                             <div class="route-arrow" style="margin: 0 12px;">
@@ -2574,7 +2556,7 @@
                                                             <div class="time-info" style="font-size: 16px;">
                                                                 {{ \Carbon\Carbon::parse($jadwal->waktu_kedatangan)->format('H:i') }}
                                                                 <span style="font-size: 12px; color: var(--muted-text); margin-left: 4px;">
-                                                                    {{ $validated['destination_city'] }}
+                                                                    {{ $kotaTujuanJadwal }}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -2590,7 +2572,7 @@
                                                         <!-- Shuttle Status -->
                                                         <div class="shuttle-status">
                                                             @php
-                                                                $seatPercentage = ($jadwal->kursi_tersedia / ($shuttle->kapasitas_kursi ?? 12)) * 100;
+                                                                $seatPercentage = ($sisaKursi / ($shuttle->kapasitas_kursi ?? 12)) * 100;
                                                                 if ($seatPercentage > 50) {
                                                                     $statusClass = 'status-available';
                                                                     $statusText = 'Tersedia';
@@ -2606,7 +2588,7 @@
                                                                 {{ $statusText }}
                                                             </span>
                                                             <span class="seat-count">
-                                                                <i class="fas fa-chair"></i> {{ $jadwal->kursi_tersedia }} kursi tersedia
+                                                                <i class="fas fa-chair"></i> {{ $sisaKursi }} kursi tersedia
                                                             </span>
                                                         </div>
 
@@ -2634,28 +2616,57 @@
                                                     </div>
 
                                                     <div class="right-section">
+                                                        @php
+                                                            // Ambil tarif dari driver jadwal jika ada
+                                                            $masterTarif = $jadwal->masterTarif;
+                                                            $hargaPerKursi = $jadwal->harga;
+                                                            $hargaDenganTarif = $hargaPerKursi;
+                                                            $diskonApli = 0;
+
+                                                            // Hitung tarif jika ada master tarif
+                                                            if ($masterTarif) {
+                                                                $hargaDenganTarif = $masterTarif->hitungTarif($hargaPerKursi);
+                                                                $diskonApli = $hargaPerKursi - $hargaDenganTarif;
+                                                            }
+
+                                                            $totalHarga = $hargaDenganTarif * $penumpang;
+                                                        @endphp
                                                         <div class="price-info">
-                                                            <div class="price">Rp {{ number_format($jadwal->harga_total, 0, ',', '.') }}</div>
-                                                            <div class="per-kursi">/kursi</div>
-                                                            @if($shuttle->kapasitas_kursi)
-                                                            <div style="font-size: 11px; color: var(--muted-text); margin-top: 2px;">
-                                                                Total: Rp {{ number_format($jadwal->harga_total * $validated['passenger_count'], 0, ',', '.') }}
-                                                            </div>
+                                                            @if($masterTarif)
+                                                                <div style="font-size: 10px; color: #ff6a00; margin-bottom: 4px; font-weight: 600;">
+                                                                    <i class="fas fa-tag"></i> {{ $masterTarif->nama_tarif }}
+                                                                </div>
+                                                                <div style="font-size: 11px; color: var(--muted-text); margin-bottom: 6px; text-decoration: line-through;">
+                                                                    Rp {{ number_format($hargaPerKursi, 0, ',', '.') }}/kursi
+                                                                </div>
+                                                                <div class="price">Rp {{ number_format($hargaDenganTarif, 0, ',', '.') }}</div>
+                                                                @if($diskonApli > 0)
+                                                                    <div style="font-size: 10px; color: #4caf50; margin-top: 2px; font-weight: 600;">
+                                                                        Hemat Rp {{ number_format($diskonApli, 0, ',', '.') }}/kursi
+                                                                    </div>
+                                                                @endif
+                                                            @else
+                                                                <div class="price">Rp {{ number_format($hargaPerKursi, 0, ',', '.') }}</div>
                                                             @endif
+                                                            <div class="per-kursi">/kursi</div>
+                                                            <div style="font-size: 11px; color: var(--muted-text); margin-top: 6px; padding-top: 6px; border-top: 1px solid #f0f0f0;">
+                                                                <strong>Total: Rp {{ number_format($totalHarga, 0, ',', '.') }}</strong>
+                                                            </div>
                                                         </div>
 
-                                                        @if($jadwal->kursi_tersedia >= $validated['passenger_count'])
-                                                           <a href="{{ route('customer.pesan', [
-                                                                'jadwal_id' => $jadwal->id,
-                                                                'penumpang' => $validated['passenger_count'],
-                                                                'outlet_asal' => $validated['departure_outlet'],
-                                                                'outlet_tujuan' => $validated['destination_outlet']
-                                                                  ]) }}" class="btn-pilih">
-                                                                <i class="fas fa-ticket-alt"></i> Pesan Sekarang
-                                                            </a>
+                                                        @if($sisaKursi >= $penumpang)
+                                                            @guest
+                                                                <a href="{{ route('customer.login') }}?redirect={{ urlencode(request()->fullUrl()) }}" class="btn-pilih">
+                                                                    <i class="fas fa-ticket-alt"></i> Pesan Sekarang
+                                                                </a>
+                                                            @else
+                                                                <a href="{{ route('customer.pesan', ['id_jadwal_driver' => $jadwal->id_jadwal_driver, 'penumpang' => $penumpang]) }}" class="btn-pilih">
+                                                                    <i class="fas fa-ticket-alt"></i> Pesan Sekarang
+                                                                </a>
+                                                            @endguest
                                                         @else
                                                             <button class="btn-pilih" disabled>
-                                                                <i class="fas fa-times-circle"></i> Hanya {{ $jadwal->kursi_tersedia }} kursi
+                                                                <i class="fas fa-times-circle"></i> Hanya {{ $sisaKursi }} kursi
                                                             </button>
                                                         @endif
 
@@ -2668,334 +2679,361 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- Route Details Toggle -->
-                                                <div class="route-details-toggle">
-                                                    <button class="btn-route" onclick="toggleRouteDetails({{ $jadwal->id }})">
-                                                        <i class="fas fa-route"></i> Lihat Rute Detail
+                                                <!-- Buttons: Rincian Perjalanan + Info Shuttle -->
+                                                <div class="route-details-toggle" style="display:flex; gap:8px; flex-wrap:wrap;">
+                                                    <button class="btn-filter" onclick="toggleRouteDetails({{ $jadwal->id_jadwal_driver }})" title="Rincian Perjalanan">
+                                                        <i class="fas fa-route"></i> Rincian Perjalanan
                                                     </button>
-                                                    <button class="btn-filter" onclick="toggleShuttleInfo({{ $jadwal->id }})">
+
+                                                    <button class="btn-filter" onclick="toggleShuttleInfo({{ $jadwal->id_jadwal_driver }})" title="Info Shuttle">
                                                         <i class="fas fa-info-circle"></i> Info Shuttle
                                                     </button>
                                                 </div>
 
-                                                <!-- Route Details (Collapsed) -->
-                                                <div class="route-details" id="route-details-{{ $jadwal->id }}" style="display: none;">
+                                                <!-- Route Details (Collapsed) - Rincian Perjalanan -->
+                                                <div class="route-details" id="route-details-{{ $jadwal->id_jadwal_driver }}" style="display: none;">
                                                     <h2>Rincian Perjalanan</h2>
-                                                    @if($jadwal->rutes && $jadwal->rutes->count() > 0)
-                                                        @foreach($jadwal->rutes as $index => $rute)
-                                                            <div style="margin-bottom: 16px;">
-                                                                <h5 style="color: var(--primary-color); margin-bottom: 8px; font-size: 14px;">
-                                                                    {{ $rute->nama_rute }}
-                                                                </h5>
+                                                    @php
+                                                        // Gunakan masterRute (rute spesifik yang dipilih driver), bukan rutes->first()
+                                                        $rute = $jadwal->masterRute ?? ($jadwal->jadwal->rutes->first() ?? null);
+                                                    @endphp
+                                                    @if($rute)
+                                                        <div style="margin-bottom: 16px;">
+                                                            <h5 style="color: var(--primary-color); margin-bottom: 8px; font-size: 14px;">
+                                                                {{ $rute->nama_rute }}
+                                                            </h5>
 
-                                                                <!-- Main Route -->
-                                                                <div style="display: flex; align-items: center; margin-bottom: 12px; padding-left: 20px;">
-                                                                    <div style="width: 8px; height: 8px; background: var(--secondary-color); border-radius: 50%; margin-right: 12px;"></div>
-                                                                    <div>
-                                                                        <strong>{{ $rute->kota_asal }}</strong>
-                                                                        <div style="font-size: 12px; color: var(--muted-text);">
-                                                                            Keberangkatan: {{ \Carbon\Carbon::parse($jadwal->waktu_keberangkatan)->format('H:i') }}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                <!-- Stops -->
-                                                                @php
-                                                                    $stops = json_decode($rute->rute_pemberhentian, true) ?? [];
-                                                                    $currentTime = \Carbon\Carbon::parse($jadwal->waktu_keberangkatan);
-                                                                @endphp
-
-                                                                @foreach($stops as $stopIndex => $stop)
-                                                                    @php
-                                                                        $currentTime->addMinutes(30);
-                                                                    @endphp
-                                                                    <div style="display: flex; align-items: center; margin-bottom: 12px; padding-left: 20px;">
-                                                                        <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; margin-right: 12px;"></div>
-                                                                        <div>
-                                                                            <strong>{{ $stop['kota'] ?? 'Kota' }}</strong>
-                                                                            <div style="font-size: 12px; color: var(--muted-text);">
-                                                                                {{ $currentTime->format('H:i') }} •
-                                                                                Durasi: {{ $stop['durasi_singgah'] ?? 10 }} menit
-                                                                            </div>
-                                                                            @if(!empty($stop['outlets']))
-                                                                            <div style="font-size: 11px; color: #666; margin-top: 2px;">
-                                                                                Outlet: {{ implode(', ', $stop['outlets']) }}
-                                                                            </div>
-                                                                            @endif
-                                                                        </div>
-                                                                    </div>
-                                                                    @php
-                                                                        $currentTime->addMinutes($stop['durasi_singgah'] ?? 10);
-                                                                    @endphp
-                                                                @endforeach
-
-                                                                <!-- Destination -->
-                                                                @php
-                                                                    $currentTime->addMinutes(30);
-                                                                @endphp
-                                                                <div style="display: flex; align-items: center; padding-left: 20px;">
-                                                                    <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 12px;"></div>
-                                                                    <div>
-                                                                        <strong>{{ $rute->kota_tujuan }}</strong>
-                                                                        <div style="font-size: 12px; color: var(--muted-text);">
-                                                                            Kedatangan: {{ $currentTime->format('H:i') }}
-                                                                        </div>
+                                                            <!-- Main Route -->
+                                                            <div style="display: flex; align-items: center; margin-bottom: 12px; padding-left: 20px;">
+                                                                <div style="width: 8px; height: 8px; background: var(--secondary-color); border-radius: 50%; margin-right: 12px;"></div>
+                                                                <div>
+                                                                    <strong>{{ $rute->kota_asal }}</strong>
+                                                                    <div style="font-size: 12px; color: var(--muted-text);">
+                                                                        Keberangkatan: {{ \Carbon\Carbon::parse($jadwal->waktu_keberangkatan)->format('H:i') }}
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                        @endforeach
+
+                                                            <!-- Stops -->
+                                                            @php
+                                                                $stops = is_string($rute->rute_pemberhentian) ? json_decode($rute->rute_pemberhentian, true) : ($rute->rute_pemberhentian ?? []);
+                                                                $stops = $stops ?? [];
+                                                                $currentTime = \Carbon\Carbon::parse($jadwal->waktu_keberangkatan);
+                                                            @endphp
+
+                                                            @foreach($stops as $stopIndex => $stop)
+                                                                @php
+                                                                    $currentTime->addMinutes(30);
+                                                                    $stopOutlets = $stop['outlets'] ?? [];
+                                                                    $outletRecords = collect();
+                                                                    if (!empty($stopOutlets) && is_array($stopOutlets)) {
+                                                                        $outletRecords = \App\Models\Outlet::whereIn('nama_outlet', $stopOutlets)
+                                                                            ->with('branch')
+                                                                            ->get();
+                                                                    }
+                                                                @endphp
+                                                                <div style="display: flex; align-items: center; margin-bottom: 12px; padding-left: 20px;">
+                                                                    <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; margin-right: 12px;"></div>
+                                                                    <div>
+                                                                        <strong>{{ $stop['kota'] ?? ($stop['nama'] ?? 'Kota') }}</strong>
+                                                                        <div style="font-size: 12px; color: var(--muted-text);">
+                                                                            {{ $currentTime->format('H:i') }} •
+                                                                            Durasi: {{ $stop['durasi_singgah'] ?? 10 }} menit
+                                                                        </div>
+                                                                        @if($outletRecords->isNotEmpty())
+                                                                        <div style="font-size: 11px; color: #666; margin-top: 6px;">
+                                                                            @foreach($outletRecords as $o)
+                                                                                <div style="margin-bottom:4px;">
+                                                                                    <strong>{{ $o->nama_outlet }}</strong>
+                                                                                    @if(isset($o->branch->kota))
+                                                                                        <span style="color:#777; font-size:11px;"> — {{ $o->branch->kota }}</span>
+                                                                                    @endif
+                                                                                    <div style="font-size:11px; color:#666;">{{ $o->alamat_lengkap ?? '' }}</div>
+                                                                                </div>
+                                                                            @endforeach
+                                                                        </div>
+                                                                        @elseif(!empty($stopOutlets))
+                                                                        <div style="font-size: 11px; color: #666; margin-top: 2px;">
+                                                                            Outlet: {{ implode(', ', $stopOutlets) }}
+                                                                        </div>
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
+                                                                @php
+                                                                    $currentTime->addMinutes($stop['durasi_singgah'] ?? 10);
+                                                                @endphp
+                                                            @endforeach
+
+                                                            <!-- Destination -->
+                                                            @php
+                                                                $currentTime->addMinutes(30);
+                                                            @endphp
+                                                            <div style="display: flex; align-items: center; padding-left: 20px;">
+                                                                <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 12px;"></div>
+                                                                <div>
+                                                                    <strong>{{ $rute->kota_tujuan }}</strong>
+                                                                    <div style="font-size: 12px; color: var(--muted-text);">
+                                                                        Kedatangan: {{ $currentTime->format('H:i') }}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     @else
                                                         <p>Informasi rute tidak tersedia</p>
                                                     @endif
                                                 </div>
 
                                                 <!-- Shuttle Details (Collapsed) -->
-                                                <div class="shuttle-details" id="shuttle-details-{{ $jadwal->id }}" style="display: none;">
+                                                <div class="shuttle-details" id="shuttle-details-{{ $jadwal->id_jadwal_driver }}" style="display: none;">
                                                     <h4><i class="fas fa-bus"></i> Informasi Shuttle</h4>
 
-                                                    <!-- Shuttle Specifications -->
-                                                    <div class="shuttle-info-grid">
-                                                        <div class="shuttle-info-item">
-                                                            <i class="fas fa-bus"></i>
-                                                            <strong>Nama Shuttle:</strong> {{ $shuttle->nama_shuttle }}
-                                                        </div>
-                                                        <div class="shuttle-info-item">
-                                                            <i class="fas fa-tag"></i>
-                                                            <strong>Tipe Shuttle:</strong> {{ $shuttle->tipe_shuttle ?? 'Standard' }}
-                                                        </div>
-                                                        <div class="shuttle-info-item">
-                                                            <i class="fas fa-users"></i>
-                                                            <strong>Kapasitas:</strong> {{ $shuttle->kapasitas_kursi }} Penumpang
-                                                        </div>
-                                                        <div class="shuttle-info-item">
-                                                            <i class="fas fa-car"></i>
-                                                            <strong>No. Polisi:</strong> {{ $shuttle->nomor_polisi ?? '-' }}
-                                                        </div>
-                                                        <div class="shuttle-info-item">
-                                                            <i class="fas fa-info-circle"></i>
-                                                            <strong>Status:</strong>
-                                                            <span class="shuttle-status-badge status-{{ $shuttle->status ?? 'aktif' }}">
-                                                                {{ ucfirst($shuttle->status ?? 'aktif') }}
-                                                            </span>
-                                                        </div>
-                                                        @if(isset($shuttle->total_kursi) && $shuttle->total_kursi != $shuttle->kapasitas_kursi)
-                                                        <div class="shuttle-info-item">
-                                                            <i class="fas fa-layer-group"></i>
-                                                            <strong>Layout Kursi:</strong> {{ $shuttle->total_kursi }} Posisi
-                                                        </div>
-                                                        @endif
-                                                    </div>
-
-                                                    <div class="info-divider"></div>
-
-                                                    <!-- Shuttle Facilities -->
-                                                    <div class="fasilitas-section">
-                                                        <h6><i class="fas fa-cogs"></i> Fasilitas Shuttle</h6>
-                                                        @if(!empty($fasilitasArray))
-                                                        <div class="fasilitas-list">
-                                                            @foreach($fasilitasArray as $fasilitasItem)
-                                                            <div class="fasilitas-list-item">
-                                                                <i class="fas fa-check-circle"></i>
-                                                                <span>{{ trim($fasilitasItem) }}</span>
+                                                    @if($shuttle)
+                                                        <!-- Shuttle Specifications -->
+                                                        <div class="shuttle-info-grid">
+                                                            <div class="shuttle-info-item">
+                                                                <i class="fas fa-bus"></i>
+                                                                <strong>Nama Shuttle:</strong> {{ $shuttle->nama_shuttle }}
                                                             </div>
-                                                            @endforeach
+                                                            <div class="shuttle-info-item">
+                                                                <i class="fas fa-tag"></i>
+                                                                <strong>Tipe Shuttle:</strong> {{ $shuttle->tipe_shuttle ?? 'Standard' }}
+                                                            </div>
+                                                            <div class="shuttle-info-item">
+                                                                <i class="fas fa-users"></i>
+                                                                <strong>Kapasitas:</strong> {{ $shuttle->kapasitas_kursi }} Penumpang
+                                                            </div>
+                                                            <div class="shuttle-info-item">
+                                                                <i class="fas fa-car"></i>
+                                                                <strong>No. Polisi:</strong> {{ $shuttle->nomor_polisi ?? '-' }}
+                                                            </div>
+                                                            <div class="shuttle-info-item">
+                                                                <i class="fas fa-info-circle"></i>
+                                                                <strong>Status:</strong>
+                                                                <span class="shuttle-status-badge status-{{ $shuttle->status ?? 'aktif' }}">
+                                                                    {{ ucfirst($shuttle->status ?? 'aktif') }}
+                                                                </span>
+                                                            </div>
+                                                            @if(isset($shuttle->total_kursi) && $shuttle->total_kursi != $shuttle->kapasitas_kursi)
+                                                            <div class="shuttle-info-item">
+                                                                <i class="fas fa-layer-group"></i>
+                                                                <strong>Layout Kursi:</strong> {{ $shuttle->total_kursi }} Posisi
+                                                            </div>
+                                                            @endif
                                                         </div>
-                                                        @else
-                                                        <p style="color: var(--muted-text); font-size: 13px;">Fasilitas tidak tersedia</p>
-                                                        @endif
-                                                    </div>
 
-                                                    <div class="info-divider"></div>
+                                                        <div class="info-divider"></div>
 
-                                                    <!-- COMBINED GALLERY AND SEAT LAYOUT -->
-                                                    <div class="shuttle-media-combined">
-                                                        <!-- Left Column: Gallery -->
-                                                        <div class="shuttle-gallery-side">
-                                                            <h6><i class="fas fa-images"></i> Gallery Shuttle</h6>
-
-                                                            <div class="compact-carousel" id="shuttleCarousel-{{ $jadwal->id }}">
-                                                                <div class="carousel-compact-header">
-                                                                    <div class="carousel-title">Tampak Depan</div>
-                                                                    <div class="carousel-counter">1/4</div>
+                                                        <!-- Shuttle Facilities -->
+                                                        <div class="fasilitas-section">
+                                                            <h6><i class="fas fa-cogs"></i> Fasilitas Shuttle</h6>
+                                                            @if(!empty($fasilitasArray))
+                                                            <div class="fasilitas-list">
+                                                                @foreach($fasilitasArray as $fasilitasItem)
+                                                                <div class="fasilitas-list-item">
+                                                                    <i class="fas fa-check-circle"></i>
+                                                                    <span>{{ trim($fasilitasItem) }}</span>
                                                                 </div>
+                                                                @endforeach
+                                                            </div>
+                                                            @else
+                                                            <p style="color: var(--muted-text); font-size: 13px;">Fasilitas tidak tersedia</p>
+                                                            @endif
+                                                        </div>
 
-                                                                <div class="carousel-compact-container">
-                                                                    <div class="carousel-track" id="carouselTrack-{{ $jadwal->id }}">
-                                                                        @php
-                                                                            $images = [
-                                                                                ['gambar' => $shuttle->gambar_depan, 'caption' => 'Tampak Depan'],
-                                                                                ['gambar' => $shuttle->gambar_samping, 'caption' => 'Tampak Samping'],
-                                                                                ['gambar' => $shuttle->gambar_belakang, 'caption' => 'Tampak Belakang'],
-                                                                                ['gambar' => $shuttle->gambar_interior, 'caption' => 'Interior']
-                                                                            ];
-                                                                        @endphp
+                                                        <div class="info-divider"></div>
 
-                                                                        @foreach($images as $index => $image)
-                                                                        <div class="carousel-slide" data-index="{{ $index }}">
-                                                                            <div class="slide-img-container">
-                                                                                @if($image['gambar'])
-                                                                                    <img src="{{ asset('images/shuttle/' . $image['gambar']) }}"
-                                                                                         alt="{{ $image['caption'] }}"
-                                                                                         class="slide-img"
-                                                                                         onerror="this.src='https://via.placeholder.com/400x225?text={{ urlencode($image['caption']) }}'">
-                                                                                @else
-                                                                                    <img src="https://via.placeholder.com/400x225?text={{ urlencode($image['caption']) }}"
-                                                                                         alt="{{ $image['caption'] }}"
-                                                                                         class="slide-img">
-                                                                                @endif
-                                                                            </div>
-                                                                        </div>
-                                                                        @endforeach
+                                                        <!-- COMBINED GALLERY AND SEAT LAYOUT -->
+                                                        <div class="shuttle-media-combined">
+                                                            <!-- Left Column: Gallery -->
+                                                            <div class="shuttle-gallery-side">
+                                                                <h6><i class="fas fa-images"></i> Gallery Shuttle</h6>
+
+                                                                <div class="compact-carousel" id="shuttleCarousel-{{ $jadwal->id_jadwal_driver }}">
+                                                                    <div class="carousel-compact-header">
+                                                                        <div class="carousel-title">Tampak Depan</div>
+                                                                        <div class="carousel-counter">1/4</div>
                                                                     </div>
 
-                                                                    <button class="carousel-btn prev-btn">
-                                                                        <i class="fas fa-chevron-left"></i>
-                                                                    </button>
-                                                                    <button class="carousel-btn next-btn">
-                                                                        <i class="fas fa-chevron-right"></i>
-                                                                    </button>
-                                                                </div>
-
-                                                                <div class="carousel-dots-nav">
-                                                                    @for($i = 0; $i < 4; $i++)
-                                                                        <button class="carousel-dot {{ $i == 0 ? 'active' : '' }}">
-                                                                            {{ $images[$i]['caption'] ?? 'Slide ' . ($i+1) }}
-                                                                        </button>
-                                                                    @endfor
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- Right Column: Seat Layout -->
-                                                        <div class="seat-layout-side">
-                                                            <h6>
-                                                                <i class="fas fa-chair"></i>
-                                                                Layout Kursi ({{ $shuttle->total_kursi ?? 9 }} Kursi)
-                                                                <small style="font-size: 12px; color: #666; margin-left: 8px;">
-                                                                    {{ $shuttle->seat_rows ?? 3 }} Baris × {{ $shuttle->seat_columns ?? 3 }} Kolom
-                                                                </small>
-                                                            </h6>
-
-                                                            <div class="dynamic-seat-layout">
-                                                                @if(isset($shuttle->seat_grid) && !empty($shuttle->seat_grid))
-                                                                    @foreach($shuttle->seat_grid as $rowIndex => $row)
-                                                                    <div class="seat-row-dynamic">
-                                                                        @foreach($row as $seat)
-                                                                        <div class="seat-dynamic
-                                                                            @if(($seat['tipe'] ?? 'reguler') === 'premium') seat-premium @endif
-                                                                            @if(($seat['posisi'] ?? '') === 'tengah') seat-middle @endif">
-
-                                                                            <div class="seat-number">{{ $seat['nomor'] ?? '?' }}</div>
-
-                                                                            @if(($seat['tipe'] ?? 'reguler') === 'premium')
-                                                                            <div class="seat-badge-premium">
-                                                                                <i class="fas fa-crown"></i>
-                                                                            </div>
-                                                                            @endif
-
-                                                                            @if(($seat['harga_tambahan'] ?? 0) > 0)
-                                                                            <div class="seat-price-extra">
-                                                                                +{{ number_format($seat['harga_tambahan'], 0, ',', '.') }}
-                                                                            </div>
-                                                                            @endif
-                                                                        </div>
-                                                                        @endforeach
-                                                                    </div>
-                                                                    @endforeach
-                                                                @else
-                                                                    @php
-                                                                        $totalSeats = $shuttle->total_kursi ?? 9;
-                                                                        $rows = ceil($totalSeats / 3);
-                                                                        $seatCounter = 0;
-                                                                    @endphp
-
-                                                                    @for($row = 1; $row <= $rows; $row++)
-                                                                    <div class="seat-row-dynamic">
-                                                                        @for($col = 1; $col <= 3; $col++)
+                                                                    <div class="carousel-compact-container">
+                                                                        <div class="carousel-track" id="carouselTrack-{{ $jadwal->id_jadwal_driver }}">
                                                                             @php
-                                                                                if($seatCounter >= $totalSeats) break;
-                                                                                $colLetter = chr(64 + $col);
-                                                                                $seatNumber = $row . $colLetter;
-                                                                                $seatCounter++;
+                                                                                $images = [
+                                                                                    ['gambar' => $shuttle->gambar_depan, 'caption' => 'Tampak Depan'],
+                                                                                    ['gambar' => $shuttle->gambar_samping, 'caption' => 'Tampak Samping'],
+                                                                                    ['gambar' => $shuttle->gambar_belakang, 'caption' => 'Tampak Belakang'],
+                                                                                    ['gambar' => $shuttle->gambar_interior, 'caption' => 'Interior']
+                                                                                ];
                                                                             @endphp
 
-                                                                            <div class="seat-dynamic">
-                                                                                <div class="seat-number">{{ $seatNumber }}</div>
+                                                                            @foreach($images as $index => $image)
+                                                                            <div class="carousel-slide" data-index="{{ $index }}">
+                                                                                <div class="slide-img-container">
+                                                                                    @if($image['gambar'])
+                                                                                        <img src="{{ asset('images/shuttle/' . $image['gambar']) }}"
+                                                                                             alt="{{ $image['caption'] }}"
+                                                                                             class="slide-img"
+                                                                                             onerror="this.src='{{ asset('images/placeholder-shuttle.jpg') }}'">
+                                                                                    @else
+                                                                                        <img src="{{ asset('images/placeholder-shuttle.jpg') }}"
+                                                                                             alt="{{ $image['caption'] }}"
+                                                                                             class="slide-img">
+                                                                                    @endif
+                                                                                </div>
                                                                             </div>
+                                                                            @endforeach
+                                                                        </div>
+
+                                                                        <button class="carousel-btn prev-btn">
+                                                                            <i class="fas fa-chevron-left"></i>
+                                                                        </button>
+                                                                        <button class="carousel-btn next-btn">
+                                                                            <i class="fas fa-chevron-right"></i>
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <div class="carousel-dots-nav">
+                                                                        @for($i = 0; $i < 4; $i++)
+                                                                            <button class="carousel-dot {{ $i == 0 ? 'active' : '' }}">
+                                                                                {{ $images[$i]['caption'] ?? 'Slide ' . ($i+1) }}
+                                                                            </button>
                                                                         @endfor
                                                                     </div>
-                                                                    @endfor
-                                                                @endif
+                                                                </div>
                                                             </div>
 
-                                                            <div class="seat-info-panel">
-                                                                <div class="info-row">
-                                                                    <div class="info-item">
-                                                                        <div class="info-icon">
-                                                                            <i class="fas fa-chair"></i>
-                                                                        </div>
-                                                                        <div class="info-text">
-                                                                            <div class="info-label">Total Kapasitas</div>
-                                                                            <div class="info-value">{{ $shuttle->kapasitas_kursi ?? 12 }} kursi</div>
-                                                                        </div>
-                                                                    </div>
+                                                            <!-- Right Column: Seat Layout -->
+                                                            <div class="seat-layout-side">
+                                                                <h6>
+                                                                    <i class="fas fa-chair"></i>
+                                                                    Layout Kursi ({{ $shuttle->total_kursi ?? 9 }} Kursi)
+                                                                    <small style="font-size: 12px; color: #666; margin-left: 8px;">
+                                                                        {{ $shuttle->seat_rows ?? 3 }} Baris × {{ $shuttle->seat_columns ?? 3 }} Kolom
+                                                                    </small>
+                                                                </h6>
 
-                                                                    <div class="info-item">
-                                                                        <div class="info-icon available">
-                                                                            <i class="fas fa-check-circle"></i>
-                                                                        </div>
-                                                                        <div class="info-text">
-                                                                            <div class="info-label">Tersedia</div>
-                                                                            <div class="info-value">{{ $jadwal->kursi_tersedia ?? 0 }} kursi</div>
-                                                                        </div>
-                                                                    </div>
+                                                                <div class="dynamic-seat-layout">
+                                                                    @if(isset($shuttle->seat_grid) && !empty($shuttle->seat_grid))
+                                                                        @foreach($shuttle->seat_grid as $rowIndex => $row)
+                                                                        <div class="seat-row-dynamic">
+                                                                            @foreach($row as $seat)
+                                                                            <div class="seat-dynamic
+                                                                                @if(($seat['tipe'] ?? 'reguler') === 'premium') seat-premium @endif
+                                                                                @if(($seat['posisi'] ?? '') === 'tengah') seat-middle @endif">
 
-                                                                    <div class="info-item">
-                                                                        <div class="info-icon">
-                                                                            <i class="fas fa-layer-group"></i>
-                                                                        </div>
-                                                                        <div class="info-text">
-                                                                            <div class="info-label">Layout</div>
-                                                                            <div class="info-value">
-                                                                                {{ $shuttle->total_kursi ?? 9 }} kursi
-                                                                                ({{ ceil(($shuttle->total_kursi ?? 9) / 3) }}×3)
+                                                                                <div class="seat-number">{{ $seat['nomor'] ?? '?' }}</div>
+
+                                                                                @if(($seat['tipe'] ?? 'reguler') === 'premium')
+                                                                                <div class="seat-badge-premium">
+                                                                                    <i class="fas fa-crown"></i>
+                                                                                </div>
+                                                                                @endif
+
+                                                                                @if(($seat['harga_tambahan'] ?? 0) > 0)
+                                                                                <div class="seat-price-extra">
+                                                                                    +{{ number_format($seat['harga_tambahan'], 0, ',', '.') }}
+                                                                                </div>
+                                                                                @endif
                                                                             </div>
+                                                                            @endforeach
                                                                         </div>
-                                                                    </div>
-
-                                                                    @if(isset($shuttle->dynamic_seat_layout) && is_array($shuttle->dynamic_seat_layout))
+                                                                        @endforeach
+                                                                    @else
                                                                         @php
-                                                                            $premiumCount = collect($shuttle->dynamic_seat_layout)
-                                                                                ->where('tipe', 'premium')
-                                                                                ->count();
+                                                                            $totalSeats = $shuttle->total_kursi ?? 9;
+                                                                            $rows = ceil($totalSeats / 3);
+                                                                            $seatCounter = 0;
                                                                         @endphp
-                                                                        @if($premiumCount > 0)
-                                                                        <div class="info-item">
-                                                                            <div class="info-icon premium">
-                                                                                <i class="fas fa-crown"></i>
-                                                                            </div>
-                                                                            <div class="info-text">
-                                                                                <div class="info-label">Kursi Premium</div>
-                                                                                <div class="info-value">{{ $premiumCount }} kursi</div>
-                                                                            </div>
+
+                                                                        @for($row = 1; $row <= $rows; $row++)
+                                                                        <div class="seat-row-dynamic">
+                                                                            @for($col = 1; $col <= 3; $col++)
+                                                                                @php
+                                                                                    if($seatCounter >= $totalSeats) break;
+                                                                                    $colLetter = chr(64 + $col);
+                                                                                    $seatNumber = $row . $colLetter;
+                                                                                    $seatCounter++;
+                                                                                @endphp
+
+                                                                                <div class="seat-dynamic">
+                                                                                    <div class="seat-number">{{ $seatNumber }}</div>
+                                                                                </div>
+                                                                            @endfor
                                                                         </div>
-                                                                        @endif
+                                                                        @endfor
                                                                     @endif
                                                                 </div>
 
-                                                                <div class="seat-legend">
-                                                                    <div class="legend-item">
-                                                                        <div class="legend-box seat-regular"></div>
-                                                                        <span class="legend-text">Reguler</span>
+                                                                <div class="seat-info-panel">
+                                                                    <div class="info-row">
+                                                                        <div class="info-item">
+                                                                            <div class="info-icon">
+                                                                                <i class="fas fa-chair"></i>
+                                                                            </div>
+                                                                            <div class="info-text">
+                                                                                <div class="info-label">Total Kapasitas</div>
+                                                                                <div class="info-value">{{ $shuttle->kapasitas_kursi ?? 12 }} kursi</div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div class="info-item">
+                                                                            <div class="info-icon available">
+                                                                                <i class="fas fa-check-circle"></i>
+                                                                            </div>
+                                                                            <div class="info-text">
+                                                                                <div class="info-label">Tersedia</div>
+                                                                                <div class="info-value">{{ $sisaKursi }} kursi</div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div class="info-item">
+                                                                            <div class="info-icon">
+                                                                                <i class="fas fa-layer-group"></i>
+                                                                            </div>
+                                                                            <div class="info-text">
+                                                                                <div class="info-label">Layout</div>
+                                                                                <div class="info-value">
+                                                                                    {{ $shuttle->total_kursi ?? 9 }} kursi
+                                                                                    ({{ ceil(($shuttle->total_kursi ?? 9) / 3) }}×3)
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        @if(isset($shuttle->dynamic_seat_layout) && is_array($shuttle->dynamic_seat_layout))
+                                                                            @php
+                                                                                $premiumCount = collect($shuttle->dynamic_seat_layout)
+                                                                                    ->where('tipe', 'premium')
+                                                                                    ->count();
+                                                                            @endphp
+                                                                            @if($premiumCount > 0)
+                                                                            <div class="info-item">
+                                                                                <div class="info-icon premium">
+                                                                                    <i class="fas fa-crown"></i>
+                                                                                </div>
+                                                                                <div class="info-text">
+                                                                                    <div class="info-label">Kursi Premium</div>
+                                                                                    <div class="info-value">{{ $premiumCount }} kursi</div>
+                                                                                </div>
+                                                                            </div>
+                                                                            @endif
+                                                                        @endif
                                                                     </div>
-                                                                    <div class="legend-item">
-                                                                        <div class="legend-box seat-sold"></div>
-                                                                        <span class="legend-text">Terjual</span>
+
+                                                                    <div class="seat-legend">
+                                                                        <div class="legend-item">
+                                                                            <div class="legend-box seat-regular"></div>
+                                                                            <span class="legend-text">Reguler</span>
+                                                                        </div>
+                                                                        <div class="legend-item">
+                                                                            <div class="legend-box seat-sold"></div>
+                                                                            <span class="legend-text">Terjual</span>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
+                                                    @else
+                                                        <p style="color: var(--muted-text); font-size: 13px;">Informasi shuttle tidak tersedia</p>
+                                                    @endif
                                                 </div>
                                             </div>
                                             @endforeach
@@ -3008,7 +3046,7 @@
                                             <div style="margin-top: 20px; padding: 16px; background: #f8f9fa; border-radius: 8px; text-align: left;">
                                                 <h5 style="color: var(--primary-color); margin-bottom: 8px;">Tips Pencarian:</h5>
                                                 <ul style="font-size: 13px; color: var(--muted-text); padding-left: 20px; margin: 0;">
-                                                    <li>Pilih outlet asal dan tujuan</li>
+                                                    <li>Pilih kota asal dan tujuan</li>
                                                     <li>Tentukan tanggal keberangkatan</li>
                                                     <li>Masukkan jumlah penumpang</li>
                                                     <li>Klik "CARI SHUTTLE" untuk melihat jadwal</li>
@@ -3085,343 +3123,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Jalankan setelah gambar dimuat
     window.addEventListener('load', setNavbarSpacing);
 
-    // Data outlet dari PHP
-    const outletsData = @json($outletsGrouped);
-
-    // Konversi data outlet ke format yang mudah dicari
-    let allOutlets = [];
-    let outletsByCity = {};
-
-    Object.keys(outletsData).forEach(city => {
-        outletsData[city].forEach(outlet => {
-            const outletItem = {
-                id: outlet.id,
-                nama_outlet: outlet.nama_outlet,
-                kota: city,
-                alamat: outlet.alamat,
-                alamat_lengkap: outlet.alamat_lengkap || outlet.alamat,
-                searchText: `${outlet.nama_outlet} ${city} ${outlet.alamat}`.toLowerCase()
-            };
-            allOutlets.push(outletItem);
-
-            if (!outletsByCity[city]) {
-                outletsByCity[city] = [];
-            }
-            outletsByCity[city].push(outletItem);
-        });
-    });
-
-    // Fungsi untuk membuat opsi dropdown
-    function createDropdownOptions(filteredOutlets = null) {
-        const outlets = filteredOutlets || allOutlets;
-        let optionsHTML = '';
-        let currentCity = null;
-
-        if (outlets.length === 0) {
-            return '<div class="combo-no-results">Tidak ada outlet yang ditemukan</div>';
-        }
-
-        outlets.forEach(outlet => {
-            if (outlet.kota !== currentCity) {
-                currentCity = outlet.kota;
-                optionsHTML += `
-                    <div class="combo-optgroup">
-                        <div class="combo-optgroup-header">${outlet.kota}</div>
-                `;
-            }
-
-            optionsHTML += `
-                <div class="combo-option" data-id="${outlet.id}" data-name="${outlet.nama_outlet}" data-alamat="${outlet.alamat_lengkap}">
-                    <div class="combo-option-main">${outlet.nama_outlet}</div>
-                    <div class="combo-option-detail">${outlet.alamat_lengkap}</div>
-                </div>
-            `;
-
-            const nextOutlet = outlets[outlets.indexOf(outlet) + 1];
-            if (!nextOutlet || nextOutlet.kota !== currentCity) {
-                optionsHTML += `</div>`;
-            }
-        });
-
-        return optionsHTML;
-    }
-
-    // Setup untuk departure combo box
-    const departureInput = document.getElementById('departure-outlet-input');
-    const departureHidden = document.getElementById('departure-outlet');
-    const departureDropdown = document.getElementById('departure-dropdown');
-    const departureOptions = document.getElementById('departure-options');
-    const departureSearch = document.getElementById('departure-search');
-    const toggleDepartureBtn = document.getElementById('toggle-departure-dropdown');
-    const clearDepartureBtn = document.getElementById('clear-departure-combo');
-
-    // Setup untuk destination combo box
-    const destinationInput = document.getElementById('destination-outlet-input');
-    const destinationHidden = document.getElementById('destination-outlet');
-    const destinationDropdown = document.getElementById('destination-dropdown');
-    const destinationOptions = document.getElementById('destination-options');
-    const destinationSearch = document.getElementById('destination-search');
-    const toggleDestinationBtn = document.getElementById('toggle-destination-dropdown');
-    const clearDestinationBtn = document.getElementById('clear-destination-combo');
-
-    // Inisialisasi dropdown dengan semua opsi
-    departureOptions.innerHTML = createDropdownOptions();
-    destinationOptions.innerHTML = createDropdownOptions();
-
-    // Fungsi untuk menampilkan/sembunyikan dropdown
-    function toggleDropdown(dropdown, input) {
-        const isVisible = dropdown.classList.contains('show');
-
-        // Tutup semua dropdown yang terbuka
-        document.querySelectorAll('.combo-dropdown-results.show').forEach(d => {
-            d.classList.remove('show');
-        });
-
-        if (!isVisible) {
-            dropdown.classList.add('show');
-            input.focus();
-
-            const selectedOption = dropdown.querySelector('.combo-option.selected');
-            if (selectedOption) {
-                selectedOption.scrollIntoView({ block: 'nearest' });
-            }
-        }
-    }
-
-    // Fungsi untuk memilih opsi
-    function selectOption(option, inputElement, hiddenInput, dropdown) {
-        const outletId = option.dataset.id;
-        const outletName = option.dataset.name;
-        const outletAlamat = option.dataset.alamat;
-
-        inputElement.value = outletName;
-        hiddenInput.value = outletId;
-
-        const clearBtn = inputElement.parentNode.querySelector('.combo-clear-btn');
-        if (clearBtn) {
-            clearBtn.style.display = 'block';
-        }
-
-        const toggleBtn = inputElement.parentNode.querySelector('.combo-dropdown-toggle');
-        if (toggleBtn) {
-            toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
-        }
-
-        dropdown.querySelectorAll('.combo-option.selected').forEach(opt => {
-            opt.classList.remove('selected');
-        });
-
-        option.classList.add('selected');
-        dropdown.classList.remove('show');
-
-        const formGroup = inputElement.closest('.form-group');
-        let infoElement = formGroup.querySelector('.outlet-info-text');
-
-        if (!infoElement) {
-            infoElement = document.createElement('small');
-            infoElement.className = 'text-muted outlet-info-text';
-            infoElement.style.fontSize = '11px';
-            infoElement.style.display = 'block';
-            infoElement.style.marginTop = '4px';
-            formGroup.appendChild(infoElement);
-        }
-
-        infoElement.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${outletAlamat}`;
-    }
-
-    // Fungsi untuk mencari outlet
-    function searchOutlets(query, currentId = null) {
-        const searchTerm = query.toLowerCase().trim();
-
-        if (!searchTerm) {
-            return allOutlets;
-        }
-
-        const results = [];
-        let exactMatches = [];
-        let partialMatches = [];
-
-        allOutlets.forEach(outlet => {
-            if (currentId && outlet.id == currentId) return;
-
-            const outletText = outlet.searchText;
-            const outletName = outlet.nama_outlet.toLowerCase();
-
-            if (outletName.includes(searchTerm)) {
-                exactMatches.push(outlet);
-            } else if (outlet.kota.toLowerCase().includes(searchTerm)) {
-                partialMatches.push(outlet);
-            } else if (outlet.alamat.toLowerCase().includes(searchTerm)) {
-                partialMatches.push(outlet);
-            } else if (outletText.includes(searchTerm)) {
-                partialMatches.push(outlet);
-            }
-        });
-
-        return [...exactMatches, ...partialMatches];
-    }
-
-    // Fungsi untuk mengupdate opsi dropdown berdasarkan pencarian
-    function updateDropdownOptions(searchInput, optionsContainer, currentId) {
-        const query = searchInput.value;
-        const results = searchOutlets(query, currentId);
-        optionsContainer.innerHTML = createDropdownOptions(results);
-        attachOptionListeners(optionsContainer);
-    }
-
-    // Fungsi untuk attach event listeners ke opsi
-    function attachOptionListeners(optionsContainer) {
-        optionsContainer.querySelectorAll('.combo-option').forEach(option => {
-            option.addEventListener('click', function() {
-                const comboBox = optionsContainer.closest('.combo-dropdown');
-                const input = comboBox.querySelector('.combo-input');
-                const hiddenInput = comboBox.querySelector('input[type="hidden"]');
-                selectOption(this, input, hiddenInput, optionsContainer.closest('.combo-dropdown-results'));
-            });
-        });
-    }
-
-    // Initial attach listeners
-    attachOptionListeners(departureOptions);
-    attachOptionListeners(destinationOptions);
-
-    // Event listeners untuk departure combo box
-    if (toggleDepartureBtn) {
-        toggleDepartureBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            toggleDropdown(departureDropdown, departureSearch);
-        });
-    }
-
-    if (departureInput) {
-        departureInput.addEventListener('click', function(e) {
-            e.stopPropagation();
-            toggleDropdown(departureDropdown, departureSearch);
-        });
-    }
-
-    if (departureSearch) {
-        departureSearch.addEventListener('input', function() {
-            updateDropdownOptions(departureSearch, departureOptions, departureHidden.value);
-        });
-
-        departureSearch.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    }
-
-    if (clearDepartureBtn) {
-        clearDepartureBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            departureInput.value = '';
-            departureHidden.value = '';
-            departureDropdown.classList.remove('show');
-
-            const infoElement = departureInput.closest('.form-group').querySelector('.outlet-info-text');
-            if (infoElement) {
-                infoElement.remove();
-            }
-
-            departureOptions.innerHTML = createDropdownOptions();
-            attachOptionListeners(departureOptions);
-            this.style.display = 'none';
-        });
-    }
-
-    // Event listeners untuk destination combo box
-    if (toggleDestinationBtn) {
-        toggleDestinationBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            toggleDropdown(destinationDropdown, destinationSearch);
-        });
-    }
-
-    if (destinationInput) {
-        destinationInput.addEventListener('click', function(e) {
-            e.stopPropagation();
-            toggleDropdown(destinationDropdown, destinationSearch);
-        });
-    }
-
-    if (destinationSearch) {
-        destinationSearch.addEventListener('input', function() {
-            updateDropdownOptions(destinationSearch, destinationOptions, destinationHidden.value);
-        });
-
-        destinationSearch.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    }
-
-    if (clearDestinationBtn) {
-        clearDestinationBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            destinationInput.value = '';
-            destinationHidden.value = '';
-            destinationDropdown.classList.remove('show');
-
-            const infoElement = destinationInput.closest('.form-group').querySelector('.outlet-info-text');
-            if (infoElement) {
-                infoElement.remove();
-            }
-
-            destinationOptions.innerHTML = createDropdownOptions();
-            attachOptionListeners(destinationOptions);
-            this.style.display = 'none';
-        });
-    }
-
-    // Close dropdown ketika klik di luar
-    document.addEventListener('click', function(event) {
-        if (!event.target.closest('.combo-dropdown')) {
-            document.querySelectorAll('.combo-dropdown-results').forEach(dropdown => {
-                dropdown.classList.remove('show');
-            });
-        }
-    });
-
-    // Handle ESC key to close dropdown
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            document.querySelectorAll('.combo-dropdown-results').forEach(dropdown => {
-                dropdown.classList.remove('show');
-            });
-        }
-    });
-
-    // Set initial values jika ada data sebelumnya
-    const initialDepartureId = departureHidden.value;
-    if (initialDepartureId) {
-        const outlet = allOutlets.find(o => o.id == initialDepartureId);
-        if (outlet) {
-            departureInput.value = outlet.nama_outlet;
-            clearDepartureBtn.style.display = 'block';
-
-            setTimeout(() => {
-                const option = departureOptions.querySelector(`[data-id="${initialDepartureId}"]`);
-                if (option) {
-                    option.classList.add('selected');
-                }
-            }, 100);
-        }
-    }
-
-    const initialDestinationId = destinationHidden.value;
-    if (initialDestinationId) {
-        const outlet = allOutlets.find(o => o.id == initialDestinationId);
-        if (outlet) {
-            destinationInput.value = outlet.nama_outlet;
-            clearDestinationBtn.style.display = 'block';
-
-            setTimeout(() => {
-                const option = destinationOptions.querySelector(`[data-id="${initialDestinationId}"]`);
-                if (option) {
-                    option.classList.add('selected');
-                }
-            }, 100);
-        }
-    }
-
     // Handle filter buttons
     const filterButtons = document.querySelectorAll('.filter-btn');
     const resultCards = document.querySelectorAll('.result-card');
@@ -3473,27 +3174,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchForm = document.getElementById('search-form');
     if (searchForm) {
         searchForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+            const departureCity = document.getElementById('departure-city').value;
+            const destinationCity = document.getElementById('destination-city').value;
 
-            const departureOutlet = departureHidden.value;
-            const destinationOutlet = destinationHidden.value;
-
-            if (departureOutlet && destinationOutlet && departureOutlet === destinationOutlet) {
-                alert('Outlet keberangkatan dan tujuan tidak boleh sama!');
-                return;
-            }
-
-            if (!departureOutlet) {
-                alert('Silakan pilih outlet asal!');
-                departureInput.focus();
-                toggleDropdown(departureDropdown, departureSearch);
-                return;
-            }
-
-            if (!destinationOutlet) {
-                alert('Silakan pilih outlet tujuan!');
-                destinationInput.focus();
-                toggleDropdown(destinationDropdown, destinationSearch);
+            if (departureCity && destinationCity && departureCity === destinationCity) {
+                alert('Kota keberangkatan dan tujuan tidak boleh sama!');
+                e.preventDefault();
                 return;
             }
 
@@ -3507,9 +3193,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (searchSpinner) searchSpinner.style.display = 'block';
             if (searchButton) searchButton.disabled = true;
             if (loadingResults) loadingResults.style.display = 'block';
-
-            // Submit form
-            this.submit();
         });
     }
 
@@ -3525,7 +3208,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Force uniform height for form controls
     function enforceUniformHeight() {
-        const formControls = document.querySelectorAll('.form-control, .form-control-select, input[type="date"], input[type="number"], .combo-input');
+        const formControls = document.querySelectorAll('.form-control, .form-control-select, input[type="date"], input[type="number"]');
         formControls.forEach(control => {
             control.style.height = '44px';
             control.style.minHeight = '44px';
@@ -3677,5 +3360,73 @@ window.toggleRouteDetails = function(jadwalId) {
         details.style.display = 'block';
     }
 };
+
+// Toggle all shuttle info from left sidebar button
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.getElementById('toggle-all-shuttle-info');
+    let allShuttleInfoVisible = false;
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            allShuttleInfoVisible = !allShuttleInfoVisible;
+
+            // Find all shuttle details sections
+            const allShuttleDetails = document.querySelectorAll('[id^="shuttle-details-"]');
+
+            allShuttleDetails.forEach(function(element) {
+                if (allShuttleInfoVisible) {
+                    element.style.display = 'block';
+                    // Initialize carousel for visible elements
+                    const jadwalId = element.id.replace('shuttle-details-', '');
+                    setTimeout(() => {
+                        initCarousel(jadwalId);
+                    }, 50);
+                } else {
+                    element.style.display = 'none';
+                }
+            });
+
+            // Update button text and style
+            if (allShuttleInfoVisible) {
+                toggleBtn.innerHTML = '<i class="fas fa-compress"></i> Sembunyikan Info Shuttle';
+                toggleBtn.style.background = '#dc3545';
+            } else {
+                toggleBtn.innerHTML = '<i class="fas fa-info-circle"></i> Tampilkan Info Shuttle';
+                toggleBtn.style.background = 'var(--secondary-color)';
+            }
+        });
+    }
+});
+</script>
+
+<script>
+// Toggle per-card route info (Info Rute)
+window.toggleRouteInfo = function(jadwalId) {
+    const info = document.getElementById(`route-info-${jadwalId}`);
+    if (!info) return;
+    if (info.style.display === 'block') {
+        info.style.display = 'none';
+    } else {
+        info.style.display = 'block';
+    }
+};
+
+// Hook up btn-route-info buttons (remove inline onclick to avoid double-binding)
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.btn-route-info').forEach(button => {
+        const onclick = button.getAttribute('onclick');
+        if (onclick) {
+            const match = onclick.match(/toggleRouteInfo\((\d+)\)/);
+            if (match) {
+                const jadwalId = match[1];
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    toggleRouteInfo(jadwalId);
+                });
+                button.removeAttribute('onclick');
+            }
+        }
+    });
+});
 </script>
 @endpush

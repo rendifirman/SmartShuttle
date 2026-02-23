@@ -1293,14 +1293,53 @@
 
                         <!-- Harga -->
                         <div class="price-section">
+                            <!-- Harga Dasar per Orang dari Jadwal -->
                             <div class="price-row">
                                 <div class="price-label">Harga Tiket per orang</div>
                                 <div class="price-value">Rp {{ number_format($jadwal->harga_total, 0, ',', '.') }}</div>
                             </div>
+
+                            <!-- Tarif Tambahan (Biaya Tambahan per Tiket) -->
+                            @if(!empty($availableTarifs) && count($availableTarifs) > 0)
+                                <div style="margin: 12px 0; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 3px solid #FF581E;">
+                                    <h6 class="fw-bold mb-2" style="color: #00215E; font-size: 13px; margin-bottom: 8px;">
+                                        <i class="fas fa-plus-circle"></i> Tarif Tambahan (per tiket):
+                                    </h6>
+                                    @foreach($availableTarifs as $tarif)
+                                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13px;">
+                                            <strong style="color: #00215E; font-size: 13px;">{{ $tarif['nama'] ?? 'Biaya Tambahan' }}</strong>
+                                            <small class="fw-bold" style="color: #FF581E;">Rp {{ number_format($tarif['final_price'] ?? $tarif['harga_dasar'] ?? 0, 0, ',', '.') }}</small>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+
                             <div class="price-row">
                                 <div class="price-label">Jumlah Penumpang</div>
                                 <div class="price-value">× {{ $penumpang }}</div>
                             </div>
+
+                            <!-- Breakdown: Harga Dasar & Total Tarif -->
+                            @if($totalTarif > 0)
+                                <div style="padding: 8px 0; border-bottom: 1px solid #e0e0e0; font-size: 12px;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                        <span style="color: #666;">Harga Dasar × {{ $penumpang }}:</span>
+                                        <span class="fw-bold">Rp {{ number_format($jadwal->harga_total * $penumpang, 0, ',', '.') }}</span>
+                                    </div>
+                                    <!-- Breakdown Tarif Tambahan per Item -->
+                                    @foreach($availableTarifs as $tarif)
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                                            <span style="color: #666;">+ {{ $tarif['nama'] ?? 'Tarif Tambahan' }} × {{ $penumpang }}:</span>
+                                            <span class="fw-bold" style="color: #FF581E;">Rp {{ number_format(($tarif['final_price'] ?? 0) * $penumpang, 0, ',', '.') }}</span>
+                                        </div>
+                                    @endforeach
+                                    <div style="display: flex; justify-content: space-between; border-top: 1px solid #ddd; padding-top: 4px; margin-top: 4px;">
+                                        <span style="color: #666;"><strong>Total Tarif Tambahan:</strong></span>
+                                        <span class="fw-bold" style="color: #FF581E;">Rp {{ number_format($totalTarif, 0, ',', '.') }}</span>
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="price-row">
                                 <div class="price-label">Subtotal</div>
                                 <div class="price-value" id="subtotal-amount-left">Rp {{ number_format($totalHarga, 0, ',', '.') }}</div>
@@ -1327,6 +1366,8 @@
                         <input type="hidden" id="kode_promo_input" name="kode_promo" value="{{ $appliedPromo['kode'] ?? '' }}">
                         <input type="hidden" id="diskon_amount" name="diskon_amount" value="{{ $diskon }}">
                         <input type="hidden" id="total_after_discount" name="total_after_discount" value="{{ $totalAfterDiscount }}">
+                        <input type="hidden" id="total_tarif" name="total_tarif" value="{{ $totalTarif ?? 0 }}">
+                        <input type="hidden" id="subtotal_harga" name="subtotal_harga" value="{{ $totalHarga ?? 0 }}">
 
                         <!-- Data Pemesan -->
                         <div class="form-group">
@@ -1618,7 +1659,7 @@
                             <h6 class="alert-heading">Syarat Promo Aktif</h6>
                             <p class="mb-1">
                                 <i class="fas fa-users me-1"></i>
-                                <strong>Jumlah Tiket:</strong> {{ $penumpang ?? 1 }} 
+                                <strong>Jumlah Tiket:</strong> {{ $penumpang ?? 1 }}
                                 @if($penumpang >= 3)
                                     <span class="badge bg-success">✓ Promo Keluarga Aktif</span>
                                 @else
@@ -1627,7 +1668,7 @@
                             </p>
                             <p class="mb-0">
                                 <i class="fas fa-user-tie me-1"></i>
-                                <strong>Status Member:</strong> 
+                                <strong>Status Member:</strong>
                                 @if(isset($userData['is_member']) && $userData['is_member'])
                                     <span class="badge bg-success">✓ Member Aktif</span>
                                 @else
@@ -1692,7 +1733,7 @@
                             $eligible = $promoItem['eligible'];
                             $reason = $promoItem['reason'];
                             $cardClass = $eligible ? '' : 'promo-inactive';
-                            
+
                             // Tentukan badge berdasarkan kategori
                             $categoryBadge = match($promo->kategori_promo) {
                                 'keluarga' => ['class' => 'bg-warning', 'icon' => 'fas fa-users', 'label' => 'Keluarga'],
@@ -1836,7 +1877,7 @@
                                 @if($eligible)
                                 <!-- Tombol Pilih Promo -->
                                 <div class="card-footer bg-transparent border-top-0">
-                                    <button type="button" 
+                                    <button type="button"
                                             class="btn btn-sm btn-orange promo-select-btn w-100"
                                             data-promo-code="{{ $promo->kode_promo }}"
                                             onclick="applyPromoFromModal('{{ $promo->kode_promo }}')">
@@ -1845,7 +1886,7 @@
                                 </div>
                                 @else
                                 <div class="card-footer bg-transparent border-top-0">
-                                    <button type="button" 
+                                    <button type="button"
                                             class="btn btn-sm btn-secondary w-100"
                                             disabled
                                             title="{{ $reason }}">
@@ -1933,7 +1974,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function checkPromoEligibility() {
         const ticketCount = {{ $penumpang ?? 1 }};
         const totalAmount = {{ $totalHarga ?? 0 }};
-        
+
         fetch('/api/promo/eligible', {
             method: 'POST',
             headers: {
@@ -1961,19 +2002,19 @@ document.addEventListener('DOMContentLoaded', function() {
     function updatePromoModal(promos) {
         const promoListContainer = document.getElementById('promoListContainer');
         if (!promoListContainer) return;
-        
+
         // Logic untuk update UI berdasarkan promos yang eligible
         promos.forEach(promoItem => {
             const promoCard = promoListContainer.querySelector(
                 `.promo-card[data-code="${promoItem.promo.kode_promo}"]`
             );
-            
+
             if (promoCard) {
                 if (promoItem.eligible) {
                     promoCard.classList.remove('promo-inactive');
                     promoCard.style.opacity = '1';
                     promoCard.style.cursor = 'pointer';
-                    
+
                     // Enable select button
                     const selectBtn = promoCard.querySelector('.promo-select-btn');
                     if (selectBtn) {
@@ -1985,7 +2026,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     promoCard.classList.add('promo-inactive');
                     promoCard.style.opacity = '0.7';
                     promoCard.style.cursor = 'not-allowed';
-                    
+
                     // Disable select button
                     const selectBtn = promoCard.querySelector('.promo-select-btn');
                     if (selectBtn) {
@@ -2004,13 +2045,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function applyPromoWithValidation(promoCode) {
         const ticketCount = {{ $penumpang ?? 1 }};
         const totalAmount = {{ $totalHarga ?? 0 }};
-        
+
         // Show loading
         if (applyPromoBtn) {
             applyPromoBtn.disabled = true;
             applyPromoBtn.innerHTML = '<span class="spinner"></span> Memvalidasi...';
         }
-        
+
         fetch('{{ route("customer.apply-promo") }}', {
             method: 'POST',
             headers: {
@@ -2030,12 +2071,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 showPromoSuccess(data.message);
                 updatePromoDisplay(data);
                 updateSummary(data.diskon, data.total_after_discount);
-                
+
                 // Update hidden inputs
                 document.getElementById('kode_promo_input').value = data.promo.kode;
                 document.getElementById('diskon_amount').value = data.diskon;
                 document.getElementById('total_after_discount').value = data.total_after_discount;
-                
+
             } else {
                 showPromoError(data.message);
             }
@@ -2149,8 +2190,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const category = item.querySelector('.promo-card')?.dataset.category || '';
                 const cardText = item.textContent.toLowerCase();
 
-                if (searchTerm === '' || 
-                    code.toLowerCase().includes(searchTerm) || 
+                if (searchTerm === '' ||
+                    code.toLowerCase().includes(searchTerm) ||
                     name.toLowerCase().includes(searchTerm) ||
                     category.toLowerCase().includes(searchTerm) ||
                     cardText.includes(searchTerm)) {
@@ -2177,13 +2218,13 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', function() {
             promoFilterBtns.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            
+
             const filter = this.dataset.filter;
-            
+
             document.querySelectorAll('.promo-card-item').forEach(item => {
                 const eligible = item.dataset.eligible === 'true';
                 const category = item.dataset.category;
-                
+
                 switch(filter) {
                     case 'all':
                         item.style.display = 'block';
@@ -2204,7 +2245,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         item.style.display = 'block';
                 }
             });
-            
+
             updatePromoCount();
         });
     });

@@ -226,7 +226,7 @@
     <div class="page-header">
         <h2>Detail Rute</h2>
         <div class="header-actions">
-            <a href="{{ route('admin.rute') }}" class="btn-back">
+            <a href="{{ route('admin.rute.index') }}" class="btn-back">
                 <i class="fas fa-arrow-left"></i> Kembali ke Daftar
             </a>
             <a href="{{ route('admin.rute.edit', $rute->id) }}" class="btn-edit">
@@ -295,8 +295,46 @@
             </div>
         </div>
 
+        <!-- TARIF YANG BERLAKU -->
+        <div class="detail-card">
+            <div class="detail-title">Tarif yang Berlaku</div>
+            @if($rute->masterTarifs && $rute->masterTarifs->count() > 0)
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                    @foreach($rute->masterTarifs as $tarif)
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 4px solid #ff6a00;">
+                        <div style="font-weight: 600; color: #0b2a4a; margin-bottom: 8px;">{{ $tarif->nama_tarif }}</div>
+                        <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
+                            <strong>Kode:</strong> {{ $tarif->kode_tarif }}<br>
+                            <strong>Jenis:</strong> {{ $tarif->jenis_tarif }}<br>
+                            <strong>Harga Dasar:</strong> Rp {{ number_format($tarif->harga_dasar, 0, ',', '.') }}<br>
+                            @if($tarif->diskon_persentase > 0 || $tarif->diskon_nominal > 0)
+                            <strong>Diskon:</strong>
+                                @if($tarif->diskon_persentase > 0){{ $tarif->diskon_persentase }}%@endif
+                                @if($tarif->diskon_nominal > 0)Rp {{ number_format($tarif->diskon_nominal, 0, ',', '.') }}@endif<br>
+                            @endif
+                            <strong>Status:</strong> <span class="status-badge status-{{ $tarif->status }}">{{ $tarif->status === 'aktif' ? 'Aktif' : 'Tidak Aktif' }}</span>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            @else
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; color: #666; text-align: center;">
+                    <em>Tidak ada tarif yang dipilih untuk rute ini</em>
+                </div>
+            @endif
+        </div>
+
         <!-- RUTE PEMBERHENTIAN -->
-        @if(!empty($pemberhentian) && count($pemberhentian) > 0)
+        @php
+            $pemberhentian = $rute->rute_pemberhentian ?? [];
+
+            // Ensure pemberhentian is an array. Some records may store it as JSON string.
+            if (is_string($pemberhentian)) {
+                $decoded = json_decode($pemberhentian, true);
+                $pemberhentian = is_array($decoded) ? $decoded : [];
+            }
+        @endphp
+        @if(!empty($pemberhentian) && is_array($pemberhentian) && count($pemberhentian) > 0)
         <div class="detail-card">
             <div class="detail-title">Rute Pemberhentian</div>
             <div style="display: grid; gap: 12px;">

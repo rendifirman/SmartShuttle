@@ -15,58 +15,15 @@ class GoogleAuthController extends Controller
 {
     public function redirectToGoogle()
     {
-        try {
-            $clientId = config('services.google.client_id');
-            $clientSecret = config('services.google.client_secret');
-            $redirectUri = config('services.google.redirect');
-
-            \Log::info('Google OAuth check', [
-                'client_id_set' => !empty($clientId),
-                'client_secret_set' => !empty($clientSecret),
-                'redirect_uri' => $redirectUri,
-            ]);
-
-            if (empty($clientId) || empty($clientSecret) || empty($redirectUri)) {
-                \Log::error('Google OAuth credentials incomplete', [
-                    'client_id' => empty($clientId) ? 'MISSING' : 'OK',
-                    'client_secret' => empty($clientSecret) ? 'MISSING' : 'OK',
-                    'redirect_uri' => empty($redirectUri) ? 'MISSING' : $redirectUri,
-                ]);
-                return redirect()->route('customer.login')
-                    ->withErrors('Konfigurasi Google OAuth belum lengkap. Hubungi administrator.');
-            }
-
-            \Log::info('Redirecting to Google OAuth');
-            // Gunakan scopes dan prompt untuk menampilkan halaman pemilihan akun
-            return Socialite::driver('google')
-                ->scopes(['profile', 'email'])
-                ->with(['prompt' => 'select_account'])
-                ->redirect();
-        } catch (\Exception $e) {
-            \Log::error('Google redirect exception', [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode(),
-                'file' => $e->getFile() . ':' . $e->getLine(),
-            ]);
-            return redirect()->route('customer.login')
-                ->withErrors('Error: ' . $e->getMessage());
-        }
+        return Socialite::driver('google')
+            ->with(['prompt' => 'select_account'])
+            ->redirect();
     }
 
-    public function handleGoogleCallback(Request $request)
+    public function handleGoogleCallback()
     {
         try {
-
-            // Decode query string to handle URL encoded parameters
-            $code = $request->input('code');
-            $state = $request->input('state');
-
-            if (!$code) {
-                throw new \Exception('Authorization code not found');
-            }
-
             $googleUser = Socialite::driver('google')->user();
-
 
             \Log::info('Google OAuth Response:', [
                 'id' => $googleUser->getId(),
@@ -79,12 +36,7 @@ class GoogleAuthController extends Controller
 
             if (!$user) {
                 // Cek apakah email sudah terdaftar (untuk menghindari duplikat)
-                $userEmail = filter_var($googleUser->getEmail(), FILTER_VALIDATE_EMAIL);
-                if (!$userEmail) {
-                    throw new \Exception('Invalid email format from Google');
-                }
-
-                $user = User::where('email', $userEmail)->first();
+                $user = User::where('email', $googleUser->getEmail())->first();
 
                 if ($user) {
                     // User sudah ada dengan email ini, update dengan Google ID
@@ -106,8 +58,8 @@ class GoogleAuthController extends Controller
                     try {
                         $user = User::create([
                             'name' => $googleUser->getName(),
-                            'username' => $this->generateUsername($userEmail),
-                            'email' => $userEmail,
+                            'username' => $this->generateUsername($googleUser->getEmail()),
+                            'email' => $googleUser->getEmail(),
                             'password' => Hash::make(Str::random(16)),
                             'google_id' => $googleUser->getId(),
                             'provider' => 'google',
@@ -134,9 +86,7 @@ class GoogleAuthController extends Controller
                         DB::rollBack();
                         \Log::error('Failed to create user via Google:', ['error' => $e->getMessage()]);
                         throw $e;
-
                     }
-
                 }
             }
 
@@ -147,33 +97,35 @@ class GoogleAuthController extends Controller
                     ->withErrors('Akun Anda dinonaktifkan. Silakan hubungi administrator.');
             }
 
-            // Login user using Auth::guard('web') dan session storage
-            Auth::guard('customer')->login($user, true);
+            // Login user (langsung masuk ke beranda)
+            Auth::login($user, true);
 
-            // Store user data di session seperti CustomerController
+            // Regenerate session to persist authentication immediately
+            try {
+                session()->regenerate();
+            } catch (\Exception $e) {
+                \Log::warning('Session regeneration failed after Google login', ['error' => $e->getMessage()]);
+            }
+
+            // Set session untuk customer
             session()->put('user', [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'avatar' => $user->avatar,
+                'avatar' => $user->avatar_url,
                 'membership_status' => $user->membership_status,
                 'membership_level' => $user->membership_level,
             ]);
 
-            // Regenerate session to persist authentication immediately
-            try {
-                session()->regenerate();
-                session()->save();
-            } catch (\Exception $e) {
-                \Log::warning('Session regeneration/save failed after Google login', ['error' => $e->getMessage()]);
-            }
+            // Pastikan session tersimpan
+            session()->save();
 
             // Debug logs to help diagnose session/auth persistence issues
             try {
                 \Log::info('Post-GoogleLogin debug', [
-                    'auth_check' => Auth::guard('customer')->check(),
-                    'auth_user_id' => Auth::guard('customer')->id(),
+                    'auth_check' => Auth::check(),
+                    'auth_user_id' => Auth::id(),
                     'session_id' => session()->getId(),
                     'session_user' => session()->get('user')
                 ]);
@@ -218,8 +170,7 @@ class GoogleAuthController extends Controller
 
     public function logout(Request $request)
     {
-        Auth::guard('customer')->logout();
-
+        Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

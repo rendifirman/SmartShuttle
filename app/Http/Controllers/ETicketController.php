@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Pemesanan;
 use App\Models\User;
 use App\Models\Jadwal;
@@ -17,19 +18,21 @@ class ETicketController extends Controller
      */
     public function show($kode_booking)
     {
-        // Cek jika user sudah login
-        if (!session()->has('user')) {
+        // Cek jika user sudah login menggunakan Auth
+        if (!Auth::check()) {
             return redirect()->route('customer.login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        $user = session()->get('user');
+        $user = Auth::user();
 
         try {
             // Ambil data pemesanan dengan relasi yang benar
             $pemesanan = Pemesanan::with([
                 'jadwal.shuttle',
+                'driverJadwal.driver',
                 'detailPenumpang',
-                'jadwal.rutes'
+                'jadwal.rutes',
+                'user'
             ])->where('kode_booking', $kode_booking)
               ->first();
 
@@ -44,30 +47,51 @@ class ETicketController extends Controller
                     ->with('error', 'Anda tidak memiliki akses ke pemesanan ini.');
             }
 
-            // Lanjutkan dengan pemrosesan data
-            $jadwal = $pemesanan->jadwal;
+            // Determine if this is a driver_jadwal booking or legacy jadwal booking
+            if ($pemesanan->id_jadwal_driver && $pemesanan->driverJadwal) {
+                // NEW FLOW: From driver_jadwals
+                $driverJadwal = $pemesanan->driverJadwal;
+                $detailRute = $driverJadwal->getDetailRute();
+                $from = $detailRute['kota_asal'] ?? 'Kota Asal';
+                $to = $detailRute['kota_tujuan'] ?? 'Kota Tujuan';
+                $date = Carbon::parse($driverJadwal->tanggal)->isoFormat('dddd, D MMMM YYYY');
+                $waktuBerangkat = Carbon::parse($driverJadwal->waktu_keberangkatan);
+                $shuttle = null; // Driver jadwals don't directly link to shuttle, but we can try to get from driver
 
-            if (!$jadwal) {
-                return redirect()->route('customer.riwayat')
-                    ->with('error', 'Data jadwal tidak ditemukan.');
+                // Safely calculate arrival time
+                $waktuSampai = $waktuBerangkat->copy();
+                if ($driverJadwal->waktu_kedatangan) {
+                    $waktuSampai = Carbon::parse($driverJadwal->waktu_kedatangan);
+                } else {
+                    $waktuSampai->addHours(3)->addMinutes(30);
+                }
+            } else {
+                // LEGACY FLOW: From jadwals
+                $jadwal = $pemesanan->jadwal;
+
+                if (!$jadwal) {
+                    return redirect()->route('customer.riwayat')
+                        ->with('error', 'Data jadwal tidak ditemukan.');
+                }
+
+                // Format data untuk e-ticket
+                $from = 'Jakarta';
+                $to = 'Jatinangor';
+
+                // Ambil rute dari jadwal
+                if ($jadwal->rutes && $jadwal->rutes->count() > 0) {
+                    $firstRoute = $jadwal->rutes->first();
+                    $lastRoute = $jadwal->rutes->last();
+
+                    $from = $firstRoute->kota_asal ?? $firstRoute->asal ?? 'Jakarta';
+                    $to = $lastRoute->kota_tujuan ?? $lastRoute->tujuan ?? 'Jatinangor';
+                }
+
+                $date = Carbon::parse($jadwal->tanggal_keberangkatan)->isoFormat('dddd, D MMMM YYYY');
+                $waktuBerangkat = Carbon::parse($jadwal->waktu_keberangkatan);
+                $waktuSampai = $waktuBerangkat->copy()->addHours(3)->addMinutes(30);
+                $shuttle = $jadwal->shuttle ?? null;
             }
-
-            // Format data untuk e-ticket
-            $from = 'Jakarta';
-            $to = 'Jatinangor';
-
-            // Ambil rute dari jadwal
-            if ($jadwal->rutes && $jadwal->rutes->count() > 0) {
-                $firstRoute = $jadwal->rutes->first();
-                $lastRoute = $jadwal->rutes->last();
-
-                $from = $firstRoute->kota_asal ?? $firstRoute->asal ?? 'Jakarta';
-                $to = $lastRoute->kota_tujuan ?? $lastRoute->tujuan ?? 'Jatinangor';
-            }
-
-            // Hitung estimasi waktu
-            $waktuBerangkat = Carbon::parse($jadwal->waktu_keberangkatan);
-            $waktuSampai = $waktuBerangkat->copy()->addHours(3)->addMinutes(30);
 
             // Ambil nomor kursi dari detail penumpang
             $nomor_kursi = '01';
@@ -80,17 +104,18 @@ class ETicketController extends Controller
             }
 
             // Get shuttle info
-            $shuttle = $jadwal->shuttle ?? null;
+            $shuttle = $shuttle ?? null;
 
             // Get user data
-            $userData = User::find($user['id']);
+            $userData = $user;
 
             $data = [
                 'pemesanan' => $pemesanan,
-                'jadwal' => $jadwal,
+                'jadwal' => $pemesanan->jadwal,
+                'driverJadwal' => $pemesanan->driverJadwal,
                 'from' => $from,
                 'to' => $to,
-                'date' => Carbon::parse($jadwal->tanggal_keberangkatan)->isoFormat('dddd, D MMMM YYYY'),
+                'date' => $date,
                 'time' => $waktuBerangkat->format('H:i'),
                 'estimasi_sampai' => $waktuSampai->format('H:i'),
                 'customer_name' => $pemesanan->nama_pemesan ?? $userData->name,
@@ -144,7 +169,7 @@ class ETicketController extends Controller
                 $to = $lastRoute->kota_tujuan ?? $lastRoute->tujuan ?? 'Jatinangor';
             }
 
-            $userData = User::find($user['id']);
+            $userData = $user;
 
             $data = [
                 'pemesanan' => $pemesanan,

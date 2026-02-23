@@ -591,9 +591,11 @@ textarea {
         <!-- HEADER -->
         <div class="page-header">
             <h2>Data Rute</h2>
+            @can('manage_rute')
             <a href="{{ route('admin.rute.create') }}" class="btn-add">
                 <i class="fas fa-plus"></i> Tambah Rute
             </a>
+            @endcan
         </div>
 
         <!-- Flash Messages -->
@@ -627,7 +629,7 @@ textarea {
 
         <!-- FILTER -->
         <div class="filter-box">
-            <form method="GET" action="{{ route('admin.rute') }}">
+            <form method="GET" action="{{ route('admin.rute.index') }}">
                 <div class="filter-row">
                     <select name="kota_asal" id="filter-kota-asal">
                         <option value="">Kota Asal</option>
@@ -663,7 +665,7 @@ textarea {
                 <div class="filter-action">
                     <input type="text" name="search" id="search-rute" placeholder="Cari Kode, Nama Rute, Kota" value="{{ request('search') }}">
                     <button type="submit" class="btn-filter">Filter</button>
-                    <a href="{{ route('admin.rute') }}" class="btn-cancel" style="padding: 12px 20px; text-decoration: none; display: inline-flex; align-items: center;">
+                    <a href="{{ route('admin.rute.index') }}" class="btn-cancel" style="padding: 12px 20px; text-decoration: none; display: inline-flex; align-items: center;">
                         <i class="fas fa-redo"></i> Reset
                     </a>
                 </div>
@@ -710,6 +712,7 @@ textarea {
                             <a href="{{ route('admin.rute.show', $rute->id) }}" class="btn-action btn-view">
                                 <i class="fas fa-eye"></i> View
                             </a>
+                            @can('manage_rute')
                             <a href="{{ route('admin.rute.edit', $rute->id) }}" class="btn-action btn-edit">
                                 <i class="fas fa-edit"></i> Edit
                             </a>
@@ -720,6 +723,7 @@ textarea {
                                     <i class="fas fa-trash"></i> Hapus
                                 </button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                     @empty
@@ -804,7 +808,7 @@ function exportExcel() {
     const params = new URLSearchParams(window.location.search);
     params.set('export', 'excel');
 
-    window.open(`{{ route('admin.rute') }}?${params.toString()}`, '_blank');
+    window.open(`{{ route('admin.rute.index') }}?${params.toString()}`, '_blank');
 }
 
 function exportPDF() {
@@ -812,7 +816,7 @@ function exportPDF() {
     const params = new URLSearchParams(window.location.search);
     params.set('export', 'pdf');
 
-    window.open(`{{ route('admin.rute') }}?${params.toString()}`, '_blank');
+    window.open(`{{ route('admin.rute.index') }}?${params.toString()}`, '_blank');
 }
 
 // Quick filter functions

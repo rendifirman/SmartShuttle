@@ -2,33 +2,49 @@
 
 namespace App\Http\Middleware;
 
-use Illuminate\Http\Request;
 use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class CheckAdminRole
 {
-    public function handle(Request $request, Closure $next)
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     */
+    public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
+        $user = Auth::guard('admin')->user();
 
         if (!$user) {
-            return response()->json([
-                'message' => 'Unauthenticated'
-            ], 401);
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Unauthenticated'
+                ], 401);
+            }
+            return redirect()->route('admin.login');
         }
 
-        // Cek apakah user memiliki role admin_pusat atau admin_cabang
-        if (!$user->hasRole('admin_pusat') && !$user->hasRole('admin_cabang')) {
-            return response()->json([
-                'message' => 'Anda tidak memiliki izin untuk mengakses fitur ini'
-            ], 403);
+        // Check if user has admin role
+        if (!$user->hasAnyRole(['admin_pusat', 'admin_cabang', 'operator'])) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Anda tidak memiliki izin untuk mengakses fitur ini'
+                ], 403);
+            }
+            abort(403, 'Anda tidak memiliki izin untuk mengakses fitur ini');
         }
 
-        // Jika user adalah admin_cabang, pastikan mereka memiliki branch yang assigned
+        // If user is branch admin, ensure they have branch assignment
         if ($user->hasRole('admin_cabang') && !$user->branch_id) {
-            return response()->json([
-                'message' => 'Branch belum di-assign ke akun admin cabang Anda'
-            ], 403);
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Branch belum di-assign ke akun admin cabang Anda'
+                ], 403);
+            }
+            abort(403, 'Branch belum di-assign ke akun admin cabang Anda');
         }
 
         return $next($request);

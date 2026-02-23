@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Smart Shuttle' }}</title>
 
     <!-- CSS OFFLINE -->
@@ -299,87 +300,56 @@
         @include('layouts.footer')
     @endif
 
-    <!-- Floating WA & Telp Buttons -->
+    <!-- Floating WA & Telp Buttons - SEMUA HALAMAN -->
     @if(!isset($isDriver) || !$isDriver)
-        @php
-            // Tentukan apakah halaman saat ini adalah Beranda atau Contact
-            $showFloatingCs = false;
+        @if(isset($masterKontak) && $masterKontak)
+            <div class="floating-cs-container">
+                <!-- WhatsApp Button -->
+                @php
+                    $whatsappNumber = $masterKontak->telepon_utama ?? '085811224321';
+                    $whatsappNumber = preg_replace('/[^0-9]/', '', $whatsappNumber);
+                    if (substr($whatsappNumber, 0, 1) === '0') {
+                        $whatsappNumber = '62' . substr($whatsappNumber, 1);
+                    }
+                    $whatsappUrl = "https://wa.me/{$whatsappNumber}?text=Halo%20" . urlencode($masterKontak->nama_perusahaan ?? 'Smart Shuttle') . "%2C%20saya%20ingin%20bertanya%20tentang%20layanan%20shuttle.";
+                @endphp
+                <a href="{{ $whatsappUrl }}"
+                   target="_blank"
+                   class="cs-button whatsapp"
+                   data-tooltip="Chat WhatsApp"
+                   title="Chat via WhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                </a>
 
-            // Dapatkan current route name
-            $routeName = Route::currentRouteName();
-
-            // Dapatkan current path/URL
-            $currentPath = request()->path();
-            $currentUrl = url()->current();
-
-            // Cek apakah halaman beranda
-            $isBeranda = $routeName === 'customer.beranda' ||
-                         $currentPath === 'customer/beranda' ||
-                         $currentPath === 'beranda' ||
-                         $currentPath === '/' ||
-                         str_contains($currentUrl, 'beranda');
-
-            // Cek apakah halaman contact
-            $isContact = $routeName === 'customer.contact' ||
-                         $currentPath === 'customer/contact' ||
-                         $currentPath === 'contact' ||
-                         str_contains($currentUrl, 'contact');
-
-            // Jika salah satu kondisi terpenuhi, tampilkan floating button
-            if ($isBeranda || $isContact) {
-                $showFloatingCs = true;
-            }
-        @endphp
-
-        @if($showFloatingCs)
-            @if(isset($masterKontak) && $masterKontak)
-                <div class="floating-cs-container">
-                    <!-- WhatsApp Button -->
-                    @php
-                        $whatsappNumber = $masterKontak->telepon_utama ?? '085811224321';
-                        $whatsappNumber = preg_replace('/[^0-9]/', '', $whatsappNumber);
-                        if (substr($whatsappNumber, 0, 1) === '0') {
-                            $whatsappNumber = '62' . substr($whatsappNumber, 1);
-                        }
-                        $whatsappUrl = "https://wa.me/{$whatsappNumber}?text=Halo%20" . urlencode($masterKontak->nama_perusahaan ?? 'Smart Shuttle') . "%2C%20saya%20ingin%20bertanya%20tentang%20layanan%20shuttle.";
-                    @endphp
-                    <a href="{{ $whatsappUrl }}"
-                       target="_blank"
-                       class="cs-button whatsapp"
-                       data-tooltip="Chat WhatsApp"
-                       title="Chat via WhatsApp">
-                        <i class="fab fa-whatsapp"></i>
-                    </a>
-
-                    <!-- Phone Button -->
-                    @php
-                        $phoneNumber = $masterKontak->telepon_utama ?? '0858-1122-4321';
-                        $phoneUrl = "tel:" . preg_replace('/[^0-9+]/', '', $phoneNumber);
-                    @endphp
-                    <a href="{{ $phoneUrl }}"
-                       class="cs-button phone"
-                       data-tooltip="Telepon Customer Service"
-                       title="Telepon Customer Service">
-                        <i class="fas fa-phone"></i>
-                    </a>
-                </div>
-            @else
-                <div class="floating-cs-container">
-                    <a href="https://wa.me/6285811224321?text=Halo%20Smart%20Shuttle%2C%20saya%20ingin%20bertanya%20tentang%20layanan%20shuttle."
-                       target="_blank"
-                       class="cs-button whatsapp"
-                       data-tooltip="Chat WhatsApp"
-                       title="Chat via WhatsApp">
-                        <i class="fab fa-whatsapp"></i>
-                    </a>
-                    <a href="tel:+6285811224321"
-                       class="cs-button phone"
-                       data-tooltip="Telepon Customer Service"
-                       title="Telepon Customer Service">
-                        <i class="fas fa-phone"></i>
-                    </a>
-                </div>
-            @endif
+                <!-- Phone Button -->
+                @php
+                    $phoneNumber = $masterKontak->telepon_utama ?? '0858-1122-4321';
+                    $phoneUrl = "tel:" . preg_replace('/[^0-9+]/', '', $phoneNumber);
+                @endphp
+                <a href="{{ $phoneUrl }}"
+                   class="cs-button phone"
+                   data-tooltip="Telepon Customer Service"
+                   title="Telepon Customer Service">
+                    <i class="fas fa-phone"></i>
+                </a>
+            </div>
+        @else
+            <!-- Default jika $masterKontak tidak ada -->
+            <div class="floating-cs-container">
+                <a href="https://wa.me/6285811224321?text=Halo%20Smart%20Shuttle%2C%20saya%20ingin%20bertanya%20tentang%20layanan%20shuttle."
+                   target="_blank"
+                   class="cs-button whatsapp"
+                   data-tooltip="Chat WhatsApp"
+                   title="Chat via WhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                </a>
+                <a href="tel:+6285811224321"
+                   class="cs-button phone"
+                   data-tooltip="Telepon Customer Service"
+                   title="Telepon Customer Service">
+                    <i class="fas fa-phone"></i>
+                </a>
+            </div>
         @endif
     @endif
 
@@ -410,15 +380,13 @@
                 }
             });
 
-            // Debug: Cek apakah floating button ditampilkan
-            const floatingContainer = document.querySelector('.floating-cs-container');
-            if (floatingContainer) {
-                console.log('Floating button DITAMPILKAN untuk halaman ini');
-            } else {
-                console.log('Floating button TIDAK ditampilkan untuk halaman ini');
-            }
+            // Debug: Cek floating button
+            console.log('Floating button aktif di semua halaman');
         });
     </script>
+
+    <!-- Global Scripts for Route Outlets Helper -->
+    <script src="{{ asset('js/route-outlets-helper.js') }}"></script>
 
     @stack('scripts')
 </body>

@@ -21,15 +21,18 @@ class AuthServiceProvider extends ServiceProvider
     /**
      * Register any authentication / authorization services.
      */
-   
+
     /**
      * Bootstrap any application services.
      */
     public function boot(): void
     {
+        // Register permission gates for Spatie Permission package
+        $this->registerPolicies();
+
         $this->app->bind('auth.password.tokens', function ($app) {
             $config = $app['config']['auth.passwords.users'];
-            
+
             return new CustomTokenRepository(
                 $app['db']->connection($config['connection'] ?? null),
                 $app['hash'],

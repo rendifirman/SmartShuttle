@@ -12,37 +12,51 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        $this->call([
-            RoleSeeder::class,
-        ]);
-
-        User::firstOrCreate(
-            ['email' => 'test@example.com'],
-            [
-                'name' => 'Test User',
-                'password' => bcrypt('password'),
-                'email_verified_at' => now(),
-            ]
-        );
-
         // ✅ URUTAN YANG BENAR:
-        $this->call([
-            BranchSeeder::class,          // 1. Infrastruktur
-            OutletSeeder::class,          // 2. Outlet (butuh Branch)
-            MLayananSeeder::class,        // 3. Jenis Layanan - HARUS PERTAMA untuk layanan
-            RuteSeeder::class,            // 4. Rute (butuh MLayanan) ← SEBELUM SHUTTLE!
-            ShuttleSeeder::class,         // 5. Shuttle (butuh MLayanan)
-            KursiSeeder::class,           // 6. Kursi (butuh Shuttle)
+        $seeders = [
+            PermissionSeeder::class,     // 1. Permissions HARUS PERTAMA
+            RoleSeeder::class,           // 2. Roles (butuh Permissions)
+            BranchSeeder::class,         // 3. Infrastruktur
+            OutletSeeder::class,         // 4. Outlet (butuh Branch)
+            MLayananSeeder::class,       // 5. Jenis Layanan
+            RuteSeeder::class,           // 6. Rute (butuh MLayanan)
+            ShuttleSeeder::class,        // 7. Shuttle (butuh MLayanan)
+            KursiSeeder::class,          // 8. Kursi (butuh Shuttle)
             KebijakanPrivasiSeeder::class,
             SyaratKetentuanSeeder::class,
             MProfilePerusahaanSeeder::class,
             PromoSeeder::class,
             MasterKontakSeeder::class,
             MetodePembayaranSeeder::class,
-            JadwalSeeder::class,
             ArtikelSeeder::class,
-            RoleSeeder::class,
-   // TERAKHIR! (butuh Rute & Shuttle)
-        ]);
+            MasterTarifSeeder::class,
+        ];
+
+        // Jalankan setiap seeder dengan try-catch agar jika gagal, yang lain tetap berjalan
+        foreach ($seeders as $seeder) {
+            try {
+                $this->command->info("Running seeder: {$seeder}");
+                $this->call($seeder);
+                $this->command->info("Seeder {$seeder} completed successfully.");
+            } catch (\Exception $e) {
+                $this->command->error("Seeder {$seeder} failed: " . $e->getMessage());
+                // Lanjutkan ke seeder berikutnya
+            }
+        }
+
+        // Buat test user
+        try {
+            User::firstOrCreate(
+                ['email' => 'test@example.com'],
+                [
+                    'name' => 'Test User',
+                    'password' => bcrypt('password'),
+                    'email_verified_at' => now(),
+                ]
+            );
+            $this->command->info("Test user created successfully.");
+        } catch (\Exception $e) {
+            $this->command->error("Failed to create test user: " . $e->getMessage());
+        }
     }
 }

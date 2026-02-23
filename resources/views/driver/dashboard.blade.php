@@ -385,19 +385,19 @@
     <!-- Stats row - 4 KOLOM SEJAJAR -->
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-number">3</div>
-            <div class="stat-label">Perjalanan hari ini</div>
+            <div class="stat-number">{{ $jumlahJadwalBulanIni ?? 0 }}</div>
+            <div class="stat-label">Perjalanan bulan ini</div>
         </div>
         <div class="stat-card">
-            <div class="stat-number">34</div>
-            <div class="stat-label">Total penumpang</div>
+            <div class="stat-number">{{ $jadwalAktif ?? 0 }}</div>
+            <div class="stat-label">Jadwal aktif</div>
         </div>
         <div class="stat-card">
-            <div class="stat-number">2</div>
-            <div class="stat-label">Paket hari ini</div>
+            <div class="stat-number">{{ $jadwalSelesai ?? 0 }}</div>
+            <div class="stat-label">Perjalanan selesai</div>
         </div>
         <div class="stat-card">
-            <div class="stat-number">5</div>
+            <div class="stat-number">{{ $totalJadwal ?? 0 }}</div>
             <div class="stat-label">Total perjalanan</div>
         </div>
     </div>
@@ -406,13 +406,17 @@
     <div class="main-grid">
         <!-- Profile Card -->
         <div class="profile-card">
-            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile" class="profile-image">
-            <div class="status-badge">Sedang Bekerja</div>
-            <h3 class="profile-name">Dimas Mahendra</h3>
+            @if($driver && $driver->avatar)
+                <img src="{{ asset('storage/' . $driver->avatar) }}" alt="Profile" class="profile-image">
+            @else
+                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile" class="profile-image">
+            @endif
+            <div class="status-badge">{{ $jadwalAktif > 0 ? 'Sedang Bekerja' : 'Siap Berangkat' }}</div>
+            <h3 class="profile-name">{{ $driver->name ?? 'Driver' }}</h3>
             <div class="profile-info">
-                <p><strong>NIK:</strong> 1223498761230002</p>
-                <p><strong>No. SIM:</strong> 02876549</p>
-                <p><strong>Kontak:</strong> 089654388976</p>
+                <p><strong>NIK:</strong> {{ $driver->nik ?? '-' }}</p>
+                <p><strong>No. SIM:</strong> {{ $driver->nomor_sim ?? '-' }}</p>
+                <p><strong>Kontak:</strong> {{ $driver->telepon ?? $driver->phone ?? '-' }}</p>
             </div>
         </div>
 
@@ -430,39 +434,60 @@
     <!-- REVISI: Jadwal Hari Ini Memanjang -->
     <div class="schedule-full-card">
         <h3 class="card-header">Jadwal Hari Ini</h3>
-        <table class="schedule-table-full">
-            <tr>
-                <td>Jadwal Shuttle</td>
-                <td>
-                    <strong>Jakarta - Bandung</strong><br>
-                    <span style="color: var(--secondary-color);">08.00 - 12.00 WIB</span><br>
-                    <small>Bus A - 12 Penumpang</small>
-                </td>
-            </tr>
-            <tr>
-                <td>Jadwal Paket</td>
-                <td>
-                    <strong>Tidak ada pengiriman</strong><br>
-                    <span style="color: #666;">Tidak ada jadwal pengiriman paket hari ini</span>
-                </td>
-            </tr>
-            <tr>
-                <td>Jadwal Armada</td>
-                <td>
-                    <strong>Perawatan Rutin</strong><br>
-                    <span style="color: var(--secondary-color);">14.00 - 16.00 WIB</span><br>
-                    <small>Bus B - Service berkala</small>
-                </td>
-            </tr>
-            <tr>
-                <td>Jadwal Tambahan</td>
-                <td>
-                    <strong>Bandung - Jakarta</strong><br>
-                    <span style="color: var(--secondary-color);">15.00 - 19.00 WIB</span><br>
-                    <small>Bus A - 8 Penumpang</small>
-                </td>
-            </tr>
-        </table>
+        @if(isset($schedules) && count($schedules) > 0)
+            <table class="schedule-table-full">
+                @foreach($schedules as $schedule)
+                <tr>
+                    <td>{{ $loop->iteration }}.
+                        @if(isset($schedule->masterRute) && $schedule->masterRute)
+                            {{ $schedule->masterRute->nama_rute ?? $schedule->rute ?? 'Jadwal' }}
+                        @else
+                            {{ $schedule->rute ?? 'Jadwal' }}
+                        @endif
+                    </td>
+                    <td>
+                        <strong>
+                            @if(isset($schedule->masterRute) && $schedule->masterRute)
+                                {{ $schedule->masterRute->kota_asal ?? 'Asal' }} - {{ $schedule->masterRute->kota_tujuan ?? 'Tujuan' }}
+                            @else
+                                {{ $schedule->rute ?? 'Rute tidak tersedia' }}
+                            @endif
+                        </strong><br>
+                        <span style="color: var(--secondary-color);">{{ $schedule->waktu_keberangkatan ?? '-' }} - {{ $schedule->waktu_kedatangan ?? '-' }}</span><br>
+                        <small>
+                            @if(isset($schedule->jadwal) && $schedule->jadwal && isset($schedule->jadwal->armada))
+                                {{ $schedule->jadwal->armada }} -
+                            @elseif($schedule->armada)
+                                {{ $schedule->armada }} -
+                            @endif
+                            {{ $schedule->kursi_terisi ?? 0 }}/{{ $schedule->total_kursi ?? 0 }} Penumpang
+                            @if($schedule->status)
+                                <span style="color: var(--secondary-color); font-weight: 600;">
+                                    ({{
+                                        $schedule->status === 'aktif' ? 'Aktif' :
+                                        ($schedule->status === 'selesai' ? 'Selesai' :
+                                        ($schedule->status === 'dibatalkan' ? 'Dibatalkan' :
+                                        ucfirst($schedule->status)))
+                                    }})
+                                </span>
+                            @endif
+                        </small>
+                    </td>
+                </tr>
+                @endforeach
+            </table>
+        @else
+            <table class="schedule-table-full">
+                <tr>
+                    <td style="text-align: center; color: #999;">
+                        Tidak ada jadwal hari ini
+                        @if(isset($totalJadwal) && $totalJadwal > 0)
+                            <br><small>(Total {{ $totalJadwal }} jadwal tersedia)</small>
+                        @endif
+                    </td>
+                </tr>
+            </table>
+        @endif
         <button class="btn btn-primary">Lihat Detail Jadwal</button>
     </div>
 </div>

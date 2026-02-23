@@ -16,6 +16,7 @@ class Pemesanan extends Model
         'kode_booking',
         'customer_id',
         'jadwal_id',
+        'id_jadwal_driver',
         'jumlah_penumpang',
         'harga_total',
         'diskon',
@@ -55,10 +56,16 @@ class Pemesanan extends Model
         return $this->belongsTo(User::class, 'customer_id');
     }
 
-    // Relasi ke jadwal
+    // Relasi ke jadwal (admin jadwal - legacy)
     public function jadwal()
     {
         return $this->belongsTo(Jadwal::class, 'jadwal_id');
+    }
+
+    // Relasi ke driver jadwal (main reference)
+    public function driverJadwal()
+    {
+        return $this->belongsTo(DriverJadwal::class, 'id_jadwal_driver', 'id_jadwal_driver');
     }
 
     // Relasi ke detail penumpang

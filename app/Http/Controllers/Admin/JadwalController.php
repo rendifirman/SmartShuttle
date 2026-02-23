@@ -1,93 +1,371 @@
 <?php
-// app/Http/Controllers/Admin/JadwalController.php
 
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Jadwal;
+use App\Models\Shuttle;
+use App\Models\Rute;
+use App\Models\User;
+use App\Models\Branch;
+use Carbon\Carbon;
 
 class JadwalController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        return view('admin.jadwal', [
-            'title' => 'Master Data - Jadwal',
-            'pageTitle' => 'Jadwal'
-        ]);
+        $query = Jadwal::with(['shuttle', 'rutes', 'driverJadwal', 'driverJadwal.driver', 'driver'])
+            ->orderBy('tanggal_keberangkatan', 'desc')
+            ->orderBy('waktu_keberangkatan', 'asc');
+
+        // Filter logic
+        if ($request->filled('rute_id')) {
+            $query->whereHas('rutes', function($q) use ($request) {
+                $q->where('rute_id', $request->rute_id);
+            });
+        }
+
+        if ($request->filled('tanggal')) {
+            $query->whereDate('tanggal_keberangkatan', $request->tanggal);
+        }
+
+        if ($request->filled('status')) {
+            if ($request->status == 'hampir_penuh') {
+                $query->where('status', 'tersedia')
+                    ->whereHas('shuttle', function($q) {
+                        $q->whereRaw('jadwals.kursi_tersedia <= (shuttles.kapasitas_kursi * 0.2)');
+                    });
+            } elseif ($request->status == 'penuh') {
+                $query->where(function($q) {
+                    $q->where('status', 'penuh')
+                      ->orWhere('kursi_tersedia', '<=', 0);
+                });
+            } else {
+                $query->where('status', $request->status);
+            }
+        }
+
+        if ($request->filled('shuttle_id')) {
+            $query->where('shuttle_id', $request->shuttle_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->whereHas('shuttle', function($q) use ($search) {
+                    $q->where('nama_shuttle', 'like', "%{$search}%")
+                      ->orWhere('plat_nomor', 'like', "%{$search}%");
+                })->orWhereHas('rutes', function($q) use ($search) {
+                    $q->where('nama_rute', 'like', "%{$search}%")
+                      ->orWhere('kota_asal', 'like', "%{$search}%")
+                      ->orWhere('kota_tujuan', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        $jadwals = $query->paginate(10);
+
+        // Statistics
+        $totalJadwal = Jadwal::count();
+
+        $tersedia = Jadwal::where('status', 'tersedia')
+            ->where('kursi_tersedia', '>', 0)
+            ->count();
+
+        $hampirPenuh = Jadwal::where('status', 'tersedia')
+            ->where('kursi_tersedia', '>', 0)
+            ->with(['shuttle'])
+            ->get()
+            ->filter(function($jadwal) {
+                $totalKursi = $jadwal->shuttle->kapasitas_kursi ?? $jadwal->shuttle->total_kursi ?? 0;
+                if ($totalKursi == 0) return false;
+                $persentase = ($jadwal->kursi_tersedia / $totalKursi) * 100;
+                return $persentase <= 20;
+            })->count();
+
+        $penuh = Jadwal::where(function($q) {
+                $q->where('status', 'penuh')
+                  ->orWhere('kursi_tersedia', '<=', 0);
+            })->count();
+
+        $shuttles = Shuttle::all();
+        $rutes = Rute::all();
+
+        return view('admin.jadwal-index', compact(
+            'jadwals',
+            'totalJadwal',
+            'tersedia',
+            'hampirPenuh',
+            'penuh',
+            'shuttles',
+            'rutes'
+        ));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        return view('admin.jadwal', [
-            'title' => 'Tambah Jadwal',
-            'pageTitle' => 'Tambah Jadwal'
-        ]);
+        $shuttles = Shuttle::all();
+        $rutes = Rute::all();
+
+        // ★★★ Jangan load semua drivers di awal - akan di-populate via AJAX setelah rute dipilih ★★★
+        // Ini untuk performa yang lebih baik
+
+        return view('admin.jadwal-create', compact('shuttles', 'rutes'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        // Simpan data jadwal ke database
-        // Di sini Anda bisa menambahkan logika penyimpanan
-        // return redirect()->route('admin.jadwal.index')->with('success', 'Jadwal berhasil ditambahkan');
-        
-        // Untuk sementara, redirect ke index
-        return redirect()->route('admin.jadwal');
+        $validated = $request->validate([
+            'shuttle_id' => 'required|exists:shuttles,id',
+            'rute_id' => 'required|exists:rutes,id',
+            'tanggal_keberangkatan' => 'required|date|after_or_equal:today',
+            'waktu_keberangkatan' => 'required',
+            'waktu_kedatangan' => 'required',
+            'driver_id' => 'nullable|exists:users,id'  // ★★★ Tambahkan validasi untuk driver_id
+        ]);
+
+        // Tidak ada validasi waktu keberangkatan harus lebih awal
+        // Bisa 21:00 -> 03:30 (melewati tengah malam)
+
+        $shuttle = Shuttle::findOrFail($request->shuttle_id);
+        $rute = Rute::findOrFail($request->rute_id);
+        $totalKursi = $shuttle->kapasitas_kursi ?? $shuttle->total_kursi ?? 0;
+
+        // Ambil harga dari rute (dari tarif yang dipilih)
+        $hargaRute = $rute->harga_dasar ?? 0;
+
+        // ★★★ FITUR BARU: Tentukan apakah ini jadwal global atau assign ke driver ★★★
+        $isGlobal = empty($request->driver_id);
+
+        $jadwal = Jadwal::create([
+            'shuttle_id' => $request->shuttle_id,
+            'driver_id' => $request->driver_id ?? null,  // AUTO_ACCEPT: assign langsung ke driver
+            'tanggal_keberangkatan' => $request->tanggal_keberangkatan,
+            'waktu_keberangkatan' => $request->waktu_keberangkatan,
+            'waktu_kedatangan' => $request->waktu_kedatangan,
+            'harga_total' => $hargaRute,
+            'kursi_tersedia' => $totalKursi,
+            'status' => 'tersedia',
+            'is_global_schedule' => $isGlobal,  // MANUAL_CONFIRM: jadwal global
+            'status_admin' => $request->driver_id ? 'diambil' : null
+        ]);
+
+        $jadwal->rutes()->attach($request->rute_id, [
+            'urutan' => 1,
+            'durasi_segment' => $this->calculateDuration($request->waktu_keberangkatan, $request->waktu_kedatangan),
+            'harga_segment' => $hargaRute,
+        ]);
+
+        // ★★★ Jika ada driver yang di-assign, buat DriverJadwal langsung ★★★
+        if ($request->driver_id) {
+            $jadwal->storeDriverJadwal($request->driver_id);
+            $message = 'Jadwal berhasil dibuat dan ditugaskan ke driver!';
+        } else {
+            $message = 'Jadwal global berhasil dibuat! Dapat diambil oleh driver dengan mode MANUAL_CONFIRM.';
+        }
+
+        return redirect()->route('admin.jadwal.index')
+            ->with('success', $message);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show($id)
-    {
-        // Ambil data jadwal berdasarkan ID
-        // return view('admin.jadwal.show', compact('jadwal'));
-        
-        // Untuk sementara, redirect ke index
-        return redirect()->route('admin.jadwal');
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit($id)
     {
-        // Ambil data jadwal berdasarkan ID
-        // return view('admin.jadwal.edit', compact('jadwal'));
-        
-        // Untuk sementara, redirect ke index
-        return redirect()->route('admin.jadwal');
+        $jadwal = Jadwal::with(['shuttle', 'rutes'])->findOrFail($id);
+        $shuttles = Shuttle::all();
+        $rutes = Rute::all();
+
+        $totalKursi = $jadwal->shuttle->kapasitas_kursi ?? $jadwal->shuttle->total_kursi ?? 0;
+
+        return view('admin.jadwal-edit', compact('jadwal', 'shuttles', 'rutes', 'totalKursi'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, $id)
     {
-        // Update data jadwal
-        // return redirect()->route('admin.jadwal.index')->with('success', 'Jadwal berhasil diperbarui');
-        
-        // Untuk sementara, redirect ke index
-        return redirect()->route('admin.jadwal');
+        $validated = $request->validate([
+            'shuttle_id' => 'required|exists:shuttles,id',
+            'rute_id' => 'required|exists:rutes,id',
+            'tanggal_keberangkatan' => 'required|date',
+            'waktu_keberangkatan' => 'required',
+            'waktu_kedatangan' => 'required',
+            'kursi_tersedia' => 'required|integer|min:0',
+        ]);
+
+        $jadwal = Jadwal::findOrFail($id);
+        $shuttle = Shuttle::findOrFail($request->shuttle_id);
+        $rute = Rute::findOrFail($request->rute_id);
+        $totalKursi = $shuttle->kapasitas_kursi ?? $shuttle->total_kursi ?? 0;
+
+        // Ambil harga dari rute
+        $hargaRute = $rute->harga_dasar ?? 0;
+
+        if ($request->kursi_tersedia > $totalKursi) {
+            return back()->withErrors(['kursi_tersedia' => 'Kursi tersedia tidak boleh melebihi kapasitas armada'])->withInput();
+        }
+
+        $status = $this->calculateStatus($request->kursi_tersedia, $shuttle);
+
+        $jadwal->update([
+            'shuttle_id' => $request->shuttle_id,
+            'tanggal_keberangkatan' => $request->tanggal_keberangkatan,
+            'waktu_keberangkatan' => $request->waktu_keberangkatan,
+            'waktu_kedatangan' => $request->waktu_kedatangan,
+            'harga_total' => $hargaRute,
+            'kursi_tersedia' => $request->kursi_tersedia,
+            'status' => $status,
+        ]);
+
+        $jadwal->rutes()->sync([$request->rute_id => [
+            'urutan' => 1,
+            'durasi_segment' => $this->calculateDuration($request->waktu_keberangkatan, $request->waktu_kedatangan),
+            'harga_segment' => $hargaRute,
+        ]]);
+
+        return redirect()->route('admin.jadwal.index')
+            ->with('success', 'Jadwal berhasil diperbarui!');
+    }
+
+    public function destroy($id)
+    {
+        $jadwal = Jadwal::findOrFail($id);
+
+        if ($jadwal->driverSchedules()->exists()) {
+            return redirect()->route('admin.jadwal.index')
+                ->with('error', 'Jadwal tidak dapat dihapus karena sudah diambil driver.');
+        }
+
+        $jadwal->delete();
+
+        return redirect()->route('admin.jadwal.index')
+            ->with('success', 'Jadwal berhasil dihapus!');
+    }
+
+    private function calculateDuration($waktuBerangkat, $waktuTiba)
+    {
+        $berangkat = Carbon::parse($waktuBerangkat);
+        $tiba = Carbon::parse($waktuTiba);
+
+        // Jika waktu tiba lebih kecil dari waktu berangkat, berarti melewati tengah malam
+        if ($tiba < $berangkat) {
+            $tiba->addDay(); // Tambah 1 hari
+        }
+
+        return $berangkat->diffInMinutes($tiba);
+    }
+
+    private function calculateStatus($kursiTersedia, $shuttle)
+    {
+        if ($kursiTersedia <= 0) {
+            return 'penuh';
+        }
+
+        $totalKursi = $shuttle->kapasitas_kursi ?? $shuttle->total_kursi ?? 0;
+        if ($totalKursi == 0) {
+            return 'tersedia';
+        }
+
+        $persentase = ($kursiTersedia / $totalKursi) * 100;
+        if ($persentase <= 20) {
+            return 'hampir_penuh';
+        }
+
+        return 'tersedia';
+    }
+
+    // Method untuk menampilkan data penumpang/transaksi dari jadwal
+    public function showPenumpang($id)
+    {
+        $jadwal = Jadwal::with(['shuttle', 'rutes'])->findOrFail($id);
+
+        // Ambil semua pemesanan yang terkait dengan jadwal ini
+        $pemesanan = Jadwal::findOrFail($id)->pemesanan()->with(['user', 'detailPenumpang', 'pembayaran', 'kursiTerpesan'])->get();
+
+        // Jika tidak ada pemesanan langsung, coba cari dari DriverJadwal
+        if ($jadwal->driverJadwal && $pemesanan->isEmpty()) {
+            $pemesanan = \App\Models\Pemesanan::where('id_jadwal_driver', $jadwal->driverJadwal->id_jadwal_driver)
+                ->with(['user', 'detailPenumpang', 'pembayaran', 'kursiTerpesan'])
+                ->get();
+        }
+
+        return view('admin.jadwal-penumpang', compact('jadwal', 'pemesanan'));
     }
 
     /**
-     * Remove the specified resource from storage.
+     * ★★★ Fetch drivers by route/branch (AJAX endpoint) ★★★
+     * Filter drivers yang berada di cabang asal rute yang dipilih
+     * Gunakan cabang_asal_id langsung dari rute (FK)
      */
-    public function destroy($id)
+    public function getDriversByRute(Request $request)
     {
-        // Hapus data jadwal
-        // return redirect()->route('admin.jadwal.index')->with('success', 'Jadwal berhasil dihapus');
-        
-        // Untuk sementara, redirect ke index
-        return redirect()->route('admin.jadwal');
+        try {
+            $ruteId = $request->get('rute_id');
+
+            if (!$ruteId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Rute ID is required',
+                    'drivers' => []
+                ]);
+            }
+
+            // Get the route
+            $rute = Rute::findOrFail($ruteId);
+
+            // ★ Use cabang_asal_id directly (FK relationship)
+            if (!$rute->cabang_asal_id) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Route has no origin branch defined',
+                    'drivers' => [],
+                    'branch_id' => null
+                ]);
+            }
+
+            // Get branch by FK
+            $branch = Branch::where('id', $rute->cabang_asal_id)
+                ->where('status', 'aktif')
+                ->first();
+
+            if (!$branch) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Origin branch not found or inactive',
+                    'drivers' => [],
+                    'branch_id' => null
+                ]);
+            }
+
+            // Get drivers from the origin branch using Spatie Permission relationship
+            // Filter: branch matches AND has 'driver' role AND status active AND not MANUAL_CONFIRM mode
+            $drivers = User::where('branch_id', $branch->id)
+                ->where('status', 'active')
+                ->where('schedule_accept_mode', '!=', 'MANUAL_CONFIRM')
+                ->whereHas('roles', function($q) {
+                    $q->where('name', 'driver');
+                })
+                ->orderBy('name')
+                ->select('id', 'name', 'email')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'drivers' => $drivers,
+                'branch_id' => $branch->id,
+                'branch_name' => $branch->nama_cabang,
+                'message' => 'Drivers loaded successfully'
+            ]);
+        } catch (\Exception $e) {
+            // Log error untuk debugging
+            \Log::error('Error in getDriversByRute: ' . $e->getMessage(), [
+                'rute_id' => $request->get('rute_id'),
+                'exception' => $e
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading drivers: ' . $e->getMessage(),
+                'drivers' => []
+            ], 500);
+        }
     }
 }

@@ -1,7 +1,5 @@
 <!-- resources/views/layouts/header.blade.php -->
 <style>
-
-    
     /* CSS Variables untuk Header */
     :root {
         --header-primary: #123352;
@@ -207,6 +205,76 @@
         color: white;
     }
 
+    /* ========== AVATAR STYLING ========== */
+    .profile-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, var(--header-secondary), var(--header-secondary-light));
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        flex-shrink: 0;
+        font-size: 14px;
+        text-transform: uppercase;
+        font-family: 'Roboto', sans-serif;
+        letter-spacing: 0.5px;
+        min-width: 36px;
+        min-height: 36px;
+        overflow: hidden;
+    }
+
+    .profile-avatar.initials-only {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        display: block;
+    }
+
+    .mobile-profile-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, var(--header-secondary), var(--header-secondary-light));
+        box-shadow: 0 4px 12px rgba(255, 88, 30, 0.3);
+        flex-shrink: 0;
+        font-size: 20px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        min-width: 50px;
+        min-height: 50px;
+        overflow: hidden;
+    }
+
+    .mobile-profile-avatar.initials-only {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .mobile-profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        display: block;
+    }
+
     /* ========== PROFILE DROPDOWN ========== */
     .profile-wrapper {
         position: relative;
@@ -237,30 +305,6 @@
 
     .profile-btn.active {
         background: rgba(18, 51, 82, 0.1);
-    }
-
-    .profile-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        color: #fff;
-        background: linear-gradient(135deg, var(--header-secondary), var(--header-secondary-light));
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-        flex-shrink: 0;
-        font-size: 14px;
-        text-transform: uppercase;
-        font-family: 'Roboto', sans-serif;
-    }
-
-    .profile-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 50%;
     }
 
     .profile-name {
@@ -375,7 +419,7 @@
             background: white !important;
             box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
         }
-        
+
         .custom-navbar.scrolled {
             background: white !important;
             box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
@@ -454,10 +498,20 @@
             height: 32px;
             font-size: 13px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            min-width: 32px;
+            min-height: 32px;
         }
 
         .profile-name {
             display: none !important; /* Sembunyikan nama di mobile */
+        }
+
+        .mobile-profile-avatar {
+            width: 45px;
+            height: 45px;
+            font-size: 18px;
+            min-width: 45px;
+            min-height: 45px;
         }
 
         /* DROPDOWN MENU MOBILE - MUNCUL DI BAWAH PROFILE BUTTON */
@@ -492,13 +546,13 @@
         }
 
         @keyframes slideDownMobile {
-            from { 
-                opacity: 0; 
-                transform: translateY(-10px) scale(0.95); 
+            from {
+                opacity: 0;
+                transform: translateY(-10px) scale(0.95);
             }
-            to { 
-                opacity: 1; 
-                transform: translateY(0) scale(1); 
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
             }
         }
 
@@ -696,22 +750,6 @@
             background: rgba(255, 255, 255, 0.1);
         }
 
-        .mobile-profile-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            color: #fff;
-            background: linear-gradient(135deg, var(--header-secondary), var(--header-secondary-light));
-            box-shadow: 0 4px 12px rgba(255, 88, 30, 0.3);
-            flex-shrink: 0;
-            font-size: 20px;
-            text-transform: uppercase;
-        }
-
         .mobile-profile-info {
             flex: 1;
             min-width: 0;
@@ -792,23 +830,25 @@
             height: 36px;
             font-size: 1.25rem;
         }
-        
+
         .dropdown-menu {
             top: 65px !important;
             right: 15px !important;
             min-width: 160px;
         }
-        
+
         .profile-btn {
             padding: 4px 6px;
         }
-        
+
         .profile-avatar {
             width: 30px;
             height: 30px;
             font-size: 12px;
+            min-width: 30px;
+            min-height: 30px;
         }
-        
+
         .dropdown-menu a,
         .dropdown-menu button[type="submit"] {
             padding: 10px 14px;
@@ -846,11 +886,11 @@
                 <i class="fas fa-bars"></i>
                 <i class="fas fa-times"></i>
             </button>
-            
+
             <div class="nav-brand">
                 <img src="{{ asset('/images/smartshuttlelogo.png') }}" alt="Smart Shuttle">
             </div>
-            
+
             <!-- NAV MENU (Tampil di desktop, disembunyikan di mobile) -->
             <div class="nav-menu" id="nav-menu">
                 <ul class="nav-links">
@@ -858,65 +898,115 @@
                         $currentRoute = Route::currentRouteName();
                         $currentPath = request()->path();
                     @endphp
-                    
-                    <li><a href="/customer/beranda" 
+
+                    <li><a href="/customer/beranda"
                            class="{{ $currentRoute == 'customer.beranda' || $currentPath == 'customer/beranda' ? 'active' : '' }}">
                            Beranda
                        </a>
                     </li>
-                    
-                    <li><a href="{{ route('customer.search') }}" 
+
+                    <li><a href="{{ route('customer.search') }}"
                            class="{{ $currentRoute == 'customer.search' || str_contains($currentPath, 'search') ? 'active' : '' }}">
                            Cari Tiket
                        </a>
                     </li>
-                    
-                    <li><a href="{{ route('customer.outlet') }}" 
+
+                    <li><a href="{{ route('customer.outlet') }}"
                            class="{{ $currentRoute == 'customer.outlet' || str_contains($currentPath, 'outlet') ? 'active' : '' }}">
                            Outlet
                        </a>
                     </li>
-                    
-                    <li><a href="{{ route('customer.smartsend') }}" 
+
+                    <li><a href="{{ route('customer.smartsend') }}"
                            class="{{ $currentRoute == 'customer.smartsend' || str_contains($currentPath, 'smartsend') ? 'active' : '' }}">
                            Kirim Paket
                        </a>
                     </li>
-                    
-                    <li><a href="#" onclick="alert('Fitur Sewa Armada akan segera hadir!'); return false;" 
-                           class="{{ $currentRoute == 'customer.sewa-armada' ? 'active' : '' }}">
-                           Sewa Armada
-                       </a>
-                    </li>
-                    
-                    <li><a href="{{ route('customer.contact') }}" 
+
+                <li><a href="{{ route('customer.smartrent') }}"
+                            class="{{ $currentRoute == 'customer.smartrent' || str_contains($currentPath, 'smartrent') ? 'active' : '' }}">
+                            Sewa Armada
+                        </a>
+                        </li>
+
+                    <li><a href="{{ route('customer.contact') }}"
                            class="{{ $currentRoute == 'customer.contact' || str_contains($currentPath, 'contact') ? 'active' : '' }}">
                            Kontak
                        </a>
                     </li>
-                    
-                    <li><a href="{{ route('customer.cek-reservasi') }}" 
+
+                    <li><a href="{{ route('customer.cek-reservasi') }}"
                            class="{{ $currentRoute == 'customer.cek-reservasi' || str_contains($currentPath, 'cek-reservasi') ? 'active' : '' }}">
                            Cek Reservasi
                        </a>
                     </li>
                 </ul>
             </div>
-            
+
             <div class="nav-auth">
-                @if(session()->has('user') && isset(session('user')['id']))
+                <!-- BAGIAN AVATAR DI NAVBAR -->
+                @if($userSession && isset($userSession['id']))
+                    @php
+                        $user = $userSession;
+                        $userName = $user['name'] ?? 'User';
+                        $avatarUrl = $user['avatar'] ?? null;
+
+                        // Generate initials dari nama user
+                        $initials = 'GU'; // Guest User default
+                        if (!empty($userName)) {
+                            $nameParts = explode(' ', trim($userName));
+                            if (count($nameParts) >= 2) {
+                                // Jika ada 2 kata atau lebih: ambil huruf pertama dari kata pertama dan terakhir
+                                $initials = strtoupper(substr($nameParts[0], 0, 1) . substr(end($nameParts), 0, 1));
+                            } else {
+                                // Jika hanya satu kata: ambil 2 huruf pertama
+                                $initials = strtoupper(substr($userName, 0, 2));
+                            }
+                        }
+
+                        // Debug: cek apa yang ada di avatarUrl
+                        // dd($avatarUrl, session()->all());
+
+                        // Tentukan apakah ada avatar yang valid
+                        $hasValidAvatar = false;
+
+                        if ($avatarUrl) {
+                            // Cek jika avatar adalah path storage (format: 'avatars/filename.jpg')
+                            if (str_starts_with($avatarUrl, 'avatars/')) {
+                                $hasValidAvatar = true;
+                                $avatarUrl = asset('storage/' . $avatarUrl);
+                            }
+                            // Cek jika avatar sudah URL lengkap
+                            elseif (filter_var($avatarUrl, FILTER_VALIDATE_URL)) {
+                                $hasValidAvatar = true;
+                            }
+                            // Cek jika avatar adalah path public
+                            elseif (str_starts_with($avatarUrl, 'public/avatars/')) {
+                                $hasValidAvatar = true;
+                                $avatarUrl = asset(str_replace('public/', 'storage/', $avatarUrl));
+                            }
+                        }
+                    @endphp
+
                     <div class="profile-wrapper">
                         <button id="profile-dropdown" class="profile-btn" type="button" aria-expanded="false">
-                            @if(!empty(session('user')['avatar']))
+                            @if($hasValidAvatar && $avatarUrl)
                                 <span class="profile-avatar">
-                                    <img src="{{ session('user')['avatar'] }}" alt="avatar">
+                                    <img src="{{ $avatarUrl }}"
+                                         alt="Avatar {{ $userName }}"
+                                         onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML='{{ $initials }}'; this.parentElement.classList.add('initials-only');">
                                 </span>
                             @else
-                                <span class="profile-avatar">{{ strtoupper(substr(session('user')['name'] ?? 'U', 0, 1)) }}</span>
+                                <span class="profile-avatar initials-only">{{ $initials }}</span>
                             @endif
-                            <span class="profile-name">{{ strlen(session('user')['name'] ?? '') > 12 ? substr(session('user')['name'], 0, 12).'...' : (session('user')['name'] ?? 'User') }}</span>
+
+                            <span class="profile-name">
+                                {{ strlen($userName) > 12 ? substr($userName, 0, 12).'...' : $userName }}
+                            </span>
                             <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
                         </button>
+
+                        <!-- Dropdown menu -->
                         <div id="dropdown-menu" class="dropdown-menu">
                             <a href="{{ route('customer.dashboardprofile') }}">
                                 <i class="fas fa-user-circle"></i>
@@ -959,20 +1049,52 @@
     </div>
 
     <div class="mobile-sidebar-content">
-        @if(session()->has('user') && isset(session('user')['id']))
+        @if($userSession && isset($userSession['id']))
+            @php
+                $mobileUser = $userSession;
+                $mobileUserName = $mobileUser['name'] ?? 'User';
+                $mobileAvatarUrl = $mobileUser['avatar'] ?? null;
+
+                // Generate initials untuk mobile
+                $mobileInitials = 'GU';
+                if (!empty($mobileUserName)) {
+                    $mobileNameParts = explode(' ', trim($mobileUserName));
+                    if (count($mobileNameParts) >= 2) {
+                        $mobileInitials = strtoupper(substr($mobileNameParts[0], 0, 1) . substr(end($mobileNameParts), 0, 1));
+                    } else {
+                        $mobileInitials = strtoupper(substr($mobileUserName, 0, 2));
+                    }
+                }
+
+                // Tentukan apakah ada avatar yang valid untuk mobile
+                $mobileHasValidAvatar = false;
+
+                if ($mobileAvatarUrl) {
+                    if (str_starts_with($mobileAvatarUrl, 'avatars/')) {
+                        $mobileHasValidAvatar = true;
+                        $mobileAvatarUrl = asset('storage/' . $mobileAvatarUrl);
+                    } elseif (filter_var($mobileAvatarUrl, FILTER_VALIDATE_URL)) {
+                        $mobileHasValidAvatar = true;
+                    } elseif (str_starts_with($mobileAvatarUrl, 'public/avatars/')) {
+                        $mobileHasValidAvatar = true;
+                        $mobileAvatarUrl = asset(str_replace('public/', 'storage/', $mobileAvatarUrl));
+                    }
+                }
+            @endphp
+
             <div class="mobile-profile-section" onclick="location.href='{{ route('customer.dashboardprofile') }}'">
-                @if(!empty(session('user')['avatar']))
+                @if($mobileHasValidAvatar && $mobileAvatarUrl)
                     <div class="mobile-profile-avatar">
-                        <img src="{{ session('user')['avatar'] }}" alt="avatar">
+                        <img src="{{ $mobileAvatarUrl }}"
+                             alt="Avatar {{ $mobileUserName }}"
+                             onerror="this.onerror=null; this.innerHTML='{{ $mobileInitials }}'; this.classList.add('initials-only');">
                     </div>
                 @else
-                    <div class="mobile-profile-avatar">
-                        {{ strtoupper(substr(session('user')['name'] ?? 'U', 0, 1)) }}
-                    </div>
+                    <div class="mobile-profile-avatar initials-only">{{ $mobileInitials }}</div>
                 @endif
                 <div class="mobile-profile-info">
-                    <div class="mobile-profile-name">{{ session('user')['name'] ?? 'User' }}</div>
-                    <div class="mobile-profile-email">{{ session('user')['email'] ?? '' }}</div>
+                    <div class="mobile-profile-name">{{ $mobileUserName }}</div>
+                    <div class="mobile-profile-email">{{ $mobileUser['email'] ?? '' }}</div>
                 </div>
             </div>
         @endif
@@ -982,49 +1104,49 @@
                 $currentRoute = Route::currentRouteName();
                 $currentPath = request()->path();
             @endphp
-            
+
             <li class="{{ $currentRoute == 'customer.beranda' || $currentPath == 'customer/beranda' ? 'active' : '' }}">
                 <a href="/customer/beranda">
                     <span class="mobile-nav-icon"><i class="fas fa-home"></i></span>
                     <span>Beranda</span>
                 </a>
             </li>
-            
+
             <li class="{{ $currentRoute == 'customer.search' || str_contains($currentPath, 'search') ? 'active' : '' }}">
                 <a href="{{ route('customer.search') }}">
                     <span class="mobile-nav-icon"><i class="fas fa-search"></i></span>
                     <span>Cari Tiket</span>
                 </a>
             </li>
-            
+
             <li class="{{ $currentRoute == 'customer.outlet' || str_contains($currentPath, 'outlet') ? 'active' : '' }}">
                 <a href="{{ route('customer.outlet') }}">
                     <span class="mobile-nav-icon"><i class="fas fa-store"></i></span>
                     <span>Outlet</span>
                 </a>
             </li>
-            
+
             <li class="{{ $currentRoute == 'customer.smartsend' || str_contains($currentPath, 'smartsend') ? 'active' : '' }}">
                 <a href="{{ route('customer.smartsend') }}">
                     <span class="mobile-nav-icon"><i class="fas fa-box"></i></span>
                     <span>Kirim Paket</span>
                 </a>
             </li>
-            
+
             <li>
                 <a href="#" onclick="alert('Fitur Sewa Armada akan segera hadir!'); return false;">
                     <span class="mobile-nav-icon"><i class="fas fa-car"></i></span>
                     <span>Sewa Armada</span>
                 </a>
             </li>
-            
+
             <li class="{{ $currentRoute == 'customer.contact' || str_contains($currentPath, 'contact') ? 'active' : '' }}">
                 <a href="{{ route('customer.contact') }}">
                     <span class="mobile-nav-icon"><i class="fas fa-phone"></i></span>
                     <span>Kontak</span>
                 </a>
             </li>
-            
+
             <li class="{{ $currentRoute == 'customer.cek-reservasi' || str_contains($currentPath, 'cek-reservasi') ? 'active' : '' }}">
                 <a href="{{ route('customer.cek-reservasi') }}">
                     <span class="mobile-nav-icon"><i class="fas fa-ticket-alt"></i></span>
@@ -1033,14 +1155,14 @@
             </li>
 
             <!-- Menu tambahan jika user sudah login -->
-            @if(session()->has('user') && isset(session('user')['id']))
+            @if($userSession && isset($userSession['id']))
                 <li class="{{ $currentRoute == 'customer.dashboardprofile' ? 'active' : '' }}">
                     <a href="{{ route('customer.dashboardprofile') }}">
                         <span class="mobile-nav-icon"><i class="fas fa-user-circle"></i></span>
                         <span>Profil</span>
                     </a>
                 </li>
-                
+
                 <li class="{{ $currentRoute == 'customer.riwayat' ? 'active' : '' }}">
                     <a href="{{ route('customer.riwayat') }}">
                         <span class="mobile-nav-icon"><i class="fas fa-history"></i></span>
@@ -1053,7 +1175,7 @@
 
     <div class="mobile-sidebar-bottom">
         <ul class="mobile-nav-menu">
-            @if(session()->has('user') && isset(session('user')['id']))
+            @if($userSession && isset($userSession['id']))
                 <li>
                     <form action="{{ route('customer.logout') }}" method="POST" style="display: none;" id="logout-form-mobile">
                         @csrf
@@ -1079,7 +1201,7 @@
 // NAVBAR GLOBAL SCRIPT
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Navbar script loaded - Mobile Profile di Kanan dengan Toggle');
-    
+
     // Elements
     const navbar = document.getElementById('navbar');
     const dropdownButton = document.getElementById('profile-dropdown');
@@ -1088,9 +1210,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const mobileSidebar = document.getElementById('mobile-sidebar');
     const mobileSidebarClose = document.getElementById('mobile-sidebar-close');
     const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
-    
+
     const isMobile = window.innerWidth <= 768;
-    
+
     /* ========== NAVBAR SCROLL ========== */
     if (navbar) {
         // Force white background on mobile
@@ -1098,7 +1220,7 @@ document.addEventListener('DOMContentLoaded', function() {
             navbar.style.background = 'white';
             navbar.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)';
         }
-        
+
         window.addEventListener('scroll', function () {
             if (!isMobile) {
                 if (window.scrollY > 50) {
@@ -1108,7 +1230,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }, { passive: true });
-        
+
         if (!isMobile && window.scrollY > 50) {
             navbar.classList.add('scrolled');
         }
@@ -1118,7 +1240,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dropdownButton && dropdownMenu) {
         dropdownButton.setAttribute('aria-haspopup', 'true');
         dropdownButton.setAttribute('aria-expanded', 'false');
-        
+
         // Function to close dropdown
         function closeDropdown() {
             dropdownMenu.classList.remove('show');
@@ -1126,29 +1248,29 @@ document.addEventListener('DOMContentLoaded', function() {
             dropdownButton.setAttribute('aria-expanded', 'false');
             document.body.style.overflow = ''; // Reset scroll
         }
-        
+
         // Function to open dropdown
         function openDropdown() {
             // Close sidebar if open on mobile
             if (isMobile && mobileSidebar && mobileSidebar.classList.contains('active')) {
                 closeMobileSidebar();
             }
-            
+
             dropdownMenu.classList.add('show');
             dropdownButton.classList.add('active');
             dropdownButton.setAttribute('aria-expanded', 'true');
-            
+
             // Prevent body scroll on mobile when dropdown is open
             if (isMobile) {
                 document.body.style.overflow = 'hidden';
             }
         }
-        
+
         // Toggle dropdown on click (klik bua, klik lagi tutup)
         dropdownButton.addEventListener('click', function (e) {
             e.stopPropagation();
             e.preventDefault();
-            
+
             // Cek apakah dropdown sedang terbuka
             if (dropdownMenu.classList.contains('show')) {
                 // Jika terbuka, tutup
@@ -1158,26 +1280,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 openDropdown();
             }
         });
-        
+
         // Close dropdown when clicking outside
         document.addEventListener('click', function (e) {
             if (dropdownMenu && dropdownMenu.classList.contains('show')) {
-                const isClickInside = dropdownMenu.contains(e.target) || 
+                const isClickInside = dropdownMenu.contains(e.target) ||
                                      dropdownButton.contains(e.target);
-                
+
                 if (!isClickInside) {
                     closeDropdown();
                 }
             }
         });
-        
+
         // Close with Escape key
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && dropdownMenu && dropdownMenu.classList.contains('show')) {
                 closeDropdown();
             }
         });
-        
+
         // Close when clicking links inside dropdown
         dropdownMenu.addEventListener('click', function (e) {
             if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') {
@@ -1188,12 +1310,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     /* ========== MOBILE SIDEBAR FUNCTIONS ========== */
     function toggleMobileSidebar() {
         if (mobileSidebar) {
             const isOpen = mobileSidebar.classList.contains('active');
-            
+
             if (isOpen) {
                 // Jika sedang terbuka, tutup
                 closeMobileSidebar();
@@ -1210,13 +1332,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (dropdownMenu && dropdownMenu.classList.contains('show')) {
                 closeDropdown();
             }
-            
+
             mobileSidebar.classList.add('active');
             mobileSidebarOverlay.classList.add('active');
             document.body.style.overflow = 'hidden';
             if (mobileMenuToggle) {
                 mobileMenuToggle.classList.add('active');
-    
             }
         }
     }
@@ -1228,11 +1349,10 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.style.overflow = '';
             if (mobileMenuToggle) {
                 mobileMenuToggle.classList.remove('active');
-          
             }
         }
     }
-    
+
     /* ========== EVENT LISTENERS ========== */
     // Open/close mobile sidebar dengan toggle
     if (mobileMenuToggle && mobileSidebar) {
@@ -1243,15 +1363,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Close mobile sidebar dengan tombol close
-    if (mobileSidebarClose) {
-        mobileSidebarClose.addEventListener('click', function(e) {
-            e.stopPropagation();
-            closeMobileSidebar();
-        });
-    }
-
-    // Close on overlay click
+    // Close mobile sidebar with overlay click
     if (mobileSidebarOverlay) {
         mobileSidebarOverlay.addEventListener('click', function(e) {
             // Jika dropdown profile sedang terbuka, jangan tutup sidebar
@@ -1262,13 +1374,13 @@ document.addEventListener('DOMContentLoaded', function() {
             closeMobileSidebar();
         });
     }
-    
+
     // Close sidebar when clicking links (except alerts)
     if (mobileSidebar) {
         const mobileNavLinks = mobileSidebar.querySelectorAll('a');
         mobileNavLinks.forEach(link => {
             const onclickAttr = link.getAttribute('onclick');
-            if (!onclickAttr || 
+            if (!onclickAttr ||
                 (!onclickAttr.includes('alert') && !onclickAttr.includes('submit'))) {
                 link.addEventListener('click', function(e) {
                     if (this.href && this.target !== '_blank') {
@@ -1278,24 +1390,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Close all on Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             if (mobileSidebar && mobileSidebar.classList.contains('active')) {
                 closeMobileSidebar();
             }
-            
+
             if (dropdownMenu && dropdownMenu.classList.contains('show')) {
                 closeDropdown();
             }
         }
     });
-    
+
     /* ========== WINDOW RESIZE HANDLER ========== */
     function handleResize() {
         const nowMobile = window.innerWidth <= 768;
-        
+
         // Force white background on mobile
         if (navbar) {
             if (nowMobile) {
@@ -1307,24 +1419,52 @@ document.addEventListener('DOMContentLoaded', function() {
                 navbar.style.boxShadow = '';
             }
         }
-        
+
         // Close mobile sidebar when resizing to desktop
         if (!nowMobile && mobileSidebar && mobileSidebar.classList.contains('active')) {
             closeMobileSidebar();
         }
-        
+
         // Always close dropdown on resize (safer)
         if (dropdownMenu && dropdownMenu.classList.contains('show')) {
             closeDropdown();
         }
     }
-    
+
     window.addEventListener('resize', handleResize);
-    
+
     // Initial setup for mobile
     if (isMobile && navbar) {
         navbar.style.background = 'white';
         navbar.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)';
     }
+
+    /* ========== AVATAR IMAGE ERROR HANDLING ========== */
+    const avatarImages = document.querySelectorAll('.profile-avatar img, .mobile-profile-avatar img');
+    avatarImages.forEach(img => {
+        img.addEventListener('error', function() {
+            console.log('Avatar image failed to load, showing initials');
+
+            const parent = this.parentElement;
+            const altText = this.alt || '';
+            const userName = altText.replace('Avatar ', '').replace('avatar ', '') || 'User';
+
+            // Get initials
+            let initials = 'GU';
+            if (userName && userName !== 'User') {
+                const words = userName.split(' ');
+                if (words.length >= 2) {
+                    initials = words[0].charAt(0) + words[words.length - 1].charAt(0);
+                } else {
+                    initials = userName.substring(0, 2);
+                }
+                initials = initials.toUpperCase();
+            }
+
+            // Replace image with initials
+            parent.innerHTML = initials;
+            parent.classList.add('initials-only');
+        });
+    });
 });
 </script>

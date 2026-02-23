@@ -15,12 +15,25 @@ use App\Models\MLayanan;
 use App\Models\Promo;
 use App\Models\Outlet;
 use App\Models\Artikel;
+use App\Models\MasterTarif;
+use App\Models\Pemesanan;
+use App\Models\Jadwal;
+use App\Models\DetailPenumpang;
+use App\Models\Transaksi;
 
 class AdminController extends Controller
 {
     public function dashboard()
     {
         return view('admin.dashboard');
+    }
+
+    /**
+     * Show admin login form
+     */
+    public function showLogin()
+    {
+        return $this->showLoginForm();
     }
 
     /**
@@ -43,24 +56,56 @@ class AdminController extends Controller
 
         $credentials = $request->only('email', 'password');
 
+        \Log::info('Admin login attempt', ['email' => $request->email]);
+
         if (Auth::guard('admin')->attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
 
             // Check if user has admin role
             $user = Auth::guard('admin')->user();
-            if (!$user->hasAnyRole(['admin_pusat', 'admin_cabang'])) {
+
+            \Log::info('Admin login - user found', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'roles' => $user->getRoleNames()->toArray(),
+                'status' => $user->status,
+                'branch_id' => $user->branch_id,
+            ]);
+
+            // Check user status
+            if ($user->status !== 'active') {
                 Auth::guard('admin')->logout();
+                \Log::warning('Admin login failed - inactive account', ['email' => $request->email]);
+                return back()->withErrors(['email' => 'Akun Anda tidak aktif.']);
+            }
+
+            // Check if user has admin role
+            if (!$user->hasAnyRole(['admin_pusat', 'admin_cabang', 'operator'])) {
+                Auth::guard('admin')->logout();
+                \Log::warning('Admin login failed - no admin role', [
+                    'email' => $request->email,
+                    'roles' => $user->getRoleNames()->toArray()
+                ]);
                 return back()->withErrors(['email' => 'Anda tidak memiliki akses admin.']);
             }
 
             // Check if branch admin has branch assignment
             if ($user->hasRole('admin_cabang') && !$user->branch_id) {
                 Auth::guard('admin')->logout();
+                \Log::warning('Admin login failed - branch admin without branch', ['email' => $request->email]);
                 return back()->withErrors(['email' => 'Akun admin cabang belum ditugaskan ke cabang manapun.']);
             }
 
+            \Log::info('Admin login successful', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'roles' => $user->getRoleNames()->toArray(),
+            ]);
+
             return redirect()->intended(route('admin.dashboard'));
         }
+
+        \Log::warning('Admin login failed - invalid credentials', ['email' => $request->email]);
 
         return back()->withErrors([
             'email' => 'Email atau password salah.'
@@ -78,15 +123,29 @@ class AdminController extends Controller
         return view('admin.kontak');
     }
 
+    /**
+     * Show contact form (using MMasterKontak model)
+     */
     public function kontakPerusahaan()
     {
-        $kontak = \App\Models\MMasterKontak::getDataKontak();
+        $kontak = MMasterKontak::getDataKontak();
         return view('admin.kontakperusahaan', compact('kontak'));
     }
 
+    /**
+     * Admin live view for driver locations (polling-based)
+     */
+    public function driverLocationsLive()
+    {
+        return view('admin.driver_locations_live');
+    }
+
+    /**
+     * Update contact (using MMasterKontak model)
+     */
     public function updateKontakPerusahaan(Request $request, $id)
     {
-        $kontak = \App\Models\MMasterKontak::findOrFail($id);
+        $kontak = MMasterKontak::findOrFail($id);
 
         $request->validate([
             'nama_perusahaan' => 'required|string|max:255',
@@ -312,141 +371,177 @@ class AdminController extends Controller
         return view('admin.outletperusahaan-create', compact('branches'));
     }
 
-   // UBAH DI storeOutlet method:
-public function storeOutlet(Request $request)
-{
-    $request->validate([
-        'branch_id' => 'required|exists:branches,id',
-        'nama_outlet' => 'required|string|max:255',
-        'alamat_lengkap' => 'required|string',
-        'telepon' => 'required|string|max:20',
-        'email' => 'nullable|email|max:255',
-        'tipe_outlet' => 'required|in:mall,pusat_perbelanjaan,perkantoran,stasiun,bandara,jalan_utama,kawasan_komersial,perumahan,kampus,rumah_sakit,hotel,wisata,pusat_kota,lainnya', // PAKAI tipe_outlet
-        'kapasitas_parkir' => 'nullable|integer|min:0',
-        'zona_pelayanan' => 'nullable|string|max:100',
-        'jam_operasional' => 'nullable|string|max:50',
-        'status' => 'required|in:aktif,nonaktif,maintenance',
-        'foto_outlet' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-    ]);
+    public function storeOutlet(Request $request)
+    {
+        $request->validate([
+            'branch_id' => 'required|exists:branches,id',
+            'nama_outlet' => 'required|string|max:255',
+            'alamat_lengkap' => 'required|string',
+            'telepon' => 'required|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'tipe_outlet' => 'required|in:mall,pusat_perbelanjaan,perkantoran,stasiun,bandara,jalan_utama,kawasan_komersial,perumahan,kampus,rumah_sakit,hotel,wisata,pusat_kota,lainnya',
+            'kapasitas_parkir' => 'nullable|integer|min:0',
+            'zona_pelayanan' => 'nullable|string|max:100',
+            'jam_operasional' => 'nullable|string|max:50',
+            'status' => 'required|in:aktif,nonaktif,maintenance',
+            'foto_outlet' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
 
+        // Generate kode outlet otomatis
+        $lastOutlet = Outlet::orderBy('id', 'desc')->first();
+        $nextNumber = $lastOutlet ? intval(substr($lastOutlet->kode_outlet, 2)) + 1 : 1;
+        $kodeOutlet = 'OT' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
 
-    // Generate kode outlet otomatis
-    $lastOutlet = Outlet::orderBy('id', 'desc')->first();
-    $nextNumber = $lastOutlet ? intval(substr($lastOutlet->kode_outlet, 2)) + 1 : 1;
-    $kodeOutlet = 'OT' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        // Get branch data for kota
+        $branch = Branch::find($request->branch_id);
 
-    // Get branch data for kota
-    $branch = Branch::find($request->branch_id);
+        // Handle fasilitas array
+        $fasilitas = $request->has('fasilitas') ? implode(', ', $request->fasilitas) : null;
 
-    // Handle fasilitas array
-    $fasilitas = $request->has('fasilitas') ? implode(', ', $request->fasilitas) : null;
+        // Handle file upload
+        $fotoPath = null;
+        if ($request->hasFile('foto_outlet')) {
+            $file = $request->file('foto_outlet');
+            $filename = time() . '_' . Str::slug($request->nama_outlet) . '.' . $file->getClientOriginalExtension();
 
-    // Handle file upload
-    $fotoPath = null;
-    if ($request->hasFile('foto_outlet')) {
-        $file = $request->file('foto_outlet');
-        $filename = time() . '_' . Str::slug($request->nama_outlet) . '.' . $file->getClientOriginalExtension();
-        
-        $path = 'images/outlets/';
-        if (!file_exists(public_path($path))) {
-            mkdir(public_path($path), 0777, true);
-        }
-        
-        $file->move(public_path($path), $filename);
-        $fotoPath = $path . $filename;
-    }
+            $path = 'images/outlets/';
+            if (!file_exists(public_path($path))) {
+                mkdir(public_path($path), 0777, true);
+            }
 
-   Outlet::create([
-        'branch_id' => $request->branch_id,
-        'kode_outlet' => $kodeOutlet,
-        'nama_outlet' => $request->nama_outlet,
-        'alamat_lengkap' => $request->alamat_lengkap,
-        'telepon' => $request->telepon,
-        'email' => $request->email,
-        'kota' => $branch->kota,
-        'tipe_outlet' => $request->tipe_outlet, // INI YANG PENTING
-        'kapasitas_parkir' => $request->kapasitas_parkir,
-        'zona_pelayanan' => $request->zona_pelayanan,
-        'jam_operasional' => $request->jam_operasional,
-        'foto_outlet' => $fotoPath,
-        'fasilitas' => $fasilitas,
-        'status' => $request->status,
-    ]);
-
-    return redirect()->route('admin.outletperusahaan')->with('success', 'Outlet berhasil ditambahkan.');
-}
-
-// UBAH METHOD updateOutlet - TAMBAHKAN DEBUG
-public function updateOutlet(Request $request, $id)
-{
-    $outlet = Outlet::findOrFail($id);
-
-    // Validasi - GUNAKAN tipe_outlet BUKAN tipe_lokasi!
-    $request->validate([
-        'nama_outlet' => 'required|string|max:255',
-        'branch_id' => 'required|exists:branches,id',
-        'alamat_lengkap' => 'required|string',
-        'telepon' => 'required|string|max:20',
-        'email' => 'nullable|email|max:255',
-        'tipe_outlet' => 'required|in:mall,pusat_perbelanjaan,perkantoran,stasiun,bandara,jalan_utama,kawasan_komersial,perumahan,kampus,rumah_sakit,hotel,wisata,pusat_kota,lainnya',
-        'kapasitas_parkir' => 'nullable|integer|min:0',
-        'zona_pelayanan' => 'nullable|string|max:100',
-        'jam_operasional' => 'nullable|string|max:50',
-        'status' => 'required|in:aktif,nonaktif,maintenance',
-        'foto_outlet' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-    ]);
-
-    // 1. Handle upload foto
-    if ($request->hasFile('foto_outlet')) {
-        if ($outlet->foto_outlet && file_exists(public_path($outlet->foto_outlet))) {
-            unlink(public_path($outlet->foto_outlet));
+            $file->move(public_path($path), $filename);
+            $fotoPath = $path . $filename;
         }
 
-        $file = $request->file('foto_outlet');
-        $filename = time() . '_' . Str::slug($outlet->nama_outlet) . '.' . $file->getClientOriginalExtension();
-        
-        $path = 'images/outlets/';
-        if (!file_exists(public_path($path))) {
-            mkdir(public_path($path), 0777, true);
+        Outlet::create([
+            'branch_id' => $request->branch_id,
+            'kode_outlet' => $kodeOutlet,
+            'nama_outlet' => $request->nama_outlet,
+            'alamat_lengkap' => $request->alamat_lengkap,
+            'telepon' => $request->telepon,
+            'email' => $request->email,
+            'kota' => $branch->kota,
+            'tipe_outlet' => $request->tipe_outlet,
+            'kapasitas_parkir' => $request->kapasitas_parkir,
+            'zona_pelayanan' => $request->zona_pelayanan,
+            'jam_operasional' => $request->jam_operasional,
+            'foto_outlet' => $fotoPath,
+            'fasilitas' => $fasilitas,
+            'status' => $request->status,
+        ]);
+
+        return redirect()->route('admin.outletperusahaan')->with('success', 'Outlet berhasil ditambahkan.');
+    }
+
+    public function editOutlet($id)
+    {
+        $outlet = Outlet::with('branch')->findOrFail($id);
+        $branches = Branch::where('status', 'aktif')->get();
+
+        // Parse fasilitas string ke array dengan benar
+        $selectedFacilities = [];
+
+        if ($outlet->fasilitas) {
+            // Bersihkan string
+            $cleanString = trim($outlet->fasilitas, ' "[]\'');
+            if (!empty($cleanString)) {
+                $facilitiesArray = explode(',', $cleanString);
+                foreach ($facilitiesArray as $facility) {
+                    $trimmed = trim($facility, ' "[]\'');
+                    if (!empty($trimmed) && strtolower($trimmed) !== 'null') {
+                        $selectedFacilities[] = $trimmed;
+                    }
+                }
+            }
         }
-        
-        $file->move(public_path($path), $filename);
-        $outlet->foto_outlet = $path . $filename;
+
+        // Tambahkan dari boolean fields jika ada
+        if ($outlet->tersedia_toilet && !in_array('Toilet', $selectedFacilities)) {
+            $selectedFacilities[] = 'Toilet';
+        }
+        if ($outlet->tersedia_musholla && !in_array('Musholla', $selectedFacilities)) {
+            $selectedFacilities[] = 'Musholla';
+        }
+        if ($outlet->tersedia_atm && !in_array('ATM', $selectedFacilities)) {
+            $selectedFacilities[] = 'ATM';
+        }
+        if ($outlet->tersedia_wifi && !in_array('WiFi', $selectedFacilities)) {
+            $selectedFacilities[] = 'WiFi';
+        }
+
+        return view('admin.outletperusahaan-edit', compact('outlet', 'branches', 'selectedFacilities'));
     }
 
-    // 2. Handle fasilitas
-    if ($request->has('fasilitas')) {
-        $fasilitasArray = $request->fasilitas;
-        $outlet->fasilitas = implode(', ', $fasilitasArray);
-        
-        $outlet->tersedia_toilet = in_array('Toilet', $fasilitasArray);
-        $outlet->tersedia_musholla = in_array('Musholla', $fasilitasArray);
-        $outlet->tersedia_atm = in_array('ATM', $fasilitasArray);
-        $outlet->tersedia_wifi = in_array('WiFi', $fasilitasArray);
-    } else {
-        $outlet->fasilitas = null;
-        $outlet->tersedia_toilet = false;
-        $outlet->tersedia_musholla = false;
-        $outlet->tersedia_atm = false;
-        $outlet->tersedia_wifi = false;
+    public function updateOutlet(Request $request, $id)
+    {
+        $outlet = Outlet::findOrFail($id);
+
+        $request->validate([
+            'nama_outlet' => 'required|string|max:255',
+            'branch_id' => 'required|exists:branches,id',
+            'alamat_lengkap' => 'required|string',
+            'telepon' => 'required|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'tipe_outlet' => 'required|in:mall,pusat_perbelanjaan,perkantoran,stasiun,bandara,jalan_utama,kawasan_komersial,perumahan,kampus,rumah_sakit,hotel,wisata,pusat_kota,lainnya',
+            'kapasitas_parkir' => 'nullable|integer|min:0',
+            'zona_pelayanan' => 'nullable|string|max:100',
+            'jam_operasional' => 'nullable|string|max:50',
+            'status' => 'required|in:aktif,nonaktif,maintenance',
+            'foto_outlet' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        // 1. Handle upload foto
+        if ($request->hasFile('foto_outlet')) {
+            if ($outlet->foto_outlet && file_exists(public_path($outlet->foto_outlet))) {
+                unlink(public_path($outlet->foto_outlet));
+            }
+
+            $file = $request->file('foto_outlet');
+            $filename = time() . '_' . Str::slug($outlet->nama_outlet) . '.' . $file->getClientOriginalExtension();
+
+            $path = 'images/outlets/';
+            if (!file_exists(public_path($path))) {
+                mkdir(public_path($path), 0777, true);
+            }
+
+            $file->move(public_path($path), $filename);
+            $outlet->foto_outlet = $path . $filename;
+        }
+
+        // 2. Handle fasilitas
+        if ($request->has('fasilitas')) {
+            $fasilitasArray = $request->fasilitas;
+            $outlet->fasilitas = implode(', ', $fasilitasArray);
+
+            $outlet->tersedia_toilet = in_array('Toilet', $fasilitasArray);
+            $outlet->tersedia_musholla = in_array('Musholla', $fasilitasArray);
+            $outlet->tersedia_atm = in_array('ATM', $fasilitasArray);
+            $outlet->tersedia_wifi = in_array('WiFi', $fasilitasArray);
+        } else {
+            $outlet->fasilitas = null;
+            $outlet->tersedia_toilet = false;
+            $outlet->tersedia_musholla = false;
+            $outlet->tersedia_atm = false;
+            $outlet->tersedia_wifi = false;
+        }
+
+        // 3. Update field lainnya
+        $outlet->update([
+            'branch_id' => $request->branch_id,
+            'nama_outlet' => $request->nama_outlet,
+            'alamat_lengkap' => $request->alamat_lengkap,
+            'telepon' => $request->telepon,
+            'email' => $request->email,
+            'tipe_outlet' => $request->tipe_outlet,
+            'kapasitas_parkir' => $request->kapasitas_parkir,
+            'zona_pelayanan' => $request->zona_pelayanan,
+            'jam_operasional' => $request->jam_operasional,
+            'status' => $request->status,
+        ]);
+
+        return redirect()->route('admin.outletperusahaan')->with('success', 'Outlet berhasil diperbarui.');
     }
 
-    // 3. Update field lainnya - HAPUS KOTA!
-    $outlet->update([
-        'branch_id' => $request->branch_id,
-        'nama_outlet' => $request->nama_outlet,
-        'alamat_lengkap' => $request->alamat_lengkap,
-        'telepon' => $request->telepon,
-        'email' => $request->email,
-        'tipe_outlet' => $request->tipe_outlet, // GUNAKAN tipe_outlet BUKAN tipe_lokasi
-        'kapasitas_parkir' => $request->kapasitas_parkir,
-        'zona_pelayanan' => $request->zona_pelayanan,
-        'jam_operasional' => $request->jam_operasional,
-        'status' => $request->status,
-    ]);
-
-    return redirect()->route('admin.outletperusahaan')->with('success', 'Outlet berhasil diperbarui.');
-}
     public function destroyOutlet($id)
     {
         $outlet = Outlet::findOrFail($id);
@@ -721,189 +816,13 @@ public function updateOutlet(Request $request, $id)
         return redirect()->route('admin.promo')->with('success', 'Promo berhasil dihapus.');
     }
 
-    public function armada(Request $request)
+    // ★★★ TAMBAHKAN METHOD jadwal() INI ★★★
+    public function jadwal()
     {
-        // Get shuttles with filtering
-        $query = Shuttle::with('layanan');
-
-        // Apply filters
-        if ($request->filled('merk')) {
-            $query->where('merk', 'like', '%' . $request->merk . '%');
-        }
-
-        if ($request->filled('tipe')) {
-            $query->where('tipe_shuttle', $request->tipe);
-        }
-
-        if ($request->filled('warna')) {
-            $query->where('warna', $request->warna);
-        }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->filled('search')) {
-            $query->where(function($q) use ($request) {
-                $q->where('kode', 'like', '%' . $request->search . '%')
-                  ->orWhere('merk', 'like', '%' . $request->search . '%')
-                  ->orWhere('model', 'like', '%' . $request->search . '%')
-                  ->orWhere('nomor_polisi', 'like', '%' . $request->search . '%');
-            });
-        }
-
-        $shuttles = $query->paginate(10);
-
-        // Get summary data
-        $totalShuttles = Shuttle::count();
-        $activeShuttles = Shuttle::where('status', 'aktif')->count();
-        $inactiveShuttles = Shuttle::where('status', 'tidak-aktif')->count();
-        $serviceShuttles = Shuttle::where('status', 'perbaikan')->count();
-
-        // Get unique brands/types/colors for filter dropdown
-        $brands = Shuttle::distinct()->pluck('merk')->filter()->sort()->values();
-        $types = Shuttle::distinct()->pluck('tipe_shuttle')->filter()->sort()->values();
-        $colors = Shuttle::distinct()->pluck('warna')->filter()->sort()->values();
-
-        return view('admin.armada', compact(
-            'shuttles',
-            'totalShuttles',
-            'activeShuttles',
-            'inactiveShuttles',
-            'serviceShuttles',
-            'brands',
-            'types',
-            'colors'
-        ));
-    }
-
-    // Shuttle CRUD Methods
-    public function createShuttle()
-    {
-        $layanans = \App\Models\MLayanan::all();
-        return view('admin.armada-create', compact('layanans'));
-    }
-
-    public function storeShuttle(Request $request)
-    {
-        $request->validate([
-            'layanan_id' => 'required|exists:m_layanan,id_layanan',
-            'kode' => 'required|string|max:20|unique:shuttles,kode',
-            'nama_shuttle' => 'required|string|max:255',
-            'merk' => 'required|string|max:100',
-            'model' => 'required|string|max:100',
-            'tipe_shuttle' => 'required|string|max:50',
-            'tahun' => 'required|integer|min:2000|max:' . (date('Y') + 1),
-            'warna' => 'required|string|max:50',
-            'kapasitas_kursi' => 'required|integer|min:1|max:50',
-            'nomor_polisi' => 'required|string|max:20|unique:shuttles,nomor_polisi',
-            'status' => 'required|in:aktif,tidak-aktif,perbaikan',
-            'jenis_kepemilikan' => 'required|in:milik-perusahaan,sewa,vendor',
-            'tanggal_masuk' => 'required|date',
-        ]);
-
-        $data = $request->all();
-
-        // Set defaults
-        $data['total_kursi'] = $request->kapasitas_kursi;
-        $data['fasilitas'] = $request->fasilitas ?? 'AC Double,WiFi High Speed,Charger USB-C';
-        $data['layout_kursi'] = \App\Models\KursiTerpesan::generateLayoutKursi($request->kapasitas_kursi);
-        $data['created_by'] = auth()->id();
-
-        // Handle kelengkapan array
-        if ($request->has('kelengkapan') && is_array($request->kelengkapan)) {
-            $data['kelengkapan'] = $request->kelengkapan;
-        }
-
-        Shuttle::create($data);
-
-        return redirect()->route('admin.armada')->with('success', 'Armada berhasil ditambahkan.');
-    }
-
-    public function editShuttle($id)
-    {
-        $shuttle = Shuttle::findOrFail($id);
-        $layanans = \App\Models\MLayanan::all();
-        return view('admin.armada-edit', compact('shuttle', 'layanans'));
-    }
-
-    public function updateShuttle(Request $request, $id)
-    {
-        $shuttle = Shuttle::findOrFail($id);
-
-        $request->validate([
-            'layanan_id' => 'required|exists:m_layanan,id_layanan',
-            'kode' => 'required|string|max:20|unique:shuttles,kode,' . $id,
-            'nama_shuttle' => 'required|string|max:255',
-            'merk' => 'required|string|max:100',
-            'model' => 'required|string|max:100',
-            'tipe_shuttle' => 'required|string|max:50',
-            'tahun' => 'required|integer|min:2000|max:' . (date('Y') + 1),
-            'warna' => 'required|string|max:50',
-            'kapasitas_kursi' => 'required|integer|min:1|max:50',
-            'nomor_polisi' => 'required|string|max:20|unique:shuttles,nomor_polisi,' . $id,
-            'status' => 'required|in:aktif,tidak-aktif,perbaikan',
-            'jenis_kepemilikan' => 'required|in:milik-perusahaan,sewa,vendor',
-            'tanggal_masuk' => 'required|date',
-            'nilai_asset' => 'nullable|numeric',
-            'fasilitas' => 'nullable|string',
-            'no_stnk' => 'nullable|string|max:50',
-            'masa_stnk' => 'nullable|date',
-            'no_kir' => 'nullable|string|max:50',
-            'masa_kir' => 'nullable|date',
-            'kelengkapan' => 'nullable|array',
-        ]);
-
-        $data = $request->all();
-
-        // Update total_kursi jika kapasitas berubah
-        if ($request->kapasitas_kursi != $shuttle->kapasitas_kursi) {
-            $data['total_kursi'] = $request->kapasitas_kursi;
-            $data['layout_kursi'] = \App\Models\KursiTerpesan::generateLayoutKursi($request->kapasitas_kursi);
-        }
-
-        // Handle kelengkapan array
-        if ($request->has('kelengkapan')) {
-            $kelengkapanArray = [];
-            foreach ($request->kelengkapan as $item) {
-                if (isset($item['name']) && !empty($item['name'])) {
-                    $kelengkapanArray[] = [
-                        'name' => $item['name'],
-                        'checked' => isset($item['checked']) ? true : false
-                    ];
-                }
-            }
-            $data['kelengkapan'] = $kelengkapanArray;
-        }
-
-        $shuttle->update($data);
-
-        return redirect()->route('admin.armada')->with('success', 'Armada berhasil diperbarui.');
-    }
-
-    public function destroyShuttle($id)
-    {
-        $shuttle = Shuttle::findOrFail($id);
-
-        // Check if shuttle has active bookings
-        if ($shuttle->jadwals()->whereHas('pemesanan', function($query) {
-            $query->whereNotIn('status', ['dibatalkan', 'expired']);
-        })->exists()) {
-            return redirect()->route('admin.armada')->with('error', 'Armada tidak dapat dihapus karena masih memiliki pemesanan aktif.');
-        }
-
-        $shuttle->deleted_by = auth()->id();
-        $shuttle->save();
-
-        $shuttle->delete();
-
-        return redirect()->route('admin.armada')->with('success', 'Armada berhasil dihapus.');
-    }
-
-    public function showShuttle($id)
-    {
-        $shuttle = Shuttle::with('layanan')->findOrFail($id);
-        return view('admin.armada-detail', compact('shuttle'));
+        // Redirect ke JadwalController index method
+        return redirect()->route('admin.jadwal.index');
+        // Atau jika ingin langsung menampilkan view:
+        // return view('admin.jadwal.index');
     }
 
     public function driver()
@@ -911,9 +830,299 @@ public function updateOutlet(Request $request, $id)
         return view('admin.driver');
     }
 
-    public function pegawai()
+    public function pegawai(Request $request)
     {
-        return view('admin.pegawai');
+        // Get all users with specific roles
+        $query = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->with('roles', 'branch');
+
+        // Apply search filter
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('email', 'like', "%$search%")
+                  ->orWhere('phone', 'like', "%$search%")
+                  ->orWhere('nik', 'like', "%$search%");
+            });
+        }
+
+        // Apply role filter
+        if ($request->filled('role')) {
+            $query->whereHas('roles', function ($q) use ($request) {
+                $q->where('name', $request->role);
+            });
+        }
+
+        // Apply status filter
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $pegawais = $query->paginate(15);
+
+        // Get statistics
+        $totalPegawai = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->count();
+
+        $adminPusat = User::whereHas('roles', function ($q) {
+            $q->where('name', 'admin_pusat');
+        })->count();
+
+        $adminCabang = User::whereHas('roles', function ($q) {
+            $q->where('name', 'admin_cabang');
+        })->count();
+
+        $driver = User::whereHas('roles', function ($q) {
+            $q->where('name', 'driver');
+        })->count();
+
+        $activePegawai = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->where('status', 'active')->count();
+
+        return view('admin.pegawai', compact(
+            'pegawais',
+            'totalPegawai',
+            'adminPusat',
+            'adminCabang',
+            'driver',
+            'activePegawai'
+        ));
+    }
+
+    /**
+     * Show form for creating new pegawai
+     */
+    public function createPegawai()
+    {
+        $branches = Branch::where('status', 'aktif')->get();
+        return view('admin.pegawai-create', compact('branches'));
+    }
+
+    /**
+     * Store new pegawai
+     */
+    public function storePegawai(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'nik' => 'required|string|max:16|unique:users,nik',
+            'email' => 'nullable|email|unique:users,email',
+            'phone' => 'required|string|max:20',
+            'tempat_lahir' => 'nullable|string',
+            'tanggal_lahir' => 'nullable|date',
+            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+            'alamat' => 'nullable|string',
+            'agama' => 'nullable|string',
+            'status_pernikahan' => 'nullable|string',
+            'kontak_darurat' => 'nullable|string',
+            'tanggal_bergabung' => 'required|date',
+            'status_pegawai' => 'required|in:Tetap,Kontrak,Magang',
+            'masa_kerja' => 'nullable|string',
+            'posisi' => 'required|in:Admin Pusat,Admin Cabrera,Driver,Manager',
+            'branch_id' => 'required|exists:branches,id',
+            // Pendidikan & Keahlian
+            'pendidikan_terakhir' => 'nullable|string',
+            'institusi' => 'nullable|string',
+            'tahun_lulus' => 'nullable|string',
+            'keahlian' => 'nullable|string',
+            'pengalaman_kerja' => 'nullable|string',
+            // Dokumen
+            'dokumen_ktp' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'dokumen_ijazah' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'dokumen_npwp' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'dokumen_skck' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $data = $request->except(['foto', 'dokumen_ktp', 'dokumen_ijazah', 'dokumen_npwp', 'dokumen_skck']);
+
+        // Handle file upload - Foto Profil
+        if ($request->hasFile('foto')) {
+            $imagePath = $request->file('foto')->store('pegawai', 'public');
+            $data['foto'] = $imagePath;
+        }
+
+        // Handle file upload - Dokumen KTP
+        if ($request->hasFile('dokumen_ktp')) {
+            $dokumenPath = $request->file('dokumen_ktp')->store('pegawai/dokumen', 'public');
+            $data['dokumen_ktp'] = $dokumenPath;
+        }
+
+        // Handle file upload - Dokumen Ijazah
+        if ($request->hasFile('dokumen_ijazah')) {
+            $dokumenPath = $request->file('dokumen_ijazah')->store('pegawai/dokumen', 'public');
+            $data['dokumen_ijazah'] = $dokumenPath;
+        }
+
+        // Handle file upload - Dokumen NPWP
+        if ($request->hasFile('dokumen_npwp')) {
+            $dokumenPath = $request->file('dokumen_npwp')->store('pegawai/dokumen', 'public');
+            $data['dokumen_npwp'] = $dokumenPath;
+        }
+
+        // Handle file upload - Dokumen SKCK
+        if ($request->hasFile('dokumen_skck')) {
+            $dokumenPath = $request->file('dokumen_skck')->store('pegawai/dokumen', 'public');
+            $data['dokumen_skck'] = $dokumenPath;
+        }
+
+        $data['password'] = bcrypt('password123');
+        $data['status'] = 'active';
+
+        $user = User::create($data);
+
+        // Assign role based on posisi
+        $roleMapping = [
+            'Admin Pusat' => 'admin_pusat',
+            'Admin Cabang' => 'admin_cabang',
+            'Driver' => 'driver',
+            'Manager' => 'admin_pusat',
+        ];
+
+        $role = $roleMapping[$request->posisi] ?? 'driver';
+        $user->assignRole($role);
+
+        return redirect()->route('admin.pegawai')->with('success', 'Pegawai berhasil ditambahkan.');
+    }
+
+    /**
+     * Show pegawai details
+     */
+    public function showPegawai($id)
+    {
+        $pegawai = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->findOrFail($id);
+
+        return view('admin.pegawai-show', compact('pegawai'));
+    }
+
+    /**
+     * Show edit pegawai form
+     */
+    public function editPegawai($id)
+    {
+        $pegawai = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->findOrFail($id);
+
+        $branches = Branch::where('status', 'aktif')->get();
+        return view('admin.pegawai-edit', compact('pegawai', 'branches'));
+    }
+
+    /**
+     * Update pegawai
+     */
+    public function updatePegawai(Request $request, $id)
+    {
+        $pegawai = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'nik' => 'required|string|max:16|unique:users,nik,' . $id,
+            'email' => 'nullable|email|unique:users,email,' . $id,
+            'phone' => 'required|string|max:20',
+            'tempat_lahir' => 'nullable|string',
+            'tanggal_lahir' => 'nullable|date',
+            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+            'alamat' => 'nullable|string',
+            'agama' => 'nullable|string',
+            'status_pernikahan' => 'nullable|string',
+            'kontak_darurat' => 'nullable|string',
+            'tanggal_bergabung' => 'nullable|date',
+            'status_pegawai' => 'nullable|in:Tetap,Kontrak,Magang',
+            'masa_kerja' => 'nullable|string',
+            'posisi' => 'nullable|in:Admin Pusat,Admin Cabang,Driver,Manager',
+            'lokasi_kerja' => 'nullable|string',
+            // Pendidikan & Keahlian
+            'pendidikan_terakhir' => 'nullable|string',
+            'institusi' => 'nullable|string',
+            'tahun_lulus' => 'nullable|string',
+            'keahlian' => 'nullable|string',
+            'pengalaman_kerja' => 'nullable|string',
+            // Dokumen
+            'dokumen_ktp' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'dokumen_ijazah' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'dokumen_npwp' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'dokumen_skck' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $data = $request->except(['foto', 'dokumen_ktp', 'dokumen_ijazah', 'dokumen_npwp', 'dokumen_skck']);
+
+        // Handle file upload - Foto Profil
+        if ($request->hasFile('foto')) {
+            if ($pegawai->foto && Storage::disk('public')->exists($pegawai->foto)) {
+                Storage::disk('public')->delete($pegawai->foto);
+            }
+            $imagePath = $request->file('foto')->store('pegawai', 'public');
+            $data['foto'] = $imagePath;
+        }
+
+        // Handle file upload - Dokumen KTP
+        if ($request->hasFile('dokumen_ktp')) {
+            if ($pegawai->dokumen_ktp && Storage::disk('public')->exists($pegawai->dokumen_ktp)) {
+                Storage::disk('public')->delete($pegawai->dokumen_ktp);
+            }
+            $dokumenPath = $request->file('dokumen_ktp')->store('pegawai/dokumen', 'public');
+            $data['dokumen_ktp'] = $dokumenPath;
+        }
+
+        // Handle file upload - Dokumen Ijazah
+        if ($request->hasFile('dokumen_ijazah')) {
+            if ($pegawai->dokumen_ijazah && Storage::disk('public')->exists($pegawai->dokumen_ijazah)) {
+                Storage::disk('public')->delete($pegawai->dokumen_ijazah);
+            }
+            $dokumenPath = $request->file('dokumen_ijazah')->store('pegawai/dokumen', 'public');
+            $data['dokumen_ijazah'] = $dokumenPath;
+        }
+
+        // Handle file upload - Dokumen NPWP
+        if ($request->hasFile('dokumen_npwp')) {
+            if ($pegawai->dokumen_npwp && Storage::disk('public')->exists($pegawai->dokumen_npwp)) {
+                Storage::disk('public')->delete($pegawai->dokumen_npwp);
+            }
+            $dokumenPath = $request->file('dokumen_npwp')->store('pegawai/dokumen', 'public');
+            $data['dokumen_npwp'] = $dokumenPath;
+        }
+
+        // Handle file upload - Dokumen SKCK
+        if ($request->hasFile('dokumen_skck')) {
+            if ($pegawai->dokumen_skck && Storage::disk('public')->exists($pegawai->dokumen_skck)) {
+                Storage::disk('public')->delete($pegawai->dokumen_skck);
+            }
+            $dokumenPath = $request->file('dokumen_skck')->store('pegawai/dokumen', 'public');
+            $data['dokumen_skck'] = $dokumenPath;
+        }
+
+        $pegawai->update($data);
+
+        return redirect()->route('admin.pegawai')->with('success', 'Pegawai berhasil diperbarui.');
+    }
+
+    /**
+     * Delete pegawai
+     */
+    public function destroyPegawai($id)
+    {
+        $pegawai = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->findOrFail($id);
+
+        // Delete photo if exists
+        if ($pegawai->foto && Storage::disk('public')->exists($pegawai->foto)) {
+            Storage::disk('public')->delete($pegawai->foto);
+        }
+
+        $pegawai->delete();
+
+        return redirect()->route('admin.pegawai')->with('success', 'Pegawai berhasil dihapus.');
     }
 
     public function rute(Request $request)
@@ -976,7 +1185,8 @@ public function updateOutlet(Request $request, $id)
     public function createRute()
     {
         $layanans = MLayanan::all();
-        return view('admin.rute-create', compact('layanans'));
+        $tarifs = MasterTarif::aktif()->get();
+        return view('admin.rute-create', compact('layanans', 'tarifs'));
     }
 
     public function storeRute(Request $request)
@@ -992,6 +1202,8 @@ public function updateOutlet(Request $request, $id)
             'harga_dasar' => 'required|numeric|min:0',
             'status' => 'required|in:aktif,nonaktif',
             'rute_pemberhentian' => 'nullable|string',
+            'master_tarif_ids' => 'nullable|array',
+            'master_tarif_ids.*' => 'exists:master_tarif,id',
         ]);
 
         $data = $request->all();
@@ -1001,7 +1213,16 @@ public function updateOutlet(Request $request, $id)
             $data['durasi'] = $data['durasi'] . ':00';
         }
 
-        Rute::create($data);
+        // Hapus master_tarif_ids dari data sebelum create
+        $tarifIds = $request->input('master_tarif_ids', []);
+        unset($data['master_tarif_ids']);
+
+        $rute = Rute::create($data);
+
+        // Attach tarifs jika ada
+        if (!empty($tarifIds)) {
+            $rute->masterTarifs()->attach($tarifIds);
+        }
 
         return redirect()->route('admin.rute')->with('success', 'Rute berhasil ditambahkan.');
     }
@@ -1010,7 +1231,8 @@ public function updateOutlet(Request $request, $id)
     {
         $rute = Rute::findOrFail($id);
         $layanans = MLayanan::all();
-        return view('admin.rute-edit', compact('rute', 'layanans'));
+        $tarifs = MasterTarif::aktif()->get();
+        return view('admin.rute-edit', compact('rute', 'layanans', 'tarifs'));
     }
 
     public function updateRute(Request $request, $id)
@@ -1028,6 +1250,8 @@ public function updateOutlet(Request $request, $id)
             'harga_dasar' => 'required|numeric|min:0',
             'status' => 'required|in:aktif,nonaktif',
             'rute_pemberhentian' => 'nullable|string',
+            'master_tarif_ids' => 'nullable|array',
+            'master_tarif_ids.*' => 'exists:master_tarif,id',
         ]);
 
         $data = $request->all();
@@ -1037,7 +1261,14 @@ public function updateOutlet(Request $request, $id)
             $data['durasi'] = $data['durasi'] . ':00';
         }
 
+        // Hapus master_tarif_ids dari data sebelum update
+        $tarifIds = $request->input('master_tarif_ids', []);
+        unset($data['master_tarif_ids']);
+
         $rute->update($data);
+
+        // Sync tarifs
+        $rute->masterTarifs()->sync($tarifIds);
 
         return redirect()->route('admin.rute')->with('success', 'Rute berhasil diperbarui.');
     }
@@ -1058,7 +1289,7 @@ public function updateOutlet(Request $request, $id)
 
     public function showRute($id)
     {
-        $rute = Rute::with('layanan')->findOrFail($id);
+        $rute = Rute::with(['layanan', 'masterTarifs'])->findOrFail($id);
 
         // Parse pemberhentian
         $pemberhentian = [];
@@ -1083,7 +1314,24 @@ public function updateOutlet(Request $request, $id)
 
     public function perjalanan()
     {
-        return view('admin.transaksi.perjalanan');
+        $pemesanan = Pemesanan::with([
+            'jadwal.shuttle',
+            'jadwal.rutes',
+            'user',
+            'detailPenumpang'
+        ])
+        ->paginate(15);
+
+        $rutes = Rute::all();
+        $customers = User::whereHas('roles', function($q) {
+            $q->where('name', 'customer');
+        })->get();
+
+        return view('admin.transaksi.perjalanan', [
+            'pemesanan' => $pemesanan,
+            'rutes' => $rutes,
+            'customers' => $customers
+        ]);
     }
 
     public function armadaTransaksi()
@@ -1113,16 +1361,296 @@ public function updateOutlet(Request $request, $id)
         return view('admin.smartrent');
     }
 
+    // Tiket Perjalanan Method
+    public function tiketPerjalanan()
+    {
+        return view('admin.tiket-perjalanan');
+    }
+
     // Laporan Method
     public function laporan()
     {
         return view('admin.laporan');
     }
 
-    // Pengaturan Methods
-    public function user()
+    // Pengaturan Methods - User Management
+    public function user(Request $request)
     {
-        return view('admin.user');
+        // Get users with filtering
+        $query = User::with('roles', 'branch');
+
+        // Apply filters
+        if ($request->filled('role')) {
+            $query->whereHas('roles', function($q) use ($request) {
+                $q->where('name', $request->role);
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('email', 'like', '%' . $request->search . '%')
+                  ->orWhere('phone', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $users = $query->orderBy('created_at', 'desc')->paginate(10);
+
+        // Get summary data
+        $totalUsers = User::count();
+        $activeUsers = User::where('status', 'active')->count();
+        $inactiveUsers = User::where('status', 'inactive')->count();
+
+        // Get data for forms
+        $branches = Branch::where('status', 'aktif')->get();
+        $roles = ['admin_pusat', 'admin_cabang', 'operator', 'driver', 'customer'];
+
+        return view('admin.user', compact(
+            'users',
+            'totalUsers',
+            'activeUsers',
+            'inactiveUsers',
+            'branches',
+            'roles'
+        ));
+    }
+
+    public function storeUser(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+            'phone' => 'nullable|string|max:20',
+            'role' => 'required|in:admin_pusat,admin_cabang,operator,driver,customer',
+            'branch_id' => 'required_if:role,admin_cabang,driver|exists:branches,id',
+            'nik' => 'nullable|string|max:20',
+            'tanggal_lahir' => 'nullable|date',
+            'jenis_kelamin' => 'nullable|in:L,P',
+            'status' => 'required|in:active,inactive',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'string|exists:permissions,name'
+        ]);
+
+        $data = $request->only([
+            'name', 'email', 'phone', 'nik', 'tanggal_lahir', 'jenis_kelamin', 'status'
+        ]);
+
+        $data['password'] = Hash::make($request->password);
+        $data['username'] = $request->email; // Use email as username
+
+        // Set branch_id for admin_cabang and driver
+        if (in_array($request->role, ['admin_cabang', 'driver'])) {
+            $data['branch_id'] = $request->branch_id;
+        }
+
+        $user = User::create($data);
+        $user->syncRoles([$request->role]);
+
+        // Assign permissions if provided
+        if ($request->has('permissions') && is_array($request->permissions)) {
+            $user->syncPermissions($request->permissions);
+        } else {
+            // If no permissions provided, assign default permissions based on role
+            $defaultPermissions = $this->getDefaultPermissionsForRole($request->role);
+            $user->syncPermissions($defaultPermissions);
+        }
+
+        return redirect()->route('admin.user')->with('success', 'User berhasil ditambahkan.');
+    }
+
+    /**
+     * Get default permissions for a role
+     */
+    private function getDefaultPermissionsForRole($role)
+    {
+        $rolePermissions = [
+            'admin_pusat' => [
+                // Dashboard
+                'view_dashboard',
+
+                // Master Data - Full access
+                'view_master_data',
+                'view_profile_perusahaan',
+                'manage_profile_perusahaan',
+                'view_cabang',
+                'manage_cabang',
+                'view_outlet',
+                'manage_outlet',
+                'view_promo',
+                'manage_promo',
+                'view_kontak',
+                'manage_kontak',
+                'view_artikel',
+                'manage_artikel',
+                'view_armada',
+                'manage_armada',
+                'view_driver',
+                'manage_driver',
+                'view_pegawai',
+                'manage_pegawai',
+                'view_rute',
+                'manage_rute',
+                'view_jadwal',
+                'manage_jadwal',
+
+                // Transaksi - Full access
+                'view_transaksi',
+                'view_smartsend_transaksi',
+                'manage_smartsend_transaksi',
+                'view_perjalanan_transaksi',
+                'manage_perjalanan_transaksi',
+                'view_armada_transaksi',
+                'manage_armada_transaksi',
+
+                // SmartSend - Full access
+                'view_smartsend',
+                'view_smartsend_tiket',
+                'manage_smartsend_tiket',
+                'view_smartsend_perjalanan',
+                'manage_smartsend_perjalanan',
+                'view_smartsend_armada',
+                'manage_smartsend_armada',
+
+                // SmartRent - Full access
+                'view_smartrent',
+                'manage_smartrent',
+
+                // Laporan - Full access
+                'view_laporan',
+                'manage_laporan',
+
+                // Pengaturan - Full access
+                'view_pengaturan',
+                'view_user',
+                'manage_user',
+                'view_menu',
+                'manage_menu',
+            ],
+            'admin_cabang' => [
+                // Dashboard
+                'view_dashboard',
+
+                // Master Data - Limited access
+                'view_master_data',
+                'view_profile_perusahaan',
+                'view_cabang',
+                'view_outlet',
+                'manage_outlet',
+                'view_promo',
+                'manage_promo',
+                'view_kontak',
+                'manage_kontak',
+                'view_artikel',
+                'manage_artikel',
+                'view_armada',
+                'manage_armada',
+                'view_driver',
+                'manage_driver',
+                'view_pegawai',
+                'manage_pegawai',
+                'view_rute',
+                'manage_rute',
+                'view_jadwal',
+                'manage_jadwal',
+
+                // Transaksi - Full access
+                'view_transaksi',
+                'view_smartsend_transaksi',
+                'manage_smartsend_transaksi',
+                'view_perjalanan_transaksi',
+                'manage_perjalanan_transaksi',
+                'view_armada_transaksi',
+                'manage_armada_transaksi',
+
+                // SmartSend - Full access
+                'view_smartsend',
+                'view_smartsend_tiket',
+                'manage_smartsend_tiket',
+                'view_smartsend_perjalanan',
+                'manage_smartsend_perjalanan',
+                'view_smartsend_armada',
+                'manage_smartsend_armada',
+
+                // SmartRent - Full access
+                'view_smartrent',
+                'manage_smartrent',
+
+                // Laporan - View only
+                'view_laporan',
+            ],
+            'operator' => [
+                // Dashboard
+                'view_dashboard',
+
+                // Master Data - Limited access
+                'view_master_data',
+                'view_profile_perusahaan',
+                'view_cabang',
+                'view_outlet',
+                'view_promo',
+                'view_kontak',
+                'view_artikel',
+                'view_armada',
+                'view_driver',
+                'view_pegawai',
+                'view_rute',
+                'view_jadwal',
+
+                // Transaksi - Full access
+                'view_transaksi',
+                'view_smartsend_transaksi',
+                'manage_smartsend_transaksi',
+                'view_perjalanan_transaksi',
+                'manage_perjalanan_transaksi',
+                'view_armada_transaksi',
+                'manage_armada_transaksi',
+
+                // SmartSend - Full access
+                'view_smartsend',
+                'view_smartsend_tiket',
+                'manage_smartsend_tiket',
+                'view_smartsend_perjalanan',
+                'manage_smartsend_perjalanan',
+                'view_smartsend_armada',
+                'manage_smartsend_armada',
+
+                // SmartRent - Full access
+                'view_smartrent',
+                'manage_smartrent',
+
+                // Laporan - View only
+                'view_laporan',
+            ],
+            'driver' => [
+                // Dashboard
+                'view_dashboard',
+
+                // Limited access for driver operations
+                'view_jadwal',
+            ],
+            'customer' => [
+                // Customer has no admin permissions
+            ],
+        ];
+
+        return $rolePermissions[$role] ?? [];
+    }
+
+    public function pengadaanBahan()
+    {
+        return view('admin.pengadaan-bahan', [
+            'title' => 'Pengaturan - Pengadaan Bahan',
+            'pageTitle' => 'Pengaturan - Pengadaan Bahan'
+        ]);
     }
 
     public function menu()
@@ -1140,7 +1668,7 @@ public function updateOutlet(Request $request, $id)
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()->route('customer.login');
+            return redirect()->route('admin.login');
 
         } catch (\Exception $e) {
             return redirect()->route('admin.dashboard');
@@ -1314,44 +1842,4 @@ public function updateOutlet(Request $request, $id)
 
         return redirect()->route('admin.artikel.index')->with('success', 'Artikel berhasil dihapus.');
     }
-
-
-public function editOutlet($id)
-{
-    $outlet = Outlet::with('branch')->findOrFail($id);
-    $branches = Branch::where('status', 'aktif')->get();
-    
-    // Parse fasilitas string ke array dengan benar
-    $selectedFacilities = [];
-    
-    if ($outlet->fasilitas) {
-        // Bersihkan string
-        $cleanString = trim($outlet->fasilitas, ' "[]\'');
-        if (!empty($cleanString)) {
-            $facilitiesArray = explode(',', $cleanString);
-            foreach ($facilitiesArray as $facility) {
-                $trimmed = trim($facility, ' "[]\'');
-                if (!empty($trimmed) && strtolower($trimmed) !== 'null') {
-                    $selectedFacilities[] = $trimmed;
-                }
-            }
-        }
-    }
-    
-    // Tambahkan dari boolean fields jika ada
-    if ($outlet->tersedia_toilet && !in_array('Toilet', $selectedFacilities)) {
-        $selectedFacilities[] = 'Toilet';
-    }
-    if ($outlet->tersedia_musholla && !in_array('Musholla', $selectedFacilities)) {
-        $selectedFacilities[] = 'Musholla';
-    }
-    if ($outlet->tersedia_atm && !in_array('ATM', $selectedFacilities)) {
-        $selectedFacilities[] = 'ATM';
-    }
-    if ($outlet->tersedia_wifi && !in_array('WiFi', $selectedFacilities)) {
-        $selectedFacilities[] = 'WiFi';
-    }
-
-    return view('admin.outletperusahaan-edit', compact('outlet', 'branches', 'selectedFacilities'));
-}
 }

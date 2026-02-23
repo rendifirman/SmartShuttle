@@ -87,7 +87,7 @@ class JadwalSeeder extends Seeder
 
                     if ($existing) continue;
 
-                    // Buat jadwal
+                    // Buat jadwal - HAPUS created_by dan updated_by
                     $jadwal = Jadwal::create([
                         'shuttle_id' => $shuttle->id,
                         'tanggal_keberangkatan' => $waktuKeberangkatan->format('Y-m-d'),

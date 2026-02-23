@@ -618,11 +618,11 @@
             .filter-top {
                 grid-template-columns: repeat(2, 1fr);
             }
-            
+
             .form-row {
                 grid-template-columns: 1fr;
             }
-            
+
             .detail-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
@@ -633,58 +633,58 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
-            
+
             .header-actions {
                 width: 100%;
                 justify-content: flex-end;
             }
-            
+
             .filter-top {
                 grid-template-columns: 1fr;
             }
-            
+
             .filter-bottom {
                 flex-direction: column;
             }
-            
+
             .form-actions {
                 flex-direction: column;
             }
-            
+
             .time-row {
                 grid-template-columns: 1fr;
             }
-            
+
             .time-separator {
                 display: none;
             }
-            
+
             .btn-save,
             .btn-reset,
             .btn-cancel {
                 width: 100%;
                 justify-content: center;
             }
-            
+
             .detail-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .table-actions {
                 flex-direction: column;
                 align-items: flex-start;
             }
-            
+
             .btn-excel, .btn-pdf {
                 width: 100%;
                 justify-content: center;
             }
-            
+
             .pagination {
                 flex-direction: column;
                 gap: 10px;
             }
-            
+
             .pagination-buttons {
                 width: 100%;
                 overflow-x: auto;
@@ -692,7 +692,7 @@
                 padding-bottom: 10px;
                 -webkit-overflow-scrolling: touch;
             }
-            
+
             .pagination-info {
                 margin-top: 5px;
                 order: 3;
@@ -703,22 +703,22 @@
             .page-container {
                 padding: 15px;
             }
-            
+
             .summary {
                 grid-template-columns: 1fr;
             }
-            
+
             .form-card {
                 padding: 20px;
             }
-            
+
             .btn-action {
                 padding: 5px 10px;
                 font-size: 11px;
                 margin-bottom: 5px;
                 margin-right: 3px;
             }
-            
+
             .pagination-buttons {
                 display: flex;
                 flex-wrap: nowrap;
@@ -729,7 +729,7 @@
                 width: 100%;
                 -webkit-overflow-scrolling: touch;
             }
-            
+
             .pagination button {
                 padding: 6px 10px;
                 min-width: 32px;
@@ -742,32 +742,32 @@
             .page-header h2 {
                 font-size: 18px;
             }
-            
+
             .btn {
                 padding: 10px 15px;
                 font-size: 13px;
             }
-            
+
             .btn-add span {
                 display: none;
             }
-            
+
             .btn-add i {
                 margin-right: 0;
             }
-            
+
             .detail-card {
                 padding: 15px;
             }
-            
+
             .filter-box {
                 padding: 15px;
             }
-            
+
             .pagination-buttons {
                 gap: 3px;
             }
-            
+
             .pagination button {
                 padding: 5px 8px;
                 min-width: 28px;
@@ -785,9 +785,11 @@
         <div class="page-header">
             <h2>Data Jadwal</h2>
             <div class="header-actions">
+                @can('manage_jadwal')
                 <button class="btn btn-add" onclick="showAddForm()">
                     <i class="fas fa-plus"></i> <span>Tambah Jadwal</span>
                 </button>
+                @endcan
             </div>
         </div>
 
@@ -1182,19 +1184,19 @@ const jadwalData = [
     function calculateDurasi(waktuBerangkat, waktuTiba) {
         const [jam1, menit1] = waktuBerangkat.split(':').map(Number);
         const [jam2, menit2] = waktuTiba.split(':').map(Number);
-        
+
         let totalMenit1 = jam1 * 60 + menit1;
         let totalMenit2 = jam2 * 60 + menit2;
-        
+
         // Jika waktu tiba lebih kecil dari waktu berangkat, berarti melewati tengah malam
         if (totalMenit2 < totalMenit1) {
             totalMenit2 += 24 * 60; // Tambah 24 jam
         }
-        
+
         const durasiMenit = totalMenit2 - totalMenit1;
         const jam = Math.floor(durasiMenit / 60);
         const menit = durasiMenit % 60;
-        
+
         if (menit === 0) {
             return `${jam} jam`;
         }
@@ -1205,11 +1207,11 @@ const jadwalData = [
     function renderJadwalTable(data = jadwalData) {
         const tbody = document.getElementById('jadwal-table-body');
         tbody.innerHTML = '';
-        
+
         data.forEach((jadwal, index) => {
             const kursiKosong = jadwal.totalKursi - jadwal.kursiTerisi;
             const status = calculateStatus(jadwal.kursiTerisi, jadwal.totalKursi);
-            
+
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${jadwal.rute}</td>
@@ -1248,15 +1250,15 @@ const jadwalData = [
     function showAddForm() {
         formMode = 'add';
         document.getElementById('form-title').textContent = 'Tambah Jadwal Perjalanan';
-        
+
         // Reset form
         resetForm();
-        
+
         // Set tanggal default (besok)
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         document.getElementById('tanggal').value = tomorrow.toISOString().split('T')[0];
-        
+
         document.getElementById('list-page').classList.add('hidden');
         document.getElementById('form-page').classList.remove('hidden');
         document.getElementById('detail-page').classList.add('hidden');
@@ -1267,15 +1269,15 @@ const jadwalData = [
     function showEditForm(index) {
         formMode = 'edit';
         currentJadwalIndex = index;
-        
+
         const jadwal = jadwalData[index];
         if (!jadwal) {
             alert('Data jadwal tidak ditemukan!');
             return;
         }
-        
+
         document.getElementById('form-title').textContent = 'Edit Jadwal Perjalanan';
-        
+
         // Isi form dengan data
         document.getElementById('rute').value = jadwal.rute;
         document.getElementById('tanggal').value = jadwal.tanggal;
@@ -1287,7 +1289,7 @@ const jadwalData = [
         document.getElementById('seatValue').textContent = jadwal.totalKursi + ' kursi';
         document.getElementById('kursiTerisi').value = jadwal.kursiTerisi;
         document.getElementById('keterangan').value = jadwal.keterangan || '';
-        
+
         document.getElementById('list-page').classList.add('hidden');
         document.getElementById('form-page').classList.remove('hidden');
         document.getElementById('detail-page').classList.add('hidden');
@@ -1301,15 +1303,15 @@ const jadwalData = [
             alert('Data jadwal tidak ditemukan!');
             return;
         }
-        
+
         currentJadwalForDetail = index;
-        
+
         // Hitung nilai yang diperlukan
         const kursiKosong = jadwal.totalKursi - jadwal.kursiTerisi;
         const persentase = (jadwal.kursiTerisi / jadwal.totalKursi) * 100;
         const durasi = calculateDurasi(jadwal.waktuBerangkat, jadwal.waktuTiba);
         const status = calculateStatus(jadwal.kursiTerisi, jadwal.totalKursi);
-        
+
         // Isi detail dengan data
         document.getElementById('detail-rute').textContent = jadwal.rute;
         document.getElementById('detail-tanggal').textContent = formatTanggal(jadwal.tanggal);
@@ -1324,7 +1326,7 @@ const jadwalData = [
         document.getElementById('detail-penuh').textContent = persentase.toFixed(1) + '%';
         document.getElementById('detail-harga').textContent = formatHarga(jadwal.harga);
         document.getElementById('detail-keterangan').textContent = jadwal.keterangan || '-';
-        
+
         document.getElementById('list-page').classList.add('hidden');
         document.getElementById('form-page').classList.add('hidden');
         document.getElementById('detail-page').classList.remove('hidden');
@@ -1341,15 +1343,15 @@ const jadwalData = [
     // Fungsi untuk reset form
     function resetForm() {
         document.getElementById('jadwalForm').reset();
-        
+
         // Set nilai default untuk slider kursi
         const seatSlider = document.getElementById('totalKursi');
         document.getElementById('seatValue').textContent = seatSlider.value + ' kursi';
-        
+
         // Set waktu default
         document.getElementById('waktuBerangkat').value = '06:00';
         document.getElementById('waktuTiba').value = '09:00';
-        
+
         // Set tanggal default (besok)
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
@@ -1362,7 +1364,7 @@ const jadwalData = [
         const ruteFilter = document.getElementById('filter-rute').value;
         const tanggalFilter = document.getElementById('filter-tanggal').value;
         const statusFilter = document.getElementById('filter-status').value;
-        
+
         const filteredData = jadwalData.filter(jadwal => {
             // Filter berdasarkan search term
             if (searchTerm && !(
@@ -1371,7 +1373,7 @@ const jadwalData = [
             )) {
                 return false;
             }
-            
+
             // Filter berdasarkan dropdown
             if (ruteFilter && jadwal.rute.toLowerCase() !== ruteFilter) {
                 // Untuk pencocokan rute (tanpa spasi)
@@ -1379,26 +1381,26 @@ const jadwalData = [
                 const filterRute = ruteFilter.replace(/\s+/g, '');
                 if (!jadwalRute.includes(filterRute)) return false;
             }
-            
+
             if (tanggalFilter && jadwal.tanggal !== tanggalFilter) return false;
-            
+
             if (statusFilter) {
                 const status = calculateStatus(jadwal.kursiTerisi, jadwal.totalKursi);
                 if (status !== statusFilter) return false;
             }
-            
+
             return true;
         });
-        
+
         renderJadwalTable(filteredData);
-        
+
         // Update info pagination
         const paginationInfo = document.querySelector('.pagination-info');
         if (paginationInfo) {
             const total = filteredData.length;
             paginationInfo.textContent = `Menampilkan 1-${total} dari ${total} data`;
         }
-        
+
         // Reset pagination
         document.querySelectorAll('.pagination button').forEach((btn, index) => {
             btn.classList.toggle('active', index === 0);
@@ -1413,7 +1415,7 @@ const jadwalData = [
     // Form submission handler
     document.getElementById('jadwalForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         // Validasi form
         const rute = document.getElementById('rute').value;
         const tanggal = document.getElementById('tanggal').value;
@@ -1424,28 +1426,28 @@ const jadwalData = [
         const totalKursi = document.getElementById('totalKursi').value;
         const kursiTerisi = document.getElementById('kursiTerisi').value || 0;
         const keterangan = document.getElementById('keterangan').value;
-        
+
         if (!rute || !tanggal || !armada || !waktuBerangkat || !waktuTiba || !harga) {
             alert('Harap isi semua field yang wajib diisi!');
             return;
         }
-        
+
         // Validasi waktu
         if (waktuBerangkat >= waktuTiba) {
             alert('Waktu keberangkatan harus lebih awal dari waktu kedatangan!');
             return;
         }
-        
+
         // Validasi kursi
         if (parseInt(kursiTerisi) > parseInt(totalKursi)) {
             alert('Kursi terisi tidak boleh lebih dari total kursi!');
             return;
         }
-        
+
         // Get armada detail
         const armadaSelect = document.getElementById('armada');
         const armadaDetail = armadaSelect.options[armadaSelect.selectedIndex].text;
-        
+
         // Buat objek jadwal
         const jadwalDataToSave = {
             id: formMode === 'add' ? 'J' + (jadwalData.length + 1).toString().padStart(3, '0') : jadwalData[currentJadwalIndex].id,
@@ -1460,7 +1462,7 @@ const jadwalData = [
             kursiTerisi: parseInt(kursiTerisi),
             keterangan: keterangan
         };
-        
+
         if (formMode === 'add') {
             // Tambah data baru
             jadwalData.push(jadwalDataToSave);
@@ -1470,10 +1472,10 @@ const jadwalData = [
             jadwalData[currentJadwalIndex] = jadwalDataToSave;
             alert('Jadwal berhasil diperbarui!');
         }
-        
+
         // Kembali ke list
         showList();
-        
+
         // Di aplikasi real, di sini akan ada AJAX request ke server
         console.log('Data jadwal disimpan:', jadwalDataToSave);
     });
@@ -1492,7 +1494,7 @@ const jadwalData = [
                 btn.classList.remove('active');
             });
             this.classList.add('active');
-            
+
             // Di aplikasi real, di sini akan ada request data untuk halaman yang dipilih
             console.log('Halaman', this.textContent, 'dipilih');
         });
@@ -1501,15 +1503,15 @@ const jadwalData = [
     // Inisialisasi
     window.addEventListener('DOMContentLoaded', function() {
         renderJadwalTable();
-        
+
         // Set tanggal filter default (besok)
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         document.getElementById('filter-tanggal').value = tomorrow.toISOString().split('T')[0];
-        
+
         // Set tanggal form default (besok)
         document.getElementById('tanggal').value = tomorrow.toISOString().split('T')[0];
-        
+
         // Set min date untuk tanggal (hari ini)
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('tanggal').min = today;

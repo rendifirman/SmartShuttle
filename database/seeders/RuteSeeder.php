@@ -1,5 +1,4 @@
 <?php
-// File: database/seeders/RuteSeeder.php
 
 namespace Database\Seeders;
 
@@ -27,195 +26,216 @@ class RuteSeeder extends Seeder
 
         $rutes = [
             [
-                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
-                'kode_rute' => 'JKT-BAL-001',
-                'nama_rute' => 'Jakarta - Bali Via Yogyakarta',
+                'layanan_id' => $smartShuttleService->id_layanan,
+                'kode_rute' => 'JKT-BDG-001',
+                'nama_rute' => 'Jakarta - Bandung Via Bekasi',
                 'kota_asal' => 'Jakarta',
-                'kota_tujuan' => 'Bali',
-                'durasi' => '18:00',
-                'jarak' => 850.00,
-                'harga_dasar' => 350000.00,
+                'kota_tujuan' => 'Bandung',
+                'durasi' => '03:30',
+                'jarak' => 150.00,
+                'harga_dasar' => 120000.00,
                 'rute_pemberhentian' => json_encode([
                     [
                         'kota' => 'Jakarta',
-                        'outlets' => ['Sudirman', 'Blok M'],
-                        'durasi_singgah' => 15
+                        'outlets' => ['Sudirman', 'Blok M', 'Kota'],
+                        'durasi_singgah' => 15,
+                        'jarak_segment' => 0
+                    ],
+                    [
+                        'kota' => 'Bekasi',
+                        'outlets' => ['Bekasi Barat', 'Bekasi Timur', 'Cikarang'],
+                        'durasi_singgah' => 20,
+                        'jarak_segment' => 30
+                    ],
+                    [
+                        'kota' => 'Cimahi',
+                        'outlets' => ['Cimahi Selatan', 'Cimahi Tengah'],
+                        'durasi_singgah' => 15,
+                        'jarak_segment' => 60
+                    ],
+                    [
+                        'kota' => 'Bandung',
+                        'outlets' => ['Dago', 'Cihampelas', 'Setiabudi'],
+                        'durasi_singgah' => 30,
+                        'jarak_segment' => 40
+                    ]
+                ]),
+                'status' => 'aktif'
+            ],
+            [
+                'layanan_id' => $smartShuttleService->id_layanan,
+                'kode_rute' => 'BDG-JKT-002',
+                'nama_rute' => 'Bandung - Jakarta Via Cikampek',
+                'kota_asal' => 'Bandung',
+                'kota_tujuan' => 'Jakarta',
+                'durasi' => '03:00',
+                'jarak' => 140.00,
+                'harga_dasar' => 115000.00,
+                'rute_pemberhentian' => json_encode([
+                    [
+                        'kota' => 'Bandung',
+                        'outlets' => ['Dago', 'Cihampelas', 'Setiabudi'],
+                        'durasi_singgah' => 15,
+                        'jarak_segment' => 0
+                    ],
+                    [
+                        'kota' => 'Cimahi',
+                        'outlets' => ['Cimahi Selatan', 'Cimahi Tengah'],
+                        'durasi_singgah' => 10,
+                        'jarak_segment' => 15
+                    ],
+                    [
+                        'kota' => 'Purwakarta',
+                        'outlets' => ['Purwakarta Kota', 'Cikampek'],
+                        'durasi_singgah' => 15,
+                        'jarak_segment' => 50
                     ],
                     [
                         'kota' => 'Bekasi',
                         'outlets' => ['Bekasi Barat', 'Bekasi Timur'],
-                        'durasi_singgah' => 20
+                        'durasi_singgah' => 20,
+                        'jarak_segment' => 40
                     ],
                     [
-                        'kota' => 'Yogyakarta',
-                        'outlets' => ['Malioboro'],
-                        'durasi_singgah' => 30
-                    ],
-                    [
-                        'kota' => 'Semarang',
-                        'outlets' => ['Simpang Lima'],
-                        'durasi_singgah' => 15
+                        'kota' => 'Jakarta',
+                        'outlets' => ['Sudirman', 'Blok M', 'Kota'],
+                        'durasi_singgah' => 30,
+                        'jarak_segment' => 35
                     ]
                 ]),
                 'status' => 'aktif'
             ],
             [
-                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
-                'kode_rute' => 'BDG-JKT-001',
-                'nama_rute' => 'Bandung - Jakarta Via Bekasi',
-                'kota_asal' => 'Bandung',
-                'kota_tujuan' => 'Jakarta',
-                'durasi' => '04:30',
-                'jarak' => 140.00,
-                'harga_dasar' => 125000.00,
-                'rute_pemberhentian' => json_encode([
-                    [
-                        'kota' => 'Bandung',
-                        'outlets' => ['Terminal Leuwi Panjang', 'Cihampelas Walk'],
-                        'durasi_singgah' => 15
-                    ],
-                    [
-                        'kota' => 'Bekasi',
-                        'outlets' => ['Bekasi Timur'],
-                        'durasi_singgah' => 20
-                    ]
-                ]),
-                'status' => 'aktif'
-            ],
-            [
-                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
+                'layanan_id' => $smartShuttleService->id_layanan,
                 'kode_rute' => 'JKT-YOG-001',
                 'nama_rute' => 'Jakarta - Yogyakarta Via Semarang',
                 'kota_asal' => 'Jakarta',
                 'kota_tujuan' => 'Yogyakarta',
-                'durasi' => '10:00',
-                'jarak' => 520.00,
-                'harga_dasar' => 225000.00,
+                'durasi' => '08:00',
+                'jarak' => 550.00,
+                'harga_dasar' => 250000.00,
                 'rute_pemberhentian' => json_encode([
                     [
                         'kota' => 'Jakarta',
-                        'outlets' => ['Sudirman', 'Jakarta Kota'],
-                        'durasi_singgah' => 15
+                        'outlets' => ['Sudirman', 'Kota'],
+                        'durasi_singgah' => 15,
+                        'jarak_segment' => 0
                     ],
                     [
-                        'kota' => 'Depok',
-                        'outlets' => ['Margonda'],
-                        'durasi_singgah' => 15
+                        'kota' => 'Cirebon',
+                        'outlets' => ['Cirebon Kota', 'Cirebon Barat'],
+                        'durasi_singgah' => 20,
+                        'jarak_segment' => 200
+                    ],
+                    [
+                        'kota' => 'Tegal',
+                        'outlets' => ['Tegal Kota', 'Slawi'],
+                        'durasi_singgah' => 15,
+                        'jarak_segment' => 100
+                    ],
+                    [
+                        'kota' => 'Pekalongan',
+                        'outlets' => ['Pekalongan Kota'],
+                        'durasi_singgah' => 10,
+                        'jarak_segment' => 60
                     ],
                     [
                         'kota' => 'Semarang',
-                        'outlets' => ['Simpang Lima'],
-                        'durasi_singgah' => 20
-                    ]
-                ]),
-                'status' => 'aktif'
-            ],
-            [
-                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
-                'kode_rute' => 'TGR-DPK-001',
-                'nama_rute' => 'Tangerang - Depok Via Jakarta',
-                'kota_asal' => 'Tangerang',
-                'kota_tujuan' => 'Depok',
-                'durasi' => '03:00',
-                'jarak' => 70.00,
-                'harga_dasar' => 85000.00,
-                'rute_pemberhentian' => json_encode([
-                    [
-                        'kota' => 'Tangerang',
-                        'outlets' => ['CBD'],
-                        'durasi_singgah' => 10
-                    ],
-                    [
-                        'kota' => 'Jakarta',
-                        'outlets' => ['Blok M', 'Sudirman'],
-                        'durasi_singgah' => 20
-                    ]
-                ]),
-                'status' => 'aktif'
-            ],
-            [
-                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
-                'kode_rute' => 'BAL-SMG-001',
-                'nama_rute' => 'Bali - Semarang Via Yogyakarta',
-                'kota_asal' => 'Bali',
-                'kota_tujuan' => 'Semarang',
-                'durasi' => '16:00',
-                'jarak' => 650.00,
-                'harga_dasar' => 295000.00,
-                'rute_pemberhentian' => json_encode([
-                    [
-                        'kota' => 'Bali',
-                        'outlets' => ['Kuta'],
-                        'durasi_singgah' => 15
+                        'outlets' => ['Semarang Tengah', 'Simpang Lima', 'Ungaran'],
+                        'durasi_singgah' => 25,
+                        'jarak_segment' => 90
                     ],
                     [
                         'kota' => 'Yogyakarta',
-                        'outlets' => ['Malioboro'],
-                        'durasi_singgah' => 30
+                        'outlets' => ['Malioboro', 'Sleman', 'Bantul'],
+                        'durasi_singgah' => 30,
+                        'jarak_segment' => 100
                     ]
                 ]),
                 'status' => 'aktif'
             ],
             [
-                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
-                'kode_rute' => 'BKS-BDG-002',
-                'nama_rute' => 'Bekasi - Bandung Express',
-                'kota_asal' => 'Bekasi',
-                'kota_tujuan' => 'Bandung',
-                'durasi' => '02:30',
-                'jarak' => 115.00,
-                'harga_dasar' => 95000.00,
+                'layanan_id' => $smartShuttleService->id_layanan,
+                'kode_rute' => 'BDG-SMG-001',
+                'nama_rute' => 'Bandung - Semarang Via Tasikmalaya',
+                'kota_asal' => 'Bandung',
+                'kota_tujuan' => 'Semarang',
+                'durasi' => '06:00',
+                'jarak' => 350.00,
+                'harga_dasar' => 180000.00,
                 'rute_pemberhentian' => json_encode([
+                    [
+                        'kota' => 'Bandung',
+                        'outlets' => ['Dago', 'Cihampelas'],
+                        'durasi_singgah' => 15,
+                        'jarak_segment' => 0
+                    ],
+                    [
+                        'kota' => 'Tasikmalaya',
+                        'outlets' => ['Tasik Kota', 'Cihideung'],
+                        'durasi_singgah' => 20,
+                        'jarak_segment' => 80
+                    ],
+                    [
+                        'kota' => 'Banjar',
+                        'outlets' => ['Banjar Kota'],
+                        'durasi_singgah' => 10,
+                        'jarak_segment' => 70
+                    ],
+                    [
+                        'kota' => 'Cilacap',
+                        'outlets' => ['Cilacap Kota', 'Kroya'],
+                        'durasi_singgah' => 15,
+                        'jarak_segment' => 100
+                    ],
+                    [
+                        'kota' => 'Purwokerto',
+                        'outlets' => ['Purwokerto Kota'],
+                        'durasi_singgah' => 15,
+                        'jarak_segment' => 60
+                    ],
+                    [
+                        'kota' => 'Semarang',
+                        'outlets' => ['Semarang Tengah', 'Simpang Lima'],
+                        'durasi_singgah' => 30,
+                        'jarak_segment' => 120
+                    ]
+                ]),
+                'status' => 'aktif'
+            ],
+            [
+                'layanan_id' => $smartShuttleService->id_layanan,
+                'kode_rute' => 'JKT-BKS-LOCAL',
+                'nama_rute' => 'Jakarta - Bekasi Local',
+                'kota_asal' => 'Jakarta',
+                'kota_tujuan' => 'Bekasi',
+                'durasi' => '01:30',
+                'jarak' => 35.00,
+                'harga_dasar' => 40000.00,
+                'rute_pemberhentian' => json_encode([
+                    [
+                        'kota' => 'Jakarta',
+                        'outlets' => ['Sudirman', 'Blok M'],
+                        'durasi_singgah' => 10,
+                        'jarak_segment' => 0
+                    ],
+                    [
+                        'kota' => 'Cakung',
+                        'outlets' => ['Cakung Barat', 'Cakung Timur'],
+                        'durasi_singgah' => 5,
+                        'jarak_segment' => 10
+                    ],
+                    [
+                        'kota' => 'Cibitung',
+                        'outlets' => ['Cibitung Kota'],
+                        'durasi_singgah' => 5,
+                        'jarak_segment' => 8
+                    ],
                     [
                         'kota' => 'Bekasi',
                         'outlets' => ['Bekasi Barat', 'Bekasi Timur'],
-                        'durasi_singgah' => 15
-                    ]
-                ]),
-                'status' => 'aktif'
-            ],
-            [
-                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
-                'kode_rute' => 'YOG-BAL-001',
-                'nama_rute' => 'Yogyakarta - Bali Direct',
-                'kota_asal' => 'Yogyakarta',
-                'kota_tujuan' => 'Bali',
-                'durasi' => '12:00',
-                'jarak' => 530.00,
-                'harga_dasar' => 275000.00,
-                'rute_pemberhentian' => json_encode([
-                    [
-                        'kota' => 'Yogyakarta',
-                        'outlets' => ['Malioboro'],
-                        'durasi_singgah' => 20
-                    ],
-                    [
-                        'kota' => 'Semarang',
-                        'outlets' => ['Simpang Lima'],
-                        'durasi_singgah' => 15
-                    ]
-                ]),
-                'status' => 'aktif'
-            ],
-            [
-                'layanan_id' => $smartShuttleService->id_layanan, // ← TAMBAHKAN INI
-                'kode_rute' => 'DPK-BKS-001',
-                'nama_rute' => 'Depok - Bekasi Via Jakarta',
-                'kota_asal' => 'Depok',
-                'kota_tujuan' => 'Bekasi',
-                'durasi' => '02:15',
-                'jarak' => 50.00,
-                'harga_dasar' => 65000.00,
-                'rute_pemberhentian' => json_encode([
-                    [
-                        'kota' => 'Depok',
-                        'outlets' => ['Margonda'],
-                        'durasi_singgah' => 10
-                    ],
-                    [
-                        'kota' => 'Jakarta',
-                        'outlets' => ['Sudirman'],
-                        'durasi_singgah' => 15
+                        'durasi_singgah' => 15,
+                        'jarak_segment' => 12
                     ]
                 ]),
                 'status' => 'aktif'
@@ -228,5 +248,10 @@ class RuteSeeder extends Seeder
 
         $this->command->info('RuteSeeder berhasil! Total: ' . count($rutes) . ' rute dibuat.');
         $this->command->info('Semua rute dikaitkan dengan layanan Smart Shuttle.');
+        
+        // Tampilkan info rute yang dibuat
+        foreach ($rutes as $rute) {
+            $this->command->info('- ' . $rute['nama_rute'] . ' (' . $rute['kota_asal'] . ' → ' . $rute['kota_tujuan'] . ')');
+        }
     }
 }

@@ -312,6 +312,101 @@
         width: 100%;
     }
 
+    /* ========== AVAILABLE SCHEDULES SECTION (DARI FILE KEDUA) ========== */
+    .available-schedules {
+        padding: 60px 40px;
+        background: #f8f9fa;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .available-schedules .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    .available-schedules h2 {
+        text-align: center;
+        color: #FF581E;
+        margin-bottom: 30px;
+        font-family: 'Roboto', sans-serif;
+        font-size: 32px;
+    }
+
+    .available-schedules h2 i {
+        margin-right: 10px;
+    }
+
+    .schedules-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+        width: 100%;
+    }
+
+    .schedule-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-left: 4px solid #FF581E;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .schedule-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .schedule-card .route {
+        font-weight: bold;
+        font-size: 18px;
+        color: #123352;
+        margin-bottom: 15px;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    .schedule-details {
+        margin-top: 10px;
+    }
+
+    .schedule-details p {
+        margin: 5px 0;
+        font-family: 'Roboto', sans-serif;
+        color: #333;
+    }
+
+    .schedule-details i {
+        color: #FF581E;
+        margin-right: 8px;
+        width: 20px;
+    }
+
+    .btn-book {
+        display: inline-block;
+        margin-top: 15px;
+        padding: 8px 20px;
+        background: #FF581E;
+        color: white;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: background 0.3s ease;
+        font-family: 'Roboto', sans-serif;
+        text-align: center;
+    }
+
+    .btn-book:hover {
+        background: #E54E1A;
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-book i {
+        margin-right: 5px;
+    }
+
     /* ========== SERVICES SECTION MOBILE FIX ========== */
     .services-section {
         padding: 80px 0;
@@ -1798,6 +1893,16 @@
         .feature-desc {
             font-size: 13px;
         }
+
+        /* Available Schedules Responsive */
+        .available-schedules {
+            padding: 40px 30px;
+        }
+
+        .schedules-grid {
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
     }
 
     /* Mobile (768px and below) */
@@ -1908,6 +2013,25 @@
         .search-btn.vertical-btn .btn-text {
             align-items: center;
             text-align: center;
+        }
+
+        /* AVAILABLE SCHEDULES MOBILE */
+        .available-schedules {
+            padding: 30px 20px;
+        }
+
+        .available-schedules h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .schedules-grid {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .schedule-card {
+            padding: 15px;
         }
 
         /* SERVICES MOBILE */
@@ -2223,6 +2347,15 @@
             font-size: 13px;
         }
 
+        /* Available Schedules Mobile */
+        .available-schedules h2 {
+            font-size: 20px;
+        }
+
+        .schedule-card .route {
+            font-size: 16px;
+        }
+
         /* Responsive floating buttons */
         .floating-cs-container {
             bottom: 15px;
@@ -2310,6 +2443,15 @@
             min-width: 100px;
             padding: 10px;
         }
+
+        /* Available Schedules Landscape */
+        .available-schedules {
+            padding: 30px 20px;
+        }
+
+        .schedules-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
     }
 
     /* Fix untuk iOS Safari */
@@ -2338,13 +2480,55 @@
     use App\Models\MProfilePerusahaan;
     use App\Models\Promo;
     use App\Models\Artikel;
+    use App\Models\DriverJadwal;
+    use App\Models\Rute;
     use Carbon\Carbon;
-    use Illuminate\Support\Facades\Storage; // TAMBAHKAN INI
     
     $profile = MProfilePerusahaan::first();
 
     // Data user dari session
     $user = session()->get('user', null);
+
+    // ========== AMBIL DATA UNTUK DROPDOWN KOTA (ASAL & TUJUAN) - DARI FILE KEDUA ==========
+    // Ambil daftar kota asal dan tujuan dari DriverJadwal yang aktif
+    $jadwalsActive = DriverJadwal::with('jadwal.rutes')
+        ->where('status', 'aktif')
+        ->where('tanggal', '>=', now()->toDateString())
+        ->get();
+
+    // Ekstrak kota unik menggunakan getDetailRute()
+    $kotaAsalList = $jadwalsActive->map(function($item) {
+        $detail = $item->getDetailRute();
+        return $detail['kota_asal'] ?? null;
+    })->filter()->unique()->values();
+
+    $kotaTujuanList = $jadwalsActive->map(function($item) {
+        $detail = $item->getDetailRute();
+        return $detail['kota_tujuan'] ?? null;
+    })->filter()->unique()->values();
+
+    // Jika tidak ada data, ambil dari Rute master
+    if($kotaAsalList->isEmpty()) {
+        $kotaAsalList = Rute::distinct()->pluck('kota_asal')->filter();
+    }
+    if($kotaTujuanList->isEmpty()) {
+        $kotaTujuanList = Rute::distinct()->pluck('kota_tujuan')->filter();
+    }
+
+    // ========== PARAMETER PENCARIAN - DARI FILE KEDUA ==========
+    $asalParam = request()->get('asal', '');
+    $tujuanParam = request()->get('tujuan', '');
+    $tanggalParam = request()->get('tanggal', date('Y-m-d'));
+    $penumpangParam = request()->get('penumpang', 1);
+    
+    // Data jadwal untuk Available Schedules (ambil 4 jadwal terdekat)
+    $jadwals = DriverJadwal::with(['jadwal.rutes', 'driver'])
+        ->where('status', 'aktif')
+        ->where('tanggal', '>=', now()->toDateString())
+        ->orderBy('tanggal', 'asc')
+        ->orderBy('waktu_keberangkatan', 'asc')
+        ->take(4)
+        ->get();
 
     // Data review dan statistik
     $totalReviews = 24;
@@ -2414,51 +2598,35 @@
         ];
     }
 
-    // DATA ARTIKEL - PERBAIKAN: Gunakan gambar dari database
-    $artikelsFromDB = Artikel::where('status', true) // Hanya ambil yang aktif
-        ->whereNotNull('tanggal_publikasi')
-        ->where('tanggal_publikasi', '<=', Carbon::now())
-        ->orderBy('tanggal_publikasi', 'desc')
-        ->take(3)
-        ->get();
-    
+    // Data artikel
+    $artikelsFromDB = Artikel::orderBy('tanggal_publikasi', 'desc')->take(3)->get();
     $articles = [];
 
+    // List nama file foto kamu yang ada di public/images/
+    $fotoKamu = [
+        'AR1.png',
+        'AR2.png',
+        'AR3.png',
+    ];
+
     foreach ($artikelsFromDB as $index => $artikel) {
-        // Gunakan gambar dari database jika ada
-        $gambar = asset('images/AR1.png'); // default fallback
-        
-        if ($artikel->gambar) {
-            // Cek apakah gambar ada di storage publik
-            if (Storage::disk('public')->exists($artikel->gambar)) {
-                $gambar = asset('storage/' . $artikel->gambar);
-            }
-            // Jika gambar sudah full URL (misalnya dari seeder)
-            elseif (filter_var($artikel->gambar, FILTER_VALIDATE_URL)) {
-                $gambar = $artikel->gambar;
-            }
-            // Jika gambar adalah path relatif di public folder
-            elseif (file_exists(public_path($artikel->gambar))) {
-                $gambar = asset($artikel->gambar);
-            }
-        }
+        $fotoIndex = $index % count($fotoKamu);
+        $namaFoto = $fotoKamu[$fotoIndex];
 
         $articles[] = [
             'id' => $artikel->id,
-            'image' => $gambar, // Gunakan gambar dari database
+            'image' => asset('images/' . $namaFoto),
             'category' => $artikel->kategori,
             'title' => $artikel->judul,
             'excerpt' => substr(strip_tags($artikel->konten), 0, 100) . '...',
             'date' => Carbon::parse($artikel->tanggal_publikasi)->translatedFormat('d F Y'),
             'read_time' => '5 min read',
-            'tags' => $artikel->meta_keywords ? explode(', ', $artikel->meta_keywords) : [],
+            'tags' => explode(', ', $artikel->meta_keywords),
             'full_content' => $artikel->konten,
-            'author' => $artikel->penulis,
-            'slug' => $artikel->slug ?? 'artikel-' . $artikel->id
+            'author' => $artikel->penulis
         ];
     }
 
-    // Jika tidak ada artikel aktif, gunakan data dummy
     if (empty($articles)) {
         $articles = [
             [
@@ -2471,12 +2639,11 @@
                 'read_time' => '5 min read',
                 'tags' => ['Perjalanan', 'Tips', 'Liburan'],
                 'full_content' => '<h3>Persiapan Sebelum Perjalanan</h3><p>Perjalanan dengan shuttle selama liburan memerlukan persiapan yang matang. Pastikan Anda memesan tiket jauh-jauh hari untuk mendapatkan harga terbaik dan kursi pilihan. Smart Shuttle menawarkan pemesanan online yang mudah melalui website atau aplikasi kami.</p>',
-                'author' => 'Admin SmartShuttle',
-                'slug' => 'tips-perjalanan-aman'
+                'author' => 'Admin SmartShuttle'
             ],
             [
                 'id' => 2,
-                'image' => asset('/images/AR2.png'),
+                'image' => asset('images/article2.jpg'),
                 'category' => 'Promo',
                 'title' => 'Diskon Spesial SmartSend untuk Pengiriman Paket',
                 'excerpt' => 'Dapatkan diskon 25% untuk semua pengiriman paket antar kota melalui layanan SmartSend. Berlaku hingga akhir bulan.',
@@ -2484,12 +2651,11 @@
                 'read_time' => '3 min read',
                 'tags' => ['Promo', 'SmartSend', 'Diskon'],
                 'full_content' => '<h3>Diskon SmartSend</h3><p>Nikmati diskon 25% untuk semua pengiriman paket antar kota melalui layanan SmartSend. Berlaku hingga akhir bulan Maret 2024.</p>',
-                'author' => 'Admin SmartShuttle',
-                'slug' => 'diskon-smartsend'
+                'author' => 'Admin SmartShuttle'
             ],
             [
                 'id' => 3,
-                'image' => asset('/images/AR3.png'),
+                'image' => asset('images/article3.jpg'),
                 'category' => 'Berita',
                 'title' => 'Rute Baru SmartShuttle: Jakarta - Bandung',
                 'excerpt' => 'SmartShuttle kini melayani rute baru Jakarta - Bandung dengan armada terbaru dan fasilitas lengkap.',
@@ -2497,8 +2663,7 @@
                 'read_time' => '4 min read',
                 'tags' => ['Berita', 'Rute Baru', 'Jakarta-Bandung'],
                 'full_content' => '<h3>Rute Baru Jakarta - Bandung</h3><p>SmartShuttle kini melayani rute baru Jakarta - Bandung dengan armada terbaru dan fasilitas lengkap untuk kenyamanan perjalanan Anda.</p>',
-                'author' => 'Admin SmartShuttle',
-                'slug' => 'rute-baru-jakarta-bandung'
+                'author' => 'Admin SmartShuttle'
             ]
         ];
     }
@@ -2520,14 +2685,14 @@
                 <span>Tiket Shuttle</span>
             </a>
 
-            <!-- KIRIM PAKET - Langsung ke halaman smartsend -->
+            <!-- KIRIM PAKET - Langsung ke halaman smartsend (dari file pertama) -->
             <a href="{{ route('customer.smartsend') }}" class="hero-service" id="kirim-paket-link">
                 <i class="fas fa-box"></i>
                 <span>Kirim Paket</span>
             </a>
 
-            <!-- SEWA ARMADA -->
-            <a href="#" class="hero-service" onclick="alert('Fitur Sewa Armada akan segera hadir!')">
+            <!-- SEWA ARMADA - Langsung ke halaman smartrent (dari file pertama) -->
+            <a href="{{ route('customer.smartrent') }}" class="hero-service" id="sewa-armada-link">
                 <i class="fas fa-car"></i>
                 <span>Sewa Armada</span>
             </a>
@@ -2535,49 +2700,65 @@
     </div>
 </div>
 
-<!-- Search Section -->
+<!-- Search Section (menggunakan form pencarian dari file kedua) -->
 <div class="search-section">
     <div class="search-container">
-        <!-- Form Tiket Shuttle (Selalu tampil) -->
-        <form action="{{ route('customer.search') }}" method="GET" id="search-form" class="service-form">
+        <!-- Form Tiket Shuttle (dari file kedua) -->
+        <form action="{{ route('customer.showSearch') }}" method="GET" id="search-form" class="service-form">
             <div class="search-row">
                 <div class="search-field">
-                    <select class="search-input" id="departure-outlet" name="departure_outlet" required>
-                        <option value="">Pilih Outlet Keberangkatan</option>
-                        @foreach($outletsGrouped as $kota => $outlets)
-                            <optgroup label="{{ $kota }}">
-                                @foreach($outlets as $outlet)
-                                    <option value="{{ $outlet->id }}">
-                                        {{ $outlet->nama_outlet }}
-                                    </option>
-                                @endforeach
-                            </optgroup>
-                        @endforeach
+                    <select class="search-input" id="departure-outlet" name="asal" required>
+                        <option value="">Pilih Kota Asal</option>
+                        @if(isset($outletsGrouped) && $outletsGrouped->isNotEmpty())
+                            @foreach($outletsGrouped as $city => $outlets)
+                                <optgroup label="{{ $city }}">
+                                    @foreach($outlets as $outlet)
+                                        @php $cityVal = $outlet->branch->kota ?? $outlet->kota ?? ''; @endphp
+                                        <option value="{{ $cityVal }}" {{ $asalParam == $cityVal ? 'selected' : '' }}>
+                                            {{ $outlet->nama_outlet }} @if($outlet->branch) - {{ $outlet->branch->kota }} @endif
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
+                        @else
+                            @foreach($kotaAsalList as $kota)
+                                <option value="{{ $kota }}" {{ $asalParam == $kota ? 'selected' : '' }}>
+                                    {{ $kota }}
+                                </option>
+                            @endforeach
+                        @endif
                     </select>
                 </div>
                 <div class="search-field">
-                    <select class="search-input" id="destination-outlet" name="destination_outlet" required>
-                        <option value="">Pilih Outlet Tujuan</option>
-                        @foreach($outletsGrouped as $kota => $outlets)
-                            <optgroup label="{{ $kota }}">
-                                @foreach($outlets as $outlet)
-                                    <option value="{{ $outlet->id }}">
-                                        {{ $outlet->nama_outlet }}
-                                    </option>
-                                @endforeach
-                            </optgroup>
-                        @endforeach
+                    <select class="search-input" id="destination-outlet" name="tujuan" required>
+                        <option value="">Pilih Kota Tujuan</option>
+                        @if(isset($outletsGrouped) && $outletsGrouped->isNotEmpty())
+                            @foreach($outletsGrouped as $city => $outlets)
+                                <optgroup label="{{ $city }}">
+                                    @foreach($outlets as $outlet)
+                                        @php $cityVal = $outlet->branch->kota ?? $outlet->kota ?? ''; @endphp
+                                        <option value="{{ $cityVal }}" {{ $tujuanParam == $cityVal ? 'selected' : '' }}>
+                                            {{ $outlet->nama_outlet }} @if($outlet->branch) - {{ $outlet->branch->kota }} @endif
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
+                        @else
+                            @foreach($kotaTujuanList as $kota)
+                                <option value="{{ $kota }}" {{ $tujuanParam == $kota ? 'selected' : '' }}>
+                                    {{ $kota }}
+                                </option>
+                            @endforeach
+                        @endif
                     </select>
                 </div>
                 <div class="search-field">
-                    <input type="date" class="search-input" name="departure_date"
-                        value="{{ old('departure_date', date('Y-m-d')) }}"
-                        min="{{ date('Y-m-d') }}" required>
+                    <input type="date" class="search-input" name="tanggal" 
+                           value="{{ $tanggalParam }}" min="{{ date('Y-m-d') }}">
                 </div>
                 <div class="search-field">
-                    <input type="number" class="search-input" name="passenger_count"
-                        value="{{ old('passenger_count', 1) }}"
-                        placeholder="Jumlah..." min="1" max="10" required>
+                    <input type="number" class="search-input" name="penumpang" 
+                           value="{{ $penumpangParam }}" min="1" max="10" placeholder="Penumpang">
                 </div>
                 <div class="search-btn-container">
                     <button type="submit" class="search-btn">
@@ -2592,7 +2773,76 @@
 <!-- Divider -->
 <div class="divider"></div>
 
-<!-- Services Section -->
+<!-- Available Schedules Section (dari file kedua) -->
+<section class="available-schedules">
+    <div class="container">
+        <h2><i class="fas fa-calendar-alt"></i> Jadwal Tersedia</h2>
+        
+        @if($jadwals->count() > 0)
+        <div class="schedules-grid">
+            @foreach($jadwals as $jadwal)
+            @php
+                $detail = $jadwal->getDetailRute();
+                // Ensure we have a single Rute model (jadwal->rutes is a collection)
+                $rute = null;
+                if (isset($jadwal->jadwal) && isset($jadwal->jadwal->rutes)) {
+                    try {
+                        $rute = $jadwal->jadwal->rutes instanceof \Illuminate\Database\Eloquent\Collection
+                            ? $jadwal->jadwal->rutes->first()
+                            : $jadwal->jadwal->rutes;
+                    } catch (\Exception $e) {
+                        $rute = null;
+                    }
+                }
+                $jamBerangkat = \Carbon\Carbon::parse($jadwal->waktu_keberangkatan)->format('H:i');
+                $jamTiba = \Carbon\Carbon::parse($jadwal->waktu_kedatangan)->format('H:i');
+                $tanggal = \Carbon\Carbon::parse($jadwal->tanggal)->translatedFormat('d F Y');
+            @endphp
+            
+            <div class="schedule-card">
+                <div class="route">
+                    {{ $detail['kota_asal'] ?? 'N/A' }} → {{ $detail['kota_tujuan'] ?? 'N/A' }}
+                </div>
+                
+                <div class="schedule-details">
+                    <p><i class="far fa-clock"></i> {{ $jamBerangkat }} - {{ $jamTiba }}</p>
+                    <p><i class="far fa-calendar"></i> {{ $tanggal }}</p>
+                    
+                    @if($rute)
+                    <p><i class="fas fa-route"></i> {{ $rute->nama_rute ?? 'Rute' }}</p>
+                    @endif
+                    
+                    @php $shuttle = $jadwal->shuttle ?? null; @endphp
+                    @if($shuttle)
+                    <p><i class="fas fa-bus"></i> {{ $shuttle->nama_shuttle ?? ($jadwal->armada ?? 'Armada') }}</p>
+                    @endif
+                    
+                    @if($jadwal->driver)
+                    <p><i class="fas fa-user"></i> {{ $jadwal->driver->nama_driver ?? 'Driver' }}</p>
+                    @endif
+                </div>
+                
+                <a href="{{ route('customer.showSearch', [
+                    'asal' => $detail['kota_asal'] ?? '',
+                    'tujuan' => $detail['kota_tujuan'] ?? '',
+                    'tanggal' => $jadwal->tanggal
+                ]) }}" class="btn-book">
+                    <i class="fas fa-ticket-alt"></i> Pesan Sekarang
+                </a>
+            </div>
+            @endforeach
+        </div>
+        @else
+        <div class="no-schedules" style="text-align: center; padding: 30px; background: white; border-radius: 10px;">
+            <i class="fas fa-calendar-times" style="font-size: 48px; color: #ddd; margin-bottom: 15px;"></i>
+            <h3 style="color: #666; margin-bottom: 10px;">Belum ada jadwal tersedia</h3>
+            <p style="color: #888;">Silakan cari jadwal menggunakan form pencarian di atas</p>
+        </div>
+        @endif
+    </div>
+</section>
+
+<!-- Services Section (dari file pertama) -->
 <div class="services-section">
     <h2 class="services-title">Layanan Utama {{ $profile->nama_dagang ?? 'Smart Shuttle' }}</h2>
     <p class="services-subtitle">
@@ -2644,7 +2894,7 @@
     </div>
 </div>
 
-<!-- Promo Section -->
+<!-- Promo Section (dari file pertama) -->
 <div class="promo-section">
     <h2 class="promo-title">Promo Spesial {{ $profile->nama_dagang ?? 'Smart Shuttle' }}</h2>
     <p class="promo-subtitle">
@@ -2685,7 +2935,7 @@
     </div>
 </div>
 
-<!-- Features Section -->
+<!-- Features Section (dari file pertama) -->
 <div class="features-section">
     <h2 class="features-title">{{ strtoupper($profile->nama_dagang ?? 'SMART SHUTTLE') }} {{ $profile->features_title ?? 'SIAP MENEMANI SETIAP PERJALANANMU!' }}</h2>
     <div class="features-grid-6">
@@ -2749,69 +2999,46 @@
     </div>
 </div>
 
-<!-- Articles Section -->
+<!-- Articles Section (dari file pertama) -->
 <section class="articles-section">
     <h2 class="articles-title">Artikel & Berita Terbaru</h2>
     <p class="articles-subtitle">
         Dapatkan informasi terbaru seputar layanan transportasi, tips perjalanan, dan berita terbaru dari Smart Shuttle.
     </p>
 
-    @if(isset($articles) && count($articles) > 0)
-        <div class="articles-grid">
-            @foreach($articles as $article)
-            <div class="article-card">
-                <!-- Debug gambar (bisa dihapus setelah testing) -->
-                <!-- <small style="color:#666; font-size:10px;">{{ $article['image'] }}</small> -->
-                
-                <img src="{{ $article['image'] ?? asset('images/AR1.png') }}" 
-                     alt="{{ $article['title'] ?? 'Artikel' }}" 
-                     class="article-image"
-                     onerror="this.onerror=null; this.src='{{ asset('images/AR1.png') }}';">
-                
-                <div class="article-content">
-                    <span class="article-category">{{ $article['category'] ?? 'Umum' }}</span>
-                    <h3 class="article-title">{{ $article['title'] ?? 'Judul Artikel' }}</h3>
-                    <p class="article-excerpt">{{ $article['excerpt'] ?? 'Deskripsi artikel...' }}</p>
-                    <div class="article-meta">
-                        <div class="article-date">
-                            <i class="far fa-calendar-alt"></i>
-                            {{ $article['date'] ?? date('d M Y') }}
-                        </div>
-                        
-                        <!-- Pastikan ada slug -->
-                        @if(isset($article['slug']) && !empty($article['slug']))
-                            <a href="{{ route('artikel.show', $article['slug']) }}" class="article-read-more">
-                                Baca Selengkapnya →
-                            </a>
-                        @elseif(isset($article['id']))
-                            <a href="{{ route('artikel.show', $article['id']) }}" class="article-read-more">
-                                Baca Selengkapnya →
-                            </a>
-                        @else
-                            <a href="{{ route('artikel.index') }}" class="article-read-more">
-                                Baca Selengkapnya →
-                            </a>
-                        @endif
+    <div class="articles-grid">
+        @foreach($articles as $index => $article)
+        <div class="article-card">
+            <img src="{{ $article['image'] }}" alt="{{ $article['title'] }}" class="article-image">
+            <div class="article-content">
+                <span class="article-category">{{ $article['category'] }}</span>
+                <h3 class="article-title">{{ $article['title'] }}</h3>
+                <p class="article-excerpt">{{ $article['excerpt'] }}</p>
+                <div class="article-meta">
+                    <div class="article-date">
+                        <i class="far fa-calendar-alt"></i>
+                        {{ $article['date'] }}
                     </div>
+                    @php
+                        $artikelModel = \App\Models\Artikel::find($article['id']);
+                        $slug = $artikelModel ? $artikelModel->slug : $article['id'];
+                    @endphp
+
+                    <a href="{{ route('customer.artikel.detail', $slug) }}" class="article-read-more">
+                        Baca Selengkapnya →
+                    </a>
                 </div>
             </div>
-            @endforeach
         </div>
+        @endforeach
+    </div>
 
-        <a href="{{ route('artikel.index') }}" class="view-all-articles">
-            Lihat Semua Artikel <i class="fas fa-arrow-right"></i>
-        </a>
-    @else
-        <div class="text-center py-5">
-            <p>Tidak ada artikel tersedia saat ini.</p>
-            <a href="{{ route('artikel.index') }}" class="view-all-articles mt-3">
-                Lihat Artikel <i class="fas fa-arrow-right"></i>
-            </a>
-        </div>
-    @endif
+    <a href="{{ route('customer.artikel') }}" class="view-all-articles">
+        Lihat Semua Artikel <i class="fas fa-arrow-right"></i>
+    </a>
 </section>
 
-<!-- Feedback Section -->
+<!-- Feedback Section (dari file pertama) -->
 <section class="feedback-section">
     <div class="feedback-container">
         <h2 class="feedback-title">Review Pelanggan</h2>
@@ -2908,7 +3135,7 @@
     </div>
 </section>
 
-<!-- Floating Customer Service Buttons -->
+<!-- Floating Customer Service Buttons (dari file pertama) -->
 <div class="floating-cs-container">
     <!-- WhatsApp Button -->
     <a href="https://wa.me/6285811224321?text=Halo%20Smart%20Shuttle%2C%20saya%20ingin%20bertanya%20tentang%20layanan%20shuttle."
@@ -2948,24 +3175,24 @@ document.addEventListener('DOMContentLoaded', function() {
             $('#destination-outlet').select2('destroy');
         }
 
-        // Inisialisasi ulang dengan konfigurasi minimal
+        // Inisialisasi ulang dengan konfigurasi minimal (menggunakan placeholder dari file kedua)
         $('#departure-outlet').select2({
-            placeholder: "Pilih Outlet Keberangkatan",
-            allowClear: false,
+            placeholder: "Pilih Kota Asal",
+            allowClear: true,
             width: '100%',
             minimumResultsForSearch: 3,
             dropdownParent: $('#search-form')
         });
 
         $('#destination-outlet').select2({
-            placeholder: "Pilih Outlet Tujuan",
-            allowClear: false,
+            placeholder: "Pilih Kota Tujuan",
+            allowClear: true,
             width: '100%',
             minimumResultsForSearch: 3,
             dropdownParent: $('#search-form')
         });
 
-        console.log('✓ Select2 initialized without double columns');
+        console.log('✓ Select2 initialized for kota dropdowns');
     }
 
     // Inisialisasi dengan delay kecil
@@ -3022,17 +3249,6 @@ document.addEventListener('DOMContentLoaded', function() {
             goToSlide(currentSlide);
         }, 5000);
     }
-
-    /* ========== ARTIKEL DEBUG ========== */
-    // Tampilkan debug informasi artikel di console
-    console.log('=== ARTIKEL DEBUG ===');
-    @foreach($articles as $index => $article)
-        console.log('Artikel {{ $index + 1 }}:', {
-            title: '{{ $article["title"] }}',
-            image: '{{ $article["image"] }}',
-            slug: '{{ $article["slug"] ?? "tidak-ada" }}'
-        });
-    @endforeach
 
     console.log('=== INITIALIZATION COMPLETE ===');
 });

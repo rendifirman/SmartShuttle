@@ -1,5 +1,4 @@
 <?php
-// database/migrations/[timestamp]_add_avatar_to_users_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -11,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             if (!Schema::hasColumn('users', 'avatar')) {
-                $table->string('avatar')->nullable()->after('email');
+                $table->string('avatar')->nullable()->after('jenis_kelamin');
             }
         });
     }
@@ -19,9 +18,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            if (Schema::hasColumn('users', 'avatar')) {
-                $table->dropColumn('avatar');
-            }
+            $table->dropColumn('avatar');
         });
     }
 };
