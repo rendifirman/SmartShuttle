@@ -46,6 +46,7 @@ use App\Services\PaylabsService;
 use App\Models\DriverSchedule;
 use App\Models\DriverJadwal;
 use App\Services\JadwalSearchService;
+use App\Models\SmartRentTransaction;
 
 // Helper function untuk mendapatkan inisial nama
 if (!function_exists('getInitials')) {
@@ -3213,19 +3214,33 @@ class CustomerController extends Controller
         }
 
         $user = Auth::user();
-        $riwayat = Pemesanan::with([
+        
+        // Fetch Pemesanan (Car Booking)
+        $pemesananList = Pemesanan::with([
             'jadwal.shuttle',
             'jadwal.rutes',
             'driverJadwal.driver',
             'detailPenumpang',
-            'pembayaran' // Eager load pembayaran untuk status dinamis
+            'pembayaran'
         ])
         ->where('customer_id', $user->id)
         ->orderBy('created_at', 'desc')
         ->get();
+        
+        // Fetch SmartRent Transactions
+        $smartrentList = SmartRentTransaction::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        // Merge both lists and sort by created_at
+        $riwayat = collect($pemesananList)->merge($smartrentList)
+            ->sortByDesc('created_at')
+            ->values();
 
         return view('customer.riwayat', [
             'riwayat' => $riwayat,
+            'smartrentTransactions' => $smartrentList,
+            'pemesananTransactions' => $pemesananList,
             'user' => $user
         ]);
     }

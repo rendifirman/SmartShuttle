@@ -874,7 +874,7 @@
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Layanan</div>
-                    <div class="detail-value">{{ (isset($service) && $service == 'self-drive') || (isset($customerData['service_type']) && $customerData['service_type'] == 'self-drive') ? 'Lepas Kunci' : 'Dengan Sopir' }}</div>
+                    <div class="detail-value">{{ (isset($service) && $service == 'self_drive') || (isset($customerData['service_type']) && $customerData['service_type'] == 'self_drive') ? 'Lepas Kunci' : 'Dengan Sopir' }}</div>
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Tipe Kendaraan</div>
@@ -945,7 +945,7 @@
                     <span>Durasi Sewa</span>
                     <span>{{ isset($duration) ? $duration : 1 }} Hari</span>
                 </div>
-                @if((isset($service) && $service == 'with-driver') || (isset($customerData['service_type']) && $customerData['service_type'] == 'with-driver'))
+                @if((isset($service) && $service == 'with_driver') || (isset($customerData['service_type']) && $customerData['service_type'] == 'with_driver'))
                 <div class="price-row">
                     <span>Biaya Driver / Hari</span>
                     <span>Rp 150.000</span>
@@ -969,7 +969,7 @@
                 <i class="fas fa-info-circle" style="margin-right:8px;"></i> Pilih metode pembayaran yang Anda inginkan, kemudian klik "Konfirmasi Pembayaran"
             </div>
 
-            <form action="{{ route('smartrent.process-payment') }}" method="POST" id="paymentForm">
+            <form action="{{ route('smartrent.payment.process') }}" method="POST" id="paymentForm">
                 @csrf
                 <input type="hidden" name="order_id" value="{{ isset($order_id) ? $order_id : '' }}">
                 <input type="hidden" name="order_number" value="{{ isset($order_number) ? $order_number : 'SR2026021230D448' }}">
@@ -1134,6 +1134,8 @@
 </div>
 
 @push('scripts')
+// Di resources/views/payment/index.blade.php - bagian script
+
 <script>
     // Data Virtual Account untuk masing-masing bank
     const vaData = {
@@ -1173,6 +1175,9 @@
                 element.innerHTML = '<i class="fas fa-copy"></i> Salin Nomor VA';
                 element.style.color = 'var(--primary)';
             }, 2000);
+        }).catch(err => {
+            // Fallback untuk browser yang tidak support clipboard
+            alert('Gagal menyalin. Silakan salin manual: ' + vaNumber);
         });
     };
 
@@ -1241,19 +1246,71 @@
             showPaymentDetail(firstMethod);
         }
         
-        // Validasi form
-        document.getElementById('paymentForm').addEventListener('submit', function(e) {
-            const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
-            
-            if (!paymentMethod) {
-                e.preventDefault();
-                alert('Silakan pilih metode pembayaran terlebih dahulu.');
-                return false;
-            }
-            
-            // Konfirmasi sebelum submit
-            return confirm('Apakah Anda yakin ingin mengkonfirmasi pembayaran?');
-        });
+        // HANDLER FORM SUBMIT - Redirect ke halaman success
+     // HANDLER FORM SUBMIT - Ganti dengan kode ini
+document.getElementById('paymentForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // Mencegah form submit normal ke server
+    
+    const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+    
+    if (!paymentMethod) {
+        alert('Silakan pilih metode pembayaran terlebih dahulu.');
+        return false;
+    }
+    
+    // Konfirmasi sebelum proses
+    if (!confirm('Apakah Anda yakin ingin mengkonfirmasi pembayaran?')) {
+        return false;
+    }
+    
+    // Tampilkan loading
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses pembayaran...';
+    submitBtn.disabled = true;
+    
+    // Ambil data dari form
+    const formData = new FormData(this);
+    
+    // Buat object data untuk dikirim via URL
+    const params = new URLSearchParams();
+    
+    // Data order - ambil dari form
+    for (let pair of formData.entries()) {
+        if (pair[1] && pair[1] !== '') {
+            params.append(pair[0], pair[1]);
+        }
+    }
+    
+    // Format tanggal pembayaran
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    
+    params.append('payment_time', `${day}/${month}/${year} ${hours}:${minutes} WIB`);
+    
+    // Hitung tanggal selesai sewa
+    const rentDate = params.get('rent_date') || new Date().toISOString().split('T')[0];
+    const duration = parseInt(params.get('duration') || '1');
+    const endDate = new Date(rentDate);
+    endDate.setDate(endDate.getDate() + duration);
+    
+    const endDay = String(endDate.getDate()).padStart(2, '0');
+    const endMonth = String(endDate.getMonth() + 1).padStart(2, '0');
+    const endYear = endDate.getFullYear();
+    
+    params.append('rent_date_end', `${endDay}-${endMonth}-${endYear}`);
+    
+    // CEK DATA sebelum redirect
+    console.log('Data yang akan dikirim:', Object.fromEntries(params));
+    
+    // Redirect ke halaman success
+    setTimeout(function() {
+        window.location.href = "{{ route('smartrent.payment.success') }}?" + params.toString();
+    }, 1500);
+});
 
         // Countdown timer
         function updateDeadlineTimer() {

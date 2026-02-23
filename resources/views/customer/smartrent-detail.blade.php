@@ -1,4 +1,3 @@
-{{-- resources/views/customer/smartrent-detail.blade.php --}}
 @extends('layouts.app')
 
 @section('title', $vehicle['name'] . ' - Detail SmartRent')
@@ -1019,6 +1018,9 @@
 @php
     use App\Models\MProfilePerusahaan;
     $profile = MProfilePerusahaan::first();
+    
+    // Tetapkan harga sopir tetap Rp 150.000
+    $driverPricePerDay = 150000;
 @endphp
 
 <div class="detail-container">
@@ -1064,10 +1066,10 @@
             <!-- Image Gallery -->
             <section class="gallery-section">
                 <div class="main-image-container">
-                    <img src="{{ $vehicle['image'] }}" alt="{{ $vehicle['name'] }}" class="main-image" id="mainImage">
+                    <img src="{{ $vehicle['image'] ?? asset('images/shuttle1.jpeg') }}" alt="{{ $vehicle['name'] }}" class="main-image" id="mainImage">
                 </div>
                 
-                @if(count($vehicle['images']) > 1)
+                @if(count($vehicle['images'] ?? []) > 1)
                 <div class="thumbnail-grid" id="thumbnailGrid">
                     @foreach($vehicle['images'] as $index => $image)
                     <div class="thumbnail {{ $index === 0 ? 'active' : '' }}" onclick="changeImage('{{ $image }}', this)">
@@ -1208,7 +1210,7 @@
                     <input type="hidden" name="vehicle_price" value="{{ $vehicle['price'] }}">
                     <input type="hidden" name="vehicle_image" value="{{ $vehicle['image'] }}">
                     <input type="hidden" name="vehicle_type" value="{{ $vehicle['type'] }}">
-                    <input type="hidden" name="driver_price" value="{{ $vehicle['driver_price'] ?? 200000 }}">
+                    <input type="hidden" name="driver_price" value="{{ $driverPricePerDay }}">
                     <input type="hidden" name="pickup_location" value="Bandung">
                     
                     <div class="form-row">
@@ -1233,7 +1235,7 @@
                     <div class="form-group">
                         <label class="form-label">Opsi Layanan *</label>
                         <select name="service_type" class="form-control" id="driverSelect" required>
-                            <option value="with_driver">Dengan Sopir (+Rp {{ number_format($vehicle['driver_price'] ?? 200000, 0, ',', '.') }}/hari)</option>
+                            <option value="with_driver">Dengan Sopir (+Rp {{ number_format($driverPricePerDay, 0, ',', '.') }}/hari)</option>
                             <option value="self_drive">Tanpa Sopir (Lepas Kunci)</option>
                         </select>
                     </div>
@@ -1348,7 +1350,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     const basePrice = {{ $vehicle['price'] }};
-    const driverPricePerDay = {{ $vehicle['driver_price'] ?? 200000 }};
+    const driverPricePerDay = {{ $driverPricePerDay }}; // Rp 150.000
     
     const durationSelect = document.getElementById('durationSelect');
     const driverSelect = document.getElementById('driverSelect');

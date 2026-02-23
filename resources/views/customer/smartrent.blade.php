@@ -875,7 +875,7 @@
             'id' => 1,
             'name' => 'Toyota Hiace Commuter',
             'type' => 'Shuttle | Manual',
-            'image' => asset('images/shuttle1.jpeg'),
+            'image' => asset('images/toyotahiace.png'),
             'seats' => '12 Seat',
             'luggage' => '4 Koper',
             'fuel' => 'Bensin',
@@ -887,7 +887,7 @@
             'id' => 2,
             'name' => 'Isuzu Elf Long',
             'type' => 'MPV | Manual',
-            'image' => asset('images/shuttle1.jpeg'),
+            'image' => asset('images/isuzu.png'),
             'seats' => '18 Seat',
             'luggage' => '6 Koper',
             'fuel' => 'Solar',
@@ -1051,10 +1051,10 @@
                             Sewa Mobil
                         </button>
          {{-- Atau gunakan alias --}}
-<button class="btn-detail" onclick="window.location.href='{{ route('smartrent.detail', ['id' => $vehicle['id']]) }}'">
-    <i class="fas fa-info-circle"></i>
-    Detail
-</button>
+                    <button class="btn-detail" onclick="window.location.href='{{ route('smartrent.detail', ['id' => $vehicle['id']]) }}'">
+                        <i class="fas fa-info-circle"></i>
+                        Detail
+                    </button>
                     </div>
                 </div>
             </div>

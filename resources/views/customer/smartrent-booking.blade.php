@@ -351,11 +351,6 @@
         padding: 30px;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
         border: 1px solid var(--border-color);
-        display: none;
-    }
-
-    .vehicle-detail-section.active {
-        display: block;
     }
 
     .detail-image-container {
@@ -868,8 +863,71 @@
         'vehicle_id' => ''
     ];
     
-    $vehicles = $vehicles ?? [];
-    $selectedVehicle = $selectedVehicle ?? null;
+    // Data mobil dengan gambar yang sesuai
+    $vehicles = [
+        [
+            'id' => 1,
+            'name' => 'Toyota Hiace Commuter',
+            'type' => 'Shuttle | Manual',
+            'image' => asset('images/toyotahiace.png'),
+            'seats' => 12,
+            'luggage' => 4,
+            'fuel' => 'Bensin',
+            'price' => 1200000,
+            'driver_price' => 150000,
+            'period' => '/hari',
+            'description' => 'Toyota Hiace Commuter dengan kapasitas 12 kursi, cocok untuk perjalanan rombongan. Dilengkapi dengan AC dingin, audio system, dan bagasi luas.',
+            'facilities' => ['AC', 'Audio', 'Power Window', 'Central Lock', 'Bagasi Luas'],
+            'available' => true
+        ],
+        [
+            'id' => 2,
+            'name' => 'Isuzu Elf Long',
+            'type' => 'MPV | Manual',
+            'image' => asset('images/isuzu.png'),
+            'seats' => 18,
+            'luggage' => 6,
+            'fuel' => 'Solar',
+            'price' => 1500000,
+            'driver_price' => 150000,
+            'period' => '/hari',
+            'description' => 'Isuzu Elf Long dengan kapasitas 18 kursi, nyaman untuk perjalanan antar kota. Mesin diesel irit dan perawatan teratur.',
+            'facilities' => ['AC', 'Audio', 'Power Window', 'Central Lock', 'Bagasi Besar', 'USB Charger'],
+            'available' => true
+        ],
+        [
+            'id' => 3,
+            'name' => 'Mitsubishi L300',
+            'type' => 'Shuttle | Manual',
+            'image' => asset('images/shuttle1.jpeg'),
+            'seats' => 8,
+            'luggage' => 3,
+            'fuel' => 'Solar',
+            'price' => 800000,
+            'driver_price' => 150000,
+            'period' => '/hari',
+            'description' => 'Mitsubishi L300 cocok untuk angkutan barang dan penumpang. Tangguh di segala medan dengan perawatan rutin.',
+            'facilities' => ['AC', 'Audio', 'Power Window'],
+            'available' => true
+        ],
+    ];
+    
+    // Cari selected vehicle jika ada vehicle_id
+    $selectedVehicle = null;
+    if (!empty($filterData['vehicle_id'])) {
+        foreach ($vehicles as $vehicle) {
+            if ($vehicle['id'] == $filterData['vehicle_id']) {
+                $selectedVehicle = $vehicle;
+                break;
+            }
+        }
+    }
+    
+    // Jika tidak ada selected vehicle, pilih yang pertama
+    if (!$selectedVehicle && !empty($vehicles)) {
+        $selectedVehicle = $vehicles[0];
+        $filterData['vehicle_id'] = $selectedVehicle['id'];
+    }
 @endphp
 
 <div class="booking-container">
@@ -932,7 +990,7 @@
             
             <input type="hidden" name="rent_date" value="{{ $filterData['rent_date'] ?? date('Y-m-d') }}">
             <input type="hidden" name="duration" value="{{ $filterData['duration'] ?? 1 }}">
-            <input type="hidden" name="vehicle_id" id="selectedVehicleId" value="{{ $filterData['vehicle_id'] ?? '' }}">
+            <input type="hidden" name="vehicle_id" id="selectedVehicleId" value="{{ $selectedVehicle['id'] }}">
         </form>
     </div>
 
@@ -946,10 +1004,10 @@
             </h3>
             
             <div class="vehicle-list" id="vehicleList">
-                @forelse($vehicles as $vehicle)
+                @foreach($vehicles as $vehicle)
                 <div class="vehicle-item {{ $selectedVehicle && $selectedVehicle['id'] == $vehicle['id'] ? 'active' : '' }}" 
                      data-vehicle-id="{{ $vehicle['id'] }}">
-                    <img src="{{ $vehicle['image'] ?? asset('images/default-vehicle.jpg') }}" 
+                    <img src="{{ $vehicle['image'] }}" 
                          alt="{{ $vehicle['name'] }}" 
                          class="vehicle-image"
                          onerror="this.onerror=null; this.src='{{ asset('images/default-vehicle.jpg') }}';">
@@ -983,133 +1041,143 @@
                         </div>
                     </div>
                 </div>
-                @empty
-                <div class="no-vehicles">
-                    <i class="fas fa-car"></i>
-                    <h3>Tidak ada kendaraan ditemukan</h3>
-                    <p>Coba ubah filter pencarian Anda</p>
-                </div>
-                @endforelse
+                @endforeach
             </div>
         </div>
 
-        <!-- Vehicle Detail Section -->
-        <div class="vehicle-detail-section" id="vehicleDetailSection"></div>
+        <!-- Vehicle Detail Section - Langsung diisi dengan selected vehicle -->
+        <div class="vehicle-detail-section" id="vehicleDetailSection">
+            @if($selectedVehicle)
+            <div class="detail-header">
+                <div class="detail-image-container">
+                    <img src="{{ $selectedVehicle['image'] }}" alt="{{ $selectedVehicle['name'] }}" class="detail-image" id="detailImage">
+                </div>
+                
+                <div class="detail-info">
+                    <h2 id="detailName">{{ $selectedVehicle['name'] }}</h2>
+                    <span class="detail-type" id="detailType">{{ $selectedVehicle['type'] }}</span>
+                    
+                    <div class="detail-specs-grid">
+                        <div class="detail-spec">
+                            <i class="fas fa-chair"></i>
+                            <div class="detail-spec-text">
+                                <span class="spec-label">Kursi</span>
+                                <span class="spec-value" id="detailSeats">{{ $selectedVehicle['seats'] }} Kursi</span>
+                            </div>
+                        </div>
+                        <div class="detail-spec">
+                            <i class="fas fa-suitcase"></i>
+                            <div class="detail-spec-text">
+                                <span class="spec-label">Bagasi</span>
+                                <span class="spec-value" id="detailLuggage">{{ $selectedVehicle['luggage'] }} Bagasi</span>
+                            </div>
+                        </div>
+                        <div class="detail-spec">
+                            <i class="fas fa-gas-pump"></i>
+                            <div class="detail-spec-text">
+                                <span class="spec-label">Bahan Bakar</span>
+                                <span class="spec-value" id="detailFuel">{{ $selectedVehicle['fuel'] }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-description" id="detailDescription">{{ $selectedVehicle['description'] }}</div>
+
+            <div class="facilities-section">
+                <h3 class="facilities-title">
+                    <i class="fas fa-clipboard-check"></i> Fasilitas
+                </h3>
+                <div class="facilities-grid" id="facilitiesGrid">
+                    @foreach($selectedVehicle['facilities'] as $facility)
+                    <div class="facility-badge"><i class="fas fa-check-circle"></i> {{ $facility }}</div>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="service-options">
+                <h3 class="service-title">
+                    <i class="fas fa-hand-holding-heart"></i> Pilih Layanan
+                </h3>
+                <div class="service-options-grid">
+                    <div class="service-option" data-service="self-drive" onclick="selectService('self-drive')">
+                        <div class="service-info">
+                            <div class="service-icon">
+                                <i class="fas fa-key"></i>
+                            </div>
+                            <div class="service-text">
+                                <h4>Lepas Kunci</h4>
+                                <p>Mobil + asuransi dasar</p>
+                            </div>
+                        </div>
+                        <div class="service-price" id="selfDrivePrice">Rp 0</div>
+                    </div>
+                    <div class="service-option active" data-service="with-driver" onclick="selectService('with-driver')">
+                        <div class="service-info">
+                            <div class="service-icon">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div class="service-text">
+                                <h4>Dengan Sopir</h4>
+                                <p>BBM, tol, parkir, makan sopir</p>
+                            </div>
+                        </div>
+                        <div class="service-price" id="withDriverPrice">Rp {{ number_format($selectedVehicle['driver_price'], 0, ',', '.') }}/hari</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="price-summary">
+                <h3 class="summary-title">
+                    <i class="fas fa-file-invoice-dollar"></i> Ringkasan Harga
+                </h3>
+                <div class="summary-row">
+                    <span class="summary-label">
+                        <i class="fas fa-car"></i> Harga Sewa Mobil
+                    </span>
+                    <span class="summary-value" id="summaryVehiclePrice">Rp {{ number_format($selectedVehicle['price'], 0, ',', '.') }}/hari</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">
+                        <i class="fas fa-user-tie"></i> Biaya Sopir
+                    </span>
+                    <span class="summary-value" id="summaryDriverPrice">Rp {{ number_format($selectedVehicle['driver_price'], 0, ',', '.') }}/hari</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">
+                        <i class="fas fa-calendar-alt"></i> Durasi
+                    </span>
+                    <span class="summary-value" id="summaryDuration">{{ $filterData['duration'] ?? 1 }} Hari</span>
+                </div>
+                <div class="total-row">
+                    <span class="total-label">Total Sewa</span>
+                    <span class="total-value" id="summaryTotal">Rp {{ number_format(($selectedVehicle['price'] + $selectedVehicle['driver_price']) * ($filterData['duration'] ?? 1), 0, ',', '.') }}</span>
+                </div>
+                <p class="summary-note">
+                    <i class="fas fa-info-circle"></i> Harga sudah termasuk PPN 11%. Belum termasuk akomodasi sopir untuk sewa > 1 hari.
+                </p>
+                
+              <!-- PERBAIKAN: Ganti dengan FORM POST ke route yang benar -->
+<form action="{{ route('smartrent.checkout.booking') }}" method="GET" id="continueForm">
+    <input type="hidden" name="vehicle_id" id="form_vehicle_id" value="{{ $selectedVehicle['id'] }}">
+    <input type="hidden" name="vehicle_name" id="form_vehicle_name" value="{{ $selectedVehicle['name'] }}">
+    <input type="hidden" name="vehicle_image" id="form_vehicle_image" value="{{ $selectedVehicle['image'] }}">
+    <input type="hidden" name="vehicle_price" id="form_vehicle_price" value="{{ $selectedVehicle['price'] }}">
+    <input type="hidden" name="driver_price" id="form_driver_price" value="{{ $selectedVehicle['driver_price'] }}">
+    <input type="hidden" name="service" id="form_service" value="with-driver">
+    <input type="hidden" name="duration" id="form_duration" value="{{ $filterData['duration'] ?? 1 }}">
+    <input type="hidden" name="rent_date" id="form_rent_date" value="{{ $filterData['rent_date'] ?? date('Y-m-d') }}">
+    
+    <button type="submit" class="continue-btn" style="width: 100%; border: none;">
+        <i class="fas fa-arrow-right"></i> Lanjutkan ke Pembayaran
+    </button>
+</form>
+            </div>
+            @endif
+        </div>
     </div>
 </div>
-
-<!-- Template untuk Vehicle Detail -->
-<template id="vehicleDetailTemplate">
-    <div class="detail-header">
-        <div class="detail-image-container">
-            <img src="" alt="" class="detail-image" id="detailImage">
-        </div>
-        
-        <div class="detail-info">
-            <h2 id="detailName"></h2>
-            <span class="detail-type" id="detailType"></span>
-            
-            <div class="detail-specs-grid">
-                <div class="detail-spec">
-                    <i class="fas fa-chair"></i>
-                    <div class="detail-spec-text">
-                        <span class="spec-label">Kursi</span>
-                        <span class="spec-value" id="detailSeats"></span>
-                    </div>
-                </div>
-                <div class="detail-spec">
-                    <i class="fas fa-suitcase"></i>
-                    <div class="detail-spec-text">
-                        <span class="spec-label">Bagasi</span>
-                        <span class="spec-value" id="detailLuggage"></span>
-                    </div>
-                </div>
-                <div class="detail-spec">
-                    <i class="fas fa-gas-pump"></i>
-                    <div class="detail-spec-text">
-                        <span class="spec-label">Bahan Bakar</span>
-                        <span class="spec-value" id="detailFuel"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="detail-description" id="detailDescription"></div>
-
-    <div class="facilities-section">
-        <h3 class="facilities-title">
-            <i class="fas fa-clipboard-check"></i> Fasilitas
-        </h3>
-        <div class="facilities-grid" id="facilitiesGrid"></div>
-    </div>
-
-    <div class="service-options">
-        <h3 class="service-title">
-            <i class="fas fa-hand-holding-heart"></i> Pilih Layanan
-        </h3>
-        <div class="service-options-grid">
-            <div class="service-option" data-service="self-drive" onclick="selectService('self-drive')">
-                <div class="service-info">
-                    <div class="service-icon">
-                        <i class="fas fa-key"></i>
-                    </div>
-                    <div class="service-text">
-                        <h4>Lepas Kunci</h4>
-                        <p>Mobil + asuransi dasar</p>
-                    </div>
-                </div>
-                <div class="service-price" id="selfDrivePrice">Rp 0</div>
-            </div>
-            <div class="service-option active" data-service="with-driver" onclick="selectService('with-driver')">
-                <div class="service-info">
-                    <div class="service-icon">
-                        <i class="fas fa-user-tie"></i>
-                    </div>
-                    <div class="service-text">
-                        <h4>Dengan Sopir</h4>
-                        <p>BBM, tol, parkir, makan sopir</p>
-                    </div>
-                </div>
-                <div class="service-price" id="withDriverPrice">Rp 0/hari</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="price-summary">
-        <h3 class="summary-title">
-            <i class="fas fa-file-invoice-dollar"></i> Ringkasan Harga
-        </h3>
-        <div class="summary-row">
-            <span class="summary-label">
-                <i class="fas fa-car"></i> Harga Sewa Mobil
-            </span>
-            <span class="summary-value" id="summaryVehiclePrice">Rp 0</span>
-        </div>
-        <div class="summary-row">
-            <span class="summary-label">
-                <i class="fas fa-user-tie"></i> Biaya Sopir
-            </span>
-            <span class="summary-value" id="summaryDriverPrice">Rp 0</span>
-        </div>
-        <div class="summary-row">
-            <span class="summary-label">
-                <i class="fas fa-calendar-alt"></i> Durasi
-            </span>
-            <span class="summary-value" id="summaryDuration">{{ $filterData['duration'] ?? 1 }} Hari</span>
-        </div>
-        <div class="total-row">
-            <span class="total-label">Total Sewa</span>
-            <span class="total-value" id="summaryTotal">Rp 0</span>
-        </div>
-        <p class="summary-note">
-            <i class="fas fa-info-circle"></i> Harga sudah termasuk PPN 11%. Belum termasuk akomodasi sopir untuk sewa > 1 hari.
-        </p>
-        <a href="/smartrent/checkout" class="continue-btn" onclick="return continueToPayment(event)">
-            <i class="fas fa-arrow-right"></i> Lanjutkan ke Pembayaran
-        </a>
-    </div>
-</template>
 
 @push('scripts')
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -1117,12 +1185,14 @@
 <script>
 // Data kendaraan dari PHP
 const vehicles = @json($vehicles);
-let selectedVehicleId = {{ $selectedVehicle ? $selectedVehicle['id'] : 'null' }};
+let selectedVehicleId = {{ $selectedVehicle['id'] }};
 let selectedService = 'with-driver';
 let duration = {{ $filterData['duration'] ?? 1 }};
 let rentDate = '{{ $filterData['rent_date'] ?? date('Y-m-d') }}';
 
 $(document).ready(function() {
+    console.log('Vehicles data:', vehicles);
+    
     // Initialize select2
     $('.select2').select2({
         minimumResultsForSearch: 3,
@@ -1130,10 +1200,9 @@ $(document).ready(function() {
         placeholder: 'Pilih opsi',
         allowClear: true
     });
-
-    if (selectedVehicleId) {
-        showVehicleDetail(selectedVehicleId);
-    }
+    
+    // Update form hidden inputs saat halaman dimuat
+    updateFormInputs();
 });
 
 function selectVehicle(vehicleId) {
@@ -1148,81 +1217,8 @@ function selectVehicle(vehicleId) {
     $('.vehicle-item').removeClass('active');
     $(`.vehicle-item[data-vehicle-id="${vehicleId}"]`).addClass('active');
     
-    showVehicleDetail(vehicleId);
-    
-    if (window.innerWidth <= 1024) {
-        setTimeout(() => {
-            $('#vehicleDetailSection')[0].scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-        }, 100);
-    }
-}
-
-function showVehicleDetail(vehicleId) {
-    const vehicle = vehicles.find(v => v.id == vehicleId);
-    if (!vehicle) return;
-    
-    $('#vehicleDetailSection').show().addClass('active');
-    
-    const template = document.getElementById('vehicleDetailTemplate');
-    $('#vehicleDetailSection').html(template.innerHTML);
-    
-    // Isi data kendaraan
-    $('#detailImage').attr('src', vehicle.image || '{{ asset('images/default-vehicle.jpg') }}').on('error', function() {
-        this.src = '{{ asset('images/default-vehicle.jpg') }}';
-    });
-    $('#detailName').text(vehicle.name);
-    $('#detailType').text(vehicle.type || 'MPV');
-    $('#detailSeats').text(vehicle.seats + ' Kursi');
-    $('#detailLuggage').text(vehicle.luggage + ' Bagasi');
-    $('#detailFuel').text(vehicle.fuel || 'Bensin');
-    $('#detailDescription').text(vehicle.description || 'Tidak ada deskripsi untuk kendaraan ini.');
-    
-    // Isi fasilitas
-    const facilitiesGrid = $('#facilitiesGrid');
-    facilitiesGrid.empty();
-    if (vehicle.facilities && vehicle.facilities.length > 0) {
-        vehicle.facilities.forEach(facility => {
-            facilitiesGrid.append(`<div class="facility-badge"><i class="fas fa-check-circle"></i> ${facility}</div>`);
-        });
-    } else {
-        const defaultFacilities = ['AC', 'Audio', 'Power Window', 'Central Lock'];
-        defaultFacilities.forEach(facility => {
-            facilitiesGrid.append(`<div class="facility-badge"><i class="fas fa-check-circle"></i> ${facility}</div>`);
-        });
-    }
-    
-    // Update link href dengan parameter
-    updateContinueButtonLink(vehicleId);
-    
-    updatePrices(vehicle);
-}
-
-function updateContinueButtonLink(vehicleId) {
-    const params = new URLSearchParams({
-        vehicle_id: vehicleId,
-        service: selectedService,
-        duration: duration,
-        rent_date: rentDate
-    });
-    
-    // Gunakan URL langsung
-    $('.continue-btn').attr('href', '/smartrent/checkout?' + params.toString());
-}
-
-function updatePrices(vehicle) {
-    const vehiclePrice = parseInt(vehicle.price) || 0;
-    const driverPrice = vehicle.driver_price ? parseInt(vehicle.driver_price) : 150000;
-    
-    $('#selfDrivePrice').text('Rp 0');
-    $('#withDriverPrice').text(`Rp ${formatNumber(driverPrice)}/hari`);
-    $('#summaryVehiclePrice').text(`Rp ${formatNumber(vehiclePrice)}/hari`);
-    $('#summaryDriverPrice').text(`Rp ${formatNumber(driverPrice)}/hari`);
-    $('#summaryDuration').text(`${duration} Hari`);
-    
-    calculateTotal();
+    // Refresh halaman untuk menampilkan detail kendaraan yang dipilih
+    window.location.href = url.toString();
 }
 
 function selectService(service) {
@@ -1230,63 +1226,43 @@ function selectService(service) {
     $('.service-option').removeClass('active');
     $(`.service-option[data-service="${service}"]`).addClass('active');
     
-    // Update link href dengan service baru
-    if (selectedVehicleId) {
-        updateContinueButtonLink(selectedVehicleId);
-    }
+    // Update form
+    $('#form_service').val(service);
     
-    calculateTotal();
+    // Update harga
+    updatePrices();
 }
 
-function calculateTotal() {
+function updatePrices() {
     const vehicle = vehicles.find(v => v.id == selectedVehicleId);
     if (!vehicle) return;
     
     const vehiclePrice = parseInt(vehicle.price) || 0;
-    let driverPrice = 0;
+    const driverPrice = selectedService === 'with-driver' ? (parseInt(vehicle.driver_price) || 150000) : 0;
+    const total = (vehiclePrice + driverPrice) * duration;
     
-    if (selectedService === 'with-driver') {
-        driverPrice = vehicle.driver_price ? parseInt(vehicle.driver_price) : 150000;
-    }
-    
-    const totalPerDay = vehiclePrice + driverPrice;
-    const total = totalPerDay * duration;
-    
+    $('#selfDrivePrice').text('Rp 0');
+    $('#withDriverPrice').text(`Rp ${formatNumber(vehicle.driver_price || 150000)}/hari`);
+    $('#summaryVehiclePrice').text(`Rp ${formatNumber(vehiclePrice)}/hari`);
+    $('#summaryDriverPrice').text(`Rp ${formatNumber(driverPrice)}/hari`);
     $('#summaryTotal').text(`Rp ${formatNumber(total)}`);
+    
+    // Update form
+    $('#form_driver_price').val(vehicle.driver_price || 150000);
 }
 
-function continueToPayment(event) {
-    if (!selectedVehicleId) {
-        event.preventDefault();
-        alert('Silakan pilih kendaraan terlebih dahulu');
-        return false;
+function updateFormInputs() {
+    const vehicle = vehicles.find(v => v.id == selectedVehicleId);
+    if (vehicle) {
+        $('#form_vehicle_id').val(vehicle.id);
+        $('#form_vehicle_name').val(vehicle.name);
+        $('#form_vehicle_image').val(vehicle.image);
+        $('#form_vehicle_price').val(vehicle.price);
+        $('#form_driver_price').val(vehicle.driver_price);
+        $('#form_service').val(selectedService);
+        $('#form_duration').val(duration);
+        $('#form_rent_date').val(rentDate);
     }
-    
-    // Cari data kendaraan yang dipilih
-    const selectedVehicle = vehicles.find(v => v.id == selectedVehicleId);
-    
-    // Simpan data lengkap kendaraan ke sessionStorage
-    const checkoutData = {
-        vehicle_id: selectedVehicleId,
-        vehicle_name: selectedVehicle.name,
-        vehicle_image: selectedVehicle.image,
-        vehicle_brand: selectedVehicle.brand || 'Toyota',
-        vehicle_type: selectedVehicle.type || 'MPV',
-        vehicle_seats: selectedVehicle.seats || 7,
-        vehicle_luggage: selectedVehicle.luggage || 2,
-        vehicle_fuel: selectedVehicle.fuel || 'Bensin',
-        vehicle_price: selectedVehicle.price || 0,
-        service: selectedService,
-        duration: duration,
-        rent_date: rentDate,
-        driver_price: selectedVehicle.driver_price || 150000
-    };
-    
-    // Simpan ke sessionStorage
-    sessionStorage.setItem('smartrent_checkout_data', JSON.stringify(checkoutData));
-    
-    // Lanjutkan ke halaman checkout (link sudah di-set di href)
-    return true;
 }
 
 function formatNumber(num) {

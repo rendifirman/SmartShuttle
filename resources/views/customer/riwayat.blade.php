@@ -613,52 +613,148 @@
 <div class="divider"></div>
 
 <div class="order-history">
-    @forelse($riwayat as $index => $pemesanan)
-        @php
+    @forelse($riwayat as $index => $item)
+        @if($item instanceof \App\Models\SmartRentTransaction)
+    {{-- SmartRent Rental Transaction Display --}}
+    @php
+        $isSmartRent = true;
+        $status = $item->payment_status === 'paid' ? 'completed' : 'pending';
+        $statusLabel = $item->getPaymentStatusLabelAttribute() ?? ucfirst($item->payment_status);
+        $serviceTypeLabel = $item->service_type === 'with_driver' ? 'Dengan Sopir' : 'Sewa Mandiri';
+        $totalBayarFormatted = 'Rp ' . number_format($item->total_price ?? 0, 0, ',', '.');
+        $formattedStartDate = \Carbon\Carbon::parse($item->start_date)->locale('id')->isoFormat('dddd, D MMMM YYYY');
+        $formattedEndDate = \Carbon\Carbon::parse($item->end_date)->locale('id')->isoFormat('D MMMM YYYY');
+        $duration = \Carbon\Carbon::parse($item->start_date)->diffInDays(\Carbon\Carbon::parse($item->end_date));
+        $vehicleInfo = $item->vehicle_name . ' - ' . $serviceTypeLabel;
+        
+        // Check if can show e-ticket
+        $canShowETicket = $item->payment_status === 'paid' && in_array($item->status, ['confirmed', 'ongoing', 'completed']);
+    @endphp
+
+    <div class="order-item blue-bg" data-status="{{ $status }}">
+        <div class="order-header">
+            <div class="order-info">
+                <div class="route">🚗 {{ $vehicleInfo }}</div>
+                <div class="date">{{ $formattedStartDate }}</div>
+                <div class="time">{{ $formattedEndDate }} ({{ $duration }} hari)</div>
+                <div class="passengers">📍 {{ $item->pickup_location ?? 'Lokasi Tidak Diketahui' }}</div>
+            </div>
+
+            <div class="order-status">
+                <div class="status {{ $status }}">
+                    {{ $statusLabel }}
+                </div>
+
+                <div class="button-qr-container">
+                    @if($canShowETicket)
+                        <!-- E-Ticket Button -->
+                        <a class="cek-tiket-btn" href="{{ route('customer.smartrent.e-ticket', $item->order_number) }}" title="Lihat E-Ticket">
+                            <i class="fas fa-ticket-alt"></i>
+                            E-Ticket
+                        </a>
+                    @else
+                        <!-- Detail Button -->
+                        <a class="cek-tiket-btn" href="{{ route('smartrent.index') }}" title="Lihat Detail">
+                            <i class="fas fa-eye"></i>
+                            Detail
+                        </a>
+                    @endif
+
+                    <!-- Show QR if paid -->
+                    @if($item->payment_status === 'paid' && $item->qr_path)
+                    <div class="qr-container qr-open-btn"
+                         role="button"
+                         tabindex="0"
+                         data-order="{{ $item->order_number }}"
+                         data-qr="{{ asset($item->qr_path) }}"
+                         title="Klik untuk melihat QR Code">
+                        <img src="{{ asset($item->qr_path) }}"
+                             alt="QR Code {{ $item->order_number }}"
+                             class="qr-thumbnail"
+                             loading="lazy">
+                        <div class="qr-code">
+                            {{ substr($item->order_number, -8) }}
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <div class="order-details">
+            <div class="details-section">
+                <div class="detail-row">
+                    <span class="label">Pemesan:</span>
+                    <span class="value">{{ $item->customer_name ?? 'N/A' }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Email:</span>
+                    <span class="value">{{ $item->customer_email ?? 'N/A' }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">No. Pesanan:</span>
+                    <span class="value">{{ $item->order_number ?? 'N/A' }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Total Pembayaran:</span>
+                    <span class="value" style="font-weight: 700; color: #FF6B2C;">{{ $totalBayarFormatted }}</span>
+                </div>
+                @if($item->payment_method)
+                <div class="detail-row">
+                    <span class="label">Metode Pembayaran:</span>
+                    <span class="value">{{ ucfirst(str_replace('_', ' ', $item->payment_method)) }}</span>
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+        @else
+            {{-- Regular Pemesanan (Shuttle) Display --}}
+            @php
             // Gunakan status dinamis dari database (baca status terbaru dari pembayaran)
-            $status = $pemesanan->status_display;
-            $statusLabel = $pemesanan->status_label;
+            $status = $item->status_display;
+            $statusLabel = $item->status_label;
 
             $routeString = 'Rute Tidak Diketahui';
             $kotaAsal = 'Jakarta';
             $kotaTujuan = 'Jatinangor';
-            if ($pemesanan->jadwal && $pemesanan->jadwal->rutes && $pemesanan->jadwal->rutes->count() > 0) {
-                $firstRoute = $pemesanan->jadwal->rutes->first();
-                $lastRoute = $pemesanan->jadwal->rutes->last();
+            if ($item->jadwal && $item->jadwal->rutes && $item->jadwal->rutes->count() > 0) {
+                $firstRoute = $item->jadwal->rutes->first();
+                $lastRoute = $item->jadwal->rutes->last();
                 $routeString = $firstRoute->kota_asal . ' → ' . $lastRoute->kota_tujuan;
                 $kotaAsal = $firstRoute->kota_asal;
                 $kotaTujuan = $lastRoute->kota_tujuan;
             }
 
-            $formattedDate = $pemesanan->jadwal ? \Carbon\Carbon::parse($pemesanan->jadwal->tanggal_keberangkatan)->locale('id')->isoFormat('dddd, D MMMM YYYY') : 'Tanggal Tidak Diketahui';
-            $formattedTime = $pemesanan->jadwal ? \Carbon\Carbon::parse($pemesanan->jadwal->waktu_keberangkatan)->format('H:i') : 'Waktu Tidak Diketahui';
-            $estimatedArrival = $pemesanan->jadwal ? \Carbon\Carbon::parse($pemesanan->jadwal->waktu_keberangkatan)->addHours(3)->addMinutes(30)->format('H:i') : '';
-            $estimationTime = $pemesanan->jadwal ? $formattedTime . ' - ' . $estimatedArrival : '09:00 - 12:30';
-            $seatNumber = substr($pemesanan->kode_booking, -2);
+            $formattedDate = $item->jadwal ? \Carbon\Carbon::parse($item->jadwal->tanggal_keberangkatan)->locale('id')->isoFormat('dddd, D MMMM YYYY') : 'Tanggal Tidak Diketahui';
+            $formattedTime = $item->jadwal ? \Carbon\Carbon::parse($item->jadwal->waktu_keberangkatan)->format('H:i') : 'Waktu Tidak Diketahui';
+            $estimatedArrival = $item->jadwal ? \Carbon\Carbon::parse($item->jadwal->waktu_keberangkatan)->addHours(3)->addMinutes(30)->format('H:i') : '';
+            $estimationTime = $item->jadwal ? $formattedTime . ' - ' . $estimatedArrival : '09:00 - 12:30';
+            $seatNumber = substr($item->kode_booking, -2);
             if (!is_numeric($seatNumber)) { $seatNumber = '01'; }
-            $totalBayarFormatted = 'Rp ' . number_format($pemesanan->total_bayar ?? 0, 0, ',', '.');
+            $totalBayarFormatted = 'Rp ' . number_format($item->total_bayar ?? 0, 0, ',', '.');
 
             // Generate QR Code URL seperti di e_ticket
-            $qrData = 'SMARTSHUTTLE:' . ($pemesanan->kode_booking ?? '') . ':CHECKIN';
+            $qrData = 'SMARTSHUTTLE:' . ($item->kode_booking ?? '') . ':CHECKIN';
             $qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' . urlencode($qrData);
 
             // Jika ada QR path di database, gunakan itu
-            if(!empty($pemesanan->qr_path) && file_exists(public_path($pemesanan->qr_path))){
-                $qrUrl = asset($pemesanan->qr_path);
-            } elseif(!empty($pemesanan->qr_code) && file_exists(storage_path('app/public/qr/'.$pemesanan->qr_code))){
-                $qrUrl = asset('storage/qr/'.$pemesanan->qr_code);
+            if(!empty($item->qr_path) && file_exists(public_path($item->qr_path))){
+                $qrUrl = asset($item->qr_path);
+            } elseif(!empty($item->qr_code) && file_exists(storage_path('app/public/qr/'.$item->qr_code))){
+                $qrUrl = asset('storage/qr/'.$item->qr_code);
             }
 
             // seat list untuk modal jika ada detail penumpang
             $seatList = [];
             $qrCodesData = [];
 
-            if (isset($pemesanan->detailPenumpang) && $pemesanan->detailPenumpang->count()>0) {
-                $seatList = $pemesanan->detailPenumpang->pluck('nomor_kursi')->filter()->values()->all();
+            if (isset($item->detailPenumpang) && $item->detailPenumpang->count()>0) {
+                $seatList = $item->detailPenumpang->pluck('nomor_kursi')->filter()->values()->all();
 
                 // Buat data QR Code untuk setiap penumpang (seperti di e_ticket)
-                foreach($pemesanan->detailPenumpang as $index => $dp) {
-                    $ticketCode = $pemesanan->kode_booking . '-P' . str_pad($index + 1, 2, '0', STR_PAD_LEFT);
+                foreach($item->detailPenumpang as $index => $dp) {
+                    $ticketCode = $item->kode_booking . '-P' . str_pad($index + 1, 2, '0', STR_PAD_LEFT);
                     $qrData = 'SMARTSHUTTLE:' . $ticketCode . ':CHECKIN';
                     $individualQrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode($qrData);
 
@@ -672,54 +768,55 @@
             } else {
                 // Jika tidak ada detail penumpang, buat satu QR Code saja
                 $qrCodesData[] = [
-                    'ticket_code' => $pemesanan->kode_booking,
+                    'ticket_code' => $item->kode_booking,
                     'qr_url' => $qrUrl,
                     'seat' => $seatNumber,
-                    'name' => $pemesanan->nama_pemesan ?? 'Penumpang'
+                    'name' => $item->nama_pemesan ?? 'Penumpang'
                 ];
             }
-        @endphp
+            @endphp
 
-        <div class="order-item blue-bg" data-status="{{ $status }}">
-            <div class="order-header">
-                <div class="order-info">
-                    <div class="route">{{ $routeString }}</div>
-                    <div class="date">{{ $formattedDate }}</div>
-                    <div class="time">{{ $formattedTime }} WIB</div>
-                    <div class="passengers">{{ $pemesanan->jumlah_penumpang }} Penumpang</div>
-                </div>
-
-                <div class="order-status">
-                    <div class="status {{ $status }}">
-                        {{ $statusLabel }}
+            <div class="order-item blue-bg" data-status="{{ $status }}">
+                <div class="order-header">
+                    <div class="order-info">
+                        <div class="route">{{ $routeString }}</div>
+                        <div class="date">{{ $formattedDate }}</div>
+                        <div class="time">{{ $formattedTime }} WIB</div>
+                        <div class="passengers">{{ $item->jumlah_penumpang }} Penumpang</div>
                     </div>
 
-                    <div class="button-qr-container">
-                        <!-- Cek Tiket: link ke halaman e_ticket penuh -->
-                        <a class="cek-tiket-btn"
-                           href="{{ route('customer.e_ticket', ['kode_booking' => $pemesanan->kode_booking]) }}">
-                            <i class="fas fa-ticket-alt"></i> Cek Tiket
-                        </a>
+                    <div class="order-status">
+                        <div class="status {{ $status }}">
+                            {{ $statusLabel }}
+                        </div>
 
-                        <!-- QR Code container: klik -> buka popup QR Code(s) -->
-                        <div class="qr-container qr-open-btn"
-                             role="button"
-                             tabindex="0"
-                             data-booking="{{ $pemesanan->kode_booking }}"
-                             data-qrcodes='@json($qrCodesData)'
-                             title="Klik untuk melihat QR Code">
-                            <img src="{{ $qrUrl }}"
-                                 alt="QR Code {{ $pemesanan->kode_booking }}"
-                                 class="qr-thumbnail"
-                                 loading="lazy">
-                            <div class="qr-code">
-                                {{ $pemesanan->kode_booking }}
+                        <div class="button-qr-container">
+                            <!-- Cek Tiket: link ke halaman e_ticket penuh -->
+                            <a class="cek-tiket-btn"
+                               href="{{ route('customer.e_ticket', ['kode_booking' => $item->kode_booking]) }}">
+                                <i class="fas fa-ticket-alt"></i> Cek Tiket
+                            </a>
+
+                            <!-- QR Code container: klik -> buka popup QR Code(s) -->
+                            <div class="qr-container qr-open-btn"
+                                 role="button"
+                                 tabindex="0"
+                                 data-booking="{{ $item->kode_booking }}"
+                                 data-qrcodes='@json($qrCodesData)'
+                                 title="Klik untuk melihat QR Code">
+                                <img src="{{ $qrUrl }}"
+                                     alt="QR Code {{ $item->kode_booking }}"
+                                     class="qr-thumbnail"
+                                     loading="lazy">
+                                <div class="qr-code">
+                                    {{ $item->kode_booking }}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        @endif
 
         @if(!$loop->last)
             <div class="divider"></div>

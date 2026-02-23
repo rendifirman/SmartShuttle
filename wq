@@ -1,0 +1,51 @@
+save perubahan gue
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# interactive rebase in progress; onto dc2ffde
+# Last command done (1 command done):
+#    pick cecd35d save perubahan gue
+# No commands remaining.
+# You are currently rebasing branch 'rendi' on 'dc2ffde'.
+#
+# Changes to be committed:
+#	modified:   app/Http/Controllers/DriverController.php
+#	new file:   app/Models/DriverDetail.php
+#	modified:   app/Models/User.php
+#	new file:   backup/smartrent-detail.blade.php
+#	new file:   backup/smartrent-success.blade.php
+#	modified:   database/migrations/2025_12_03_041250_add_kursi_to_shuttles.php
+#	modified:   database/migrations/2025_12_04_010445_update_outlets_table.php
+#	modified:   database/migrations/2025_12_10_073643_add_images_to_shuttles_table.php
+#	modified:   database/migrations/2025_12_17_090620_add_layanan_id_to_shuttles_table.php
+#	modified:   database/migrations/2025_12_20_011541_add_paylabs_fields_to_pembayaran_table.php
+#	modified:   database/migrations/2025_12_22_012227_add_google_fields_to_users_table.php
+#	modified:   database/migrations/2026_01_07_031642_add_avatar_column_to_users_table.php
+#	modified:   database/migrations/2026_01_08_023247_add_promo_conditions_to_promo_table.php
+#	modified:   database/migrations/2026_01_13_074841_add_qris_fields_to_pembayaran_table.php
+#	modified:   database/migrations/2026_01_15_073917_add_branch_id_to_users_table.php
+#	modified:   database/migrations/2026_01_19_034055_add_audit_fields_to_pemesanan_table.php
+#	modified:   database/migrations/2026_01_19_042302_add_audit_fields_to_shuttles_table.php
+#	modified:   database/migrations/2026_01_19_042919_add_audit_fields_to_artikels_table.php
+#	modified:   database/migrations/2026_01_19_043319_add_audit_fields_to_promo_table.php
+#	modified:   database/migrations/2026_01_19_063716_add_audit_fields_to_m_profile_perusahaan_table.php
+#	modified:   database/migrations/2026_02_03_175001_add_status_admin_to_jadwals_table.php
+#	modified:   database/migrations/2026_02_10_000002_add_master_tarif_relations.php
+#	modified:   database/migrations/2026_02_11_024934_add_cabang_to_rutes.php
+#	modified:   database/migrations/2026_02_11_051104_add_biaya_tambahan_to_master_tarifs_table.php
+#	modified:   database/migrations/2026_02_12_065116_add_driver_jadwal_id_to_kursi_terpesan_table.php
+#	new file:   database/migrations/2026_02_20_042928_add_driver_columns_to_users_table.php
+#	new file:   public/images/shuttle1.jpeg
+#	modified:   resources/views/admin/system_settings/index.blade.php
+#	modified:   resources/views/customer/pembayaran-smartrent.blade.php
+#	modified:   resources/views/customer/smartrent-booking.blade.php
+#	modified:   resources/views/customer/smartsend.blade.php
+#	modified:   resources/views/driver/jadwal-saya.blade.php
+#	modified:   resources/views/driver/jadwal-tersedia.blade.php
+#	modified:   resources/views/driver/jadwal.blade.php
+#	modified:   resources/views/driver/perjalanan.blade.php
+#	modified:   resources/views/driver/profile-edit.blade.php
+#	modified:   resources/views/driver/profile.blade.php
+#	modified:   routes/web.php
+#

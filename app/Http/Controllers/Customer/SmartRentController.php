@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\MProfilePerusahaan;
-use App\Models\Pemesanan;
-use App\Models\Pembayaran;
+use App\Models\SmartRentTransaction;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class SmartRentController extends Controller
 {
@@ -25,7 +25,7 @@ class SmartRentController extends Controller
                 'id' => 1,
                 'name' => 'Toyota Hiace Commuter',
                 'type' => 'Shuttle',
-                'image' => asset('images/shuttle1.jpeg'),
+                'image' => asset('images/toyotahiace.png'),
                 'seats' => '12 Seat',
                 'luggage' => '4 Koper',
                 'fuel' => 'Bensin',
@@ -42,7 +42,7 @@ class SmartRentController extends Controller
                 'id' => 2,
                 'name' => 'Isuzu Elf Long',
                 'type' => 'Shuttle',
-                'image' => asset('images/shuttle2.jpeg'),
+                'image' => asset('images/isuzu.png'),
                 'seats' => '18 Seat',
                 'luggage' => '6 Koper',
                 'fuel' => 'Solar',
@@ -88,9 +88,9 @@ class SmartRentController extends Controller
                 'name' => 'Toyota Hiace Commuter',
                 'type' => 'Shuttle | Manual',
                 'category' => 'Shuttle Bus',
-                'image' => asset('images/shuttle1.jpeg'),
+                'image' => asset('images/toyotahiace.png'),
                 'images' => [
-                    asset('images/shuttle1.jpeg'),
+                    asset('images/toyotahiace.png'),
                     asset('images/shuttle2.jpg'),
                     asset('images/shuttle3.jpg'),
                 ],
@@ -127,9 +127,10 @@ class SmartRentController extends Controller
                 'name' => 'Isuzu Elf Long',
                 'type' => 'MPV | Manual',
                 'category' => 'Shuttle Bus',
-                'image' => asset('images/shuttle1.jpeg'),
+                'image' => asset('images/isuzu.png'),
                 'images' => [
-                    asset('images/shuttle1.jpeg'),
+                    asset('images/isuzu.png'),
+                    asset('images/shuttle2.jpg'),
                 ],
                 'seats' => '18 Seat',
                 'luggage' => '6 Koper',
@@ -164,9 +165,10 @@ class SmartRentController extends Controller
                 'name' => 'Mitsubishi L300',
                 'type' => 'Shuttle | Manual',
                 'category' => 'Shuttle',
-                'image' => asset('images/shuttle1.jpeg'),
+                'image' => asset('images/shuttle3.jpeg'),
                 'images' => [
-                    asset('images/shuttle1.jpeg'),
+                    asset('images/shuttle3.jpeg'),
+                    asset('images/shuttle2.jpg'),
                 ],
                 'seats' => '8 Seat',
                 'luggage' => 'Besar',
@@ -214,14 +216,12 @@ class SmartRentController extends Controller
      */
     public function booking(Request $request)
     {
-        // CEK APAKAH USER SUDAH LOGIN
         if (!Auth::check()) {
             return redirect()->route('login')
                 ->with('error', 'Silakan login terlebih dahulu untuk mengakses halaman booking.')
                 ->with('redirect_url', route('smartrent.booking', $request->all()));
         }
         
-        // Ambil parameter dari URL untuk filter
         $filterData = [
             'city' => $request->input('city', ''),
             'vehicle_type' => $request->input('vehicle_type', ''),
@@ -238,7 +238,7 @@ class SmartRentController extends Controller
                 'id' => 1,
                 'name' => 'Toyota Hiace Commuter',
                 'type' => 'Shuttle | Manual',
-                'image' => asset('images/shuttle1.jpeg'),
+                'image' => asset('images/toyotahiace.png'),
                 'seats' => '12 Seat',
                 'luggage' => '4 Koper',
                 'fuel' => 'Bensin',
@@ -256,7 +256,7 @@ class SmartRentController extends Controller
                 'id' => 2,
                 'name' => 'Isuzu Elf Long',
                 'type' => 'MPV | Manual',
-                'image' => asset('images/shuttle1.jpeg'),
+                'image' => asset('images/isuzu.png'),
                 'seats' => '18 Seat',
                 'luggage' => '6 Koper',
                 'fuel' => 'Solar',
@@ -274,7 +274,7 @@ class SmartRentController extends Controller
                 'id' => 3,
                 'name' => 'Mitsubishi L300',
                 'type' => 'Shuttle | Manual',
-                'image' => asset('images/shuttle1.jpeg'),
+                'image' => asset('images/shuttle3.jpeg'),
                 'seats' => '8 Seat',
                 'luggage' => 'Besar',
                 'fuel' => 'Solar',
@@ -292,21 +292,18 @@ class SmartRentController extends Controller
         
         $filteredVehicles = $allVehicles;
         
-        // Filter berdasarkan kota (jika ada)
         if ($filterData['city']) {
             $filteredVehicles = array_filter($filteredVehicles, function($vehicle) use ($filterData) {
-                return true; // Untuk sementara selalu true, bisa ditambahkan logika filter kota nanti
+                return true;
             });
         }
         
-        // Filter berdasarkan tipe kendaraan
         if ($filterData['vehicle_type']) {
             $filteredVehicles = array_filter($filteredVehicles, function($vehicle) use ($filterData) {
                 return stripos($vehicle['type'], $filterData['vehicle_type']) !== false;
             });
         }
         
-        // Filter berdasarkan kapasitas
         if ($filterData['capacity']) {
             $filteredVehicles = array_filter($filteredVehicles, function($vehicle) use ($filterData) {
                 $capacityRange = $filterData['capacity'];
@@ -322,7 +319,6 @@ class SmartRentController extends Controller
         
         $filteredVehicles = array_values($filteredVehicles);
         
-        // Cari kendaraan yang dipilih (jika ada vehicle_id)
         $selectedVehicle = null;
         if ($filterData['vehicle_id']) {
             foreach ($allVehicles as $vehicle) {
@@ -333,7 +329,6 @@ class SmartRentController extends Controller
             }
         }
         
-        // Return view dengan semua data
         return view('customer.smartrent-booking', [
             'filterData' => $filterData,
             'vehicles' => $filteredVehicles,
@@ -347,7 +342,6 @@ class SmartRentController extends Controller
      */
     public function order(Request $request)
     {
-        // CEK LOGIN
         if (!Auth::check()) {
             return redirect()->route('login')
                 ->with('error', 'Silakan login terlebih dahulu untuk melakukan pemesanan.')
@@ -398,7 +392,6 @@ class SmartRentController extends Controller
      */
     public function processDetailCheckout(Request $request)
     {
-        // CEK LOGIN
         if (!Auth::check()) {
             return redirect()->route('login')
                 ->with('error', 'Silakan login terlebih dahulu untuk melanjutkan checkout.')
@@ -423,6 +416,7 @@ class SmartRentController extends Controller
         
         $vehiclePrice = $validated['vehicle_price'] * $validated['duration'];
         $driverPrice = 0;
+        $driverPricePerDay = 0;
         
         if ($validated['service_type'] == 'with_driver') {
             $driverPricePerDay = $validated['driver_price'];
@@ -443,7 +437,7 @@ class SmartRentController extends Controller
             'service_type' => $validated['service_type'],
             'vehicle_total' => $vehiclePrice,
             'driver_total' => $driverPrice,
-            'driver_price_per_day' => $driverPricePerDay ?? 0,
+            'driver_price_per_day' => $driverPricePerDay,
             'total_price' => $totalPrice,
             'booking_code' => 'SR' . date('Ymd') . strtoupper(substr(md5(uniqid()), 0, 6)),
             'created_at' => now()->format('Y-m-d H:i:s')
@@ -459,7 +453,6 @@ class SmartRentController extends Controller
      */
     public function processBookingCheckout(Request $request)
     {
-        // CEK LOGIN
         if (!Auth::check()) {
             return redirect()->route('login')
                 ->with('error', 'Silakan login terlebih dahulu untuk melanjutkan checkout.')
@@ -495,7 +488,7 @@ class SmartRentController extends Controller
             'vehicle_id' => $validated['vehicle_id'],
             'vehicle_name' => $vehicle['name'],
             'vehicle_price' => $vehicle['price'],
-            'vehicle_image' => $vehicle['image'] ?? asset('images/shuttle1.jpeg'),
+            'vehicle_image' => $vehicle['image'] ?? asset('images/toyotahiace.png'),
             'vehicle_type' => $vehicle['type'],
             'pickup_location' => '',
             'rent_date' => $validated['rent_date'],
@@ -519,7 +512,6 @@ class SmartRentController extends Controller
      */
     public function showCheckoutForm()
     {
-        // CEK LOGIN
         if (!Auth::check()) {
             return redirect()->route('login')
                 ->with('error', 'Silakan login terlebih dahulu untuk melanjutkan checkout.')
@@ -543,14 +535,12 @@ class SmartRentController extends Controller
      */
     public function finalizeCheckout(Request $request)
     {
-        // CEK LOGIN
         if (!Auth::check()) {
             return redirect()->route('login')
                 ->with('error', 'Silakan login terlebih dahulu untuk melanjutkan checkout.')
                 ->with('redirect_url', route('smartrent.checkout'));
         }
         
-        // Validasi input
         $validated = $request->validate([
             'full_name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
@@ -567,7 +557,6 @@ class SmartRentController extends Controller
             'other_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
         ]);
         
-        // Ambil data checkout dari session
         $checkout = session('smartrent_checkout');
         
         if (!$checkout) {
@@ -575,7 +564,6 @@ class SmartRentController extends Controller
                 ->with('error', 'Sesi pemesanan telah berakhir. Silakan ulangi pemesanan.');
         }
         
-        // Proses upload file
         $ktpPath = $request->file('ktp_file')->store('documents/ktp', 'public');
         $simPath = $request->file('sim_file')->store('documents/sim', 'public');
         $otherPath = null;
@@ -584,117 +572,326 @@ class SmartRentController extends Controller
             $otherPath = $request->file('other_document')->store('documents/other', 'public');
         }
         
-        // Gabungkan semua data
-        $completeCheckout = array_merge($checkout, [
-            'customer_data' => [
-                'full_name' => $validated['full_name'],
-                'email' => $validated['email'],
-                'phone' => $validated['phone'],
-                'address' => $validated['address'],
-            ],
-            'rental_details' => [
+        $orderNumber = 'SR' . date('Ymd') . strtoupper(substr(md5(uniqid()), 0, 6));
+        
+        try {
+            $transaction = SmartRentTransaction::create([
+                'order_number' => $orderNumber,
+                'invoice_number' => 'INV-SR-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid()), 0, 8)),
+                'user_id' => Auth::id(),
+                'vehicle_id' => $checkout['vehicle_id'] ?? null,
+                'vehicle_name' => $checkout['vehicle_name'] ?? null,
+                'vehicle_type' => $checkout['vehicle_type'] ?? null,
+                'vehicle_price' => (float) ($checkout['vehicle_price'] ?? 0),
+                'duration' => $checkout['duration'] ?? 1,
+                'vehicle_total' => (float) ($checkout['vehicle_total'] ?? 0),
+                'service_type' => $checkout['service_type'] ?? 'self_drive',
+                'driver_price_per_day' => (float) ($checkout['driver_price_per_day'] ?? 0),
+                'driver_total' => (float) ($checkout['driver_total'] ?? 0),
+                'total_price' => (float) ($checkout['total_price'] ?? 0),
+                'customer_name' => $validated['full_name'],
+                'customer_email' => $validated['email'],
+                'customer_phone' => $validated['phone'],
+                'customer_address' => $validated['address'],
                 'start_date' => $validated['start_date'],
                 'end_date' => $validated['end_date'],
                 'start_time' => $validated['start_time'],
                 'end_time' => $validated['end_time'],
                 'pickup_location' => $validated['pickup_location'],
-                'notes' => $validated['notes'] ?? '',
-            ],
-            'documents' => [
+                'notes' => $validated['notes'] ?? null,
                 'ktp_path' => $ktpPath,
                 'sim_path' => $simPath,
-                'other_document' => $otherPath,
-            ],
-            'invoice_number' => 'INV-SR-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid()), 0, 8)),
-            'booking_code' => 'BOOK-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid()), 0, 6)),
-            'status' => 'pending_payment',
-            'payment_status' => 'unpaid',
-            'created_at' => now()->format('Y-m-d H:i:s'),
-            'updated_at' => now()->format('Y-m-d H:i:s'),
-        ]);
+                'other_document_path' => $otherPath,
+                'payment_status' => 'unpaid',
+                'status' => 'pending_payment',
+            ]);
+            
+            session(['smartrent_order_number' => $orderNumber]);
+            session(['smartrent_transaction_id' => $transaction->id]);
+        } catch (\Exception $e) {
+            Log::error('Error saving SmartRent transaction: ' . $e->getMessage());
+            return redirect()->route('smartrent.checkout')
+                ->with('error', 'Terjadi kesalahan saat menyimpan data pesanan. Silakan coba lagi.');
+        }
         
-        // Simpan ke session dengan nama yang BENAR
-        session(['smartrent_complete_checkout' => $completeCheckout]);
-        
-        // Hapus session checkout awal
         session()->forget('smartrent_checkout');
         
-        // Log untuk debugging
-        Log::info('Checkout data saved to session:', $completeCheckout);
+        Log::info('SmartRent checkout data saved to database with order_number: ' . $orderNumber);
         
-        // Redirect ke halaman pembayaran
-        return redirect()->route('smartrent.payment')
-            ->with('success', 'Data pemesanan berhasil disimpan. Silakan lanjutkan pembayaran.');
+        return redirect()->route('smartrent.payment', ['order_number' => $orderNumber])
+            ->with('success', 'Data pesanan berhasil disimpan. Silakan lanjutkan pembayaran.');
     }
     
     /**
-     * Halaman konfirmasi booking - PERLU LOGIN
+     * Halaman pembayaran - PERLU LOGIN
      */
-    public function confirmation()
+    public function payment(Request $request)
     {
-        // CEK LOGIN
         if (!Auth::check()) {
             return redirect()->route('login')
-                ->with('error', 'Silakan login terlebih dahulu untuk melihat konfirmasi.')
-                ->with('redirect_url', route('smartrent.index'));
+                ->with('error', 'Silakan login terlebih dahulu untuk melanjutkan pembayaran.')
+                ->with('redirect_url', route('smartrent.checkout'));
         }
         
-        $payment = session()->get('smartrent_payment');
-        
-        if (!$payment) {
-            return redirect()->route('smartrent.index')->with('error', 'Data pembayaran tidak ditemukan.');
+        $orderNumber = $request->get('order_number') ?? session('smartrent_order_number');
+
+        if (!$orderNumber) {
+            return redirect()->route('smartrent.checkout')
+                ->with('error', 'Data pemesanan tidak ditemukan. Silakan ulangi proses checkout.');
         }
-        
+
+        $transaction = SmartRentTransaction::where('order_number', $orderNumber)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if (!$transaction) {
+            return redirect()->route('smartrent.checkout')
+                ->with('error', 'Data pemesanan tidak ditemukan.');
+        }
+
         $profile = MProfilePerusahaan::first();
-        
-        return view('customer.smartrent-confirmation', compact('profile', 'payment'));
+
+        return view('customer.pembayaran-smartrent', [
+            'profile' => $profile,
+            'transaction' => $transaction,
+            'order_number' => $orderNumber,
+            'order_id' => $transaction->id,
+            'totalPrice' => $transaction->total_price,
+            'vehicle' => [
+                'id' => $transaction->vehicle_id,
+                'name' => $transaction->vehicle_name,
+                'type' => $transaction->vehicle_type,
+            ],
+            'customerData' => [
+                'full_name' => $transaction->customer_name,
+                'email' => $transaction->customer_email,
+                'phone' => $transaction->customer_phone,
+                'address' => $transaction->customer_address,
+            ],
+            'rentDate' => $transaction->start_date,
+            'duration' => $transaction->duration,
+            'service' => $transaction->service_type,
+        ]);
     }
-    
+
+    /**
+     * Proses pembayaran - PERLU LOGIN
+     */
+    public function processPayment(Request $request)
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'Silakan login terlebih dahulu untuk melakukan pembayaran.')
+                ->with('redirect_url', route('smartrent.payment'));
+        }
+        
+        $orderNumber = $request->get('order_number');
+
+        if (!$orderNumber) {
+            return redirect()->route('smartrent.payment')
+                ->with('error', 'Data pemesanan tidak ditemukan.');
+        }
+
+        $transaction = SmartRentTransaction::where('order_number', $orderNumber)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if (!$transaction) {
+            return redirect()->route('smartrent.payment')
+                ->with('error', 'Data pemesanan tidak ditemukan.');
+        }
+        
+        $request->validate([
+            'payment_method' => 'required|string',
+            'payment_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+        ]);
+        
+        $methodMap = [
+            'qris' => 'qris',
+            'QRIS' => 'qris',
+            'BCA Virtual Account' => 'bca_va',
+            'Mandiri Virtual Account' => 'mandiri_va',
+            'bca_va' => 'bca_va',
+            'mandiri_va' => 'mandiri_va',
+        ];
+        
+        $paymentMethod = $methodMap[$request->payment_method] ?? strtolower(str_replace(' ', '_', $request->payment_method));
+        
+        $paymentProofPath = null;
+        if ($request->hasFile('payment_proof')) {
+            $paymentProofPath = $request->file('payment_proof')->store('payment-proofs/smartrent', 'public');
+        }
+        
+        try {
+            $transaction->update([
+                'payment_method' => $paymentMethod,
+                'payment_status' => 'paid',
+                'payment_proof_path' => $paymentProofPath,
+                'paid_at' => now(),
+                'status' => 'confirmed',
+            ]);
+
+            $this->generateQrCodeForTransaction($transaction);
+            
+            session(['smartrent_last_order' => $transaction->order_number]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error updating SmartRent payment: ' . $e->getMessage());
+            return redirect()->route('smartrent.payment', ['order_number' => $orderNumber])
+                ->with('error', 'Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.');
+        }
+
+        return redirect()->route('smartrent.payment-success', ['order_number' => $transaction->order_number])
+            ->with('success', 'Pembayaran berhasil diproses.');
+    }
+
+    /**
+     * Halaman sukses pembayaran - PERLU LOGIN
+     */
+    public function success(Request $request, $orderNumber = null)
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'Silakan login terlebih dahulu.')
+                ->with('redirect_url', route('smartrent.payment-success', $orderNumber));
+        }
+        
+        if (!$orderNumber) {
+            $orderNumber = $request->get('order_number') ?? session('smartrent_last_order');
+        }
+
+        if (!$orderNumber) {
+            return redirect()->route('smartrent.index')
+                ->with('error', 'Data pembayaran tidak ditemukan.');
+        }
+
+        $transaction = SmartRentTransaction::where('order_number', $orderNumber)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if (!$transaction) {
+            return redirect()->route('smartrent.index')
+                ->with('error', 'Data pesanan tidak ditemukan.');
+        }
+
+        if ($transaction->payment_status === 'paid' && !$transaction->qr_code) {
+            $this->generateQrCodeForTransaction($transaction);
+            $transaction->refresh();
+        }
+
+        $profile = MProfilePerusahaan::first();
+
+        return view('customer.smartrent-success', [
+            'profile' => $profile,
+            'transaction' => $transaction,
+            'order_number' => $transaction->order_number,
+            'vehicle_name' => $transaction->vehicle_name,
+            'rent_date' => $transaction->start_date,
+            'customer_info' => [
+                'full_name' => $transaction->customer_name,
+                'phone' => $transaction->customer_phone,
+                'email' => $transaction->customer_email,
+                'address' => $transaction->customer_address,
+            ],
+            'payment_method' => $transaction->payment_method,
+            'total_price' => $transaction->total_price,
+        ]);
+    }
+
+    /**
+     * Menampilkan E-Ticket SmartRent - PERLU LOGIN
+     */
+    public function showETicket($orderNumber)
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'Silakan login terlebih dahulu untuk melihat E-Ticket.')
+                ->with('redirect_url', route('smartrent.e-ticket', $orderNumber));
+        }
+
+        $transaction = SmartRentTransaction::where('order_number', $orderNumber)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        if ($transaction->payment_status !== 'paid') {
+            return redirect()->route('customer.riwayat')
+                ->with('error', 'E-Ticket hanya tersedia untuk transaksi yang sudah dibayar.');
+        }
+
+        if (!$transaction->qr_code || !$transaction->qr_path) {
+            $this->generateQrCodeForTransaction($transaction);
+            $transaction->refresh();
+        }
+
+        $priceBreakdown = $this->getPriceBreakdown($transaction);
+        $profile = MProfilePerusahaan::first();
+
+        return view('customer.smartrent-e-ticket', compact('profile', 'transaction', 'priceBreakdown'));
+    }
+
+    /**
+     * Download E-Ticket sebagai PDF - PERLU LOGIN
+     */
+    public function downloadETicket($orderNumber)
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'Silakan login terlebih dahulu.')
+                ->with('redirect_url', route('smartrent.e-ticket.download', $orderNumber));
+        }
+
+        $transaction = SmartRentTransaction::where('order_number', $orderNumber)
+            ->where('user_id', Auth::id())
+            ->where('payment_status', 'paid')
+            ->firstOrFail();
+
+        try {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('customer.smartrent-e-ticket-pdf', [
+                'transaction' => $transaction,
+                'priceBreakdown' => $this->getPriceBreakdown($transaction)
+            ]);
+            
+            return $pdf->download('e-ticket-' . $transaction->order_number . '.pdf');
+        } catch (\Exception $e) {
+            Log::error('Error generating PDF: ' . $e->getMessage());
+            
+            return redirect()->route('smartrent.e-ticket', $orderNumber)
+                ->with('info', 'Fitur download PDF akan segera tersedia sepenuhnya.');
+        }
+    }
+
+    /**
+     * Print E-Ticket - PERLU LOGIN
+     */
+    public function printETicket($orderNumber)
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'Silakan login terlebih dahulu.')
+                ->with('redirect_url', route('smartrent.e-ticket.print', $orderNumber));
+        }
+
+        $transaction = SmartRentTransaction::where('order_number', $orderNumber)
+            ->where('user_id', Auth::id())
+            ->where('payment_status', 'paid')
+            ->firstOrFail();
+
+        if (!$transaction->qr_code || !$transaction->qr_path) {
+            $this->generateQrCodeForTransaction($transaction);
+            $transaction->refresh();
+        }
+
+        $priceBreakdown = $this->getPriceBreakdown($transaction);
+
+        return view('customer.smartrent-e-ticket-print', compact('transaction', 'priceBreakdown'));
+    }
+
     /**
      * API: Get vehicle by ID (AJAX)
      */
     public function getVehicle($id)
     {
-        $vehicles = [
-            1 => [
-                'id' => 1,
-                'name' => 'Toyota Hiace Commuter',
-                'type' => 'Shuttle',
-                'price' => 1200000,
-                'driver_price' => 150000,
-                'price_formatted' => '1.200.000',
-                'driver_included_price' => 150000,
-                'seats' => '12 Seat',
-                'description' => 'Mobil shuttle dengan kapasitas 12 penumpang...',
-                'image' => asset('images/shuttle1.jpeg')
-            ],
-            2 => [
-                'id' => 2,
-                'name' => 'Isuzu Elf Long',
-                'type' => 'MPV',
-                'price' => 1500000,
-                'driver_price' => 200000,
-                'price_formatted' => '1.500.000',
-                'driver_included_price' => 200000,
-                'seats' => '18 Seat',
-                'description' => 'Armada besar untuk rombongan besar...',
-                'image' => asset('images/shuttle1.jpeg')
-            ],
-            3 => [
-                'id' => 3,
-                'name' => 'Mitsubishi L300',
-                'type' => 'Shuttle',
-                'price' => 800000,
-                'driver_price' => 100000,
-                'price_formatted' => '800.000',
-                'driver_included_price' => 100000,
-                'seats' => '8 Seat',
-                'description' => 'Ekonomis dan tangguh, cocok untuk kebutuhan sehari-hari...',
-                'image' => asset('images/shuttle1.jpeg')
-            ],
-        ];
-        
-        $vehicle = $vehicles[$id] ?? null;
+        $vehicle = $this->getVehicleById($id);
         
         if (!$vehicle) {
             return response()->json([
@@ -730,6 +927,150 @@ class SmartRentController extends Controller
     }
     
     /**
+     * API untuk mendapatkan data E-Ticket
+     */
+    public function getETicketData($orderNumber)
+    {
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        $transaction = SmartRentTransaction::where('order_number', $orderNumber)
+            ->where('user_id', Auth::id())
+            ->where('payment_status', 'paid')
+            ->first();
+
+        if (!$transaction) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data tidak ditemukan'
+            ], 404);
+        }
+
+        if (!$transaction->qr_code || !$transaction->qr_path) {
+            $this->generateQrCodeForTransaction($transaction);
+            $transaction->refresh();
+        }
+
+        $priceBreakdown = $this->getPriceBreakdown($transaction);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'order_number' => $transaction->order_number,
+                'invoice_number' => $transaction->invoice_number,
+                'customer_name' => $transaction->customer_name,
+                'customer_email' => $transaction->customer_email,
+                'customer_phone' => $transaction->customer_phone,
+                'customer_address' => $transaction->customer_address,
+                'vehicle_name' => $transaction->vehicle_name,
+                'vehicle_type' => $transaction->vehicle_type,
+                'service_type' => $transaction->service_type === 'with_driver' ? 'Dengan Sopir' : 'Sewa Mandiri',
+                'duration' => $transaction->duration . ' Hari',
+                'rental_period' => ($transaction->start_date ? $transaction->start_date->format('d M Y') : '-') . ' - ' . ($transaction->end_date ? $transaction->end_date->format('d M Y') : '-'),
+                'start_date' => $transaction->start_date ? $transaction->start_date->format('d M Y') : '-',
+                'end_date' => $transaction->end_date ? $transaction->end_date->format('d M Y') : '-',
+                'start_time' => $transaction->start_time,
+                'end_time' => $transaction->end_time,
+                'pickup_location' => $transaction->pickup_location,
+                'total_price' => 'Rp ' . number_format($transaction->total_price, 0, ',', '.'),
+                'qr_url' => $transaction->qr_path ? asset($transaction->qr_path) : null,
+                'paid_at' => $transaction->paid_at ? $transaction->paid_at->format('d M Y H:i') : '-',
+                'status' => $transaction->status_label,
+                'payment_status' => $transaction->payment_status_label,
+                'price_breakdown' => $priceBreakdown
+            ]
+        ]);
+    }
+
+    /**
+     * Generate QR Code untuk transaksi
+     */
+    private function generateQrCodeForTransaction(SmartRentTransaction $transaction)
+    {
+        try {
+            $qrDataArray = $this->generateQrData($transaction);
+            $qrData = json_encode($qrDataArray);
+
+            $qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' . urlencode($qrData);
+            $response = Http::get($qrApiUrl);
+
+            if ($response->ok()) {
+                $fileName = 'rent/' . $transaction->order_number . '_' . time() . '.png';
+                Storage::disk('public')->put('qr/' . $fileName, $response->body());
+
+                $transaction->qr_code = $fileName;
+                $transaction->qr_path = '/storage/qr/' . $fileName;
+                $transaction->save();
+
+                Log::info('QR Code generated for SmartRent (via qrserver): ' . $transaction->order_number);
+            } else {
+                Log::error('Failed to fetch QR Code from external service for: ' . $transaction->order_number . ' Response code: ' . $response->status());
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Gagal generate QR Code untuk SmartRent: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Generate data untuk QR Code
+     */
+    private function generateQrData(SmartRentTransaction $transaction)
+    {
+        $data = [
+            'type' => 'smartrent',
+            'order' => $transaction->order_number,
+            'invoice' => $transaction->invoice_number,
+            'customer' => $transaction->customer_name,
+            'vehicle' => $transaction->vehicle_name,
+            'service' => $transaction->service_type,
+            'start' => $transaction->start_date ? $transaction->start_date->format('Y-m-d') : null,
+            'end' => $transaction->end_date ? $transaction->end_date->format('Y-m-d') : null,
+            'amount' => $transaction->total_price
+        ];
+        
+        return 'SMARTRENT:' . json_encode($data);
+    }
+
+    /**
+     * Dapatkan breakdown harga
+     */
+    private function getPriceBreakdown(SmartRentTransaction $transaction)
+    {
+        $breakdown = [];
+
+        $breakdown[] = [
+            'label' => 'Sewa ' . $transaction->vehicle_name . ' (' . $transaction->duration . ' hari)',
+            'amount' => $transaction->vehicle_total,
+            'formatted' => 'Rp ' . number_format($transaction->vehicle_total, 0, ',', '.')
+        ];
+
+        if ($transaction->service_type === 'with_driver' && $transaction->driver_total > 0) {
+            $breakdown[] = [
+                'label' => 'Biaya Sopir (' . $transaction->duration . ' hari)',
+                'amount' => $transaction->driver_total,
+                'formatted' => 'Rp ' . number_format($transaction->driver_total, 0, ',', '.')
+            ];
+        }
+
+        return $breakdown;
+    }
+
+    /**
+     * Hitung tanggal selesai sewa
+     */
+    private function calculateEndDate($startDate, $duration)
+    {
+        $date = \Carbon\Carbon::parse($startDate);
+        $date->addDays($duration);
+        return $date->format('d-m-Y');
+    }
+
+    /**
      * Helper: Get vehicle by ID
      */
     private function getVehicleById($id)
@@ -745,7 +1086,7 @@ class SmartRentController extends Controller
                 'driver_included_price' => 150000,
                 'seats' => '12 Seat',
                 'description' => 'Mobil shuttle dengan kapasitas 12 penumpang...',
-                'image' => asset('images/shuttle1.jpeg')
+                'image' => asset('images/toyotahiace.png')
             ],
             2 => [
                 'id' => 2,
@@ -757,7 +1098,7 @@ class SmartRentController extends Controller
                 'driver_included_price' => 200000,
                 'seats' => '18 Seat',
                 'description' => 'Armada besar untuk rombongan besar...',
-                'image' => asset('images/shuttle1.jpeg')
+                'image' => asset('images/isuzu.png')
             ],
             3 => [
                 'id' => 3,
@@ -769,245 +1110,10 @@ class SmartRentController extends Controller
                 'driver_included_price' => 100000,
                 'seats' => '8 Seat',
                 'description' => 'Ekonomis dan tangguh, cocok untuk kebutuhan sehari-hari...',
-                'image' => asset('images/shuttle1.jpeg')
+                'image' => asset('images/shuttle3.jpeg')
             ],
         ];
         
         return $vehicles[$id] ?? null;
-    }
-    
-    /**
-     * Halaman pembayaran - PERLU LOGIN
-     */
-    public function payment()
-    {
-        // CEK LOGIN
-        if (!Auth::check()) {
-            return redirect()->route('login')
-                ->with('error', 'Silakan login terlebih dahulu untuk melanjutkan pembayaran.')
-                ->with('redirect_url', route('smartrent.checkout'));
-        }
-        
-        // Prefer loading the order from DB using order_id (GET) or session stored pemesanan id
-        $orderId = request()->get('order_id') ?? session('smartrent_pemesanan_id');
-
-        $pemesanan = null;
-        $checkout = session('smartrent_complete_checkout');
-
-        if ($orderId) {
-            $pemesanan = Pemesanan::with('pembayaran')->find($orderId);
-        }
-
-        // If DB order found, build view variables from DB; otherwise fall back to session checkout
-        if ($pemesanan) {
-            $catatan = [];
-            if ($pemesanan->catatan) {
-                $catatan = json_decode($pemesanan->catatan, true) ?? [];
-            }
-
-            $vehicle = [
-                'id' => $catatan['vehicle_id'] ?? null,
-                'name' => $catatan['vehicle_name'] ?? ($pemesanan->catatan ? ($catatan['vehicle_name'] ?? null) : null),
-                'type' => $catatan['vehicle_type'] ?? null,
-                'image' => $catatan['vehicle_image'] ?? null,
-                'price' => $catatan['vehicle_price'] ?? $pemesanan->harga_total,
-            ];
-
-            $customerData = $catatan['customer_data'] ?? [
-                'full_name' => $pemesanan->nama_pemesan ?? null,
-                'phone' => $pemesanan->telepon_pemesan ?? null,
-                'email' => $pemesanan->email_pemesan ?? null,
-                'pickup_address' => $catatan['pickup_location'] ?? null,
-                'service_type' => $catatan['service_type'] ?? null,
-                'city' => $catatan['city'] ?? null,
-            ];
-
-            $rentDate = $catatan['rent_date'] ?? ($pemesanan->created_at? $pemesanan->created_at->toDateString() : null);
-            $duration = $catatan['duration'] ?? null;
-            $totalPrice = $pemesanan->total_bayar ?? $pemesanan->harga_total ?? ($catatan['total_price'] ?? null);
-            $order_id = $pemesanan->id;
-            $order_number = $pemesanan->kode_booking;
-        } elseif ($checkout) {
-            // Build variables from session checkout
-            $vehicle = [
-                'id' => $checkout['vehicle_id'] ?? null,
-                'name' => $checkout['vehicle_name'] ?? null,
-                'type' => $checkout['vehicle_type'] ?? null,
-                'image' => $checkout['vehicle_image'] ?? null,
-                'price' => $checkout['vehicle_price'] ?? null,
-            ];
-
-            $customerData = $checkout['customer_data'] ?? [];
-            $rentDate = $checkout['rent_date'] ?? ($checkout['rental_details']['start_date'] ?? null);
-            $duration = $checkout['duration'] ?? ($checkout['rental_details']['duration'] ?? null);
-            $totalPrice = $checkout['total_price'] ?? null;
-            $order_id = session('smartrent_pemesanan_id') ?? null;
-            $order_number = $checkout['booking_code'] ?? $checkout['invoice_number'] ?? null;
-        } else {
-            return redirect()->route('smartrent.checkout')
-                ->with('error', 'Data pemesanan tidak ditemukan. Silakan ulangi proses checkout.');
-        }
-
-        $profile = MProfilePerusahaan::first();
-
-        return view('customer.pembayaran-smartrent', compact('profile', 'checkout', 'vehicle', 'customerData', 'rentDate', 'duration', 'totalPrice', 'order_id', 'order_number'));
-    }
-
-    /**
-     * Halaman sukses pembayaran (GET) - PRG target
-     */
-    public function success()
-    {
-        $payment = session('smartrent_payment');
-        $pemesananId = session('smartrent_pemesanan_id') ?? ($payment['pemesanan_id'] ?? null);
-
-        if (!$pemesananId) {
-            return redirect()->route('smartrent.index')->with('error', 'Data pembayaran tidak ditemukan.');
-        }
-
-        $pemesanan = Pemesanan::with('pembayaran')->find($pemesananId);
-        if (!$pemesanan) {
-            return redirect()->route('smartrent.index')->with('error', 'Data pesanan tidak ditemukan.');
-        }
-
-        $catatan = json_decode($pemesanan->catatan ?? '{}', true) ?: [];
-
-        $order_number = $pemesanan->kode_booking;
-        $vehicle_name = $catatan['vehicle_name'] ?? ($catatan['vehicle']['name'] ?? null);
-        $rent_date = $catatan['rental_details']['rent_date'] ?? ($catatan['rent_date'] ?? null) ?? $pemesanan->created_at->toDateString();
-        $customer_info = $catatan['customer_data'] ?? [
-            'full_name' => $pemesanan->nama_pemesan ?? null,
-            'phone' => $pemesanan->telepon_pemesan ?? null,
-            'email' => $pemesanan->email_pemesan ?? null,
-        ];
-        $payment_method = $pemesanan->metode_pembayaran ?? ($payment['payment_method'] ?? null);
-        $total_price = $pemesanan->total_bayar ?? $pemesanan->harga_total;
-
-        return view('customer.smartrent-success', compact('order_number', 'vehicle_name', 'rent_date', 'customer_info', 'payment_method', 'total_price'));
-    }
-    
-    /**
-     * Proses pembayaran - PERLU LOGIN
-     */
-    public function processPayment(Request $request)
-    {
-        // CEK LOGIN
-        if (!Auth::check()) {
-            return redirect()->route('login')
-                ->with('error', 'Silakan login terlebih dahulu untuk melakukan pembayaran.')
-                ->with('redirect_url', route('smartrent.payment'));
-        }
-        
-        // Normalize payment method values from the form (case-insensitive labels)
-        $methodMap = [
-            'qris' => 'qris',
-            'QRIS' => 'qris',
-            'BCA Virtual Account' => 'bca_va',
-            'Mandiri Virtual Account' => 'mandiri_va',
-            'bca_va' => 'bca_va',
-            'mandiri_va' => 'mandiri_va',
-        ];
-
-        $request->validate([
-            'payment_method' => 'required|string',
-            'payment_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-        ]);
-        
-        $checkout = session('smartrent_complete_checkout');
-        
-        if (!$checkout) {
-            return redirect()->route('smartrent.checkout')
-                ->with('error', 'Data pemesanan tidak ditemukan. Silakan ulangi proses checkout.');
-        }
-        
-        // Simpan bukti pembayaran jika transfer
-        $paymentProofPath = null;
-        if ($request->hasFile('payment_proof')) {
-            $paymentProofPath = $request->file('payment_proof')->store('payment-proofs', 'public');
-        }
-        
-        $normalizedMethod = $methodMap[$request->payment_method] ?? strtolower(str_replace(' ', '_', $request->payment_method));
-
-        $transactionId = 'TRX-' . date('YmdHis') . '-' . strtoupper(substr(md5(uniqid()), 0, 6));
-
-        // Persist order and payment to database so success and history pages read consistent data
-        try {
-            DB::beginTransaction();
-
-            $totalBayar = (int) ($request->input('total_price') ?? $checkout['total_price'] ?? 0);
-
-            // Build order payload for storing in `catatan`
-            $orderPayload = [
-                'vehicle_id' => $checkout['vehicle_id'] ?? null,
-                'vehicle_name' => $checkout['vehicle_name'] ?? $checkout['vehicle']['name'] ?? null,
-                'vehicle_type' => $checkout['vehicle_type'] ?? null,
-                'vehicle_image' => $checkout['vehicle_image'] ?? null,
-                'customer_data' => $checkout['customer_data'] ?? [],
-                'rental_details' => $checkout['rental_details'] ?? [
-                    'rent_date' => $checkout['rent_date'] ?? null,
-                    'duration' => $checkout['duration'] ?? null
-                ],
-                'total_price' => $totalBayar,
-            ];
-
-            // Create Pemesanan record
-            $pemesanan = Pemesanan::create([
-                'kode_booking' => $checkout['booking_code'] ?? ($checkout['invoice_number'] ?? 'SR' . date('Ymd') . strtoupper(substr(md5(uniqid()), 0, 6))),
-                'customer_id' => Auth::id() ?? null,
-                'harga_total' => $checkout['total_price'] ?? 0,
-                'diskon' => 0,
-                'total_bayar' => $totalBayar,
-                'nama_pemesan' => $checkout['customer_data']['full_name'] ?? null,
-                'telepon_pemesan' => $checkout['customer_data']['phone'] ?? null,
-                'email_pemesan' => $checkout['customer_data']['email'] ?? null,
-                'catatan' => json_encode($orderPayload),
-                'status' => 'dibayar',
-                'waktu_kadaluarsa' => now()->addHours(24),
-                'metode_pembayaran' => $normalizedMethod,
-                'bukti_pembayaran' => $paymentProofPath,
-                'tanggal_pembayaran' => now()->toDateString(),
-                'waktu_pembayaran' => now(),
-                'created_by' => Auth::id() ?? null,
-            ]);
-
-            // Create Pembayaran record
-            $pembayaran = Pembayaran::create([
-                'pemesanan_id' => $pemesanan->id,
-                'kode_pembayaran' => 'PAY-' . date('YmdHis') . '-' . strtoupper(substr(md5(uniqid()), 0, 6)),
-                'jumlah' => $totalBayar,
-                'metode' => $normalizedMethod,
-                'status' => 'sukses',
-                'waktu_pembayaran' => now(),
-            ]);
-
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Failed to persist smartrent order/payment: ' . $e->getMessage());
-            return redirect()->route('smartrent.payment')->with('error', 'Terjadi kesalahan saat menyimpan pembayaran. Silakan coba lagi.');
-        }
-
-        // Prepare session payment info for success page
-        $paymentData = [
-            'checkout_data' => $checkout,
-            'payment_method' => $normalizedMethod,
-            'payment_proof' => $paymentProofPath,
-            'payment_date' => now()->format('Y-m-d H:i:s'),
-            'payment_status' => 'paid',
-            'transaction_id' => $transactionId,
-            'pemesanan_id' => $pemesanan->id,
-            'pembayaran_id' => $pembayaran->id,
-            'order_number' => $pemesanan->kode_booking,
-        ];
-
-        // Simpan ke session
-        session(['smartrent_payment' => $paymentData]);
-        session(['smartrent_pemesanan_id' => $pemesanan->id]);
-
-        // Hapus session checkout
-        session()->forget('smartrent_complete_checkout');
-
-        // PRG: redirect to success page (GET) to avoid POST re-submission loops
-        return redirect()->route('smartrent.success')->with('success', 'Pembayaran berhasil diproses.');
     }
 }

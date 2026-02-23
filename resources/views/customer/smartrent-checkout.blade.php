@@ -1,4 +1,3 @@
-{{-- resources/views/customer/smartrent-checkout.blade.php --}}
 @extends('layouts.app')
 
 @section('title', 'Checkout SmartRent - SmartRent')
@@ -34,6 +33,62 @@
     .checkout-subtitle {
         color: #666;
         font-size: 16px;
+    }
+    
+    /* Vehicle Summary Card */
+    .vehicle-summary-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 10px rgba(15, 41, 66, 0.1);
+        border: 1px solid var(--border-color);
+        padding: 20px;
+        margin-bottom: 25px;
+        display: flex;
+        gap: 20px;
+    }
+    
+    .vehicle-summary-image {
+        width: 150px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    
+    .vehicle-summary-details {
+        flex: 1;
+    }
+    
+    .vehicle-summary-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 5px;
+    }
+    
+    .vehicle-summary-type {
+        color: var(--secondary-color);
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        display: block;
+    }
+    
+    .vehicle-summary-specs {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 10px;
+    }
+    
+    .vehicle-summary-spec {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: #666;
+        font-size: 12px;
+    }
+    
+    .vehicle-summary-spec i {
+        color: var(--secondary-color);
     }
     
     /* Form Section */
@@ -115,6 +170,13 @@
         }
         .time-group {
             grid-template-columns: 1fr;
+        }
+        .vehicle-summary-card {
+            flex-direction: column;
+        }
+        .vehicle-summary-image {
+            width: 100%;
+            height: 150px;
         }
     }
     
@@ -295,6 +357,12 @@
         border-color: #c3e6cb;
         color: #155724;
     }
+    
+    /* Readonly fields */
+    .form-control[readonly] {
+        background-color: var(--light-bg);
+        cursor: not-allowed;
+    }
 </style>
 @endpush
 
@@ -303,17 +371,47 @@
     use App\Models\MProfilePerusahaan;
     $profile = MProfilePerusahaan::first();
     
-    // Determine service type text
-    $serviceType = $checkout['service_type'] ?? 'with_driver';
-    $serviceText = $serviceType == 'with_driver' ? 'Dengan Sopir' : 'Lepas Kunci';
+    // CEK SESSION DULU, baru fallback ke URL parameters
+    $checkoutData = session('smartrent_checkout');
     
-    // Calculate end date
-    $duration = $checkout['duration'] ?? 1;
-    $rentDate = $checkout['rent_date'] ?? date('Y-m-d');
-    $endDate = date('Y-m-d', strtotime($rentDate . ' + ' . ($duration - 1) . ' days'));
+    if ($checkoutData) {
+        // Ambil data dari session
+        $vehicle_id = $checkoutData['vehicle_id'] ?? 1;
+        $vehicle_name = $checkoutData['vehicle_name'] ?? 'Toyota Hiace Commuter';
+        $vehicle_image = $checkoutData['vehicle_image'] ?? asset('images/toyotahiace.png');
+        $vehicle_price = $checkoutData['vehicle_price'] ?? 1200000;
+        $driver_price = $checkoutData['driver_price'] ?? 150000;
+        $service_type = $checkoutData['service_type'] ?? 'with_driver';
+        $duration = $checkoutData['duration'] ?? 1;
+        $rent_date = $checkoutData['rent_date'] ?? date('Y-m-d');
+        $vehicle_total = $checkoutData['vehicle_total'] ?? ($vehicle_price * $duration);
+        $driver_total = $checkoutData['driver_total'] ?? (($service_type == 'with_driver') ? $driver_price * $duration : 0);
+        $total_price = $checkoutData['total_price'] ?? ($vehicle_total + $driver_total);
+        $booking_code = $checkoutData['booking_code'] ?? ('SR' . date('Ymd') . rand(100, 999));
+    } else {
+        // Fallback ke URL parameters (untuk kompatibilitas)
+        $vehicle_id = request()->get('vehicle_id', 1);
+        $vehicle_name = request()->get('vehicle_name', 'Toyota Hiace Commuter');
+        $vehicle_image = request()->get('vehicle_image', asset('images/toyotahiace.png'));
+        $vehicle_price = request()->get('vehicle_price', 1200000);
+        $driver_price = request()->get('driver_price', 150000);
+        $service_type = request()->get('service_type', 'with_driver');
+        $service_type = str_replace('with-driver', 'with_driver', $service_type);
+        $duration = request()->get('duration', 1);
+        $rent_date = request()->get('rent_date', date('Y-m-d'));
+        
+        // Hitung ulang
+        $vehicle_total = $vehicle_price * $duration;
+        $driver_total = ($service_type == 'with_driver') ? $driver_price * $duration : 0;
+        $total_price = $vehicle_total + $driver_total;
+        $booking_code = 'SR' . date('Ymd') . rand(100, 999);
+    }
     
-    // Default pickup location dari detail jika ada
-    $defaultPickup = $checkout['pickup_location'] ?? '';
+    // Hitung tanggal selesai
+    $end_date = date('Y-m-d', strtotime($rent_date . ' + ' . ($duration) . ' days'));
+    
+    // Pastikan service_type formatnya benar
+    $service_display = ($service_type == 'with_driver') ? 'Dengan Sopir' : 'Lepas Kunci';
 @endphp
 
 <div class="checkout-container">
@@ -335,67 +433,68 @@
         </div>
     @endif
 
-    @if(!isset($checkout) || !$checkout)
-        <div class="alert alert-danger">
-            <i class="fas fa-exclamation-circle"></i> 
-            Data pemesanan tidak ditemukan. Silakan pilih kendaraan terlebih dahulu.
+    <!-- Ringkasan Kendaraan -->
+    <div class="vehicle-summary-card">
+        <img src="{{ $vehicle_image }}" alt="{{ $vehicle_name }}" class="vehicle-summary-image"
+             onerror="this.onerror=null; this.src='{{ asset('images/default-vehicle.jpg') }}';">
+        <div class="vehicle-summary-details">
+            <h4 class="vehicle-summary-name">{{ $vehicle_name }}</h4>
+            <span class="vehicle-summary-type">{{ $service_display }}</span>
+            <div class="vehicle-summary-specs">
+                <div class="vehicle-summary-spec">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>{{ $duration }} Hari</span>
+                </div>
+                <div class="vehicle-summary-spec">
+                    <i class="fas fa-clock"></i>
+                    <span>{{ date('d M Y', strtotime($rent_date)) }}</span>
+                </div>
+            </div>
         </div>
-        <div style="text-align: center; margin-top: 30px;">
-            <a href="{{ route('smartrent.index') }}" class="btn-payment" style="width: auto; padding: 12px 30px;">
-                <i class="fas fa-arrow-left"></i> Kembali ke SmartRent
-            </a>
-        </div>
-    @else
-    <!-- Ringkasan Pesanan -->
+    </div>
+
+    <!-- Ringkasan Harga -->
     <div class="order-summary">
-        <h3 style="font-size: 18px; font-weight: 600; color: var(--primary-color); margin-bottom: 20px;">
-            Ringkasan Pesanan
+        <h3 style="font-size: 16px; font-weight: 600; color: var(--primary-color); margin-bottom: 15px;">
+            <i class="fas fa-file-invoice"></i> Ringkasan Harga
         </h3>
         
         <div class="summary-item">
-            <span class="summary-label">Kendaraan:</span>
-            <span class="summary-value">{{ $checkout['vehicle_name'] ?? 'N/A' }}</span>
+            <span class="summary-label">Harga Sewa ({{ $duration }} Hari):</span>
+            <span class="summary-value">Rp {{ number_format($vehicle_total, 0, ',', '.') }}</span>
         </div>
         
+        @if($service_type == 'with_driver')
         <div class="summary-item">
-            <span class="summary-label">Tipe Layanan:</span>
-            <span class="summary-value">{{ $serviceText }}</span>
-        </div>
-        
-        <div class="summary-item">
-            <span class="summary-label">Durasi:</span>
-            <span class="summary-value">{{ $duration }} Hari</span>
-        </div>
-        
-        <div class="summary-item">
-            <span class="summary-label">Periode:</span>
-            <span class="summary-value">{{ date('d M Y', strtotime($rentDate)) }} - {{ date('d M Y', strtotime($endDate)) }}</span>
-        </div>
-        
-        <div class="summary-item">
-            <span class="summary-label">Harga Sewa:</span>
-            <span class="summary-value">Rp {{ number_format($checkout['vehicle_total'] ?? 0, 0, ',', '.') }}</span>
-        </div>
-        
-        @if($serviceType == 'with_driver')
-        <div class="summary-item">
-            <span class="summary-label">Biaya Sopir:</span>
-            <span class="summary-value">Rp {{ number_format($checkout['driver_total'] ?? 0, 0, ',', '.') }}</span>
+            <span class="summary-label">Biaya Sopir ({{ $duration }} Hari):</span>
+            <span class="summary-value">Rp {{ number_format($driver_total, 0, ',', '.') }}</span>
         </div>
         @endif
         
         <div class="summary-total">
             <span class="total-label">Total Pembayaran:</span>
-            <span class="total-value">Rp {{ number_format($checkout['total_price'] ?? 0, 0, ',', '.') }}</span>
+            <span class="total-value">Rp {{ number_format($total_price, 0, ',', '.') }}</span>
         </div>
     </div>
     
-    <!-- PERUBAHAN PENTING: Form action harus mengarah ke route yang benar -->
+    <!-- Form Checkout -->
     <form action="{{ route('smartrent.checkout.finalize') }}" method="POST" id="checkoutForm" enctype="multipart/form-data">
         @csrf
         
-        <!-- Tambahkan input hidden untuk data checkout -->
-        <input type="hidden" name="checkout_id" value="{{ $checkout['booking_code'] ?? '' }}">
+        <!-- Hidden inputs untuk data booking -->
+        <input type="hidden" name="vehicle_id" value="{{ $vehicle_id }}">
+        <input type="hidden" name="vehicle_name" value="{{ $vehicle_name }}">
+        <input type="hidden" name="vehicle_image" value="{{ $vehicle_image }}">
+        <input type="hidden" name="vehicle_price" value="{{ $vehicle_price }}">
+        <input type="hidden" name="driver_price" value="{{ $driver_price }}">
+        <input type="hidden" name="service_type" value="{{ $service_type }}">
+        <input type="hidden" name="duration" value="{{ $duration }}">
+        <input type="hidden" name="rent_date" value="{{ $rent_date }}">
+        <input type="hidden" name="end_date" value="{{ $end_date }}">
+        <input type="hidden" name="vehicle_total" value="{{ $vehicle_total }}">
+        <input type="hidden" name="driver_total" value="{{ $driver_total }}">
+        <input type="hidden" name="total_price" value="{{ $total_price }}">
+        <input type="hidden" name="booking_code" value="{{ $booking_code }}">
         
         <!-- SECTION 1: DATA PEMESAN -->
         <div class="form-section">
@@ -439,15 +538,15 @@
             
             <div class="datetime-grid">
                 <div class="form-group">
-                    <label class="form-label">Tanggal Mulai <span class="required">*</span></label>
-                    <input type="date" name="start_date" class="form-control" required
-                           value="{{ old('start_date', $rentDate) }}" min="{{ date('Y-m-d') }}" id="startDate">
+                    <label class="form-label">Tanggal Mulai</label>
+                    <input type="date" name="start_date" class="form-control" readonly
+                           value="{{ $rent_date }}">
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Tanggal Selesai <span class="required">*</span></label>
-                    <input type="date" name="end_date" class="form-control" required
-                           value="{{ old('end_date', $endDate) }}" min="{{ $rentDate }}" id="endDate">
+                    <label class="form-label">Tanggal Selesai</label>
+                    <input type="date" name="end_date" class="form-control" readonly
+                           value="{{ $end_date }}">
                 </div>
             </div>
             
@@ -469,22 +568,22 @@
                 <label class="form-label">Lokasi/Outlet Penjemputan <span class="required">*</span></label>
                 <select name="pickup_location" class="form-control" required id="pickupLocation">
                     <option value="">Pilih Lokasi Penjemputan</option>
-                    <option value="jakarta" {{ old('pickup_location', $defaultPickup) == 'jakarta' ? 'selected' : '' }}>
+                    <option value="Jakarta - Kantor Pusat SmartRent" {{ old('pickup_location') == 'Jakarta - Kantor Pusat SmartRent' ? 'selected' : '' }}>
                         Jakarta - Kantor Pusat SmartRent
                     </option>
-                    <option value="bandung" {{ old('pickup_location', $defaultPickup) == 'bandung' ? 'selected' : '' }}>
+                    <option value="Bandung - Outlet Merdeka SmartRent" {{ old('pickup_location') == 'Bandung - Outlet Merdeka SmartRent' ? 'selected' : '' }}>
                         Bandung - Outlet Merdeka SmartRent
                     </option>
-                    <option value="surabaya" {{ old('pickup_location', $defaultPickup) == 'surabaya' ? 'selected' : '' }}>
+                    <option value="Surabaya - Outlet Tunjungan SmartRent" {{ old('pickup_location') == 'Surabaya - Outlet Tunjungan SmartRent' ? 'selected' : '' }}>
                         Surabaya - Outlet Tunjungan SmartRent
                     </option>
-                    <option value="yogyakarta" {{ old('pickup_location', $defaultPickup) == 'yogyakarta' ? 'selected' : '' }}>
+                    <option value="Yogyakarta - Outlet Malioboro SmartRent" {{ old('pickup_location') == 'Yogyakarta - Outlet Malioboro SmartRent' ? 'selected' : '' }}>
                         Yogyakarta - Outlet Malioboro SmartRent
                     </option>
-                    <option value="bali" {{ old('pickup_location', $defaultPickup) == 'bali' ? 'selected' : '' }}>
+                    <option value="Bali - Outlet Kuta SmartRent" {{ old('pickup_location') == 'Bali - Outlet Kuta SmartRent' ? 'selected' : '' }}>
                         Bali - Outlet Kuta SmartRent
                     </option>
-                    <option value="other" {{ old('pickup_location', $defaultPickup) == 'other' ? 'selected' : '' }}>
+                    <option value="Lainnya (Sesuai Kesepakatan)" {{ old('pickup_location') == 'Lainnya (Sesuai Kesepakatan)' ? 'selected' : '' }}>
                         Lainnya (Sesuai Kesepakatan)
                     </option>
                 </select>
@@ -562,28 +661,21 @@
             <div class="form-group">
                 <label class="form-label">Catatan Tambahan (Opsional)</label>
                 <textarea name="notes" class="form-control" rows="3" 
-                          placeholder="Contoh: Alamat lengkap penjemputan, permintaan khusus, instruksi khusus untuk sopir, dll">
-                    {{ old('notes') }}
-                </textarea>
+                          placeholder="Contoh: Alamat lengkap penjemputan, permintaan khusus, instruksi khusus untuk sopir, dll">{{ old('notes') }}</textarea>
             </div>
         </div>
         
         <!-- ACTION BUTTONS -->
         <div class="action-buttons">
-            <!-- PERBAIKAN: Kembali ke detail kendaraan -->
-            <a href="{{ route('smartrent.detail', $checkout['vehicle_id'] ?? 1) }}" class="btn-back">
-                <i class="fas fa-arrow-left"></i>
-                Kembali ke Detail
+            <a href="{{ route('smartrent.booking', ['vehicle_id' => $vehicle_id]) }}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Kembali
             </a>
             
-            <!-- Button untuk submit form -->
             <button type="submit" class="btn-payment" id="submitBtn">
-                <i class="fas fa-lock"></i>
-                Lanjutkan ke Pembayaran
+                <i class="fas fa-lock"></i> Proses Pembayaran
             </button>
         </div>
     </form>
-    @endif
 </div>
 
 @push('scripts')
@@ -601,31 +693,18 @@ function handleFileUpload(input, areaId, fileNameId) {
             alert(`Ukuran file terlalu besar. Maksimal ${maxSize}MB.`);
             input.value = '';
             area.classList.remove('has-file');
-            fileName.style.display = 'flex';
+            fileName.style.display = 'none';
             return;
         }
         
         // Validasi tipe file
-        const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-        const validExtensions = ['.jpg', '.jpeg', '.png', '.pdf'];
-        
-        // Tambahkan validasi untuk dokumen lainnya
-        if (areaId === 'other-upload-area') {
-            validExtensions.push('.doc', '.docx');
-        }
-        
+        const fileNameLower = file.name.toLowerCase();
         let isValid = false;
         
-        if (validTypes.includes(file.type)) {
-            isValid = true;
+        if (areaId === 'other-upload-area') {
+            isValid = fileNameLower.match(/\.(jpg|jpeg|png|pdf|doc|docx)$/);
         } else {
-            const fileNameLower = file.name.toLowerCase();
-            for (const ext of validExtensions) {
-                if (fileNameLower.endsWith(ext)) {
-                    isValid = true;
-                    break;
-                }
-            }
+            isValid = fileNameLower.match(/\.(jpg|jpeg|png|pdf)$/);
         }
         
         if (!isValid) {
@@ -635,7 +714,7 @@ function handleFileUpload(input, areaId, fileNameId) {
             alert(`Format file tidak didukung. Gunakan ${allowed}.`);
             input.value = '';
             area.classList.remove('has-file');
-            fileName.style.display = 'flex';
+            fileName.style.display = 'none';
             return;
         }
         
@@ -644,83 +723,42 @@ function handleFileUpload(input, areaId, fileNameId) {
         fileName.style.display = 'flex';
         area.classList.add('has-file');
     } else {
-        fileName.querySelector('span').textContent = 'Belum ada file';
-        fileName.style.display = 'flex';
+        fileName.style.display = 'none';
         area.classList.remove('has-file');
     }
 }
 
-// Auto-set end date based on duration
+// Form validation
 document.addEventListener('DOMContentLoaded', function() {
-    const startDateInput = document.getElementById('startDate');
-    const endDateInput = document.getElementById('endDate');
-    const duration = {{ $duration }};
-    
-    if (startDateInput && endDateInput) {
-        // Set end date berdasarkan durasi
-        const startDate = new Date(startDateInput.value);
-        if (!isNaN(startDate.getTime())) {
-            const endDate = new Date(startDate);
-            endDate.setDate(startDate.getDate() + (duration - 1));
-            
-            const endDateStr = endDate.toISOString().split('T')[0];
-            endDateInput.min = startDateInput.value;
-            if (!endDateInput.value) {
-                endDateInput.value = endDateStr;
-            }
-        }
-        
-        // Update end date ketika start date berubah
-        startDateInput.addEventListener('change', function() {
-            const startDate = new Date(this.value);
-            if (!isNaN(startDate.getTime())) {
-                const endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + (duration - 1));
-                
-                const endDateStr = endDate.toISOString().split('T')[0];
-                endDateInput.min = this.value;
-                endDateInput.value = endDateStr;
-            }
-        });
-    }
-    
-    // Form validation
     const form = document.getElementById('checkoutForm');
     if (form) {
         form.addEventListener('submit', function(e) {
-            const submitBtn = this.querySelector('.btn-payment');
-            const originalText = submitBtn.innerHTML;
+            const submitBtn = document.getElementById('submitBtn');
             
             // Validasi file upload
             const ktpFile = document.getElementById('ktp_file').files.length;
             const simFile = document.getElementById('sim_file').files.length;
             
-            if (ktpFile === 0 || simFile === 0) {
+            if (ktpFile === 0) {
                 e.preventDefault();
-                alert('Harap unggah KTP dan SIM terlebih dahulu');
+                alert('Harap unggah KTP terlebih dahulu');
                 return false;
             }
             
-            // Validasi tanggal
-            const startDate = new Date(document.querySelector('input[name="start_date"]').value);
-            const endDate = new Date(document.querySelector('input[name="end_date"]').value);
-            
-            if (endDate < startDate) {
+            if (simFile === 0) {
                 e.preventDefault();
-                alert('Tanggal selesai harus setelah atau sama dengan tanggal mulai');
+                alert('Harap unggah SIM terlebih dahulu');
                 return false;
             }
             
             // Validasi jam untuk sewa hari yang sama
-            if (startDate.toDateString() === endDate.toDateString()) {
-                const startTime = document.querySelector('input[name="start_time"]').value;
-                const endTime = document.querySelector('input[name="end_time"]').value;
-                
-                if (startTime >= endTime) {
-                    e.preventDefault();
-                    alert('Jam selesai harus setelah jam mulai');
-                    return false;
-                }
+            const startTime = document.querySelector('input[name="start_time"]').value;
+            const endTime = document.querySelector('input[name="end_time"]').value;
+            
+            if (startTime && endTime && startTime >= endTime) {
+                e.preventDefault();
+                alert('Jam selesai harus setelah jam mulai');
+                return false;
             }
             
             // Validasi lokasi
@@ -752,12 +790,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show loading
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
             submitBtn.disabled = true;
-            
-            // Re-enable after 5 seconds jika masih di halaman
-            setTimeout(() => {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }, 5000);
         });
     }
 });

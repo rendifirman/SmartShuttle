@@ -29,6 +29,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\Customer\SmartRentETicketController;
 
 // ★★★ IMPORT CONTROLLER YANG DIPERLUKAN ★★★
 use App\Http\Controllers\DriverJadwalController;
@@ -1117,51 +1118,6 @@ Route::get('/refresh-csrf', function () {
 
 // ★★★ SMART RENT ROUTES ★★★
 use App\Http\Controllers\Customer\SmartRentController;
-/// ★★★ SMART RENT ROUTES ★★★
-Route::middleware(['web'])->prefix('smartrent')->name('smartrent.')->group(function () {
-    // Halaman utama SmartRent
-    Route::get('/', [SmartRentController::class, 'index'])->name('index');
-    
-    // Halaman detail kendaraan
-    Route::get('/vehicle/{id}', [SmartRentController::class, 'detail'])->name('vehicle.detail');
-    
-    // Halaman booking dengan filter
-    Route::get('/booking', [SmartRentController::class, 'booking'])->name('booking');
-    
-    // Proses order langsung
-    Route::post('/order', [SmartRentController::class, 'order'])->name('order');
-    
-    // 1. PROSES CHECKOUT dari halaman detail (POST) - route yang sudah ada
-    Route::post('/smartrent-checkout', [SmartRentController::class, 'processDetailCheckout'])
-        ->name('checkout.process');
-    
-    // 2. PROSES CHECKOUT dari halaman booking (GET) - route yang sudah ada
-    Route::get('/checkout/booking', [SmartRentController::class, 'processBookingCheckout'])
-        ->name('checkout.booking');
-    
-    // 3. HALAMAN FORM CHECKOUT (GET) - route yang sudah ada
-    Route::get('/checkout', [SmartRentController::class, 'showCheckoutForm'])
-        ->name('checkout');
-    
-    // 4. FINALISASI CHECKOUT (POST) - route yang sudah ada
-    Route::post('/checkout/final', [SmartRentController::class, 'finalizeCheckout'])
-        ->name('checkout.final');
-    
-    // Halaman pembayaran
-    Route::get('/payment', [SmartRentController::class, 'payment'])->name('payment');
-    
-    // Proses pembayaran
-    Route::post('/process-payment', [SmartRentController::class, 'processPayment'])
-        ->name('process-payment');
-    
-    // Halaman konfirmasi
-    Route::get('/confirmation', [SmartRentController::class, 'confirmation'])
-        ->name('confirmation');
-    
-    // API Routes
-    Route::get('/api/vehicle/{id}', [SmartRentController::class, 'getVehicle']);
-    Route::post('/api/check-availability', [SmartRentController::class, 'checkAvailability']);
-});
 
 // ★★★ ALIAS ROUTES untuk kompatibilitas ★★★
 Route::get('/smartrent-page', [SmartRentController::class, 'index'])->name('customer.smartrent');
@@ -1192,57 +1148,33 @@ Route::prefix('smartrent')->name('smartrent.')->group(function () {
         Route::post('/checkout/finalize', [SmartRentController::class, 'finalizeCheckout'])->name('checkout.finalize');
         Route::get('/payment', [SmartRentController::class, 'payment'])->name('payment');
         Route::post('/payment/process', [SmartRentController::class, 'processPayment'])->name('payment.process');
+        Route::post('/process-payment', [SmartRentController::class, 'processPayment'])->name('process-payment');
+        Route::get('/payment-success', [SmartRentController::class, 'success'])->name('payment-success');
         Route::get('/confirmation', [SmartRentController::class, 'confirmation'])->name('confirmation');
     });
 
     // ★★★ SMART RENT ROUTES ★★★
-Route::middleware(['web'])->prefix('smartrent')->name('smartrent.')->group(function () {
-    // Halaman utama SmartRent
-    Route::get('/', [SmartRentController::class, 'index'])->name('index');
-    
-    // Halaman detail kendaraan
-    Route::get('/detail/{id}', [SmartRentController::class, 'detail'])->name('detail');
-    
-    // Halaman booking dengan filter
-    Route::get('/booking', [SmartRentController::class, 'booking'])->name('booking');
-    
-    // Proses order langsung
-    Route::post('/order', [SmartRentController::class, 'order'])->name('order');
-    
-    // 1. PROSES CHECKOUT dari halaman detail (POST)
-    Route::post('/checkout/process', [SmartRentController::class, 'processDetailCheckout'])
-        ->name('checkout.process');
-    
-    // 2. PROSES CHECKOUT dari halaman booking (GET)
-    Route::get('/checkout/booking', [SmartRentController::class, 'processBookingCheckout'])
-        ->name('checkout.booking');
-    
-    // 3. HALAMAN FORM CHECKOUT (GET)
-    Route::get('/checkout', [SmartRentController::class, 'showCheckoutForm'])
-        ->name('checkout');
-    
-    // 4. FINALISASI CHECKOUT (POST) - PERUBAHAN: gunakan 'checkout.finalize' 
-    Route::post('/checkout/finalize', [SmartRentController::class, 'finalizeCheckout'])
-        ->name('checkout.finalize'); // PERUBAHAN: dari 'checkout.final' ke 'checkout.finalize'
-    
-    // 5. Halaman pembayaran
-    Route::get('/payment', [SmartRentController::class, 'payment'])->name('payment');
-    
-    // 6. Proses pembayaran
-    Route::post('/payment/process', [SmartRentController::class, 'processPayment'])
-        ->name('payment.process');
-    
-    // 7. Halaman konfirmasi
-    Route::get('/confirmation', [SmartRentController::class, 'confirmation'])
-        ->name('confirmation');
-    
-    // API Routes
-    Route::get('/api/vehicle/{id}', [SmartRentController::class, 'getVehicle']);
-    Route::post('/api/check-availability', [SmartRentController::class, 'checkAvailability']);
+    // (Routes without auth requirements already moved above)
 });
+
 
 // ★★★ ALIAS ROUTES untuk kompatibilitas ★★★
 Route::get('/smartrent-page', [SmartRentController::class, 'index'])->name('customer.smartrent');
 Route::get('/smartrent/detail/{id}', [SmartRentController::class, 'detail'])
-    ->name('customer.smartrent-detail');
+    ->name('smartrent.detail');
+
+  
+
+// Customer routes
+Route::prefix('customer')->name('customer.')->middleware(['auth', \App\Http\Middleware\CustomerAuth::class])->group(function () {
+    
+    // ... existing routes ...
+    
+    // SmartRent E-Ticket routes
+    Route::prefix('smartrent')->name('smartrent.')->group(function () {
+        Route::get('/e-ticket/{orderNumber}', [SmartRentETicketController::class, 'show'])->name('e-ticket');
+        Route::get('/e-ticket/{orderNumber}/download', [SmartRentETicketController::class, 'download'])->name('e-ticket.download');
+        Route::get('/e-ticket/{orderNumber}/print', [SmartRentETicketController::class, 'print'])->name('e-ticket.print');
+        Route::get('/api/e-ticket/{orderNumber}', [SmartRentETicketController::class, 'getTicketData'])->name('e-ticket.api');
+    });
 });
