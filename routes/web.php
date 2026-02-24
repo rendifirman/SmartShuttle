@@ -545,9 +545,16 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/api/promo/validate', [AdminPemesananController::class, 'validatePromo'])
             ->middleware('permission:view_perjalanan_transaksi')
             ->name('api.promo.validate');
+        Route::get('/api/jadwal/{id}/kursi', [AdminPemesananController::class, 'getTakenSeats'])
+            ->middleware('permission:view_perjalanan_transaksi')
+            ->name('api.jadwal.kursi');
         Route::post('/api/pemesanan/create', [AdminPemesananController::class, 'createPemesanan'])
             ->middleware('permission:manage_perjalanan_transaksi')
             ->name('api.pemesanan.create');
+        // Admin booking page (admin flow mirroring customer flow)
+        Route::get('/transaksi/pemesanan-baru', [AdminPemesananController::class, 'showCreatePage'])
+            ->middleware('permission:manage_perjalanan_transaksi')
+            ->name('admin.pemesanan.create.page');
         Route::delete('/api/pemesanan/{id}', [AdminPemesananController::class, 'deletePemesanan'])
             ->middleware('permission:manage_perjalanan_transaksi')
             ->name('api.pemesanan.delete');

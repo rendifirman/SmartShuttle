@@ -399,6 +399,8 @@
                         <option value="driver" {{ old('role') == 'driver' ? 'selected' : '' }}>Driver</option>
                         <option value="customer" {{ old('role') == 'customer' ? 'selected' : '' }}>Customer</option>
                     </select>
+                    <!-- Hidden input used to submit role when the select is disabled (disabled elements are not submitted) -->
+                    <input type="hidden" id="role_hidden" />
                     @error('role')
                         <small class="text-danger">{{ $message }}</small>
                     @enderror
@@ -428,6 +430,8 @@
                             </option>
                         @endforeach
                     </select>
+                    <!-- Hidden input used to submit branch_id when the select is disabled -->
+                    <input type="hidden" id="branch_id_hidden" />
                     @error('branch_id')
                         <small class="text-danger">{{ $message }}</small>
                     @enderror
@@ -778,6 +782,22 @@
 </div>
 
 <script>
+// Utility: ensure disabled selects still submit their value by moving the name to a hidden input
+function syncSubmissionField(selectEl, hiddenId, fieldName) {
+    const hidden = document.getElementById(hiddenId);
+    if (!hidden || !selectEl) return;
+
+    if (selectEl.disabled) {
+        selectEl.removeAttribute('name');
+        hidden.setAttribute('name', fieldName);
+        hidden.value = selectEl.value || '';
+    } else {
+        selectEl.setAttribute('name', fieldName);
+        hidden.removeAttribute('name');
+        hidden.value = '';
+    }
+}
+
 // Function to load pegawai data via AJAX
 function loadPegawaiData(userId) {
     const roleSelect = document.getElementById('role');
@@ -807,18 +827,23 @@ function loadPegawaiData(userId) {
                 if (data.data.role) {
                     roleSelect.value = data.data.role;
                     roleSelect.disabled = true; // Disable agar tidak bisa diubah
+                    // Sinkron nama field untuk submission saat disabled
+                    syncSubmissionField(roleSelect, 'role_hidden', 'role');
                     // Trigger change event untuk update branch field jika diperlukan
                     roleSelect.dispatchEvent(new Event('change'));
                 } else {
                     roleSelect.disabled = false;
+                    syncSubmissionField(roleSelect, 'role_hidden', 'role');
                 }
 
                 // Auto-set branch dari pegawai jika ada
                 if (data.data.branch_id) {
                     branchSelect.value = data.data.branch_id;
                     branchSelect.disabled = true; // Disable agar tidak bisa diubah
+                    syncSubmissionField(branchSelect, 'branch_id_hidden', 'branch_id');
                 } else {
                     branchSelect.disabled = false;
+                    syncSubmissionField(branchSelect, 'branch_id_hidden', 'branch_id');
                 }
 
                 document.getElementById('pegawaiDataSection').style.display = 'block';
@@ -836,6 +861,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const branchField = document.getElementById('branchField');
     const branchSelect = document.getElementById('branch_id');
 
+
     function toggleBranchField() {
         // Tampilkan branch field untuk admin_cabang dan driver
         if (['admin_cabang', 'driver'].includes(roleSelect.value)) {
@@ -847,8 +873,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    roleSelect.addEventListener('change', toggleBranchField);
+    roleSelect.addEventListener('change', function() {
+        toggleBranchField();
+        // keep hidden input in sync when user changes role
+        syncSubmissionField(roleSelect, 'role_hidden', 'role');
+    });
     toggleBranchField(); // Initial check
+
+    // Ensure submission fields are in sync on load
+    syncSubmissionField(roleSelect, 'role_hidden', 'role');
+    syncSubmissionField(branchSelect, 'branch_id_hidden', 'branch_id');
 
     // Password confirmation validation
     const password = document.getElementById('password');
@@ -982,6 +1016,9 @@ function resetForm() {
         } else {
             permissionsSection.style.display = 'none';
         }
+        // Sync hidden inputs so submission remains correct after reset
+        syncSubmissionField(roleSelect, 'role_hidden', 'role');
+        syncSubmissionField(branchSelect, 'branch_id_hidden', 'branch_id');
     }
 }
 </script>

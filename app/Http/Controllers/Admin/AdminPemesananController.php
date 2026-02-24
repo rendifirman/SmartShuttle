@@ -55,11 +55,12 @@ class AdminPemesananController extends Controller
                         'waktu_keberangkatan' => $j->waktu_keberangkatan,
                         'harga_total' => $j->harga_total,
                         'kursi_tersedia' => $j->kursi_tersedia,
-                        'shuttle' => [
-                            'id' => $j->shuttle->id ?? null,
-                            'nama_shuttle' => $j->shuttle->nama_shuttle ?? 'N/A',
-                            'fasilitas' => $j->shuttle->fasilitas ?? null
-                        ]
+                            'shuttle' => [
+                                'id' => $j->shuttle->id ?? null,
+                                'nama_shuttle' => $j->shuttle->nama_shuttle ?? 'N/A',
+                                'fasilitas' => $j->shuttle->fasilitas ?? null,
+                                'kapasitas' => $j->shuttle->kapasitas ?? null
+                            ]
                     ];
                 })
             ]);
@@ -71,6 +72,18 @@ class AdminPemesananController extends Controller
                 'jadwal' => []
             ], 500);
         }
+    }
+
+    /**
+     * Show admin booking page that mirrors customer flow
+     */
+    public function showCreatePage()
+    {
+        // Load necessary data for the admin booking page
+        $rutes = Rute::all();
+        $customers = User::select('id','name','phone','email')->get();
+
+        return view('admin.transaksi.pemesanan_admin_flow', compact('rutes', 'customers'));
     }
 
     /**
@@ -127,6 +140,26 @@ class AdminPemesananController extends Controller
     }
 
     /**
+     * Get taken seats for a jadwal
+     */
+    public function getTakenSeats($jadwal_id)
+    {
+        try {
+            $taken = DetailPenumpang::whereHas('pemesanan', function($q) use ($jadwal_id) {
+                $q->where('id_jadwal', $jadwal_id)
+                  ->where('status', '!=', 'cancelled');
+            })->whereNotNull('nomor_kursi')
+              ->pluck('nomor_kursi')
+              ->toArray();
+
+            return response()->json([ 'taken' => $taken ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting taken seats: ' . $e->getMessage());
+            return response()->json([ 'taken' => [] ], 500);
+        }
+    }
+
+    /**
      * Create pemesanan from admin
      */
     public function createPemesanan(Request $request)
@@ -148,6 +181,7 @@ class AdminPemesananController extends Controller
                 'penumpang.*.jenis_kelamin' => 'required|string|in:L,P',
                 'penumpang.*.telepon' => 'required|string|min:10|max:15',
                 'penumpang.*.email' => 'required|email|max:100',
+                'penumpang.*.nomor_kursi' => 'nullable|string',
                 'kode_promo' => 'nullable|string',
                 'catatan' => 'nullable|string|max:500',
             ]);
@@ -239,7 +273,7 @@ class AdminPemesananController extends Controller
                     'jenis_kelamin' => $penumpangData['jenis_kelamin'],
                     'telepon' => $penumpangData['telepon'],
                     'email' => $penumpangData['email'],
-                    'nomor_kursi' => null, // Will be set during seat selection
+                    'nomor_kursi' => $penumpangData['nomor_kursi'] ?? null,
                 ]);
             }
 

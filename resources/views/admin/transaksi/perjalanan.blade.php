@@ -365,7 +365,7 @@
             <p style="color: #6c757d; margin-top: 5px; font-size: 14px;">Kelola dan lihat semua transaksi pemesanan tiket shuttle</p>
         </div>
         <div class="header-actions">
-            <button class="btn-admin-primary" onclick="openNewBookingModal()">
+                <button class="btn-admin-primary" onclick="openNewBookingModal()">
                 <i class="fas fa-plus-circle"></i>
                 Pesan Untuk Customer
             </button>
@@ -673,17 +673,8 @@
     const bookingModal = new bootstrap.Modal(document.getElementById('bookingModal'), {});
 
     function openNewBookingModal() {
-        document.getElementById('adminBookingForm').reset();
-        // Initialize promoResult dataset
-        const promoResult = document.getElementById('promoResult');
-        promoResult.dataset.diskon = '0';
-        promoResult.dataset.valid = 'false';
-        promoResult.style.display = 'none';
-        // Reset summary
-        document.getElementById('summarySubtotal').textContent = 'Rp 0';
-        document.getElementById('summaryTotal').textContent = 'Rp 0';
-        document.getElementById('summaryPenumpang').textContent = '0 Orang';
-        bookingModal.show();
+        // Open new admin booking flow page
+        window.location.href = '/admin/transaksi/pemesanan-baru';
     }
 
     // Handle customer selection
