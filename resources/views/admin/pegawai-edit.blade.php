@@ -381,10 +381,10 @@
                     <label class="form-label" for="jenis_kelamin">Jenis Kelamin *</label>
                     <select id="jenis_kelamin" name="jenis_kelamin" class="form-control" required>
                         <option value="">Pilih Jenis Kelamin</option>
-                        <option value="Laki-laki" {{ old('jenis_kelamin', $pegawai->jenis_kelamin) == 'Laki-laki' ? 'selected' : '' }}>
+                        <option value="L" {{ old('jenis_kelamin', $pegawai->jenis_kelamin) == 'L' ? 'selected' : '' }}>
                             Laki-laki
                         </option>
-                        <option value="Perempuan" {{ old('jenis_kelamin', $pegawai->jenis_kelamin) == 'Perempuan' ? 'selected' : '' }}>
+                        <option value="P" {{ old('jenis_kelamin', $pegawai->jenis_kelamin) == 'P' ? 'selected' : '' }}>
                             Perempuan
                         </option>
                     </select>
@@ -496,12 +496,17 @@
             </div>
 
             <div class="form-row">
-                <!-- Lokasi Kerja -->
+                <!-- Lokasi Kerja (Cabang) -->
                 <div class="form-group">
-                    <label class="form-label" for="lokasi_kerja">Lokasi Kerja *</label>
-                    <input type="text" id="lokasi_kerja" name="lokasi_kerja"
-                           value="{{ old('lokasi_kerja', $pegawai->lokasi_kerja) }}"
-                           class="form-control" required>
+                    <label class="form-label" for="branch_id">Lokasi Kerja (Cabang) *</label>
+                    <select id="branch_id" name="branch_id" class="form-control" required>
+                        <option value="">Pilih Lokasi Kerja</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" {{ old('branch_id', $pegawai->branch_id) == $branch->id ? 'selected' : '' }}>
+                                {{ $branch->nama_cabang }} ({{ $branch->kota }})
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <!-- Status -->
@@ -509,11 +514,11 @@
                     <label class="form-label" for="status">Status *</label>
                     <select id="status" name="status" class="form-control" required>
                         <option value="">Pilih Status</option>
-                        <option value="Aktif" {{ old('status', $pegawai->status) == 'Aktif' ? 'selected' : '' }}>
+                        <option value="active" {{ old('status', $pegawai->status) == 'active' ? 'selected' : '' }}>
                             Aktif
                         </option>
-                        <option value="Non-Aktif" {{ old('status', $pegawai->status) == 'Non-Aktif' ? 'selected' : '' }}>
-                            Non-Aktif
+                        <option value="inactive" {{ old('status', $pegawai->status) == 'inactive' ? 'selected' : '' }}>
+                            Tidak Aktif
                         </option>
                     </select>
                 </div>

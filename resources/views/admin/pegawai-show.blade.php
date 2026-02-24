@@ -270,7 +270,7 @@
             <div class="detail-row">
                 <div class="detail-field">
                     <label>Jenis Kelamin</label>
-                    <value>{{ $pegawai->jenis_kelamin ?? '-' }}</value>
+                    <value>{{ $pegawai->getJenisKelaminLabel() ?? '-' }}</value>
                 </div>
                 <div class="detail-field">
                     <label>Agama</label>

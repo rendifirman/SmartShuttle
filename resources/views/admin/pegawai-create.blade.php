@@ -395,8 +395,8 @@ textarea {
                         <label for="jenis_kelamin" class="required">Jenis Kelamin</label>
                         <select name="jenis_kelamin" id="jenis_kelamin" required>
                             <option value="">Pilih Jenis Kelamin</option>
-                            <option value="Laki-laki" {{ old('jenis_kelamin') == 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
-                            <option value="Perempuan" {{ old('jenis_kelamin') == 'Perempuan' ? 'selected' : '' }}>Perempuan</option>
+                            <option value="L" {{ old('jenis_kelamin') == 'L' ? 'selected' : '' }}>Laki-laki</option>
+                            <option value="P" {{ old('jenis_kelamin') == 'P' ? 'selected' : '' }}>Perempuan</option>
                         </select>
                         <div class="form-error" id="error-jenis_kelamin"></div>
                     </div>
@@ -491,23 +491,23 @@ textarea {
                         <div class="form-error" id="error-posisi"></div>
                     </div>
                     <div class="form-group">
-                        <label for="lokasi_kerja" class="required">Lokasi Kerja</label>
-                        <select name="lokasi_kerja" id="lokasi_kerja" required>
+                        <label for="branch_id" class="required">Lokasi Kerja (Cabang)</label>
+                        <select name="branch_id" id="branch_id" required>
                             <option value="">Pilih Lokasi Kerja</option>
-                            <option value="Kantor Pusat" {{ old('lokasi_kerja') == 'Kantor Pusat' ? 'selected' : '' }}>Kantor Pusat</option>
-                            <option value="Cabang Utara" {{ old('lokasi_kerja') == 'Cabang Utara' ? 'selected' : '' }}>Cabang Utara</option>
-                            <option value="Cabang Selatan" {{ old('lokasi_kerja') == 'Cabang Selatan' ? 'selected' : '' }}>Cabang Selatan</option>
-                            <option value="Cabang Timur" {{ old('lokasi_kerja') == 'Cabang Timur' ? 'selected' : '' }}>Cabang Timur</option>
-                            <option value="Cabang Barat" {{ old('lokasi_kerja') == 'Cabang Barat' ? 'selected' : '' }}>Cabang Barat</option>
+                            @foreach($branches as $branch)
+                                <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
+                                    {{ $branch->nama_cabang }} ({{ $branch->kota }})
+                                </option>
+                            @endforeach
                         </select>
-                        <div class="form-error" id="error-lokasi_kerja"></div>
+                        <div class="form-error" id="error-branch_id"></div>
                     </div>
                     <div class="form-group">
                         <label for="status" class="required">Status aktif</label>
                         <select name="status" id="status" required>
                             <option value="">Pilih Status Aktif</option>
-                            <option value="Aktif" {{ old('status') == 'Aktif' ? 'selected' : '' }}>Aktif</option>
-                            <option value="Non-Aktif" {{ old('status') == 'Non-Aktif' ? 'selected' : '' }}>Non-Aktif</option>
+                            <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Aktif</option>
+                            <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }}>Tidak Aktif</option>
                         </select>
                         <div class="form-error" id="error-status"></div>
                     </div>
@@ -642,7 +642,7 @@ document.getElementById('pegawaiForm').addEventListener('submit', function(e) {
     const requiredFields = [
         'id_pegawai', 'nama', 'nik', 'jenis_kelamin',
         'telepon', 'tanggal_bergabung', 'status_pegawai',
-        'posisi', 'lokasi_kerja', 'status'
+        'posisi', 'branch_id', 'status'
     ];
 
     // Clear previous errors

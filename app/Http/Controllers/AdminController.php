@@ -914,7 +914,7 @@ class AdminController extends Controller
             'phone' => 'required|string|max:20',
             'tempat_lahir' => 'nullable|string',
             'tanggal_lahir' => 'nullable|date',
-            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+            'jenis_kelamin' => 'required|in:L,P',
             'alamat' => 'nullable|string',
             'agama' => 'nullable|string',
             'status_pernikahan' => 'nullable|string',
@@ -922,8 +922,9 @@ class AdminController extends Controller
             'tanggal_bergabung' => 'required|date',
             'status_pegawai' => 'required|in:Tetap,Kontrak,Magang',
             'masa_kerja' => 'nullable|string',
-            'posisi' => 'required|in:Admin Pusat,Admin Cabrera,Driver,Manager',
+            'posisi' => 'required|in:Admin Pusat,Admin Cabang,Driver,Manager',
             'branch_id' => 'required|exists:branches,id',
+            'status' => 'required|in:active,inactive',
             // Pendidikan & Keahlian
             'pendidikan_terakhir' => 'nullable|string',
             'institusi' => 'nullable|string',
@@ -1030,7 +1031,7 @@ class AdminController extends Controller
             'phone' => 'required|string|max:20',
             'tempat_lahir' => 'nullable|string',
             'tanggal_lahir' => 'nullable|date',
-            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+            'jenis_kelamin' => 'required|in:L,P',
             'alamat' => 'nullable|string',
             'agama' => 'nullable|string',
             'status_pernikahan' => 'nullable|string',
@@ -1039,7 +1040,8 @@ class AdminController extends Controller
             'status_pegawai' => 'nullable|in:Tetap,Kontrak,Magang',
             'masa_kerja' => 'nullable|string',
             'posisi' => 'nullable|in:Admin Pusat,Admin Cabang,Driver,Manager',
-            'lokasi_kerja' => 'nullable|string',
+            'branch_id' => 'nullable|exists:branches,id',
+            'status' => 'nullable|in:active,inactive',
             // Pendidikan & Keahlian
             'pendidikan_terakhir' => 'nullable|string',
             'institusi' => 'nullable|string',
@@ -1102,6 +1104,19 @@ class AdminController extends Controller
         }
 
         $pegawai->update($data);
+
+        // Update roles if posisi changed
+        if ($request->filled('posisi')) {
+            $roleMapping = [
+                'Admin Pusat' => 'admin_pusat',
+                'Admin Cabang' => 'admin_cabang',
+                'Driver' => 'driver',
+                'Manager' => 'admin_pusat',
+            ];
+
+            $role = $roleMapping[$request->posisi] ?? 'driver';
+            $pegawai->syncRoles($role);
+        }
 
         return redirect()->route('admin.pegawai')->with('success', 'Pegawai berhasil diperbarui.');
     }
@@ -1409,6 +1424,18 @@ class AdminController extends Controller
         $activeUsers = User::where('status', 'active')->count();
         $inactiveUsers = User::where('status', 'inactive')->count();
 
+        // Get pegawai without user account (pegawai yang belum punya akun)
+        $pegawaiWithoutAccount = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->doesntHave('roles.permissions')->orWhereHas('roles', function ($q) {
+            $q->whereNotIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->get();
+
+        // Simpler approach: get all pegawai with roles but check if they need to be assigned as user accounts
+        $allPegawai = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->get();
+
         // Get data for forms
         $branches = Branch::where('status', 'aktif')->get();
         $roles = ['admin_pusat', 'admin_cabang', 'operator', 'driver', 'customer'];
@@ -1419,40 +1446,40 @@ class AdminController extends Controller
             'activeUsers',
             'inactiveUsers',
             'branches',
-            'roles'
+            'roles',
+            'allPegawai'
         ));
     }
 
     public function storeUser(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-            'phone' => 'nullable|string|max:20',
+            'user_id' => 'required|exists:users,id',
             'role' => 'required|in:admin_pusat,admin_cabang,operator,driver,customer',
+            'password' => 'required|string|min:8|confirmed',
             'branch_id' => 'required_if:role,admin_cabang,driver|exists:branches,id',
-            'nik' => 'nullable|string|max:20',
-            'tanggal_lahir' => 'nullable|date',
-            'jenis_kelamin' => 'nullable|in:L,P',
             'status' => 'required|in:active,inactive',
             'permissions' => 'nullable|array',
             'permissions.*' => 'string|exists:permissions,name'
         ]);
 
-        $data = $request->only([
-            'name', 'email', 'phone', 'nik', 'tanggal_lahir', 'jenis_kelamin', 'status'
-        ]);
+        // Get pegawai data
+        $user = User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+        })->findOrFail($request->user_id);
 
-        $data['password'] = Hash::make($request->password);
-        $data['username'] = $request->email; // Use email as username
+        // Update password and status
+        $user->password = Hash::make($request->password);
+        $user->status = $request->status;
 
         // Set branch_id for admin_cabang and driver
         if (in_array($request->role, ['admin_cabang', 'driver'])) {
-            $data['branch_id'] = $request->branch_id;
+            $user->branch_id = $request->branch_id;
         }
 
-        $user = User::create($data);
+        $user->save();
+
+        // Assign roles
         $user->syncRoles([$request->role]);
 
         // Assign permissions if provided
@@ -1465,6 +1492,41 @@ class AdminController extends Controller
         }
 
         return redirect()->route('admin.user')->with('success', 'User berhasil ditambahkan.');
+    }
+
+    /**
+     * Get pegawai data for form (AJAX endpoint)
+     */
+    public function getPegawaiData($id)
+    {
+        try {
+            $pegawai = User::whereHas('roles', function ($q) {
+                $q->whereIn('name', ['admin_pusat', 'admin_cabang', 'driver']);
+            })->findOrFail($id);
+
+            // Ambil role pertama dari pegawai
+            $userRole = $pegawai->roles->first()?->name;
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'name' => $pegawai->name,
+                    'email' => $pegawai->email,
+                    'phone' => $pegawai->phone,
+                    'nik' => $pegawai->nik,
+                    'posisi' => $pegawai->posisi,
+                    'branch_id' => $pegawai->branch_id,
+                    'branch_name' => $pegawai->branch ? $pegawai->branch->nama_cabang : '-',
+                    'status' => $pegawai->status,
+                    'role' => $userRole,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data pegawai tidak ditemukan'
+            ], 404);
+        }
     }
 
     /**

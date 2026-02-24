@@ -1739,8 +1739,19 @@
         .then(r => r.json())
         .then(result => {
             if (result && result.success) {
-                console.log('Journey started persisted:', result.data);
+                console.log('✅ Journey started persisted:', result.data);
                 alert('Perjalanan dimulai! Anda sekarang bisa mengupdate lokasi.');
+
+                // ★★★ SINKRONKAN STATE SETELAH MULAI PERJALANAN ★★★
+                fetchJourneyState(currentTripId).then(state => {
+                    if (state) {
+                        journeyStarted[currentTripId] = true;
+                        const idx = state.current_stop_index ?? 0;
+                        journeyData.currentStopIndex = parseInt(idx) || 0;
+                        updateJourneyDisplay();
+                        console.log('✅ State tersinkronkan setelah mulai perjalanan');
+                    }
+                }).catch(err => console.error('Error syncing state:', err));
             } else {
                 console.error('Failed to persist journey start', result);
                 alert('Gagal memulai perjalanan di server. Coba lagi.');
@@ -1944,6 +1955,17 @@
                 hideUpdateLokasiModal();
                 console.log('✅ Update lokasi berhasil: ' + nextStop.name);
 
+                // ★★★ SINKRONKAN STATE SETELAH UPDATE LOKASI ★★★
+                fetchJourneyState(currentTripId).then(state => {
+                    if (state) {
+                        journeyStarted[currentTripId] = true;
+                        const idx = state.current_stop_index ?? journeyData.currentStopIndex;
+                        journeyData.currentStopIndex = parseInt(idx) || journeyData.currentStopIndex;
+                        updateJourneyDisplay();
+                        console.log('✅ State tersinkronkan setelah update lokasi');
+                    }
+                }).catch(err => console.error('Error syncing state:', err));
+
                 // ★★★ PERBAIKAN: OTOMATIS SELESAIKAN PERJALANAN JIKA SAMPAI OUTLET AKHIR ★★★
                 if (status === 'completed' || nextStop.type === 'finish') {
                     console.log('🎉 Perjalanan Selesai! Outlet tujuan tercapai:', nextStop.name);
@@ -2037,6 +2059,40 @@
                                 statusElement.textContent = "Selesai";
                                 statusElement.className = "status-selesai";
                             }
+
+                            // ★★★ PERBAIKAN: Pindahkan trip dari daftar aktif ke history ★★★
+                            // Cari dan update data di array tripsData
+                            const tripIndex = tripsData.findIndex(t => String(t.id_jadwal_driver) === String(currentTripId));
+                            if (tripIndex !== -1) {
+                                tripsData[tripIndex].status = 'selesai';
+                                console.log(`✅ Trip ${currentTripId} status updated ke 'selesai' di tripsData`);
+                            }
+
+                            // Tambahkan ke completedTrips jika belum ada
+                            const tripData = tripsData.find(t => String(t.id_jadwal_driver) === String(currentTripId));
+                            if (tripData && !completedTrips.find(t => String(t.id_jadwal_driver) === String(currentTripId))) {
+                                completedTrips.push({
+                                    ...tripData,
+                                    status: 'selesai',
+                                    tanggal: tripData.date || new Date().toISOString().split('T')[0]
+                                });
+                                console.log(`✅ Trip ${currentTripId} ditambahkan ke completedTrips`);
+                            }
+
+                            // ★★★ SINKRONKAN STATE DAN RENDER ULANG SETELAH SELESAI ★★★
+                            // Fetch state terbaru dari server
+                            fetchJourneyState(currentTripId).then(state => {
+                                journeyStarted[currentTripId] = false;
+                                console.log('✅ State tersinkronkan setelah selesai perjalanan');
+                            }).catch(err => console.error('Error syncing final state:', err));
+
+                            // Re-render history
+                            renderCompletedTripsHistory();
+                            console.log('✅ Riwayat perjalanan di-refresh');
+
+                            // ★★★ RENDER ULANG DAFTAR PERJALANAN AKTIF ★★★
+                            renderTripList();
+                            console.log('✅ Daftar perjalanan aktif di-render ulang');
                         }
 
                         // Sembunyikan tombol
@@ -2046,7 +2102,15 @@
                         const mulaiBtn = document.getElementById('mulaiPerjalananBtn');
                         if (mulaiBtn) mulaiBtn.classList.add('hidden');
 
-                        alert('✅ Perjalanan telah diselesaikan! Status telah disimpan ke database.');
+                        // ★★★ Auto-redirect ke halaman daftar setelah 2 detik ★★★
+                        setTimeout(() => {
+                            alert('✅ Perjalanan telah diselesaikan! Mengalihkan ke halaman daftar...');
+                            backToDaftarPerjalanan();
+                            // Optionally reload halaman untuk sinkronisasi data terbaru dari server
+                            setTimeout(() => {
+                                location.reload();
+                            }, 500);
+                        }, 1500);
                     } else {
                         console.error('Gagal menyelesaikan perjalanan:', result);
                         alert('Gagal menyelesaikan perjalanan. Silakan coba lagi.');
@@ -2079,6 +2143,45 @@
     // ★★★ VARIABLE GLOBAL UNTUK AUTO-REFRESH DATA PENUMPANG ★★★
     let passengerRefreshInterval = null;
     let lastPassengerCount = 0; // Track perubahan jumlah penumpang
+
+    // ★★★ FUNGSI UNTUK FETCH DATA PENUMPANG DARI ADMIN JADWAL PENUMPANG ★★★
+    // Data source: Pemesanan + DetailPenumpang (sama seperti admin/jadwal/{id}/penumpang)
+    async function fetchPassengersFromAdmin(tripId) {
+        try {
+            const route = "{{ route('api.driver.trip.passengers.admin', ':tripId') }}".replace(':tripId', tripId);
+            const response = await fetch(route, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            });
+
+            if (!response.ok) {
+                console.warn(`❌ Gagal fetch data penumpang dari admin jadwal (Status: ${response.status})`);
+                return null;
+            }
+
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                console.log('✅ Data penumpang dari admin jadwal berhasil di-fetch:', {
+                    total_passengers: result.data.total_passengers,
+                    occupied_seats: result.data.occupied_seats,
+                    timestamp: result.data.timestamp
+                });
+
+                return result.data;
+            } else {
+                console.warn('❌ Response tidak valid:', result);
+                return null;
+            }
+        } catch (error) {
+            console.error('❌ Error fetching passengers from admin jadwal:', error);
+            return null;
+        }
+    }
 
     // ★★★ FUNGSI UNTUK FETCH DATA PENUMPANG REAL-TIME DARI API ★★★
     async function fetchPassengersRealtime(tripId) {
@@ -2127,7 +2230,7 @@
     // ★★★ FUNGSI UNTUK UPDATE PENUMPANG DARI DATA REAL-TIME ★★★
     function updatePassengersFromRealtime(passengersData) {
         if (!passengersData || !passengersData.passengers) {
-            console.warn('⚠️ Data penumpang tidak valid');
+            console.warn('⚠️ Data penumpang real-time tidak valid');
             return;
         }
 
@@ -2136,6 +2239,19 @@
         const passengerCountEl = document.getElementById('passengerCount');
 
         if (!penumpangListElement) return;
+
+        // ★★★ PERBAIKAN: CEK JUMLAH DATA SEBELUM UPDATE ★★★
+        // Hanya update jika ada perubahan signifikan
+        const currentCount = penumpangListElement.querySelectorAll('.penumpang-item').length;
+        const newCount = passengersData.passengers.length;
+
+        // Jika data belum berubah, skip update untuk menghindari flicker
+        if (currentCount === newCount && lastPassengerCount === newCount) {
+            console.log(`✓ Data penumpang tidak berubah (${newCount} penumpang), skip update`);
+            return;
+        }
+
+        console.log(`🔄 Update data penumpang: ${currentCount} → ${newCount} penumpang`);
 
         // Bersihkan list lama
         penumpangListElement.innerHTML = '';
@@ -2191,7 +2307,109 @@
             penumpangListElement.appendChild(penumpangItem);
         });
 
-        console.log(`✅ Penumpang diupdate: ${passengersData.total_passengers} penumpang`);
+        // ★★★ UPDATE lastPassengerCount UNTUK NEXT CHANGE DETECTION ★★★
+        lastPassengerCount = newCount;
+
+        console.log(`✅ Penumpang di-update dari API: ${passengersData.total_passengers} penumpang`);
+    }
+
+    // ★★★ FUNGSI UNTUK MENAMPILKAN DAFTAR PENUMPANG DARI DATA KURSI TERISI (KursiTerpesan) ★★★
+    function displayInitialPassengers(tripId) {
+        // ★★★ PRIORITAS 1: Ambil dari API fetch yang sudah di-call di showDetailPerjalanan ★★★
+        // Data ini berasal dari getTripDetail yang menggunakan KursiTerpesan model
+        // Jika belum tersedia, gunakan fallback dari fetchPassengersRealtime
+
+        console.log(`%c🎯 displayInitialPassengers: Rendering awal untuk trip ${tripId}`, 'color: purple; font-weight: bold;');
+
+        const renderPassengers = (passengersData, source = 'unknown') => {
+            const penumpangListElement = document.getElementById('penumpangList');
+            const totalPenumpangElement = document.getElementById('totalPenumpang');
+            const passengerCountEl = document.getElementById('passengerCount');
+
+            if (!penumpangListElement) {
+                console.warn('❌ penumpangList element tidak ditemukan');
+                return;
+            }
+
+            // Bersihkan list lama
+            penumpangListElement.innerHTML = '';
+
+            if (!passengersData || passengersData.length === 0) {
+                penumpangListElement.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Tidak ada penumpang untuk perjalanan ini</div>';
+                if (totalPenumpangElement) totalPenumpangElement.textContent = '0';
+                console.log(`📊 Tidak ada data penumpang dari ${source}`);
+                lastPassengerCount = 0; // ★★★ UPDATE tracking counter ★★★
+                return;
+            }
+
+            // Update total penumpang
+            if (totalPenumpangElement) {
+                totalPenumpangElement.textContent = passengersData.length;
+            }
+
+            // ★★★ UPDATE tracking counter ★★★
+            lastPassengerCount = passengersData.length;
+
+            // Render setiap penumpang dari kursi terisi
+            passengersData.forEach((passenger, idx) => {
+                let statusClass = 'status-terverifikasi';
+                let statusText = 'Terverifikasi';
+
+                // Tentukan kelas dan teks status dari KursiTerpesan status
+                switch((passenger.status || '').toLowerCase()) {
+                    case 'refund':
+                        statusClass = 'status-refund';
+                        statusText = 'Refund';
+                        break;
+                    case 'terdaftar':
+                        statusClass = 'status-terdaftar';
+                        statusText = 'Terdaftar';
+                        break;
+                    case 'terverifikasi':
+                    case 'verified':
+                    default:
+                        statusClass = 'status-terverifikasi';
+                        statusText = 'Terverifikasi';
+                }
+
+                // Buat elemen penumpang dari kursi terisi
+                const penumpangItem = document.createElement('div');
+                penumpangItem.className = 'penumpang-item';
+                penumpangItem.innerHTML = `
+                    <div class="penumpang-info">
+                        <div class="penumpang-name">${passenger.name || 'Penumpang'}</div>
+                        <div class="penumpang-phone">${passenger.phone || '-'}</div>
+                    </div>
+                    <div class="penumpang-seat">
+                        <div class="seat-number">${passenger.seat || 'N/A'}</div>
+                        <span class="seat-status ${statusClass}">${statusText}</span>
+                    </div>
+                `;
+
+                penumpangListElement.appendChild(penumpangItem);
+            });
+
+            console.log(`✅ Daftar penumpang (dari ${source}): ${passengersData.length} penumpang`);
+        };
+
+        // Render dari data yang sudah di-fetch
+        const tripData = tripsData.find(t => parseInt(t.id_jadwal_driver) === parseInt(tripId));
+
+        if (tripData && tripData.passengers && tripData.passengers.length > 0) {
+            console.log('📦 Menggunakan data penumpang dari tripsData (sudah update dari API)');
+            renderPassengers(tripData.passengers, 'tripsData [API]');
+        } else if (tripData && tripData.passengers) {
+            // Empty passengers array
+            console.log('⚠️ tripsData ada tapi passengers kosong');
+            renderPassengers([], 'tripsData [empty]');
+        } else {
+            console.log('⏳ Data penumpang dari server belum tersedia, menunggu update dari API...');
+            // Fallback: render placeholder
+            const penumpangListElement = document.getElementById('penumpangList');
+            if (penumpangListElement) {
+                penumpangListElement.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Memuat data penumpang...</div>';
+            }
+        }
     }
 
     // ★★★ FUNGSI UNTUK SETUP AUTO-REFRESH DATA PENUMPANG ★★★
@@ -2201,29 +2419,67 @@
             clearInterval(passengerRefreshInterval);
         }
 
-        // Initial load
-        fetchPassengersRealtime(tripId).then(data => {
-            if (data) {
-                updatePassengersFromRealtime(data);
-            }
-        });
+        // ★★★ PERBAIKAN: Jangan fetch langsung di awal ★★★
+        // Biarkan displayInitialPassengers render dulu
+        // Auto-refresh dimulai setelah delay untuk memberi waktu initial render
 
-        // Setup auto-refresh setiap 5 detik
+        console.log('⏳ Auto-refresh data penumpang akan dimulai...');
+
         passengerRefreshInterval = setInterval(async () => {
-            const data = await fetchPassengersRealtime(tripId);
+            console.log('🔄 Checking for passenger data updates dari admin jadwal...');
+            const data = await fetchPassengersFromAdmin(tripId);
             if (data) {
+                console.log(`📊 Update penumpang dari admin jadwal: ${data.total_passengers} penumpang`);
                 updatePassengersFromRealtime(data);
             }
-        }, 5000); // Refresh setiap 5 detik
+        }, 15000); // Refresh setiap 15 detik (lebih jarang untuk menghindari flicker)
 
-        console.log('✅ Auto-refresh data penumpang diaktifkan (update setiap 5 detik)');
+        console.log('✅ Auto-refresh data penumpang diaktifkan (update setiap 15 detik dari admin jadwal)');
     }
 
     // Fungsi untuk menampilkan daftar penumpang berdasarkan ID perjalanan
     function generatePenumpangList(tripId) {
-        // ★★★ PERBAIKAN: Gunakan real-time data dari API daripada dari initial data ★★★
-        // Setup auto-refresh dan fetch data real-time
-        setupPassengerAutoRefresh(tripId);
+        // ★★★ PERBAIKAN: Tampilkan data penumpang dari server terlebih dahulu ★★★
+        console.log(`%c📋 generatePenumpangList called untuk trip ${tripId}`, 'color: green; font-weight: bold;');
+        displayInitialPassengers(tripId);
+
+        // Setup auto-refresh dengan delay agar initial data sudah ter-render
+        // 10 detik delay memberikan waktu untuk initial render sebelum API fetch override
+        setTimeout(() => {
+            setupPassengerAutoRefresh(tripId);
+        }, 1000); // Delay 1 detik sebelum setup interval
+    }
+
+    // Fungsi untuk mengambil detail trip lengkap dari server termasuk stop_points
+    function fetchTripDetail(tripId) {
+        return new Promise((resolve, reject) => {
+            if (!tripId) return resolve(null);
+
+            const url = '{{ route("api.driver.trip.detail", ["tripId" => "__TRIPID__"]) }}'.replace('__TRIPID__', tripId);
+
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            }).then(r => r.json())
+            .then(result => {
+                if (result && result.success && result.data) {
+                    console.log('✅ Trip detail berhasil di-fetch dari API:', {
+                        stop_points: result.data.stop_points ? result.data.stop_points.length : 0,
+                        passengers: result.data.passengers ? result.data.passengers.length : 0
+                    });
+                    resolve(result.data);
+                } else {
+                    console.error('API getTripDetail gagal:', result);
+                    resolve(null);
+                }
+            }).catch(err => {
+                console.error('Error fetching trip detail:', err);
+                resolve(null);
+            });
+        });
     }
 
     // Fungsi untuk mengambil state perjalanan dari server dan mengembalikan promise
@@ -2273,126 +2529,147 @@
         // Update info penumpang sesuai data dari halaman daftar
         document.getElementById('passengerCount').textContent = tripData.seats;
 
-        // ★★★ CARI FULL TRIP DATA DARI TRIPS DATA ★★★
-        const fullTripData = tripsData.find(t => parseInt(t.id_jadwal_driver) === parseInt(tripData.id));
+        // ★★★ FETCH TRIP DETAIL LENGKAP DARI API ★★★
+        fetchTripDetail(tripData.id).then(fullApiData => {
+            // Prioritas: gunakan data dari API jika tersedia, jika tidak gunakan data server atau data dari list
+            let tripDetailData = fullApiData || tripsData.find(t => parseInt(t.id_jadwal_driver) === parseInt(tripData.id)) || tripData;
 
-        // Jika server menyediakan data lengkap, gunakan nilai tersebut untuk info utama
-        if (fullTripData) {
-            // ★★★ PENUMPANG: Dari kursi yang terisi di jadwal ★★★
-            const passengerCountEl = document.getElementById('passengerCount');
-            if (passengerCountEl) {
-                passengerCountEl.textContent = `${fullTripData.occupied_seats || 0}/${fullTripData.total_seats || 0}`;
+            if (!tripDetailData) {
+                console.warn('⚠️ Data trip tidak ditemukan dari API maupun server');
+                tripDetailData = tripData;
             }
 
-            // ★★★ WAKTU TEMPUH: Dari waktu berangkat sampai waktu sampat ★★★
+            console.log('%c📥 Trip Detail Data Loaded:', 'color: blue; font-weight: bold;', {
+                source: fullApiData ? 'API' : 'Server Data',
+                stop_points: tripDetailData.stop_points ? tripDetailData.stop_points.length : 0,
+                passengers: tripDetailData.passengers ? tripDetailData.passengers.length : 0,
+                status: tripDetailData.status
+            });
+
+            // ★★★ UPDATE INFO PENUMPANG ★★★
+            const passengerCountEl = document.getElementById('passengerCount');
+            if (passengerCountEl && tripDetailData) {
+                if (tripDetailData.occupied_seats !== undefined && tripDetailData.total_seats !== undefined) {
+                    passengerCountEl.textContent = `${tripDetailData.occupied_seats}/${tripDetailData.total_seats}`;
+                }
+            }
+
+            // ★★★ UPDATE WAKTU TEMPUH ★★★
             const travelEl = document.getElementById('travelTime');
-            if (travelEl) {
+            if (travelEl && tripDetailData) {
                 let travelText = '-';
-                if (fullTripData.time && fullTripData.eta) {
-                    // Format: HH:MM - HH:MM (durasi)
-                    travelText = `${fullTripData.time} - ${fullTripData.eta}`;
-                    if (fullTripData.estimated_duration && fullTripData.estimated_duration !== '-') {
-                        travelText += ` (${fullTripData.estimated_duration})`;
+                if (tripDetailData.time && tripDetailData.eta) {
+                    travelText = `${tripDetailData.time} - ${tripDetailData.eta}`;
+                    if (tripDetailData.estimated_duration && tripDetailData.estimated_duration !== '-') {
+                        travelText += ` (${tripDetailData.estimated_duration})`;
                     }
-                } else if (fullTripData.estimated_duration && fullTripData.estimated_duration !== '-') {
-                    travelText = fullTripData.estimated_duration;
+                } else if (tripDetailData.estimated_duration && tripDetailData.estimated_duration !== '-') {
+                    travelText = tripDetailData.estimated_duration;
                 }
                 travelEl.textContent = travelText;
             }
 
-            // ★★★ JARAK: Dari data rute yang ada di jadwal ★★★
+            // ★★★ UPDATE JARAK ★★★
             const distEl = document.getElementById('distance');
-            if (distEl && fullTripData.distance) {
-                const distanceText = (typeof fullTripData.distance === 'number') ? `${fullTripData.distance} km` : fullTripData.distance;
+            if (distEl && tripDetailData && tripDetailData.distance) {
+                const distanceText = (typeof tripDetailData.distance === 'number') ? `${tripDetailData.distance} km` : tripDetailData.distance;
                 distEl.textContent = distanceText;
             }
-        }
 
-        // ★★★ BANGUN JOURNEY DATA DARI STOP POINTS ★★★
-        buildJourneyDataFromStopPoints({
-            from: tripData.from,
-            to: tripData.to,
-            stop_points: fullTripData ? fullTripData.stop_points : [],
-            id_jadwal_driver: tripData.id
-        });
+            // ★★★ BANGUN JOURNEY DATA DARI STOP POINTS ★★★
+            buildJourneyDataFromStopPoints({
+                from: tripDetailData.from || tripData.from,
+                to: tripDetailData.to || tripData.to,
+                stop_points: tripDetailData.stop_points || [],
+                id_jadwal_driver: tripData.id
+            });
 
-        // ★★★ CEK DATA OUTLETS (LOG KE CONSOLE) ★★★
-        if (fullTripData && fullTripData.stop_points) {
-            debugOutletsData(fullTripData);
-            validateOutletsCompleteness();
-        }
-
-        // Reset data perjalanan untuk perjalanan baru
-        journeyData.currentStopIndex = 0;
-
-        // ★★★ RESET JOURNEY START STATE (default) ★★★
-        journeyStarted[tripData.id] = false;
-
-        // Try to restore journey state from server (in case page was reloaded)
-        fetchJourneyState(tripData.id).then(state => {
-            if (state) {
-                // state can be an object or model; normalize
-                const status = state.status || (state.data && state.data.status) || 'not_started';
-                const idx = state.current_stop_index ?? state.data?.current_stop_index ?? 0;
-                journeyStarted[tripData.id] = (status === 'in_progress');
-                journeyData.currentStopIndex = parseInt(idx) || 0;
-                // Update UI accordingly
-                updateJourneyDisplay();
-            } else {
-                updateJourneyDisplay();
+            // ★★★ CEK DATA OUTLETS (LOG KE CONSOLE) ★★★
+            if (tripDetailData && tripDetailData.stop_points) {
+                debugOutletsData(tripDetailData);
+                validateOutletsCompleteness();
             }
-        }).catch(() => {
-            updateJourneyDisplay();
-        });
 
-        // Generate daftar penumpang berdasarkan ID perjalanan
-        generatePenumpangList(parseInt(tripData.id));
+            // Reset data perjalanan untuk perjalanan baru
+            journeyData.currentStopIndex = 0;
 
-        // Reset button visibility based on journey state
-        const mulaiBtn = document.getElementById('mulaiPerjalananBtn');
-        const updateBtn = document.getElementById('updateLokasiBtn');
+            // ★★★ RESET JOURNEY START STATE (default) ★★★
+            journeyStarted[tripData.id] = false;
 
-        // ★★★ CEK STATUS DARI SERVER DATA, BUKAN HANYA DARI DOM ELEMENT ★★★
-        let tripStatus = 'aktif'; // Default status
-        if (fullTripData && fullTripData.status) {
-            tripStatus = fullTripData.status;
-        } else {
-            // Fallback: cek dari DOM element jika server data tidak ada
-            const statusElement = document.getElementById(`status-${tripData.id}`);
-            if (statusElement && statusElement.textContent === "Selesai") {
-                tripStatus = 'selesai';
+            // Try to restore journey state from server (in case page was reloaded)
+            fetchJourneyState(tripData.id).then(state => {
+                if (state) {
+                    // state can be an object or model; normalize
+                    const status = state.status || (state.data && state.data.status) || 'not_started';
+                    const idx = state.current_stop_index ?? state.data?.current_stop_index ?? 0;
+                    journeyStarted[tripData.id] = (status === 'in_progress');
+                    journeyData.currentStopIndex = parseInt(idx) || 0;
+                    // Update UI accordingly
+                    updateJourneyDisplay();
+                } else {
+                    updateJourneyDisplay();
+                }
+            }).catch(() => {
+                updateJourneyDisplay();
+            });
+
+            // Generate daftar penumpang berdasarkan ID perjalanan
+            // ★★★ PERBAIKAN: Data penumpang sekarang dari KursiTerpesan (kursi terisi) ★★★
+            // Jika fullApiData tersedia, gunakan passengers dari situ
+            if (fullApiData && fullApiData.passengers) {
+                console.log('✅ Menggunakan data penumpang dari API getTripDetail (dari KursiTerpesan)');
+                // Update tripsData agar konsisten
+                if (tripsData && tripsData.length > 0) {
+                    const tripIdx = tripsData.findIndex(t => parseInt(t.id_jadwal_driver) === parseInt(tripData.id));
+                    if (tripIdx !== -1) {
+                        tripsData[tripIdx].passengers = fullApiData.passengers;
+                    }
+                }
             }
-        }
 
-        // Update UI berdasarkan status dari database
-        if (tripStatus === 'selesai') {
-            // Jika perjalanan sudah selesai
-            document.querySelector('.card-title-detail i').style.color = "#2d572c";
-            document.querySelector('.card-title-detail i').className = "fa-solid fa-circle-check";
-            document.getElementById('tripTitle').textContent = "✅ Perjalanan Selesai";
-            document.getElementById('selesaiPerjalananBtn').classList.add('hidden');
-            if (mulaiBtn) mulaiBtn.classList.add('hidden');
-            if (updateBtn) updateBtn.classList.add('hidden');
-        } else {
-            // Jika perjalanan masih aktif
-            document.querySelector('.card-title-detail i').style.color = "#36B35A";
-            document.querySelector('.card-title-detail i').className = "fa-solid fa-circle-play";
-            document.getElementById('tripTitle').textContent = `Perjalanan #${tripData.id} - ${tripData.from} → ${tripData.to}`;
+            generatePenumpangList(parseInt(tripData.id));
 
-            // Show "Mulai Perjalanan" if not started yet
-            if (journeyStarted[tripData.id]) {
-                // Journey already started
+            // Reset button visibility based on journey state
+            const mulaiBtn = document.getElementById('mulaiPerjalananBtn');
+            const updateBtn = document.getElementById('updateLokasiBtn');
+
+            // ★★★ CEK STATUS DARI SERVER DATA ★★★
+            let tripStatus = tripDetailData.status || 'aktif'; // Prioritas ke API data
+
+            // Update UI berdasarkan status dari database
+            if (tripStatus === 'selesai') {
+                // Jika perjalanan sudah selesai
+                document.querySelector('.card-title-detail i').style.color = "#2d572c";
+                document.querySelector('.card-title-detail i').className = "fa-solid fa-circle-check";
+                document.getElementById('tripTitle').textContent = "✅ Perjalanan Selesai";
+                document.getElementById('selesaiPerjalananBtn').classList.add('hidden');
                 if (mulaiBtn) mulaiBtn.classList.add('hidden');
-                if (updateBtn) updateBtn.classList.remove('hidden');
-            } else {
-                // Journey not started yet
-                if (mulaiBtn) mulaiBtn.classList.remove('hidden');
                 if (updateBtn) updateBtn.classList.add('hidden');
-            }
-        }
+            } else {
+                // Jika perjalanan masih aktif
+                document.querySelector('.card-title-detail i').style.color = "#36B35A";
+                document.querySelector('.card-title-detail i').className = "fa-solid fa-circle-play";
+                document.getElementById('tripTitle').textContent = `Perjalanan #${tripData.id} - ${tripData.from} → ${tripData.to}`;
 
-        // Scroll ke atas
-        window.scrollTo(0, 0);
+                // Show "Mulai Perjalanan" if not started yet
+                if (journeyStarted[tripData.id]) {
+                    // Journey already started
+                    if (mulaiBtn) mulaiBtn.classList.add('hidden');
+                    if (updateBtn) updateBtn.classList.remove('hidden');
+                } else {
+                    // Journey not started yet
+                    if (mulaiBtn) mulaiBtn.classList.remove('hidden');
+                    if (updateBtn) updateBtn.classList.add('hidden');
+                }
+            }
+
+            // Scroll ke atas
+            window.scrollTo(0, 0);
+        }).catch(err => {
+            console.error('Error di showDetailPerjalanan:', err);
+            // Fallback ke handling lama jika ada error
+            window.scrollTo(0, 0);
+        });
     }
 
     // Fungsi untuk kembali ke halaman daftar perjalanan
@@ -2632,6 +2909,9 @@
                     item.setAttribute('data-passengers', passengers);
                     item.setAttribute('data-status', t.status);
                     item.setAttribute('data-date', t.date);
+
+                    // ★★★ PERBAIKAN: Simpan full trip object dalam JSON untuk akses lengkap ★★★
+                    item.setAttribute('data-trip', JSON.stringify(t));
 
                     // ★★★ TAMPILKAN: Waktu berangkat - waktu sampat (durasi) ★★★
                     const travelTimeDisplay = time && eta ? `${time} - ${eta}` : time || '-';

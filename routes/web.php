@@ -435,6 +435,9 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::delete('/pegawai/{id}', [AdminController::class, 'destroyPegawai'])
             ->middleware('permission:manage_pegawai')
             ->name('pegawai.destroy');
+        Route::get('/pegawai/{id}/get-data', [AdminController::class, 'getPegawaiData'])
+            ->middleware('permission:view_pegawai')
+            ->name('pegawai.get-data');
         // Rute Routes
         Route::get('/rute', [RuteController::class, 'index'])
             ->middleware('permission:view_rute')
@@ -676,6 +679,14 @@ Route::prefix('api')->group(function () {
     // Get journey state for a trip (driver-only)
     Route::get('/driver/journey/{tripId}/state', [\App\Http\Controllers\API\DriverLocationController::class, 'getJourneyState'])
         ->name('api.driver.journey.state');
+
+    // Get complete trip details including stop_points (driver-only)
+    Route::get('/driver/trip/{tripId}/detail', [\App\Http\Controllers\API\DriverLocationController::class, 'getTripDetail'])
+        ->name('api.driver.trip.detail');
+
+    // ★★★ Get passengers from admin jadwal penumpang data source ★★★
+    Route::get('/driver/trip/{tripId}/passengers-admin', [\App\Http\Controllers\API\DriverLocationController::class, 'getTripPassengersFromAdmin'])
+        ->name('api.driver.trip.passengers.admin');
 
     Route::post('/driver/journey/start', [\App\Http\Controllers\API\DriverLocationController::class, 'startJourney'])
         ->name('api.driver.journey.start');

@@ -329,6 +329,20 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Helper method untuk menampilkan jenis_kelamin dalam bahasa Indonesia
+     * Mengkonversi 'L' -> 'Laki-laki', 'P' -> 'Perempuan'
+     */
+    public function getJenisKelaminLabel()
+    {
+        $labels = [
+            'L' => 'Laki-laki',
+            'P' => 'Perempuan'
+        ];
+
+        return $labels[$this->jenis_kelamin] ?? $this->jenis_kelamin;
+    }
+
+    /**
      * Method untuk mendapatkan URL avatar atau inisial untuk tampilan
      */
     public function getAvatarOrInitials()

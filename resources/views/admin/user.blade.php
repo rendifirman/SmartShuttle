@@ -319,75 +319,72 @@
 
     <!-- FORM -->
     <div class="form-card">
-        <h3>Informasi User</h3>
+        <h3>Assign Hak Akses ke Pegawai</h3>
+        <p style="color: #666; margin-bottom: 20px;">Silakan pilih pegawai untuk memberikan akun dan menentukan hak akses. Untuk membuat pegawai baru, gunakan menu <strong>Master Data > Pegawai</strong></p>
 
         <form method="POST" action="{{ route('admin.user.store') }}">
             @csrf
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="name">Nama Lengkap <span class="required">*</span></label>
-                    <input type="text" name="name" id="name"
-                           value="{{ old('name') }}"
-                           placeholder="Masukkan nama lengkap" required>
-                    @error('name')
-                        <small class="text-danger">{{ $message }}</small>
-                    @enderror
-                </div>
-
-                <div class="form-group">
-                    <label for="email">Email <span class="required">*</span></label>
-                    <input type="email" name="email" id="email"
-                           value="{{ old('email') }}"
-                           placeholder="Masukkan alamat email" required>
-                    @error('email')
-                        <small class="text-danger">{{ $message }}</small>
-                    @enderror
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="phone">Nomor Telepon</label>
-                    <input type="text" name="phone" id="phone"
-                           value="{{ old('phone') }}"
-                           placeholder="Masukkan nomor telepon">
-                    @error('phone')
-                        <small class="text-danger">{{ $message }}</small>
-                    @enderror
-                </div>
-
-                <div class="form-group">
-                    <label for="nik">NIK</label>
-                    <input type="text" name="nik" id="nik"
-                           value="{{ old('nik') }}"
-                           placeholder="Masukkan NIK">
-                    @error('nik')
-                        <small class="text-danger">{{ $message }}</small>
-                    @enderror
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="tanggal_lahir">Tanggal Lahir</label>
-                    <input type="date" name="tanggal_lahir" id="tanggal_lahir"
-                           value="{{ old('tanggal_lahir') }}">
-                    @error('tanggal_lahir')
-                        <small class="text-danger">{{ $message }}</small>
-                    @enderror
-                </div>
-
-                <div class="form-group">
-                    <label for="jenis_kelamin">Jenis Kelamin</label>
-                    <select name="jenis_kelamin" id="jenis_kelamin">
-                        <option value="">-- Pilih Jenis Kelamin --</option>
-                        <option value="L" {{ old('jenis_kelamin') == 'L' ? 'selected' : '' }}>Laki-laki</option>
-                        <option value="P" {{ old('jenis_kelamin') == 'P' ? 'selected' : '' }}>Perempuan</option>
+                    <label for="user_id">Pilih Pegawai <span class="required">*</span></label>
+                    <select name="user_id" id="user_id" required onchange="loadPegawaiData(this.value)">
+                        <option value="">-- Pilih Pegawai --</option>
+                        @foreach($allPegawai as $pegawai)
+                            <option value="{{ $pegawai->id }}" {{ old('user_id') == $pegawai->id ? 'selected' : '' }}>
+                                {{ $pegawai->name }} ({{ $pegawai->posisi }})
+                            </option>
+                        @endforeach
                     </select>
-                    @error('jenis_kelamin')
+                    @error('user_id')
                         <small class="text-danger">{{ $message }}</small>
                     @enderror
+                </div>
+                <div class="form-group"></div>
+            </div>
+
+            <!-- PEGAWAI DATA DISPLAY (READONLY) -->
+            <div id="pegawaiDataSection" style="display: none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="display_name">Nama Lengkap</label>
+                        <input type="text" id="display_name" readonly
+                               style="background-color: #f5f5f5; cursor: not-allowed;">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="display_email">Email</label>
+                        <input type="text" id="display_email" readonly
+                               style="background-color: #f5f5f5; cursor: not-allowed;">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="display_phone">Nomor Telepon</label>
+                        <input type="text" id="display_phone" readonly
+                               style="background-color: #f5f5f5; cursor: not-allowed;">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="display_nik">NIK</label>
+                        <input type="text" id="display_nik" readonly
+                               style="background-color: #f5f5f5; cursor: not-allowed;">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="display_posisi">Posisi</label>
+                        <input type="text" id="display_posisi" readonly
+                               style="background-color: #f5f5f5; cursor: not-allowed;">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="display_branch">Lokasi Kerja (Cabang)</label>
+                        <input type="text" id="display_branch" readonly
+                               style="background-color: #f5f5f5; cursor: not-allowed;">
+                    </div>
                 </div>
             </div>
 
@@ -412,7 +409,7 @@
                     <select name="status" id="status" required>
                         <option value="">-- Pilih Status --</option>
                         <option value="active" {{ old('status', 'active') == 'active' ? 'selected' : '' }}>Aktif</option>
-                        <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }}>Nonaktif</option>
+                        <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }}>Tidak Aktif</option>
                     </select>
                     @error('status')
                         <small class="text-danger">{{ $message }}</small>
@@ -781,6 +778,58 @@
 </div>
 
 <script>
+// Function to load pegawai data via AJAX
+function loadPegawaiData(userId) {
+    const roleSelect = document.getElementById('role');
+    const branchSelect = document.getElementById('branch_id');
+
+    if (!userId) {
+        document.getElementById('pegawaiDataSection').style.display = 'none';
+        roleSelect.disabled = false; // Enable role field
+        roleSelect.value = ''; // Reset role
+        branchSelect.disabled = false; // Enable branch field
+        branchSelect.value = ''; // Reset branch
+        return;
+    }
+
+    fetch(`{{ url('admin/pegawai') }}/${userId}/get-data`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('display_name').value = data.data.name;
+                document.getElementById('display_email').value = data.data.email;
+                document.getElementById('display_phone').value = data.data.phone || '-';
+                document.getElementById('display_nik').value = data.data.nik || '-';
+                document.getElementById('display_posisi').value = data.data.posisi || '-';
+                document.getElementById('display_branch').value = data.data.branch_name || '-';
+
+                // Auto-set role dari pegawai
+                if (data.data.role) {
+                    roleSelect.value = data.data.role;
+                    roleSelect.disabled = true; // Disable agar tidak bisa diubah
+                    // Trigger change event untuk update branch field jika diperlukan
+                    roleSelect.dispatchEvent(new Event('change'));
+                } else {
+                    roleSelect.disabled = false;
+                }
+
+                // Auto-set branch dari pegawai jika ada
+                if (data.data.branch_id) {
+                    branchSelect.value = data.data.branch_id;
+                    branchSelect.disabled = true; // Disable agar tidak bisa diubah
+                } else {
+                    branchSelect.disabled = false;
+                }
+
+                document.getElementById('pegawaiDataSection').style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Gagal memuat data pegawai');
+        });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Show/hide branch field based on role selection
     const roleSelect = document.getElementById('role');
@@ -815,63 +864,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     password.addEventListener('change', validatePassword);
     passwordConfirmation.addEventListener('keyup', validatePassword);
-
-    // Format phone number input
-    const phoneInput = document.getElementById('phone');
-    phoneInput.addEventListener('input', function() {
-        // Remove non-numeric characters except plus sign for international numbers
-        let value = this.value.replace(/[^\d+]/g, '');
-
-        // If it starts with +, allow it for international numbers
-        if (value.startsWith('+')) {
-            // Keep the + and following digits
-            this.value = value;
-        } else {
-            // For local numbers, format with dash
-            value = value.replace(/\D/g, '');
-            if (value.length > 3 && value.length <= 6) {
-                this.value = value.slice(0, 3) + '-' + value.slice(3);
-            } else if (value.length > 6 && value.length <= 10) {
-                this.value = value.slice(0, 3) + '-' + value.slice(3, 6) + '-' + value.slice(6);
-            } else if (value.length > 10) {
-                this.value = value.slice(0, 3) + '-' + value.slice(3, 7) + '-' + value.slice(7, 11);
-            } else {
-                this.value = value;
-            }
-        }
-    });
-
-    // Format NIK input
-    const nikInput = document.getElementById('nik');
-    nikInput.addEventListener('input', function() {
-        // Remove non-numeric characters
-        let value = this.value.replace(/\D/g, '');
-
-        // Limit to 16 digits for NIK
-        if (value.length > 16) {
-            value = value.slice(0, 16);
-        }
-
-        // Add dots for readability every 4 digits
-        let formatted = '';
-        for (let i = 0; i < value.length; i++) {
-            if (i > 0 && i % 4 === 0) {
-                formatted += '.';
-            }
-            formatted += value[i];
-        }
-
-        this.value = formatted;
-    });
-
-    // Set minimum date for tanggal_lahir (100 years ago)
-    const tanggalLahirInput = document.getElementById('tanggal_lahir');
-    const today = new Date();
-    const minDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
-    const maxDate = new Date(today.getFullYear() - 17, today.getMonth(), today.getDate()); // Minimum age 17
-
-    tanggalLahirInput.min = minDate.toISOString().split('T')[0];
-    tanggalLahirInput.max = maxDate.toISOString().split('T')[0];
 
     // Handle role change for permissions
     const permissionsSection = document.getElementById('permissionsSection');
@@ -966,6 +958,9 @@ document.addEventListener('DOMContentLoaded', function() {
 function resetForm() {
     if (confirm('Apakah Anda yakin ingin mereset form? Semua data yang diisi akan hilang.')) {
         document.querySelector('form').reset();
+
+        // Reset pegawai data section
+        document.getElementById('pegawaiDataSection').style.display = 'none';
 
         // Reset branch field visibility
         const roleSelect = document.getElementById('role');

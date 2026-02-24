@@ -321,6 +321,115 @@ class DriverLocationController extends Controller
     }
 
     /**
+     * Get complete trip details including stop_points and kursi terpesan
+     * Ensures data is always available even for completed trips
+     */
+    public function getTripDetail($tripId)
+    {
+        $driver = Auth::guard('driver')->user();
+
+        if (!$driver) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver not authenticated'
+            ], 401);
+        }
+
+        // Fetch the trip with all relationships
+        $trip = DriverJadwal::with([
+            'jadwal',
+            'jadwal.rutes',
+            'jadwal.rutes.stop_points',
+            'jadwal.rutes.stop_points.outlets',
+            'masterRute'
+        ])
+            ->where('id_jadwal_driver', $tripId)
+            ->where('id_driver', $driver->id)
+            ->first();
+
+        if (!$trip) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Trip not found or does not belong to this driver'
+            ], 404);
+        }
+
+        // Extract route information
+        $route = $trip->jadwal && $trip->jadwal->rutes ? $trip->jadwal->rutes->first() : null;
+        $stopPoints = $route && $route->stop_points ? $route->stop_points->toArray() : [];
+
+        // ★★★ PERBAIKAN: Ambil data penumpang dari admin Jadwal penumpang source ★★★
+        // Gunakan Pemesanan + DetailPenumpang (sama seperti admin/jadwal/{id}/penumpang)
+        $jadwalId = $trip->id_jadwal;
+        $pemesanan = \App\Models\Jadwal::find($jadwalId)
+            ? \App\Models\Jadwal::findOrFail($jadwalId)->pemesanan()
+                ->with(['user', 'detailPenumpang', 'pembayaran', 'kursiTerpesan'])
+                ->get()
+            : collect([]);
+
+        // Transform Pemesanan + DetailPenumpang ke format penumpang
+        $passengers = [];
+        $occupiedCount = 0;
+
+        foreach ($pemesanan as $booking) {
+            foreach ($booking->detailPenumpang as $detail) {
+                $occupiedCount++;
+
+                // Cari seat dari kursiTerpesan
+                $seat = $booking->kursiTerpesan()
+                    ->where('detail_penumpang_id', $detail->id)
+                    ->first();
+
+                $passengers[] = [
+                    'id' => $detail->id,
+                    'name' => $detail->nama_lengkap,
+                    'phone' => $detail->telepon ?? $booking->telepon_pemesan,
+                    'seat' => $seat ? $seat->nomor_kursi : 'N/A',
+                    'nik' => $detail->nik,
+                    'status' => $seat ? $seat->status : 'pending',
+                    'jenis_kelamin' => $detail->jenis_kelamin,
+                ];
+            }
+        }
+
+        // Build comprehensive response
+        $tripDetail = [
+            'id_jadwal_driver' => $trip->id_jadwal_driver,
+            'id_driver' => $trip->id_driver,
+            'id_jadwal' => $trip->id_jadwal,
+            'from' => $trip->masterRute ? $trip->masterRute->kota_asal : 'N/A',
+            'to' => $trip->masterRute ? $trip->masterRute->kota_tujuan : 'N/A',
+            'date' => $trip->tanggal ? $trip->tanggal->toDateString() : $trip->tanggal,
+            'time' => $trip->waktu_keberangkatan,
+            'eta' => $trip->waktu_kedatangan,
+            'status' => $trip->status,
+            'estimated_duration' => $trip->estimated_duration,
+            'distance' => $trip->jarak,
+            'total_seats' => $trip->total_kursi ?? 0,
+            'occupied_seats' => $occupiedCount,
+            'stop_points' => $stopPoints,
+            'passengers' => $passengers, // ★★★ Data dari admin Jadwal penumpang (Pemesanan + DetailPenumpang) ★★★
+            'created_at' => $trip->created_at,
+            'updated_at' => $trip->updated_at,
+        ];
+
+        // Get journey state
+        $journeyState = DriverJourneyState::where('id_driver', $driver->id)
+            ->where('id_jadwal_driver', $tripId)
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'data' => $tripDetail,
+            'journey_state' => $journeyState ? $journeyState->toArray() : [
+                'status' => 'not_started',
+                'current_stop_index' => 0,
+                'total_stops' => 0
+            ]
+        ], 200);
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
@@ -329,19 +438,103 @@ class DriverLocationController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * ★★★ API ENDPOINT: Fetch passengers from admin jadwal penumpang data source ★★★
+     * Data source: Pemesanan -> DetailPenumpang (from Jadwal)
+     * Ini menggunakan data yang sama dengan admin/jadwal/{id}/penumpang
      */
-    public function show(string $id)
+    public function getTripPassengersFromAdmin($tripId)
     {
-        //
-    }
+        try {
+            $driver = Auth::guard('driver')->user();
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
+            if (!$driver) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Driver not authenticated'
+                ], 401);
+            }
+
+            // Get DriverJadwal with Jadwal relationship
+            $driverJadwal = \App\Models\DriverJadwal::with(['jadwal'])
+                ->where('id_jadwal_driver', $tripId)
+                ->where('id_driver', $driver->id)
+                ->first();
+
+            if (!$driverJadwal) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Trip not found'
+                ], 404);
+            }
+
+            // Get Jadwal ID from DriverJadwal
+            $jadwalId = $driverJadwal->id_jadwal;
+
+            if (!$jadwalId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Jadwal tidak terkait dengan trip ini'
+                ], 404);
+            }
+
+            // ★★★ Fetch Pemesanan + DetailPenumpang (SAMA SEPERTI admin/jadwal/{id}/penumpang) ★★★
+            $pemesanan = \App\Models\Jadwal::findOrFail($jadwalId)
+                ->pemesanan()
+                ->with(['user', 'detailPenumpang', 'pembayaran', 'kursiTerpesan'])
+                ->get();
+
+            // Transform data ke format penumpang
+            $passengers = [];
+            $totalPassengers = 0;
+
+            foreach ($pemesanan as $booking) {
+                foreach ($booking->detailPenumpang as $detail) {
+                    $totalPassengers++;
+
+                    // Cari seat dari kursiTerpesan
+                    $seat = $booking->kursiTerpesan()
+                        ->where('detail_penumpang_id', $detail->id)
+                        ->first();
+
+                    $passengers[] = [
+                        'id' => $detail->id,
+                        'name' => $detail->nama_lengkap,
+                        'phone' => $detail->telepon ?? $booking->telepon_pemesan,
+                        'seat' => $seat ? $seat->nomor_kursi : 'N/A',
+                        'nik' => $detail->nik,
+                        'status' => $seat ? $seat->status : 'pending',
+                        'jenis_kelamin' => $detail->jenis_kelamin,
+                        'booking_code' => $booking->kode_booking,
+                        'booking_id' => $booking->id,
+                    ];
+                }
+            }
+
+            // Get trip data untuk total seats
+            $trip = $driverJadwal;
+            $totalSeats = $trip->total_kursi ?? 0;
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'trip_id' => $tripId,
+                    'jadwal_id' => $jadwalId,
+                    'total_passengers' => $totalPassengers,
+                    'occupied_seats' => $totalPassengers,
+                    'total_seats' => $totalSeats,
+                    'available_seats' => $totalSeats - $totalPassengers,
+                    'passengers' => $passengers,
+                    'timestamp' => now()->toIso8601String()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error getting passengers from admin jadwal: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

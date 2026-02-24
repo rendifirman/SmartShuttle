@@ -448,6 +448,11 @@ class DriverController extends Controller
         // Kita gunakan 'dibayar' karena itu ekivalen dengan 'lunas'
         $tripsData = [];
         foreach ($trips as $trip) {
+            // ★★★ PERBAIKAN: SKIP jadwal dengan status 'selesai' dari daftar perjalanan hari ini
+            // Jadwal 'selesai' akan ditampilkan di bagian Riwayat Perjalanan saja
+            if ($trip->status === 'selesai') {
+                continue;
+            }
             // ★★★ AMBIL DATA DARI JADWAL DAN RUTE ★★★
             // Prioritas: masterRute (rute_id) -> jadwal.rutes -> string rute
 
@@ -847,6 +852,7 @@ class DriverController extends Controller
 
     /**
      * ★★★ API ENDPOINT: Ambil data penumpang real-time untuk trip tertentu ★★★
+     * Data source: Pemesanan + DetailPenumpang (dari admin jadwal penumpang)
      * Digunakan untuk update penumpang tanpa perlu reload halaman
      */
     public function getPassengersRealtime($tripId)
@@ -868,36 +874,36 @@ class DriverController extends Controller
                 return response()->json(['error' => 'Trip tidak ditemukan'], 404);
             }
 
-            // Ambil semua bookings untuk trip ini dengan status aktif
-            $bookings = Pemesanan::with(['detailPenumpang', 'kursiTerpesan'])
-                ->where('id_jadwal_driver', $tripId)
-                ->whereIn('status', ['dibayar', 'diproses', 'menunggu_pembayaran', 'menunggu_konfirmasi'])
-                ->orderBy('created_at', 'asc')
-                ->get();
+            // ★★★ Ambil data penumpang dari admin Jadwal penumpang source ★★★
+            // Gunakan Pemesanan + DetailPenumpang (SAMA dengan getTripDetail() sekarang)
+            $jadwalId = $trip->id_jadwal;
+            $pemesanan = \App\Models\Jadwal::find($jadwalId)
+                ? \App\Models\Jadwal::findOrFail($jadwalId)->pemesanan()
+                    ->with(['user', 'detailPenumpang', 'pembayaran', 'kursiTerpesan'])
+                    ->get()
+                : collect([]);
 
+            // Transform Pemesanan + DetailPenumpang ke format penumpang
             $passengers = [];
-            $occupiedSeats = 0;
+            $occupiedCount = 0;
 
-            foreach ($bookings as $booking) {
-                // Pastikan detailPenumpang adalah Collection
-                $detailPenumpangs = $booking->detailPenumpang;
-                if (!($detailPenumpangs instanceof \Illuminate\Database\Eloquent\Collection)) {
-                    $detailPenumpangs = collect($detailPenumpangs);
-                }
+            foreach ($pemesanan as $booking) {
+                foreach ($booking->detailPenumpang as $detail) {
+                    $occupiedCount++;
 
-                foreach ($detailPenumpangs as $passenger) {
-                    $occupiedSeats++;
-
+                    // Cari seat dari kursiTerpesan
                     $seat = $booking->kursiTerpesan()
-                        ->where('detail_penumpang_id', $passenger->id)
+                        ->where('detail_penumpang_id', $detail->id)
                         ->first();
 
                     $passengers[] = [
-                        'id' => $passenger->id,
-                        'name' => $passenger->nama_lengkap,
-                        'phone' => $passenger->telepon ?? $booking->telepon_pemesan,
+                        'id' => $detail->id,
+                        'name' => $detail->nama_lengkap,
+                        'phone' => $detail->telepon ?? $booking->telepon_pemesan,
                         'seat' => $seat ? $seat->nomor_kursi : 'N/A',
-                        'status' => 'terverifikasi',
+                        'nik' => $detail->nik,
+                        'status' => $seat ? $seat->status : 'pending',
+                        'jenis_kelamin' => $detail->jenis_kelamin,
                     ];
                 }
             }
@@ -910,9 +916,9 @@ class DriverController extends Controller
                 'data' => [
                     'trip_id' => $tripId,
                     'total_passengers' => count($passengers),
-                    'occupied_seats' => $occupiedSeats,
+                    'occupied_seats' => $occupiedCount,
                     'total_seats' => $totalSeats,
-                    'available_seats' => $totalSeats - $occupiedSeats,
+                    'available_seats' => $totalSeats - $occupiedCount,
                     'passengers' => $passengers,
                     'timestamp' => now()->toIso8601String()
                 ]
