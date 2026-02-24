@@ -20,12 +20,11 @@ class SmartRentETicketController extends Controller
         // Find transaction by order number and ensure it belongs to current user
         $transaction = SmartRentTransaction::where('order_number', $orderNumber)
             ->where('user_id', Auth::id())
-            ->where('payment_status', 'paid')
             ->firstOrFail();
 
-        // Check if transaction can show e-ticket
-        if (!$transaction->canShowETicket()) {
-            return redirect()->route('customer.riwayat')
+        // Check if transaction is paid using is_paid accessor (supports: paid, settlement, success, completed)
+        if (!$transaction->is_paid) {
+            return redirect()->route('smartrent.riwayat')
                 ->with('error', 'E-Ticket hanya tersedia untuk transaksi yang sudah dibayar dan dikonfirmasi.');
         }
 
@@ -48,11 +47,16 @@ class SmartRentETicketController extends Controller
     {
         $transaction = SmartRentTransaction::where('order_number', $orderNumber)
             ->where('user_id', Auth::id())
-            ->where('payment_status', 'paid')
             ->firstOrFail();
 
+        // Check if paid using is_paid accessor (supports: paid, settlement, success, completed)
+        if (!$transaction->is_paid) {
+            return redirect()->route('smartrent.riwayat')
+                ->with('error', 'E-Ticket hanya tersedia untuk transaksi yang sudah dibayar.');
+        }
+
         // For now, redirect to show page with info
-        return redirect()->route('customer.smartrent.e-ticket', $orderNumber)
+        return redirect()->route('smartrent.e-ticket', $orderNumber)
             ->with('info', 'Fitur download PDF akan segera tersedia.');
     }
 
@@ -63,8 +67,13 @@ class SmartRentETicketController extends Controller
     {
         $transaction = SmartRentTransaction::where('order_number', $orderNumber)
             ->where('user_id', Auth::id())
-            ->where('payment_status', 'paid')
             ->firstOrFail();
+
+        // Check if paid using is_paid accessor (supports: paid, settlement, success, completed)
+        if (!$transaction->is_paid) {
+            return redirect()->route('smartrent.riwayat')
+                ->with('error', 'E-Ticket hanya tersedia untuk transaksi yang sudah dibayar.');
+        }
 
         // Get price breakdown
         $priceBreakdown = $this->getPriceBreakdown($transaction);
@@ -79,8 +88,15 @@ class SmartRentETicketController extends Controller
     {
         $transaction = SmartRentTransaction::where('order_number', $orderNumber)
             ->where('user_id', Auth::id())
-            ->where('payment_status', 'paid')
             ->firstOrFail();
+
+        // Check if paid using is_paid accessor (supports: paid, settlement, success, completed)
+        if (!$transaction->is_paid) {
+            return response()->json([
+                'success' => false,
+                'message' => 'E-Ticket hanya tersedia untuk transaksi yang sudah dibayar.'
+            ], 403);
+        }
 
         return response()->json([
             'success' => true,

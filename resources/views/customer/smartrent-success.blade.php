@@ -292,6 +292,31 @@
         color: #0066cc;
     }
 
+    /* Status badge */
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .status-badge.paid {
+        background: var(--success-light);
+        color: var(--success);
+        border: 1px solid var(--success);
+    }
+    
+    .status-badge.pending {
+        background: #fff3e0;
+        color: #ef6c00;
+        border: 1px solid #ef6c00;
+    }
+    
+    .status-badge i {
+        margin-right: 4px;
+    }
+
     @media (max-width: 768px) {
         .summary-grid {
             grid-template-columns: 1fr;
@@ -367,12 +392,12 @@
                 
                 {{-- Tombol Lihat dan Download E-Ticket --}}
                 <div class="order-number-actions">
-                    <a href="{{ route('customer.smartrent.e-ticket', ['orderNumber' => $transaction->order_number ?? $order_number]) }}" 
+                    <a href="{{ route('smartrent.e-ticket', ['orderNumber' => $transaction->order_number ?? $order_number]) }}" 
                        class="btn-eticket view" 
                        target="_blank">
                         <i class="fas fa-ticket-alt"></i> Lihat E-Ticket
                     </a>
-                    <a href="{{ route('customer.smartrent.e-ticket.download', ['orderNumber' => $transaction->order_number ?? $order_number]) }}" 
+                    <a href="{{ route('smartrent.e-ticket.download', ['orderNumber' => $transaction->order_number ?? $order_number]) }}" 
                        class="btn-eticket download">
                         <i class="fas fa-download"></i> Download E-Ticket
                     </a>
@@ -460,8 +485,16 @@
                     </div>
                     <div class="summary-row">
                         <span class="summary-label">Status Pembayaran</span>
-                        <span class="summary-value" style="color: var(--success);">
-                            <i class="fas fa-check-circle"></i> Terbayar
+                        <span class="summary-value">
+                            @if($transaction->is_paid)
+                                <span style="color: var(--success);">
+                                    <i class="fas fa-check-circle"></i> {{ $transaction->payment_status_label }}
+                                </span>
+                            @else
+                                <span style="color: #ef6c00;">
+                                    <i class="fas fa-clock"></i> {{ $transaction->payment_status_label }}
+                                </span>
+                            @endif
                         </span>
                     </div>
                 </div>
@@ -521,7 +554,7 @@
 
             {{-- ACTION BUTTONS --}}
             <div class="action-buttons">
-                <a href="{{ route('customer.riwayat') }}" class="btn btn-secondary">
+                <a href="{{ route('smartrent.riwayat') }}" class="btn btn-secondary">
                     <i class="fas fa-history"></i> Lihat Riwayat Pesanan
                 </a>
                 <a href="{{ route('smartrent.index') }}" class="btn btn-secondary">
@@ -546,9 +579,7 @@
             })
             .catch(error => console.error('Error refreshing CSRF:', error));
     }, 3600000); // Refresh setiap 1 jam
-</script>
 
-<script>
     // Tracking event untuk analytics (jika diperlukan)
     document.addEventListener('DOMContentLoaded', function() {
         console.log('SmartRent payment success page loaded for order: {{ $transaction->order_number ?? $order_number ?? "unknown" }}');
@@ -562,9 +593,7 @@
             });
         }
     });
-</script>
 
-<script>
     // Fungsi untuk copy nomor pesanan ke clipboard
     function copyOrderNumber() {
         const orderNumber = '{{ $transaction->order_number ?? $order_number ?? "" }}';

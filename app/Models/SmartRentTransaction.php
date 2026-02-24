@@ -62,6 +62,21 @@ class SmartRentTransaction extends Model
     ];
 
     /**
+     * Payment statuses that are considered "paid"
+     */
+    const PAID_STATUSES = ['paid', 'settlement', 'success', 'completed', 'lunas'];
+    
+    /**
+     * Payment statuses that are considered "pending"
+     */
+    const PENDING_STATUSES = ['pending', 'waiting', 'unpaid', 'menunggu', 'process'];
+    
+    /**
+     * Payment statuses that are considered "failed/cancelled"
+     */
+    const FAILED_STATUSES = ['expired', 'failed', 'cancelled', 'batal', 'rejected'];
+
+    /**
      * Relation to User
      */
     public function user()
@@ -90,15 +105,40 @@ class SmartRentTransaction extends Model
      */
     public function getPaymentStatusLabelAttribute()
     {
+        $paymentStatus = strtolower($this->payment_status);
+        
         $labels = [
             'unpaid' => 'Belum Dibayar',
-            'pending' => 'Proses',
-            'paid' => 'Terbayar',
+            'pending' => 'Menunggu Pembayaran',
+            'waiting' => 'Menunggu Pembayaran',
+            'paid' => 'Lunas',
+            'settlement' => 'Lunas',
+            'success' => 'Lunas',
+            'completed' => 'Lunas',
+            'lunas' => 'Lunas',
             'failed' => 'Gagal',
+            'expired' => 'Kadaluarsa',
             'cancelled' => 'Dibatalkan',
+            'batal' => 'Dibatalkan',
         ];
 
-        return $labels[$this->payment_status] ?? $this->payment_status;
+        return $labels[$paymentStatus] ?? ucfirst($this->payment_status);
+    }
+
+    /**
+     * Get filter status for riwayat page (lunas/menunggu/batal)
+     */
+    public function getFilterStatusAttribute()
+    {
+        $paymentStatus = strtolower($this->payment_status);
+        
+        if (in_array($paymentStatus, self::PAID_STATUSES)) {
+            return 'lunas';
+        } elseif (in_array($paymentStatus, self::FAILED_STATUSES)) {
+            return 'batal';
+        } else {
+            return 'menunggu';
+        }
     }
 
     /**
@@ -147,6 +187,41 @@ class SmartRentTransaction extends Model
     public function getServiceTypeLabelAttribute()
     {
         return $this->service_type === 'with_driver' ? 'Dengan Sopir' : 'Sewa Mandiri';
+    }
+
+    /**
+     * Check if transaction is paid (supports multiple payment status values)
+     */
+    public function getIsPaidAttribute()
+    {
+        $paymentStatus = strtolower($this->payment_status);
+        return in_array($paymentStatus, self::PAID_STATUSES);
+    }
+
+    /**
+     * Check if transaction is pending
+     */
+    public function getIsPendingAttribute()
+    {
+        $paymentStatus = strtolower($this->payment_status);
+        return in_array($paymentStatus, self::PENDING_STATUSES);
+    }
+
+    /**
+     * Check if transaction is failed/cancelled
+     */
+    public function getIsFailedAttribute()
+    {
+        $paymentStatus = strtolower($this->payment_status);
+        return in_array($paymentStatus, self::FAILED_STATUSES);
+    }
+
+    /**
+     * Check if e-ticket can be shown (paid and status allows)
+     */
+    public function canShowETicket()
+    {
+        return $this->is_paid && in_array($this->status, ['confirmed', 'ongoing', 'completed', 'pending_payment']);
     }
 
     /**
@@ -220,18 +295,27 @@ class SmartRentTransaction extends Model
     }
 
     /**
+     * Scope: Filter by filter status (lunas/menunggu/batal)
+     */
+    public function scopeByFilterStatus($query, $filterStatus)
+    {
+        switch ($filterStatus) {
+            case 'lunas':
+                return $query->whereIn('payment_status', self::PAID_STATUSES);
+            case 'batal':
+                return $query->whereIn('payment_status', self::FAILED_STATUSES);
+            case 'menunggu':
+                return $query->whereNotIn('payment_status', array_merge(self::PAID_STATUSES, self::FAILED_STATUSES));
+            default:
+                return $query;
+        }
+    }
+
+    /**
      * Scope: Latest first
      */
     public function scopeLatest($query)
     {
         return $query->orderBy('created_at', 'desc');
-    }
-
-    /**
-     * Check if transaction can show e-ticket
-     */
-    public function canShowETicket()
-    {
-        return $this->payment_status === 'paid' && in_array($this->status, ['confirmed', 'ongoing', 'completed']);
     }
 }

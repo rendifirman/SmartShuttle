@@ -20,6 +20,8 @@
             --white: #FFFFFF;
             --gray-light: #f8f9fa;
             --gray: #e9ecef;
+            --warning: #FFC107;
+            --warning-light: #FFF3CD;
         }
 
         * {
@@ -512,6 +514,12 @@
         .alert-info i {
             margin-right: 8px;
         }
+        
+        .alert-warning {
+            background-color: var(--warning-light);
+            border: 1px solid var(--warning);
+            color: #856404;
+        }
 
         @media (max-width: 768px) {
             .ticket-header {
@@ -639,6 +647,12 @@
         </div>
         @endif
 
+        @if(session('error'))
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i> {{ session('error') }}
+        </div>
+        @endif
+
         <div class="ticket-card">
             <div class="ticket-header">
                 <div class="ticket-brand">
@@ -673,9 +687,10 @@
                         <span class="info-value">{{ $transaction->created_at->format('d M Y H:i') }}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Status</span>
+                        <span class="info-label">Status Pembayaran</span>
                         <span class="info-value highlight">
-                            <i class="fas fa-check-circle"></i> {{ $transaction->status_label ?? 'Confirmed' }}
+                            <i class="fas fa-{{ $transaction->is_paid ? 'check-circle' : 'clock' }}"></i> 
+                            {{ $transaction->payment_status_label }}
                         </span>
                     </div>
                     <div class="info-item">
@@ -778,6 +793,7 @@
                     </div>
                 </div>
 
+                @if($transaction->is_paid)
                 <div class="qr-section">
                     <div class="qr-title">SCAN UNTUK VERIFIKASI</div>
                     <div class="qr-container">
@@ -793,6 +809,13 @@
                         {{ $transaction->order_number }}
                     </div>
                 </div>
+                @else
+                <div class="alert alert-warning" style="margin: 20px 0;">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    <strong>Pembayaran Belum Dikonfirmasi</strong><br>
+                    E-Ticket lengkap dengan QR Code akan tersedia setelah pembayaran Anda dikonfirmasi.
+                </div>
+                @endif
 
                 <div class="instructions">
                     <div class="instructions-title">
@@ -829,10 +852,10 @@
                     <button class="btn btn-secondary" onclick="window.print()">
                         <i class="fas fa-print"></i> Cetak
                     </button>
-                    <a href="{{ route('customer.smartrent.e-ticket.download', $transaction->order_number) }}" class="btn btn-outline">
+                    <a href="{{ route('smartrent.e-ticket.download', $transaction->order_number) }}" class="btn btn-outline">
                         <i class="fas fa-download"></i> Download
                     </a>
-                    <a href="{{ route('customer.riwayat') }}" class="btn btn-outline">
+                    <a href="{{ route('smartrent.riwayat') }}" class="btn btn-outline">
                         <i class="fas fa-history"></i> Riwayat
                     </a>
                     <a href="{{ route('smartrent.index') }}" class="btn btn-primary">

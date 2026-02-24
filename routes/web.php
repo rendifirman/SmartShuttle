@@ -673,6 +673,10 @@ Route::get('/debug/e-ticket/{kode_booking}', function($kode_booking) {
     return redirect()->route('customer.e_ticket', ['kode_booking' => $kode_booking]);
 })->name('debug.e_ticket');
 
+// ★★★ SMARTRENT PAYMENT DEBUG ROUTE ★★★
+Route::get('/debug/smartrent-payment/{order_number}', [SmartRentController::class, 'debugPaymentStatus'])
+    ->name('debug.smartrent_payment');
+
 // Test route: generate RSA signature only (no external API call)
 Route::get('/paylabs/signature-test', function () {
     try {
@@ -805,12 +809,6 @@ Route::prefix('admin')->middleware(['auth:admin'])->group(function () {
             ->middleware(['permission:view_cabang', 'branch.access'])
             ->name('admin.cabang.get');
     });
-});
-
-// ★★★ ROUTE FALLBACK ★★★
-// Taruh di luar group middleware UpdateAvatarSession agar tidak terpengaruh
-Route::fallback(function () {
-    return redirect()->route('customer.beranda');
 });
 
 Route::get('/test-storage-write', function() {
@@ -1150,31 +1148,26 @@ Route::prefix('smartrent')->name('smartrent.')->group(function () {
         Route::post('/payment/process', [SmartRentController::class, 'processPayment'])->name('payment.process');
         Route::post('/process-payment', [SmartRentController::class, 'processPayment'])->name('process-payment');
         Route::get('/payment-success', [SmartRentController::class, 'success'])->name('payment-success');
+            // Riwayat (history) for SmartRent - placed inside smartrent group and requires auth
+            Route::get('/riwayat', [\App\Http\Controllers\CustomerController::class, 'showRiwayat'])
+                ->middleware('auth')
+                ->name('riwayat');
+        // E-Ticket routes (requires auth)
+        Route::get('/e-ticket/{orderNumber}', [SmartRentController::class, 'showETicket'])->name('e-ticket');
+        Route::get('/e-ticket/{orderNumber}/download', [SmartRentController::class, 'downloadETicket'])->name('e-ticket.download');
+        Route::get('/e-ticket/{orderNumber}/print', [SmartRentController::class, 'printETicket'])->name('e-ticket.print');
+        Route::get('/api/e-ticket/{orderNumber}', [SmartRentController::class, 'getETicketData'])->name('e-ticket.api');
         Route::get('/confirmation', [SmartRentController::class, 'confirmation'])->name('confirmation');
     });
 
     // ★★★ SMART RENT ROUTES ★★★
     // (Routes without auth requirements already moved above)
 });
+// ★★★ ALL SMARTRENT ROUTES CONSOLIDATED - NO DUPLICATES ★★★
 
-
-// ★★★ ALIAS ROUTES untuk kompatibilitas ★★★
-Route::get('/smartrent-page', [SmartRentController::class, 'index'])->name('customer.smartrent');
-Route::get('/smartrent/detail/{id}', [SmartRentController::class, 'detail'])
-    ->name('smartrent.detail');
-
-  
-
-// Customer routes
-Route::prefix('customer')->name('customer.')->middleware(['auth', \App\Http\Middleware\CustomerAuth::class])->group(function () {
-    
-    // ... existing routes ...
-    
-    // SmartRent E-Ticket routes
-    Route::prefix('smartrent')->name('smartrent.')->group(function () {
-        Route::get('/e-ticket/{orderNumber}', [SmartRentETicketController::class, 'show'])->name('e-ticket');
-        Route::get('/e-ticket/{orderNumber}/download', [SmartRentETicketController::class, 'download'])->name('e-ticket.download');
-        Route::get('/e-ticket/{orderNumber}/print', [SmartRentETicketController::class, 'print'])->name('e-ticket.print');
-        Route::get('/api/e-ticket/{orderNumber}', [SmartRentETicketController::class, 'getTicketData'])->name('e-ticket.api');
-    });
+// ★★★ ROUTE FALLBACK (MUST BE AT END) ★★★
+// Placed at absolute end of file to ensure all defined routes are matched first
+// SmartRent and other specific routes will be matched before this fallback triggers
+Route::fallback(function () {
+    return redirect()->route('customer.beranda');
 });

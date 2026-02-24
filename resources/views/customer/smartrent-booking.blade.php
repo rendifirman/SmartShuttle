@@ -1157,22 +1157,9 @@
                 <p class="summary-note">
                     <i class="fas fa-info-circle"></i> Harga sudah termasuk PPN 11%. Belum termasuk akomodasi sopir untuk sewa > 1 hari.
                 </p>
-                
-              <!-- PERBAIKAN: Ganti dengan FORM POST ke route yang benar -->
-<form action="{{ route('smartrent.checkout.booking') }}" method="GET" id="continueForm">
-    <input type="hidden" name="vehicle_id" id="form_vehicle_id" value="{{ $selectedVehicle['id'] }}">
-    <input type="hidden" name="vehicle_name" id="form_vehicle_name" value="{{ $selectedVehicle['name'] }}">
-    <input type="hidden" name="vehicle_image" id="form_vehicle_image" value="{{ $selectedVehicle['image'] }}">
-    <input type="hidden" name="vehicle_price" id="form_vehicle_price" value="{{ $selectedVehicle['price'] }}">
-    <input type="hidden" name="driver_price" id="form_driver_price" value="{{ $selectedVehicle['driver_price'] }}">
-    <input type="hidden" name="service" id="form_service" value="with-driver">
-    <input type="hidden" name="duration" id="form_duration" value="{{ $filterData['duration'] ?? 1 }}">
-    <input type="hidden" name="rent_date" id="form_rent_date" value="{{ $filterData['rent_date'] ?? date('Y-m-d') }}">
-    
-    <button type="submit" class="continue-btn" style="width: 100%; border: none;">
-        <i class="fas fa-arrow-right"></i> Lanjutkan ke Pembayaran
-    </button>
-</form>
+                <a href="#" class="continue-btn" onclick="return continueToPayment(event)">
+                    <i class="fas fa-arrow-right"></i> Lanjutkan ke Pembayaran
+                </a>
             </div>
             @endif
         </div>
@@ -1200,9 +1187,6 @@ $(document).ready(function() {
         placeholder: 'Pilih opsi',
         allowClear: true
     });
-    
-    // Update form hidden inputs saat halaman dimuat
-    updateFormInputs();
 });
 
 function selectVehicle(vehicleId) {
@@ -1226,9 +1210,6 @@ function selectService(service) {
     $('.service-option').removeClass('active');
     $(`.service-option[data-service="${service}"]`).addClass('active');
     
-    // Update form
-    $('#form_service').val(service);
-    
     // Update harga
     updatePrices();
 }
@@ -1246,23 +1227,32 @@ function updatePrices() {
     $('#summaryVehiclePrice').text(`Rp ${formatNumber(vehiclePrice)}/hari`);
     $('#summaryDriverPrice').text(`Rp ${formatNumber(driverPrice)}/hari`);
     $('#summaryTotal').text(`Rp ${formatNumber(total)}`);
-    
-    // Update form
-    $('#form_driver_price').val(vehicle.driver_price || 150000);
 }
 
-function updateFormInputs() {
+function continueToPayment(event) {
+    event.preventDefault();
+    
     const vehicle = vehicles.find(v => v.id == selectedVehicleId);
-    if (vehicle) {
-        $('#form_vehicle_id').val(vehicle.id);
-        $('#form_vehicle_name').val(vehicle.name);
-        $('#form_vehicle_image').val(vehicle.image);
-        $('#form_vehicle_price').val(vehicle.price);
-        $('#form_driver_price').val(vehicle.driver_price);
-        $('#form_service').val(selectedService);
-        $('#form_duration').val(duration);
-        $('#form_rent_date').val(rentDate);
+    if (!vehicle) {
+        alert('Silakan pilih kendaraan terlebih dahulu');
+        return false;
     }
+    
+    // Buat parameter lengkap
+    const params = new URLSearchParams({
+        vehicle_id: selectedVehicleId,
+        vehicle_name: vehicle.name,
+        vehicle_image: vehicle.image,
+        vehicle_price: vehicle.price,
+        driver_price: vehicle.driver_price || 150000,
+        service: selectedService,
+        duration: duration,
+        rent_date: rentDate
+    });
+    
+    // Redirect ke halaman checkout dengan parameter
+    window.location.href = '{{ route("smartrent.checkout.booking") }}?' + params.toString();
+    return false;
 }
 
 function formatNumber(num) {

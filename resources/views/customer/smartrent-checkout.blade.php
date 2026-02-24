@@ -1,3 +1,4 @@
+{{-- resources/views/customer/smartrent-checkout.blade.php --}}
 @extends('layouts.app')
 
 @section('title', 'Checkout SmartRent - SmartRent')
@@ -371,47 +372,41 @@
     use App\Models\MProfilePerusahaan;
     $profile = MProfilePerusahaan::first();
     
-    // CEK SESSION DULU, baru fallback ke URL parameters
-    $checkoutData = session('smartrent_checkout');
-    
-    if ($checkoutData) {
-        // Ambil data dari session
-        $vehicle_id = $checkoutData['vehicle_id'] ?? 1;
-        $vehicle_name = $checkoutData['vehicle_name'] ?? 'Toyota Hiace Commuter';
-        $vehicle_image = $checkoutData['vehicle_image'] ?? asset('images/toyotahiace.png');
-        $vehicle_price = $checkoutData['vehicle_price'] ?? 1200000;
-        $driver_price = $checkoutData['driver_price'] ?? 150000;
-        $service_type = $checkoutData['service_type'] ?? 'with_driver';
-        $duration = $checkoutData['duration'] ?? 1;
-        $rent_date = $checkoutData['rent_date'] ?? date('Y-m-d');
-        $vehicle_total = $checkoutData['vehicle_total'] ?? ($vehicle_price * $duration);
-        $driver_total = $checkoutData['driver_total'] ?? (($service_type == 'with_driver') ? $driver_price * $duration : 0);
-        $total_price = $checkoutData['total_price'] ?? ($vehicle_total + $driver_total);
-        $booking_code = $checkoutData['booking_code'] ?? ('SR' . date('Ymd') . rand(100, 999));
-    } else {
-        // Fallback ke URL parameters (untuk kompatibilitas)
-        $vehicle_id = request()->get('vehicle_id', 1);
-        $vehicle_name = request()->get('vehicle_name', 'Toyota Hiace Commuter');
-        $vehicle_image = request()->get('vehicle_image', asset('images/toyotahiace.png'));
-        $vehicle_price = request()->get('vehicle_price', 1200000);
-        $driver_price = request()->get('driver_price', 150000);
-        $service_type = request()->get('service_type', 'with_driver');
-        $service_type = str_replace('with-driver', 'with_driver', $service_type);
-        $duration = request()->get('duration', 1);
-        $rent_date = request()->get('rent_date', date('Y-m-d'));
-        
-        // Hitung ulang
-        $vehicle_total = $vehicle_price * $duration;
-        $driver_total = ($service_type == 'with_driver') ? $driver_price * $duration : 0;
-        $total_price = $vehicle_total + $driver_total;
-        $booking_code = 'SR' . date('Ymd') . rand(100, 999);
-    }
+    // Ambil data dari URL parameters (dari halaman booking)
+    $vehicle_id = request()->get('vehicle_id', 1);
+    $vehicle_name = request()->get('vehicle_name', 'Toyota Hiace Commuter');
+    $vehicle_image = request()->get('vehicle_image', asset('images/toyotahiace.png'));
+    $vehicle_price = request()->get('vehicle_price', 1200000);
+    $driver_price = request()->get('driver_price', 150000);
+    $service = request()->get('service', 'with-driver');
+    $duration = request()->get('duration', 1);
+    $rent_date = request()->get('rent_date', date('Y-m-d'));
     
     // Hitung tanggal selesai
-    $end_date = date('Y-m-d', strtotime($rent_date . ' + ' . ($duration) . ' days'));
+    $end_date = date('Y-m-d', strtotime($rent_date . ' + ' . ($duration - 1) . ' days'));
     
-    // Pastikan service_type formatnya benar
-    $service_display = ($service_type == 'with_driver') ? 'Dengan Sopir' : 'Lepas Kunci';
+    // Hitung total harga
+    $vehicle_total = $vehicle_price * $duration;
+    $driver_total = ($service == 'with-driver') ? $driver_price * $duration : 0;
+    $total_price = $vehicle_total + $driver_total;
+    
+    // Data lengkap untuk dikirim ke controller
+    $checkoutData = [
+        'vehicle_id' => $vehicle_id,
+        'vehicle_name' => $vehicle_name,
+        'vehicle_image' => $vehicle_image,
+        'vehicle_price' => $vehicle_price,
+        'driver_price' => $driver_price,
+        'service' => $service,
+        'service_text' => $service == 'with-driver' ? 'Dengan Sopir' : 'Lepas Kunci',
+        'duration' => $duration,
+        'rent_date' => $rent_date,
+        'end_date' => $end_date,
+        'vehicle_total' => $vehicle_total,
+        'driver_total' => $driver_total,
+        'total_price' => $total_price,
+        'booking_code' => 'SR' . date('Ymd') . rand(100, 999)
+    ];
 @endphp
 
 <div class="checkout-container">
@@ -439,7 +434,7 @@
              onerror="this.onerror=null; this.src='{{ asset('images/default-vehicle.jpg') }}';">
         <div class="vehicle-summary-details">
             <h4 class="vehicle-summary-name">{{ $vehicle_name }}</h4>
-            <span class="vehicle-summary-type">{{ $service_display }}</span>
+            <span class="vehicle-summary-type">{{ $service == 'with-driver' ? 'Dengan Sopir' : 'Lepas Kunci' }}</span>
             <div class="vehicle-summary-specs">
                 <div class="vehicle-summary-spec">
                     <i class="fas fa-calendar-alt"></i>
@@ -464,7 +459,7 @@
             <span class="summary-value">Rp {{ number_format($vehicle_total, 0, ',', '.') }}</span>
         </div>
         
-        @if($service_type == 'with_driver')
+        @if($service == 'with-driver')
         <div class="summary-item">
             <span class="summary-label">Biaya Sopir ({{ $duration }} Hari):</span>
             <span class="summary-value">Rp {{ number_format($driver_total, 0, ',', '.') }}</span>
@@ -477,7 +472,7 @@
         </div>
     </div>
     
-    <!-- Form Checkout -->
+    <!-- Form Checkout - PERBAIKAN: Menggunakan route smartrent.checkout.finalize -->
     <form action="{{ route('smartrent.checkout.finalize') }}" method="POST" id="checkoutForm" enctype="multipart/form-data">
         @csrf
         
@@ -487,14 +482,14 @@
         <input type="hidden" name="vehicle_image" value="{{ $vehicle_image }}">
         <input type="hidden" name="vehicle_price" value="{{ $vehicle_price }}">
         <input type="hidden" name="driver_price" value="{{ $driver_price }}">
-        <input type="hidden" name="service_type" value="{{ $service_type }}">
+        <input type="hidden" name="service" value="{{ $service }}">
         <input type="hidden" name="duration" value="{{ $duration }}">
         <input type="hidden" name="rent_date" value="{{ $rent_date }}">
         <input type="hidden" name="end_date" value="{{ $end_date }}">
         <input type="hidden" name="vehicle_total" value="{{ $vehicle_total }}">
         <input type="hidden" name="driver_total" value="{{ $driver_total }}">
         <input type="hidden" name="total_price" value="{{ $total_price }}">
-        <input type="hidden" name="booking_code" value="{{ $booking_code }}">
+        <input type="hidden" name="booking_code" value="{{ $checkoutData['booking_code'] }}">
         
         <!-- SECTION 1: DATA PEMESAN -->
         <div class="form-section">
@@ -668,11 +663,13 @@
         <!-- ACTION BUTTONS -->
         <div class="action-buttons">
             <a href="{{ route('smartrent.booking', ['vehicle_id' => $vehicle_id]) }}" class="btn-back">
-                <i class="fas fa-arrow-left"></i> Kembali
+                <i class="fas fa-arrow-left"></i>
+                Kembali
             </a>
             
             <button type="submit" class="btn-payment" id="submitBtn">
-                <i class="fas fa-lock"></i> Proses Pembayaran
+                <i class="fas fa-lock"></i>
+                Proses Pembayaran
             </button>
         </div>
     </form>
@@ -734,6 +731,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (form) {
         form.addEventListener('submit', function(e) {
             const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.innerHTML;
             
             // Validasi file upload
             const ktpFile = document.getElementById('ktp_file').files.length;

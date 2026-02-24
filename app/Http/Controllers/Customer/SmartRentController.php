@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class SmartRentController extends Controller
 {
@@ -78,7 +79,7 @@ class SmartRentController extends Controller
     }
     
     /**
-     * Halaman detail kendaraan (TIDAK PERLU LOGIN)
+     * Halaman detail kendaraan
      */
     public function detail($id)
     {
@@ -212,7 +213,7 @@ class SmartRentController extends Controller
     }
     
     /**
-     * Halaman booking dengan filter (PERLU LOGIN)
+     * Halaman booking dengan filter
      */
     public function booking(Request $request)
     {
@@ -338,7 +339,7 @@ class SmartRentController extends Controller
     }
     
     /**
-     * Proses order langsung (PERLU LOGIN)
+     * Proses order langsung
      */
     public function order(Request $request)
     {
@@ -388,7 +389,7 @@ class SmartRentController extends Controller
     }
 
     /**
-     * Proses checkout dari halaman detail (POST) - PERLU LOGIN
+     * Proses checkout dari halaman detail (POST)
      */
     public function processDetailCheckout(Request $request)
     {
@@ -449,7 +450,7 @@ class SmartRentController extends Controller
     }
     
     /**
-     * Proses checkout dari halaman booking (GET dengan query parameters) - PERLU LOGIN
+     * Proses checkout dari halaman booking (GET dengan query parameters)
      */
     public function processBookingCheckout(Request $request)
     {
@@ -508,7 +509,7 @@ class SmartRentController extends Controller
     }
     
     /**
-     * Halaman form checkout (GET) - PERLU LOGIN
+     * Halaman form checkout (GET)
      */
     public function showCheckoutForm()
     {
@@ -531,7 +532,7 @@ class SmartRentController extends Controller
     }
     
     /**
-     * Finalisasi checkout dengan data customer (POST) - PERLU LOGIN
+     * Finalisasi checkout dengan data customer (POST)
      */
     public function finalizeCheckout(Request $request)
     {
@@ -575,6 +576,8 @@ class SmartRentController extends Controller
         $orderNumber = 'SR' . date('Ymd') . strtoupper(substr(md5(uniqid()), 0, 6));
         
         try {
+            DB::beginTransaction();
+            
             $transaction = SmartRentTransaction::create([
                 'order_number' => $orderNumber,
                 'invoice_number' => 'INV-SR-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid()), 0, 8)),
@@ -602,28 +605,37 @@ class SmartRentController extends Controller
                 'ktp_path' => $ktpPath,
                 'sim_path' => $simPath,
                 'other_document_path' => $otherPath,
-                'payment_status' => 'unpaid',
+                'payment_status' => 'unpaid', // Status awal: unpaid
                 'status' => 'pending_payment',
             ]);
             
+            DB::commit();
+            
             session(['smartrent_order_number' => $orderNumber]);
             session(['smartrent_transaction_id' => $transaction->id]);
+            
+            Log::info('SmartRent transaction created', [
+                'order_number' => $orderNumber,
+                'user_id' => Auth::id()
+            ]);
+            
         } catch (\Exception $e) {
-            Log::error('Error saving SmartRent transaction: ' . $e->getMessage());
+            DB::rollBack();
+            Log::error('Error saving SmartRent transaction: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
             return redirect()->route('smartrent.checkout')
                 ->with('error', 'Terjadi kesalahan saat menyimpan data pesanan. Silakan coba lagi.');
         }
         
         session()->forget('smartrent_checkout');
         
-        Log::info('SmartRent checkout data saved to database with order_number: ' . $orderNumber);
-        
         return redirect()->route('smartrent.payment', ['order_number' => $orderNumber])
             ->with('success', 'Data pesanan berhasil disimpan. Silakan lanjutkan pembayaran.');
     }
     
     /**
-     * Halaman pembayaran - PERLU LOGIN
+     * Halaman pembayaran
      */
     public function payment(Request $request)
     {
@@ -661,6 +673,8 @@ class SmartRentController extends Controller
                 'id' => $transaction->vehicle_id,
                 'name' => $transaction->vehicle_name,
                 'type' => $transaction->vehicle_type,
+                'price' => $transaction->vehicle_price,
+                'image' => $transaction->vehicle_image ?? null,
             ],
             'customerData' => [
                 'full_name' => $transaction->customer_name,
@@ -675,37 +689,41 @@ class SmartRentController extends Controller
     }
 
     /**
-     * Proses pembayaran - PERLU LOGIN
+     * Proses pembayaran - PERBAIKAN UTAMA
      */
     public function processPayment(Request $request)
     {
+        // Step 1: Verify authentication
         if (!Auth::check()) {
+            Log::warning('Unauthenticated payment attempt');
             return redirect()->route('login')
                 ->with('error', 'Silakan login terlebih dahulu untuk melakukan pembayaran.')
                 ->with('redirect_url', route('smartrent.payment'));
         }
         
-        $orderNumber = $request->get('order_number');
-
-        if (!$orderNumber) {
-            return redirect()->route('smartrent.payment')
-                ->with('error', 'Data pemesanan tidak ditemukan.');
-        }
-
+        // Step 2: Validate request data
+        $validated = $request->validate([
+            'order_number' => 'required|string',
+            'payment_method' => 'required|string',
+            'payment_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+        ]);
+        
+        $orderNumber = $validated['order_number'];
+        
+        // Step 3: Find transaction
+        Log::info('Processing payment for order', ['order_number' => $orderNumber, 'user_id' => Auth::id()]);
+        
         $transaction = SmartRentTransaction::where('order_number', $orderNumber)
             ->where('user_id', Auth::id())
             ->first();
 
         if (!$transaction) {
+            Log::warning('Transaction not found', ['order_number' => $orderNumber, 'user_id' => Auth::id()]);
             return redirect()->route('smartrent.payment')
                 ->with('error', 'Data pemesanan tidak ditemukan.');
         }
         
-        $request->validate([
-            'payment_method' => 'required|string',
-            'payment_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-        ]);
-        
+        // Step 4: Map payment method
         $methodMap = [
             'qris' => 'qris',
             'QRIS' => 'qris',
@@ -715,38 +733,124 @@ class SmartRentController extends Controller
             'mandiri_va' => 'mandiri_va',
         ];
         
-        $paymentMethod = $methodMap[$request->payment_method] ?? strtolower(str_replace(' ', '_', $request->payment_method));
+        $paymentMethod = $methodMap[$validated['payment_method']] ?? strtolower(str_replace(' ', '_', $validated['payment_method']));
+        Log::debug('Payment method mapped', ['input' => $validated['payment_method'], 'mapped' => $paymentMethod]);
         
+        // Step 5: Handle payment proof file
         $paymentProofPath = null;
         if ($request->hasFile('payment_proof')) {
-            $paymentProofPath = $request->file('payment_proof')->store('payment-proofs/smartrent', 'public');
+            try {
+                $paymentProofPath = $request->file('payment_proof')->store('payment-proofs/smartrent', 'public');
+                Log::debug('Payment proof stored', ['path' => $paymentProofPath]);
+            } catch (\Exception $e) {
+                Log::error('Failed to store payment proof', ['error' => $e->getMessage()]);
+                return redirect()->route('smartrent.payment', ['order_number' => $orderNumber])
+                    ->with('error', 'Gagal mengunggah bukti pembayaran. Silakan coba lagi.');
+            }
         }
         
+        // Step 6: Database transaction - CRITICAL SECTION
         try {
-            $transaction->update([
-                'payment_method' => $paymentMethod,
-                'payment_status' => 'paid',
-                'payment_proof_path' => $paymentProofPath,
-                'paid_at' => now(),
-                'status' => 'confirmed',
-            ]);
-
-            $this->generateQrCodeForTransaction($transaction);
+            DB::beginTransaction();
+            Log::debug('Database transaction started', ['order_number' => $orderNumber]);
             
+            // Step 6a: Update transaction fields individually
+            $transaction->payment_method = $paymentMethod;
+            Log::debug('Set payment_method', ['value' => $paymentMethod]);
+            
+            $transaction->payment_status = 'paid';
+            Log::debug('Set payment_status', ['value' => 'paid']);
+            
+            if ($paymentProofPath) {
+                $transaction->payment_proof_path = $paymentProofPath;
+                Log::debug('Set payment_proof_path', ['value' => $paymentProofPath]);
+            }
+            
+            $transaction->paid_at = now();
+            Log::debug('Set paid_at', ['value' => now()]);
+            
+            $transaction->status = 'confirmed';
+            Log::debug('Set status', ['value' => 'confirmed']);
+            
+            // Step 6b: Save and verify
+            $saved = $transaction->save();
+            
+            if (!$saved) {
+                throw new \Exception('Database save() returned false for transaction update');
+            }
+            Log::info('Transaction saved successfully', ['order_number' => $orderNumber, 'id' => $transaction->id]);
+            
+            // Step 6c: Verify data was actually written to database
+            $verified = SmartRentTransaction::find($transaction->id);
+            if (!$verified) {
+                throw new \Exception('Failed to verify transaction in database');
+            }
+            
+            if ($verified->payment_status !== 'paid') {
+                throw new \Exception(
+                    "Payment status verification failed. Expected 'paid', got: " . 
+                    var_export($verified->payment_status, true)
+                );
+            }
+            Log::info('Payment status verified in database', [
+                'order_number' => $orderNumber,
+                'payment_status' => $verified->payment_status
+            ]);
+            
+            // Step 6d: Generate QR Code
+            try {
+                $this->generateQrCodeForTransaction($transaction);
+                Log::debug('QR code generated successfully', ['order_number' => $orderNumber]);
+            } catch (\Exception $e) {
+                Log::warning('QR code generation failed, but continuing', [
+                    'order_number' => $orderNumber,
+                    'error' => $e->getMessage()
+                ]);
+                // Don't fail the entire payment process if QR generation fails
+            }
+            
+            // Step 6e: Refresh model from database
+            $transaction->refresh();
+            Log::debug('Model refreshed from database', ['order_number' => $orderNumber]);
+            
+            // Step 6f: Commit transaction
+            DB::commit();
+            Log::info('Database transaction committed', ['order_number' => $orderNumber]);
+            
+            // Step 7: Final verification and logging
+            Log::info('SmartRent payment processed successfully', [
+                'order_number' => $transaction->order_number,
+                'payment_status' => $transaction->payment_status,
+                'is_paid' => $transaction->is_paid,
+                'paid_at' => $transaction->paid_at,
+                'user_id' => $transaction->user_id
+            ]);
+            
+            // Step 8: Set session
             session(['smartrent_last_order' => $transaction->order_number]);
             
         } catch (\Exception $e) {
-            Log::error('Error updating SmartRent payment: ' . $e->getMessage());
+            // Rollback on any error
+            DB::rollBack();
+            Log::error('Error updating SmartRent payment - transaction rolled back', [
+                'order_number' => $orderNumber,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return redirect()->route('smartrent.payment', ['order_number' => $orderNumber])
-                ->with('error', 'Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.');
+                ->with('error', 'Terjadi kesalahan saat memproses pembayaran: ' . $e->getMessage());
         }
 
+        // Step 9: Redirect to success page
+        Log::info('Redirecting to success page', ['order_number' => $transaction->order_number]);
         return redirect()->route('smartrent.payment-success', ['order_number' => $transaction->order_number])
             ->with('success', 'Pembayaran berhasil diproses.');
     }
 
     /**
-     * Halaman sukses pembayaran - PERLU LOGIN
+     * Halaman sukses pembayaran - PERBAIKAN UTAMA
      */
     public function success(Request $request, $orderNumber = null)
     {
@@ -774,7 +878,16 @@ class SmartRentController extends Controller
                 ->with('error', 'Data pesanan tidak ditemukan.');
         }
 
-        if ($transaction->payment_status === 'paid' && !$transaction->qr_code) {
+        // Log untuk debugging
+        Log::info('SmartRent success page accessed', [
+            'order_number' => $transaction->order_number,
+            'payment_status' => $transaction->payment_status,
+            'is_paid' => $transaction->is_paid,
+            'paid_at' => $transaction->paid_at
+        ]);
+
+        // Use is_paid accessor to support multiple payment statuses
+        if ($transaction->is_paid && !$transaction->qr_code) {
             $this->generateQrCodeForTransaction($transaction);
             $transaction->refresh();
         }
@@ -799,7 +912,102 @@ class SmartRentController extends Controller
     }
 
     /**
-     * Menampilkan E-Ticket SmartRent - PERLU LOGIN
+     * DEBUG ENDPOINT: Check raw database payment status
+     * GET /debug/smartrent-payment/{order_number}
+     * 
+     * This endpoint is TEMPORARY and should be removed after verification
+     * Shows raw database values for troubleshooting payment status issues
+     */
+    public function debugPaymentStatus($orderNumber)
+    {
+        // Allow only in debug mode
+        if (!config('app.debug')) {
+            return response()->json([
+                'error' => 'Debug mode is disabled',
+                'message' => 'This endpoint is only available when APP_DEBUG=true'
+            ], 403);
+        }
+
+        try {
+            // Get raw transaction data
+            $transaction = SmartRentTransaction::where('order_number', $orderNumber)
+                ->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'error' => 'Transaction not found',
+                    'order_number' => $orderNumber
+                ], 404);
+            }
+
+            // Get raw database values
+            $rawDbData = DB::table('smartrent_transactions')
+                ->where('order_number', $orderNumber)
+                ->first();
+
+            return response()->json([
+                'success' => true,
+                'order_number' => $orderNumber,
+                'model_data' => [
+                    'id' => $transaction->id,
+                    'user_id' => $transaction->user_id,
+                    'payment_status' => $transaction->payment_status,
+                    'payment_status_type' => gettype($transaction->payment_status),
+                    'is_paid_accessor' => $transaction->is_paid,
+                    'payment_status_label' => $transaction->payment_status_label,
+                    'filter_status' => $transaction->filter_status,
+                    'paid_at' => $transaction->paid_at,
+                    'status' => $transaction->status,
+                    'payment_method' => $transaction->payment_method,
+                    'created_at' => $transaction->created_at,
+                    'updated_at' => $transaction->updated_at,
+                ],
+                'raw_database_values' => [
+                    'payment_status' => $rawDbData->payment_status,
+                    'payment_status_type' => gettype($rawDbData->payment_status),
+                    'paid_at' => $rawDbData->paid_at,
+                    'status' => $rawDbData->status,
+                    'payment_method' => $rawDbData->payment_method,
+                    'updated_at' => $rawDbData->updated_at,
+                ],
+                'constants' => [
+                    'PAID_STATUSES' => SmartRentTransaction::PAID_STATUSES,
+                    'PENDING_STATUSES' => SmartRentTransaction::PENDING_STATUSES,
+                    'FAILED_STATUSES' => SmartRentTransaction::FAILED_STATUSES,
+                ],
+                'checks' => [
+                    'payment_status_in_paid_array' => in_array(
+                        strtolower($transaction->payment_status), 
+                        SmartRentTransaction::PAID_STATUSES
+                    ),
+                    'payment_status_value_is_paid' => strtolower($transaction->payment_status) === 'paid',
+                    'is_paid_accessor_returns_true' => $transaction->is_paid === true,
+                    'paid_at_is_set' => $transaction->paid_at !== null,
+                    'status_is_confirmed' => $transaction->status === 'confirmed',
+                ],
+                'debug_info' => [
+                    'app_debug_enabled' => config('app.debug'),
+                    'timestamp' => now(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Debug endpoint error', [
+                'order_number' => $orderNumber,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'An error occurred',
+                'message' => $e->getMessage(),
+                'trace' => config('app.debug') ? $e->getTraceAsString() : null
+            ], 500);
+        }
+    }
+
+    /**
+     * Menampilkan E-Ticket SmartRent
      */
     public function showETicket($orderNumber)
     {
@@ -813,9 +1021,10 @@ class SmartRentController extends Controller
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
-        if ($transaction->payment_status !== 'paid') {
-            return redirect()->route('customer.riwayat')
-                ->with('error', 'E-Ticket hanya tersedia untuk transaksi yang sudah dibayar.');
+        // Gunakan accessor is_paid untuk cek status pembayaran
+        if (!$transaction->is_paid) {
+            return redirect()->route('smartrent.riwayat')
+                ->with('error', 'E-Ticket hanya tersedia untuk transaksi yang sudah dibayar. Status saat ini: ' . $transaction->payment_status_label);
         }
 
         if (!$transaction->qr_code || !$transaction->qr_path) {
@@ -830,7 +1039,7 @@ class SmartRentController extends Controller
     }
 
     /**
-     * Download E-Ticket sebagai PDF - PERLU LOGIN
+     * Download E-Ticket sebagai PDF
      */
     public function downloadETicket($orderNumber)
     {
@@ -861,7 +1070,7 @@ class SmartRentController extends Controller
     }
 
     /**
-     * Print E-Ticket - PERLU LOGIN
+     * Print E-Ticket
      */
     public function printETicket($orderNumber)
     {
@@ -940,7 +1149,6 @@ class SmartRentController extends Controller
 
         $transaction = SmartRentTransaction::where('order_number', $orderNumber)
             ->where('user_id', Auth::id())
-            ->where('payment_status', 'paid')
             ->first();
 
         if (!$transaction) {
@@ -948,6 +1156,14 @@ class SmartRentController extends Controller
                 'success' => false,
                 'message' => 'Data tidak ditemukan'
             ], 404);
+        }
+
+        // Gunakan accessor is_paid
+        if (!$transaction->is_paid) {
+            return response()->json([
+                'success' => false,
+                'message' => 'E-Ticket hanya tersedia untuk transaksi yang sudah dibayar'
+            ], 403);
         }
 
         if (!$transaction->qr_code || !$transaction->qr_path) {
@@ -981,6 +1197,8 @@ class SmartRentController extends Controller
                 'paid_at' => $transaction->paid_at ? $transaction->paid_at->format('d M Y H:i') : '-',
                 'status' => $transaction->status_label,
                 'payment_status' => $transaction->payment_status_label,
+                'payment_status_raw' => $transaction->payment_status,
+                'is_paid' => $transaction->is_paid,
                 'price_breakdown' => $priceBreakdown
             ]
         ]);
@@ -1006,7 +1224,7 @@ class SmartRentController extends Controller
                 $transaction->qr_path = '/storage/qr/' . $fileName;
                 $transaction->save();
 
-                Log::info('QR Code generated for SmartRent (via qrserver): ' . $transaction->order_number);
+                Log::info('QR Code generated for SmartRent: ' . $transaction->order_number);
             } else {
                 Log::error('Failed to fetch QR Code from external service for: ' . $transaction->order_number . ' Response code: ' . $response->status());
             }

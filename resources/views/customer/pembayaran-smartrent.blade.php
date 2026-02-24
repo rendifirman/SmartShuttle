@@ -1308,7 +1308,7 @@ document.getElementById('paymentForm').addEventListener('submit', function(e) {
     
     // Redirect ke halaman success
     setTimeout(function() {
-        window.location.href = "{{ route('smartrent.payment.success') }}?" + params.toString();
+        window.location.href = "{{ route('smartrent.payment-success') }}?" + params.toString();
     }, 1500);
 });
 

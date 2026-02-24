@@ -96,17 +96,17 @@
         font-weight: 600;
         text-transform: uppercase;
     }
-    .status.open {
+    .status.lunas, .status.paid, .status.settlement, .status.selesai {
         background-color: #e8f5e9;
         color: #2e7d32;
     }
-    .status.proses {
+    .status.menunggu, .status.pending, .status.waiting, .status.proses {
         background-color: #fff3e0;
         color: #ef6c00;
     }
-    .status.selesai {
-        background-color: #e3f2fd;
-        color: #1565c0;
+    .status.batal, .status.expired, .status.failed, .status.cancelled {
+        background-color: #ffebee;
+        color: #c62828;
     }
     .cek-tiket-btn {
         background: linear-gradient(135deg, #FF6B2C 0%, #ff7b4d 100%);
@@ -604,9 +604,9 @@
     <div class="filter-title">Filter Status:</div>
     <div class="filter-options">
         <button class="filter-btn active" data-filter="all">Semua</button>
-        <button class="filter-btn" data-filter="open">Open</button>
-        <button class="filter-btn" data-filter="proses">Proses</button>
-        <button class="filter-btn" data-filter="selesai">Selesai</button>
+        <button class="filter-btn" data-filter="lunas">Lunas</button>
+        <button class="filter-btn" data-filter="menunggu">Menunggu</button>
+        <button class="filter-btn" data-filter="batal">Batal</button>
     </div>
 </div>
 
@@ -615,189 +615,206 @@
 <div class="order-history">
     @forelse($riwayat as $index => $item)
         @if($item instanceof \App\Models\SmartRentTransaction)
-    {{-- SmartRent Rental Transaction Display --}}
-    @php
-        $isSmartRent = true;
-        $status = $item->payment_status === 'paid' ? 'completed' : 'pending';
-        $statusLabel = $item->getPaymentStatusLabelAttribute() ?? ucfirst($item->payment_status);
-        $serviceTypeLabel = $item->service_type === 'with_driver' ? 'Dengan Sopir' : 'Sewa Mandiri';
-        $totalBayarFormatted = 'Rp ' . number_format($item->total_price ?? 0, 0, ',', '.');
-        $formattedStartDate = \Carbon\Carbon::parse($item->start_date)->locale('id')->isoFormat('dddd, D MMMM YYYY');
-        $formattedEndDate = \Carbon\Carbon::parse($item->end_date)->locale('id')->isoFormat('D MMMM YYYY');
-        $duration = \Carbon\Carbon::parse($item->start_date)->diffInDays(\Carbon\Carbon::parse($item->end_date));
-        $vehicleInfo = $item->vehicle_name . ' - ' . $serviceTypeLabel;
-        
-        // Check if can show e-ticket
-        $canShowETicket = $item->payment_status === 'paid' && in_array($item->status, ['confirmed', 'ongoing', 'completed']);
-    @endphp
-
-    <div class="order-item blue-bg" data-status="{{ $status }}">
-        <div class="order-header">
-            <div class="order-info">
-                <div class="route">🚗 {{ $vehicleInfo }}</div>
-                <div class="date">{{ $formattedStartDate }}</div>
-                <div class="time">{{ $formattedEndDate }} ({{ $duration }} hari)</div>
-                <div class="passengers">📍 {{ $item->pickup_location ?? 'Lokasi Tidak Diketahui' }}</div>
-            </div>
-
-            <div class="order-status">
-                <div class="status {{ $status }}">
-                    {{ $statusLabel }}
-                </div>
-
-                <div class="button-qr-container">
-                    @if($canShowETicket)
-                        <!-- E-Ticket Button -->
-                        <a class="cek-tiket-btn" href="{{ route('customer.smartrent.e-ticket', $item->order_number) }}" title="Lihat E-Ticket">
-                            <i class="fas fa-ticket-alt"></i>
-                            E-Ticket
-                        </a>
-                    @else
-                        <!-- Detail Button -->
-                        <a class="cek-tiket-btn" href="{{ route('smartrent.index') }}" title="Lihat Detail">
-                            <i class="fas fa-eye"></i>
-                            Detail
-                        </a>
-                    @endif
-
-                    <!-- Show QR if paid -->
-                    @if($item->payment_status === 'paid' && $item->qr_path)
-                    <div class="qr-container qr-open-btn"
-                         role="button"
-                         tabindex="0"
-                         data-order="{{ $item->order_number }}"
-                         data-qr="{{ asset($item->qr_path) }}"
-                         title="Klik untuk melihat QR Code">
-                        <img src="{{ asset($item->qr_path) }}"
-                             alt="QR Code {{ $item->order_number }}"
-                             class="qr-thumbnail"
-                             loading="lazy">
-                        <div class="qr-code">
-                            {{ substr($item->order_number, -8) }}
-                        </div>
-                    </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <div class="order-details">
-            <div class="details-section">
-                <div class="detail-row">
-                    <span class="label">Pemesan:</span>
-                    <span class="value">{{ $item->customer_name ?? 'N/A' }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Email:</span>
-                    <span class="value">{{ $item->customer_email ?? 'N/A' }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">No. Pesanan:</span>
-                    <span class="value">{{ $item->order_number ?? 'N/A' }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Total Pembayaran:</span>
-                    <span class="value" style="font-weight: 700; color: #FF6B2C;">{{ $totalBayarFormatted }}</span>
-                </div>
-                @if($item->payment_method)
-                <div class="detail-row">
-                    <span class="label">Metode Pembayaran:</span>
-                    <span class="value">{{ ucfirst(str_replace('_', ' ', $item->payment_method)) }}</span>
-                </div>
-                @endif
-            </div>
-        </div>
-    </div>
-        @else
-            {{-- Regular Pemesanan (Shuttle) Display --}}
+            {{-- SmartRent Rental Transaction Display --}}
             @php
-            // Gunakan status dinamis dari database (baca status terbaru dari pembayaran)
-            $status = $item->status_display;
-            $statusLabel = $item->status_label;
-
-            $routeString = 'Rute Tidak Diketahui';
-            $kotaAsal = 'Jakarta';
-            $kotaTujuan = 'Jatinangor';
-            if ($item->jadwal && $item->jadwal->rutes && $item->jadwal->rutes->count() > 0) {
-                $firstRoute = $item->jadwal->rutes->first();
-                $lastRoute = $item->jadwal->rutes->last();
-                $routeString = $firstRoute->kota_asal . ' → ' . $lastRoute->kota_tujuan;
-                $kotaAsal = $firstRoute->kota_asal;
-                $kotaTujuan = $lastRoute->kota_tujuan;
-            }
-
-            $formattedDate = $item->jadwal ? \Carbon\Carbon::parse($item->jadwal->tanggal_keberangkatan)->locale('id')->isoFormat('dddd, D MMMM YYYY') : 'Tanggal Tidak Diketahui';
-            $formattedTime = $item->jadwal ? \Carbon\Carbon::parse($item->jadwal->waktu_keberangkatan)->format('H:i') : 'Waktu Tidak Diketahui';
-            $estimatedArrival = $item->jadwal ? \Carbon\Carbon::parse($item->jadwal->waktu_keberangkatan)->addHours(3)->addMinutes(30)->format('H:i') : '';
-            $estimationTime = $item->jadwal ? $formattedTime . ' - ' . $estimatedArrival : '09:00 - 12:30';
-            $seatNumber = substr($item->kode_booking, -2);
-            if (!is_numeric($seatNumber)) { $seatNumber = '01'; }
-            $totalBayarFormatted = 'Rp ' . number_format($item->total_bayar ?? 0, 0, ',', '.');
-
-            // Generate QR Code URL seperti di e_ticket
-            $qrData = 'SMARTSHUTTLE:' . ($item->kode_booking ?? '') . ':CHECKIN';
-            $qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' . urlencode($qrData);
-
-            // Jika ada QR path di database, gunakan itu
-            if(!empty($item->qr_path) && file_exists(public_path($item->qr_path))){
-                $qrUrl = asset($item->qr_path);
-            } elseif(!empty($item->qr_code) && file_exists(storage_path('app/public/qr/'.$item->qr_code))){
-                $qrUrl = asset('storage/qr/'.$item->qr_code);
-            }
-
-            // seat list untuk modal jika ada detail penumpang
-            $seatList = [];
-            $qrCodesData = [];
-
-            if (isset($item->detailPenumpang) && $item->detailPenumpang->count()>0) {
-                $seatList = $item->detailPenumpang->pluck('nomor_kursi')->filter()->values()->all();
-
-                // Buat data QR Code untuk setiap penumpang (seperti di e_ticket)
-                foreach($item->detailPenumpang as $index => $dp) {
-                    $ticketCode = $item->kode_booking . '-P' . str_pad($index + 1, 2, '0', STR_PAD_LEFT);
-                    $qrData = 'SMARTSHUTTLE:' . $ticketCode . ':CHECKIN';
-                    $individualQrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode($qrData);
-
-                    $qrCodesData[] = [
-                        'ticket_code' => $ticketCode,
-                        'qr_url' => $individualQrUrl,
-                        'seat' => $dp->nomor_kursi ?? null,
-                        'name' => $dp->nama_lengkap ?? $dp->nama ?? 'Penumpang ' . ($index + 1)
-                    ];
-                }
-            } else {
-                // Jika tidak ada detail penumpang, buat satu QR Code saja
-                $qrCodesData[] = [
-                    'ticket_code' => $item->kode_booking,
-                    'qr_url' => $qrUrl,
-                    'seat' => $seatNumber,
-                    'name' => $item->nama_pemesan ?? 'Penumpang'
-                ];
-            }
+                $isSmartRent = true;
+                
+                // Gunakan accessor dari model untuk mendapatkan status filter
+                $filterStatus = $item->filter_status; // 'lunas', 'menunggu', atau 'batal'
+                $statusLabel = $item->payment_status_label;
+                
+                $serviceTypeLabel = $item->service_type === 'with_driver' ? 'Dengan Sopir' : 'Sewa Mandiri';
+                $totalBayarFormatted = $item->formatted_total_price;
+                $formattedStartDate = \Carbon\Carbon::parse($item->start_date)->locale('id')->isoFormat('dddd, D MMMM YYYY');
+                $formattedEndDate = \Carbon\Carbon::parse($item->end_date)->locale('id')->isoFormat('D MMMM YYYY');
+                $duration = \Carbon\Carbon::parse($item->start_date)->diffInDays(\Carbon\Carbon::parse($item->end_date));
+                $vehicleInfo = $item->vehicle_name . ' - ' . $serviceTypeLabel;
+                
+                // Cek apakah bisa show e-ticket menggunakan method canShowETicket()
+                $canShowETicket = $item->canShowETicket();
+                
+                // Debug: tampilkan status asli untuk membantu troubleshooting (opsional, bisa dihapus setelah fix)
+                $debugInfo = 'Status: ' . $item->payment_status . ' | Is Paid: ' . ($item->is_paid ? 'Ya' : 'Tidak');
             @endphp
 
-            <div class="order-item blue-bg" data-status="{{ $status }}">
+            <div class="order-item blue-bg" data-status="{{ $filterStatus }}">
                 <div class="order-header">
                     <div class="order-info">
-                        <div class="route">{{ $routeString }}</div>
-                        <div class="date">{{ $formattedDate }}</div>
-                        <div class="time">{{ $formattedTime }} WIB</div>
-                        <div class="passengers">{{ $item->jumlah_penumpang }} Penumpang</div>
+                        <div class="route">🚗 {{ $vehicleInfo }}</div>
+                        <div class="date">{{ $formattedStartDate }}</div>
+                        <div class="time">{{ $formattedEndDate }} ({{ $duration }} hari)</div>
+                        <div class="passengers">📍 {{ $item->pickup_location ?? 'Lokasi Tidak Diketahui' }}</div>
+                        {{-- Debug info (hapus setelah fix) --}}
+                        {{-- <div style="font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 5px;">{{ $debugInfo }}</div> --}}
                     </div>
 
                     <div class="order-status">
-                        <div class="status {{ $status }}">
+                        <div class="status {{ $filterStatus }}">
                             {{ $statusLabel }}
                         </div>
 
                         <div class="button-qr-container">
-                            <!-- Cek Tiket: link ke halaman e_ticket penuh -->
+                            @if($canShowETicket)
+                                <!-- E-Ticket Button (hanya untuk yang sudah lunas) -->
+                                <a class="cek-tiket-btn" href="{{ route('smartrent.e-ticket', $item->order_number) }}" title="Lihat E-Ticket">
+                                    <i class="fas fa-ticket-alt"></i>
+                                    E-Ticket
+                                </a>
+                            @else
+                                <!-- Detail Button (untuk yang belum lunas - tetap bisa lihat detail) -->
+                                <a class="cek-tiket-btn" href="{{ route('smartrent.e-ticket', $item->order_number) }}" title="Lihat Detail">
+                                    <i class="fas fa-eye"></i>
+                                    Detail
+                                </a>
+                            @endif
+
+                            <!-- Show QR if paid and has qr_path -->
+                            @if($canShowETicket && $item->qr_path)
+                            <div class="qr-container qr-open-btn"
+                                 role="button"
+                                 tabindex="0"
+                                 data-booking="{{ $item->order_number }}"
+                                 data-qr="{{ asset($item->qr_path) }}"
+                                 title="Klik untuk melihat QR Code">
+                                <img src="{{ asset($item->qr_path) }}"
+                                     alt="QR Code {{ $item->order_number }}"
+                                     class="qr-thumbnail"
+                                     loading="lazy">
+                                <div class="qr-code">
+                                    {{ substr($item->order_number, -8) }}
+                                </div>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-details">
+                    <div class="details-section" style="margin-top: 15px;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 15px; font-size: 14px;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <span style="color: rgba(255,255,255,0.7);">Pemesan:</span>
+                                <span style="color: white; margin-left: 8px;">{{ $item->customer_name ?? 'N/A' }}</span>
+                            </div>
+                            <div style="flex: 1; min-width: 200px;">
+                                <span style="color: rgba(255,255,255,0.7);">No. Pesanan:</span>
+                                <span style="color: white; margin-left: 8px;">{{ $item->order_number ?? 'N/A' }}</span>
+                            </div>
+                            <div style="flex: 1; min-width: 200px;">
+                                <span style="color: rgba(255,255,255,0.7);">Total:</span>
+                                <span style="color: #FF6B2C; font-weight: 700; margin-left: 8px;">{{ $totalBayarFormatted }}</span>
+                            </div>
+                            @if($item->payment_method)
+                            <div style="flex: 1; min-width: 200px;">
+                                <span style="color: rgba(255,255,255,0.7);">Metode:</span>
+                                <span style="color: white; margin-left: 8px;">{{ ucfirst(str_replace('_', ' ', $item->payment_method)) }}</span>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @else
+            {{-- Regular Pemesanan (Shuttle) Display --}}
+            @php
+                // Perbaiki penentuan status berdasarkan pembayaran
+                $paymentStatus = strtolower($item->status_pembayaran ?? 'pending');
+                $orderStatus = strtolower($item->status ?? 'pending');
+                
+                // Tentukan status untuk filter
+                if (in_array($paymentStatus, ['paid', 'settlement', 'success', 'lunas'])) {
+                    $filterStatus = 'lunas';
+                    $statusLabel = 'Lunas';
+                } elseif (in_array($paymentStatus, ['pending', 'waiting', 'menunggu'])) {
+                    $filterStatus = 'menunggu';
+                    $statusLabel = 'Menunggu Pembayaran';
+                } elseif (in_array($paymentStatus, ['expired', 'failed', 'cancelled', 'batal'])) {
+                    $filterStatus = 'batal';
+                    $statusLabel = 'Dibatalkan';
+                } else {
+                    $filterStatus = 'menunggu';
+                    $statusLabel = ucfirst($paymentStatus);
+                }
+
+                $routeString = 'Rute Tidak Diketahui';
+                $kotaAsal = 'Jakarta';
+                $kotaTujuan = 'Jatinangor';
+                if ($item->jadwal && $item->jadwal->rutes && $item->jadwal->rutes->count() > 0) {
+                    $firstRoute = $item->jadwal->rutes->first();
+                    $lastRoute = $item->jadwal->rutes->last();
+                    $routeString = $firstRoute->kota_asal . ' → ' . $lastRoute->kota_tujuan;
+                    $kotaAsal = $firstRoute->kota_asal;
+                    $kotaTujuan = $lastRoute->kota_tujuan;
+                }
+
+                $formattedDate = $item->jadwal ? \Carbon\Carbon::parse($item->jadwal->tanggal_keberangkatan)->locale('id')->isoFormat('dddd, D MMMM YYYY') : 'Tanggal Tidak Diketahui';
+                $formattedTime = $item->jadwal ? \Carbon\Carbon::parse($item->jadwal->waktu_keberangkatan)->format('H:i') : 'Waktu Tidak Diketahui';
+                $estimatedArrival = $item->jadwal ? \Carbon\Carbon::parse($item->jadwal->waktu_keberangkatan)->addHours(3)->addMinutes(30)->format('H:i') : '';
+                $estimationTime = $item->jadwal ? $formattedTime . ' - ' . $estimatedArrival . ' WIB' : '09:00 - 12:30 WIB';
+                $totalBayarFormatted = 'Rp ' . number_format($item->total_bayar ?? 0, 0, ',', '.');
+
+                // Generate QR Code URL
+                $qrData = 'SMARTSHUTTLE:' . ($item->kode_booking ?? '') . ':CHECKIN';
+                $qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' . urlencode($qrData);
+
+                // Jika ada QR path di database, gunakan itu
+                if(!empty($item->qr_path) && file_exists(public_path($item->qr_path))){
+                    $qrUrl = asset($item->qr_path);
+                } elseif(!empty($item->qr_code) && file_exists(storage_path('app/public/qr/'.$item->qr_code))){
+                    $qrUrl = asset('storage/qr/'.$item->qr_code);
+                }
+
+                // seat list untuk modal jika ada detail penumpang
+                $qrCodesData = [];
+
+                if (isset($item->detailPenumpang) && $item->detailPenumpang->count()>0) {
+                    foreach($item->detailPenumpang as $index => $dp) {
+                        $ticketCode = $item->kode_booking . '-P' . str_pad($index + 1, 2, '0', STR_PAD_LEFT);
+                        $qrData = 'SMARTSHUTTLE:' . $ticketCode . ':CHECKIN';
+                        $individualQrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode($qrData);
+
+                        $qrCodesData[] = [
+                            'ticket_code' => $ticketCode,
+                            'qr_url' => $individualQrUrl,
+                            'seat' => $dp->nomor_kursi ?? null,
+                            'name' => $dp->nama_lengkap ?? $dp->nama ?? 'Penumpang ' . ($index + 1)
+                        ];
+                    }
+                } else {
+                    // Jika tidak ada detail penumpang, buat satu QR Code saja
+                    $qrCodesData[] = [
+                        'ticket_code' => $item->kode_booking,
+                        'qr_url' => $qrUrl,
+                        'seat' => substr($item->kode_booking, -2),
+                        'name' => $item->nama_pemesan ?? 'Penumpang'
+                    ];
+                }
+            @endphp
+
+            <div class="order-item blue-bg" data-status="{{ $filterStatus }}">
+                <div class="order-header">
+                    <div class="order-info">
+                        <div class="route">{{ $routeString }}</div>
+                        <div class="date">{{ $formattedDate }}</div>
+                        <div class="time">{{ $estimationTime }}</div>
+                        <div class="passengers">{{ $item->jumlah_penumpang ?? 1 }} Penumpang</div>
+                    </div>
+
+                    <div class="order-status">
+                        <div class="status {{ $filterStatus }}">
+                            {{ $statusLabel }}
+                        </div>
+
+                        <div class="button-qr-container">
+                            <!-- Cek Tiket: link ke halaman e_ticket penuh (bisa diakses semua status) -->
                             <a class="cek-tiket-btn"
                                href="{{ route('customer.e_ticket', ['kode_booking' => $item->kode_booking]) }}">
-                                <i class="fas fa-ticket-alt"></i> Cek Tiket
+                                <i class="fas fa-ticket-alt"></i> 
+                                {{ $filterStatus == 'lunas' ? 'E-Ticket' : 'Detail' }}
                             </a>
 
-                            <!-- QR Code container: klik -> buka popup QR Code(s) -->
+                            <!-- QR Code container: hanya tampil jika lunas -->
+                            @if($filterStatus == 'lunas')
                             <div class="qr-container qr-open-btn"
                                  role="button"
                                  tabindex="0"
@@ -812,6 +829,7 @@
                                     {{ $item->kode_booking }}
                                 </div>
                             </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -829,7 +847,7 @@
                     <div class="date">Silakan lakukan pemesanan terlebih dahulu</div>
                 </div>
                 <div class="order-status">
-                    <div class="status open">-</div>
+                    <div class="status">-</div>
                     <div>
                         <a href="{{ route('customer.beranda') }}" class="cek-tiket-btn">
                             <i class="fas fa-shopping-cart"></i>
@@ -844,110 +862,6 @@
 
 <div class="footer">
     <p>&copy; 2025 SMART SHUTTLE. Semua hak dilindungi.</p>
-</div>
-
-<!-- MODAL TIKET SEDERHANA -->
-<div class="modal-overlay" id="ticketModal">
-    <div class="ticket-container">
-        <!-- Header -->
-        <div class="ticket-header">
-            <h1 style="font-size: 24px; font-weight: 800; margin: 0;">E-TICKET</h1>
-            <div class="ticket-code" id="modalBookingCode">SMART SHUTTLE</div>
-        </div>
-
-        <!-- Body -->
-        <div class="ticket-body">
-            <!-- Kode Booking -->
-            <div style="text-align: center; margin-bottom: 20px;">
-                <div style="font-size: 11px; color: #666; letter-spacing: 1px;">KODE PEMESANAN</div>
-                <div style="background: #f0f7ff; padding: 8px 15px; border-radius: 20px; font-family: monospace; font-size: 14px; color: #0066cc; display: inline-block; margin-top: 5px;" id="modalBookingCodeText">
-                    TKT-20251120-001
-                </div>
-            </div>
-
-            <!-- Rute -->
-            <div style="text-align: center; margin-bottom: 20px;">
-                <div style="font-size: 18px; font-weight: 700; color: #00215E;" id="modalRoute">
-                    Jakarta → Jatinangor
-                </div>
-                <div style="color: #666; font-size: 14px; margin-top: 5px;" id="modalDate">
-                    Sabtu, 15 November 2025
-                </div>
-                <div style="color: #666; font-size: 14px;" id="modalTime">
-                    09:00 - 12:30 WIB
-                </div>
-            </div>
-
-            <!-- Info Penting -->
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #FF6B2C;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                    <div style="font-size: 12px; color: #666;">Status</div>
-                    <div style="font-weight: 600; color: #10b981; font-size: 13px;">
-                        <i class="fas fa-check-circle"></i> <span id="modalStatus">Dibayar</span>
-                    </div>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                    <div style="font-size: 12px; color: #666;">Penumpang</div>
-                    <div style="font-weight: 600; color: #00215E; font-size: 13px;" id="modalPassengerCount">
-                        1 orang
-                    </div>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                    <div style="font-size: 12px; color: #666;">Kursi</div>
-                    <div style="font-weight: 600; color: #00215E; font-size: 13px;" id="modalSeatNumber">
-                        01
-                    </div>
-                </div>
-            </div>
-
-            <!-- QR Code Mini -->
-            <div style="text-align: center; margin: 20px 0;">
-                <div style="font-size: 12px; color: #666; margin-bottom: 8px;">Scan untuk Check-in</div>
-                <div style="width: 120px; height: 120px; background: white; margin: 0 auto; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid #e0e0e0;" id="qrCodeMini">
-                    <i class="fas fa-qrcode" style="font-size: 40px; color: #00215E;"></i>
-                </div>
-                <div style="font-size: 11px; color: #999; margin-top: 8px;" id="modalCheckinCode">
-                    Kode: 20-001
-                </div>
-            </div>
-
-            <!-- Instruksi Singkat -->
-            <div style="background: #fff7ed; padding: 12px; border-radius: 8px; margin-bottom: 20px; border-left: 3px solid #f97316;">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                    <i class="fas fa-info-circle" style="color: #f97316; font-size: 14px;"></i>
-                    <div style="font-weight: 600; color: #f97316; font-size: 13px;">Instruksi Check-in</div>
-                </div>
-                <div style="font-size: 12px; color: #666;">
-                    <div>• Datang 30 menit sebelum keberangkatan</div>
-                    <div>• Tunjukkan tiket ini dan identitas</div>
-                    <div>• Scan QR Code di lokasi</div>
-                </div>
-            </div>
-
-            <!-- Total Harga -->
-            <div style="text-align: center; margin: 20px 0;">
-                <div style="font-size: 12px; color: #666;">Total Pembayaran</div>
-                <div style="font-weight: 700; font-size: 20px; color: #00215E;" id="modalTotalBayar">
-                    Rp 150.000
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer dengan Tombol -->
-        <div class="ticket-footer" style="padding: 15px;">
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button class="print-button" id="printTicketBtn">
-                    <i class="fas fa-print"></i> Cetak
-                </button>
-                <button class="detail-modal-btn" id="detailTicketBtn">
-                    <i class="fas fa-external-link-alt"></i> Detail Tiket
-                </button>
-            </div>
-            <button class="close-modal-btn" id="closeTicketModalBtn">
-                <i class="fas fa-times"></i> Tutup
-            </button>
-        </div>
-    </div>
 </div>
 
 <!-- MODAL QR CODE -->
@@ -984,9 +898,6 @@
 
         // setup filter buttons
         setupFilterButtons();
-
-        // setup modal ticket events
-        setupModalEvents();
         
         // optimize mobile filter
         optimizeMobileFilter();
@@ -1001,11 +912,32 @@
 
                 const booking = this.getAttribute('data-booking');
                 let qrCodes = [];
+                
                 try {
                     const raw = this.getAttribute('data-qrcodes');
                     if (raw) qrCodes = JSON.parse(raw);
                 } catch (err) {
-                    qrCodes = [];
+                    console.log('Error parsing QR codes:', err);
+                    // Jika gagal parse, buat default dari data-qr
+                    const qrUrl = this.getAttribute('data-qr');
+                    if (qrUrl) {
+                        qrCodes = [{
+                            ticket_code: booking,
+                            qr_url: qrUrl,
+                            seat: null,
+                            name: 'Penumpang'
+                        }];
+                    }
+                }
+
+                if (qrCodes.length === 0 && booking) {
+                    // Default QR code
+                    qrCodes = [{
+                        ticket_code: booking,
+                        qr_url: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('SMARTSHUTTLE:' + booking + ':CHECKIN')}`,
+                        seat: null,
+                        name: 'Penumpang'
+                    }];
                 }
 
                 showQrModal(booking, qrCodes);
@@ -1036,9 +968,16 @@
                 if (e.target === qrModal) closeQrModal();
             });
         }
+        
+        // Escape key to close modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeQrModal();
+            }
+        });
     }
 
-    // show modal dengan satu atau multiple QR Codes (sesuai data dari e_ticket)
+    // show modal dengan satu atau multiple QR Codes
     function showQrModal(bookingCode, qrCodes = []) {
         const modal = document.getElementById('qrModal');
         const grid = document.getElementById('qrGrid');
@@ -1051,21 +990,12 @@
         // clear previous content
         grid.innerHTML = '';
 
-        // jika tidak ada data, buat default
-        if (qrCodes.length === 0) {
-            qrCodes = [{
-                ticket_code: bookingCode,
-                qr_url: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('SMARTSHUTTLE:' + bookingCode + ':CHECKIN')}`,
-                seat: null,
-                name: 'Penumpang'
-            }];
-        }
-
         // tampilkan QR Code untuk setiap penumpang
         qrCodes.forEach((qrData, index) => {
             // Create QR item wrapper
             const item = document.createElement('div');
             item.className = 'qr-modal-item';
+            item.style.cssText = 'padding: 15px; margin-bottom: 15px; border: 1px dashed #e0e0e0; border-radius: 8px; background: #fafafa;';
 
             // Create title jika ada multiple penumpang
             if (qrCodes.length > 1) {
@@ -1078,6 +1008,7 @@
             // Create QR image
             const qrImg = document.createElement('img');
             qrImg.className = 'qr-modal-img';
+            qrImg.style.cssText = 'width: 200px; height: 200px; object-fit: contain; background: white; padding: 10px; border-radius: 8px; margin: 10px auto; border: 1px solid #e0e0e0; display: block;';
             qrImg.src = qrData.qr_url;
             qrImg.alt = `QR Code ${qrData.ticket_code}`;
             qrImg.loading = 'lazy';
@@ -1085,6 +1016,7 @@
             // Create code text
             const codeText = document.createElement('div');
             codeText.className = 'qr-modal-text';
+            codeText.style.cssText = 'margin-top: 8px; font-family: monospace; font-size: 13px; color: #00215E; word-break: break-all; background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px dashed #ddd;';
             codeText.textContent = qrData.ticket_code || bookingCode;
 
             // Append elements
@@ -1094,7 +1026,7 @@
             // Tambahkan info kursi jika ada
             if (qrData.seat) {
                 const seatInfo = document.createElement('div');
-                seatInfo.style.cssText = 'font-size: 13px; color: #666; margin-top: 8px;';
+                seatInfo.style.cssText = 'font-size: 13px; color: #666; margin-top: 8px; text-align: center;';
                 seatInfo.innerHTML = `<strong>Kursi:</strong> ${qrData.seat}`;
                 item.appendChild(seatInfo);
             }
@@ -1117,148 +1049,6 @@
         // Clear content
         const grid = document.getElementById('qrGrid');
         if (grid) grid.innerHTML = '';
-    }
-
-    /* ------------------------------
-       Ticket modal (detail) functions
-       ------------------------------ */
-    function setupModalEvents() {
-        // ticket modal open/close wiring
-        const ticketModal = document.getElementById('ticketModal');
-        if (!ticketModal) return;
-
-        // Close modal when clicking overlay
-        ticketModal.addEventListener('click', function(e) {
-            if (e.target === ticketModal) {
-                tutupModalTiket();
-            }
-        });
-
-        // Close modal button
-        const closeBtn = document.getElementById('closeTicketModalBtn');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                tutupModalTiket();
-            });
-        }
-
-        // Print ticket button inside ticket modal
-        const printBtn = document.getElementById('printTicketBtn');
-        if (printBtn) {
-            printBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                printTicket();
-            });
-        }
-
-        // Detail ticket button — redirect to e_ticket page
-        const detailBtn = document.getElementById('detailTicketBtn');
-        if (detailBtn) {
-            detailBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const modal = document.getElementById('ticketModal');
-                const bookingCode = modal.dataset.bookingCode;
-                if (bookingCode) {
-                    tutupModalTiket();
-                    window.location.href = "{{ route('customer.e_ticket', ['kode_booking' => ':kode']) }}".replace(':kode', bookingCode);
-                } else {
-                    alert('Kode booking tidak ditemukan!');
-                }
-            });
-        }
-    }
-
-    // Buka modal tiket sederhana
-    function bukaModalTiket(kodeBooking, routeFrom, routeTo, date, time, passengers, seatNumber, estimationTime, passengerName, totalBayar) {
-        const modal = document.getElementById('ticketModal');
-        if (!modal) return;
-        modal.dataset.bookingCode = kodeBooking || '';
-
-        document.getElementById('modalRoute').textContent = `${routeFrom || 'Jakarta'} → ${routeTo || 'Jatinangor'}`;
-        document.getElementById('modalDate').textContent = date || '';
-        document.getElementById('modalTime').textContent = estimationTime || time || '';
-        document.getElementById('modalBookingCodeText').textContent = kodeBooking || '';
-        document.getElementById('modalBookingCode').textContent = kodeBooking || '';
-        document.getElementById('modalPassengerCount').textContent = (passengers || 1) + ' orang';
-        document.getElementById('modalSeatNumber').textContent = seatNumber || '';
-        document.getElementById('modalTotalBayar').textContent = totalBayar || '';
-
-        // generate QR Code
-        const qrContainer = document.getElementById('qrCodeMini');
-        qrContainer.innerHTML = '';
-        const qrImg = document.createElement('img');
-        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent('SMARTSHUTTLE:' + kodeBooking + ':CHECKIN')}`;
-        qrImg.alt = 'QR Code Check-in';
-        qrImg.style.width = '100%';
-        qrImg.style.height = '100%';
-        qrImg.style.objectFit = 'cover';
-        qrImg.style.borderRadius = '4px';
-        qrContainer.appendChild(qrImg);
-
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    }
-
-    function tutupModalTiket() {
-        const modal = document.getElementById('ticketModal');
-        if (!modal) return;
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
-    }
-
-    // Fungsi untuk mencetak tiket (modal)
-    function printTicket() {
-        const modal = document.getElementById('ticketModal');
-        const bookingCode = modal ? modal.dataset.bookingCode : null;
-
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-            <html>
-                <head>
-                    <title>Cetak Tiket - SMART SHUTTLE</title>
-                    <style>
-                        @media print {
-                            body { margin: 0; padding: 0; background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                        }
-                        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
-                        .ticket-container { width: 100%; max-width: 400px; margin: 0 auto; background: white; border: 1px solid #ddd; border-radius: 12px; overflow: hidden; }
-                        .ticket-header { background: #00215E; color: white; padding: 20px; text-align: center; border-bottom: 3px dashed #f0f0f0; }
-                        .ticket-body { padding: 20px; }
-                    </style>
-                </head>
-                <body>
-                    <div class="ticket-container">
-                        <div class="ticket-header">
-                            <h1 style="font-size: 24px; font-weight: 800; margin: 0;">E-TICKET</h1>
-                            <div style="font-size: 13px; opacity: 0.9; letter-spacing: 1px; margin-top: 5px;">
-                                ${bookingCode || 'TKT-UNKNOWN'}
-                            </div>
-                        </div>
-                        <div class="ticket-body">
-                            <div style="text-align: center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px dashed #e0e0e0;">
-                                <div style="font-size: 12px; color: #666; margin-bottom: 5px;">Kode Pemesanan</div>
-                                <div style="font-family: monospace; font-weight: 600; font-size: 16px; color: #00215E;">
-                                    ${bookingCode || 'TKT-UNKNOWN'}
-                                </div>
-                            </div>
-                            <div style="font-size: 12px; text-align: center; color: #666; margin-top: 20px;">
-                                Tiket ini dicetak pada: ${new Date().toLocaleString('id-ID')}
-                            </div>
-                        </div>
-                    </div>
-                    <script>
-                        window.onload = function() {
-                            window.print();
-                            setTimeout(function() {
-                                window.close();
-                            }, 500);
-                        };
-                    <\/script>
-                </body>
-            </html>
-        `);
-        printWindow.document.close();
     }
 
     /* ------------------------------
@@ -1285,19 +1075,26 @@
                 }
             });
         });
+        
+        // Set initial filter
+        filterOrders('all');
     }
 
     function filterOrders(status) {
         const allOrders = document.querySelectorAll('.order-item');
         const allDividers = document.querySelectorAll('.divider');
         
+        let visibleCount = 0;
+        
         allOrders.forEach(order => {
             if (status === 'all' || status === 'semua') {
                 order.style.display = '';
+                visibleCount++;
             } else {
                 const orderStatus = order.getAttribute('data-status');
                 if (orderStatus === status) {
                     order.style.display = '';
+                    visibleCount++;
                 } else {
                     order.style.display = 'none';
                 }
@@ -1305,20 +1102,20 @@
         });
         
         // Hide/show dividers based on visible orders
-        allDividers.forEach((divider, index) => {
-            const prevOrder = divider.previousElementSibling;
-            const nextOrder = divider.nextElementSibling;
-            
-            if (prevOrder && nextOrder && 
-                prevOrder.style.display !== 'none' && 
-                nextOrder.style.display !== 'none' &&
-                prevOrder.classList.contains('order-item') && 
-                nextOrder.classList.contains('order-item')) {
-                divider.style.display = '';
-            } else {
-                divider.style.display = 'none';
-            }
+        allDividers.forEach(divider => {
+            divider.style.display = 'none';
         });
+        
+        // Show message if no orders
+        if (visibleCount === 0 && allOrders.length > 0) {
+            const firstOrder = allOrders[0];
+            if (firstOrder && firstOrder.querySelector('.route').textContent === 'Belum ada riwayat pemesanan') {
+                // Already showing empty message
+            } else {
+                // Could show a "no results" message
+                console.log('No orders found for filter:', status);
+            }
+        }
     }
 
     /* ------------------------------
