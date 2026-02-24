@@ -16,8 +16,6 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ArtikelController;
 use App\Http\Controllers\Admin\ProfilePerusahaanController;
 use App\Http\Controllers\Admin\ArmadaController;
-use App\Http\Controllers\Admin\MasterTarifController;
-use App\Http\Controllers\Admin\RuteController;
 use App\Http\Controllers\KalkulatorEstimasiController;
 use App\Http\Controllers\Admin\JadwalController;
 use App\Http\Controllers\API\PaymentController;
@@ -31,12 +29,8 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 
-// ★★★ IMPORT CONTROLLER YANG DIPERLUKAN ★★★
-use App\Http\Controllers\DriverJadwalController;
-
+// ★★★ TAMBAHKAN INI DI SINI ★★★
 use App\Http\Middleware\UpdateAvatarSession;
-use App\Http\Controllers\Admin\KontakPerusahaanController;
-use App\Http\Controllers\Admin\AdminPemesananController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,74 +38,33 @@ use App\Http\Controllers\Admin\AdminPemesananController;
 |--------------------------------------------------------------------------
 */
 
-// ★★★ DRIVER AUTH ROUTES - ACCESSIBLE TO ANYONE (GUESTS & LOGGED-IN CUSTOMERS) ★★★
-Route::prefix('driver')->group(function () {
-    // Show driver login page - accessible to anyone (customers can log in as driver)
-    Route::get('/login', [DriverController::class, 'showLogin'])
-        ->name('driver.login');
-
-    // Process driver login - accessible to anyone
-    Route::post('/login', [DriverController::class, 'login'])
-        ->name('driver.login.post');
-});
-
-// ★★★ SMARTSEND - KIRIM & CEK PAKET (ACCESSIBLE WITHOUT LOGIN) ★★★
-Route::middleware(['web'])->prefix('smartsend')->name('customer.')->group(function () {
-    // Halaman utama SmartSend
-    Route::get('/', [CustomerController::class, 'smartsend'])->name('smartsend');
-
-    // API untuk SmartSend (gunakan method baru di CustomerController)
-    Route::post('/get-outlet-tujuan', [CustomerController::class, 'getOutletTujuanByRute'])
-        ->name('smartsend.get-outlet-tujuan');
-
-    Route::post('/kalkulator-harga', [CustomerController::class, 'kalkulatorHargaSmartSend'])
-        ->name('smartsend.kalkulator-harga');
-
-    // Cek status paket (AJAX)
-    Route::post('/cek-status', [CustomerController::class, 'cekStatusPaket'])
-        ->name('cek-status-paket');
-
-    // Halaman cek resi (form input)
-    Route::get('/cek-resi', [CustomerController::class, 'cekResi'])->name('cek-resi');
-
-    // Proses validasi resi
-    Route::post('/cek-resi', [CustomerController::class, 'prosesCekResi'])
-        ->name('proses-cek-resi');
-
-    // Halaman detail paket
-    Route::get('/detail-paket/{kode_resi}', [CustomerController::class, 'detailPaket'])
-        ->name('detail-paket');
-
-    // Tracking paket
-    Route::get('/tracking/{kode_resi}', [CustomerController::class, 'trackingPaket'])
-        ->name('tracking-paket');
-});
-
 // ★★★ BUNGKUS SEMUA ROUTE YANG BUTUH AVATAR UPDATE DENGAN MIDDLEWARE ★★★
 Route::middleware([UpdateAvatarSession::class])->group(function () {
 
-// ★★★ BERANDA ROUTES (DRIVERJADWAL DATA ONLY) ★★★
-// Halaman utama - menampilkan jadwal dari DriverJadwal (hanya yang sudah diklaim driver)
-Route::get('/', [CustomerController::class, 'beranda'])->name('customer.beranda');
-Route::get('/customer/beranda', [CustomerController::class, 'beranda']);
+    // ★★★ ROUTE UTAMA DAN TAMU ★★★
+    Route::get('/', [CustomerController::class, 'beranda'])->name('customer.beranda');
+    Route::get('/customer/beranda', [CustomerController::class, 'beranda']);
 
-// Beranda dengan filter - mendukung filter asal, tujuan, tanggal, penumpang
-Route::get('/beranda', [CustomerController::class, 'beranda'])->name('customer.beranda.filter');
-
+<<<<<<<<< Temporary merge branch 1
     // Halaman statis - bisa diakses tamu
     Route::get('/bantuan', [CustomerController::class, 'bantuan'])->name('customer.bantuan');
     Route::get('/syarat-ketentuan', [CustomerController::class, 'syaratKetentuan'])->name('customer.syarat.ketentuan');
     Route::get('/kebijakan-privasi', [CustomerController::class, 'kebijakanPrivasi'])->name('customer.kebijakan.privasi');
-
+    
     // Boleh diakses tamu (guest) - GET
     Route::get('/kontak', [CustomerController::class, 'contact'])
         ->name('customer.contact');
+=========
+Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
+    ->middleware('guest')
+    ->name('password.email.forgot');
+>>>>>>>>> Temporary merge branch 2
 
     // Hanya boleh diakses user yang sudah login - POST
     Route::post('/kontak', [CustomerController::class, 'submitContact'])
         ->name('customer.contact.submit')
         ->middleware('auth.customer');
-
+    
     Route::get('/syarat-ketentuan-membership', [CustomerController::class, 'syaratKetentuanMembership'])
         ->name('customer.syarat.ketentuan.membership');
 
@@ -122,20 +75,202 @@ Route::get('/beranda', [CustomerController::class, 'beranda'])->name('customer.b
         ->name('customer.outlet.loadMore');
     Route::get('/outlet', [CustomerController::class, 'outlet']);
 
-    // ★★★ PENCARIAN SHUTTLE - DRIVERJADWAL DATA ONLY ★★★
-    // Halaman pencarian - mendukung parameter: asal, tujuan, tanggal, penumpang
-    // Hanya menampilkan jadwal dari DriverJadwal (jadwal yang sudah diklaim driver)
+<<<<<<<<< Temporary merge branch 1
+    // Halaman SmartSend - bisa diakses tamu
+=========
+Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+    ->middleware(['auth', 'throttle:6,1'])
+    ->name('verification.send');
+
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('logout');
+
+// ★★★ ROUTE UTAMA DAN TAMU ★★★
+Route::get('/', [CustomerController::class, 'beranda'])->name('customer.beranda');
+Route::get('/customer/beranda', [CustomerController::class, 'beranda']);
+
+// ★★★ ARTIKEL ROUTES UNTUK CUSTOMER (BISA DIAKSES TANPA LOGIN) ★★★
+Route::prefix('customer')->name('customer.')->group(function () {
+    Route::get('/artikel', [ArtikelController::class, 'index'])->name('artikel.index');
+    Route::get('/artikel/{slug}', [ArtikelController::class, 'show'])->name('artikel.show');
+    Route::get('/artikel/kategori/{kategori}', [ArtikelController::class, 'kategori'])->name('artikel.kategori');
+});
+
+// Halaman statis - bisa diakses tamu
+Route::get('/bantuan', [CustomerController::class, 'bantuan'])->name('customer.bantuan');
+Route::get('/syarat-ketentuan', [CustomerController::class, 'syaratKetentuan'])->name('customer.syarat.ketentuan');
+Route::get('/kebijakan-privasi', [CustomerController::class, 'kebijakanPrivasi'])->name('customer.kebijakan.privasi');
+// Boleh diakses tamu (guest) - GET
+Route::get('/kontak', [CustomerController::class, 'contact'])
+    ->name('customer.contact');
+
+// Hanya boleh diakses user yang sudah login - POST
+Route::post('/kontak', [CustomerController::class, 'submitContact'])
+    ->name('customer.contact.submit')
+    ->middleware('auth.customer');
+Route::get('/syarat-ketentuan-membership', [CustomerController::class, 'syaratKetentuanMembership'])->name('customer.syarat.ketentuan.membership');
+
+    // Halaman outlet - bisa diakses tamu
+    Route::get('/customer/outlet', [CustomerController::class, 'outlet'])->name('customer.outlet');
+    Route::get('/customer/outlet/filter', [CustomerController::class, 'outlet'])->name('customer.outlet.filter');
+    Route::post('/customer/outlet/loadMore', [CustomerController::class, 'loadMoreOutlets'])
+        ->name('customer.outlet.loadMore');
+    Route::get('/outlet', [CustomerController::class, 'outlet']);
+
+// Halaman SmartSend - bisa diakses tamu
+Route::get('/customer/smartsend', function() {
+    return view('customer.smartsend');
+})->name('customer.smartsend');
+
+// Halaman pencarian shuttle - bisa diakses tamu
+Route::get('/cari-shuttle', [CustomerController::class, 'showSearch'])->name('customer.search');
+Route::post('/cari-shuttle', [CustomerController::class, 'search'])->name('customer.search.post');
+Route::get('/customer/search', [CustomerController::class, 'showSearch']);
+Route::post('/customer/search', [CustomerController::class, 'search']);
+
+// ★★★ CEK RESERVASI - BISA DIAKSES TANPA LOGIN ★★★
+Route::get('/customer/cek-reservasi', function() {
+    return view('customer.cek-reservasi');
+})->name('customer.cek-reservasi');
+
+Route::post('/customer/cek-reservasi', [CekReservasiController::class, 'proses'])
+    ->name('customer.cek-reservasi.proses');
+
+// Route untuk hasil reservasi (bisa diakses tanpa login)
+Route::get('/customer/cek-reservasi/hasil/{kode}', [CekReservasiController::class, 'hasil'])
+    ->name('customer.cek-reservasi.hasil');
+
+// Google OAuth Routes - minimal middleware for proper OAuth flow
+Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])
+    ->name('login.google');
+
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
+    ->withoutMiddleware('Illuminate\Http\Middleware\ValidatePathEncoding')
+    ->name('login.google.callback');
+
+
+
+// ★★★ AUTH ROUTES - HANYA UNTUK TAMU ★★★
+Route::middleware(['ensure.session', 'guest.customer'])->group(function () {
+    // Login/Register tradisional
+    Route::get('/customer/login', [CustomerController::class, 'showLogin'])->name('customer.login');
+    Route::post('/customer/login', [CustomerController::class, 'login'])->name('customer.login.post');
+    Route::get('/customer/register', [CustomerController::class, 'showRegister'])->name('customer.register');
+    Route::post('/customer/register', [CustomerController::class, 'register'])->name('customer.register.post');
+
+
+    // Password reset
+    Route::prefix('password')->group(function () {
+        Route::get('/forgot', [AuthController::class, 'showForgotForm'])->name('password.request');
+        Route::post('/email', [AuthController::class, 'sendResetLinkEmail'])->name('password.email.custom');
+        Route::get('/token', [AuthController::class, 'showTokenForm'])->name('password.token');
+        Route::post('/token/verify', [AuthController::class, 'verifyToken'])->name('password.token.verify');
+        Route::get('/reset', [AuthController::class, 'showResetForm'])->name('password.reset');
+        Route::post('/reset', [AuthController::class, 'reset'])->name('password.update');
+    });
+
+    // Alias untuk kompatibilitas password reset
+    Route::get('/password/reset/{token}', function ($token) {
+        return redirect()->route('password.reset')->with('token', $token);
+    })->name('password.reset.with.token');
+});
+
+// ★★★ LOGOUT ★★★
+Route::post('/customer/logout', [CustomerController::class, 'logout'])
+    ->name('customer.logout')
+    ->middleware('auth.customer');
+
+// ============================================================
+// ★★★ AVATAR ROUTES - TAMBAHKAN DI SINI SEBELUM MIDDLEWARE ★★★
+// ============================================================
+
+// AVATAR UPLOAD ROUTE
+Route::post('/customer/avatar/upload', [CustomerController::class, 'uploadAvatar'])
+    ->middleware('auth')
+    ->name('customer.avatar.upload');
+
+// AVATAR DELETE ROUTE
+Route::delete('/customer/avatar/delete', [CustomerController::class, 'deleteAvatar'])
+    ->middleware('auth')
+    ->name('customer.avatar.delete');
+
+// ============================================================
+
+// ★★★ ROUTES YANG BUTUH LOGIN ★★★
+Route::middleware(['auth:customer'])->group(function () {
+
+
+    // ★★★ PROFIL & DASHBOARD ★★★
+    Route::get('/customer/dashboardprofile', [CustomerController::class, 'profil'])->name('customer.dashboardprofile');
+    Route::get('/customer/profil', [CustomerController::class, 'profil'])->name('customer.profil');
+    Route::get('/customer/profilcust', [CustomerController::class, 'profilDetail'])->name('customer.profilcust');
+    Route::put('/customer/profilcust/update', [CustomerController::class, 'updateProfile'])->name('customer.profilcust.update');
+
+    // ★★★ MEMBERSHIP ★★★
+    Route::get('/customer/membership', [CustomerController::class, 'membership'])->name('customer.membership');
+    Route::get('/membership/form', [CustomerController::class, 'showMembershipForm'])->name('customer.membership.form');
+    Route::post('/membership/form', [CustomerController::class, 'processMembershipRegistration'])->name('customer.membership.form.submit');
+    Route::get('/membership/payment', [CustomerController::class, 'showMembershipPayment'])->name('customer.membership.payment');
+    Route::post('/membership/payment', [CustomerController::class, 'processMembershipPayment'])->name('customer.membership.payment.submit');
+    Route::post('/membership/payment/simulate', [CustomerController::class, 'simulateMembershipPayment'])->name('customer.membership.payment.simulate');
+    Route::delete('/membership/payment/cancel', [CustomerController::class, 'cancelMembershipPayment'])->name('customer.membership.payment.cancel');
+    Route::get('/membership/pending', [CustomerController::class, 'showMembershipPending'])->name('customer.membership.pending');
+    Route::post('/membership/renew', [CustomerController::class, 'renewMembership'])->name('customer.membership.renew');
+
+    // ★★★ LOYALTY POINTS ★★★
+    Route::post('/loyalty-points/use', [CustomerController::class, 'useLoyaltyPoints'])->name('customer.useLoyaltyPoints');
+    Route::post('/loyalty-points/remove', [CustomerController::class, 'removeLoyaltyDiscount'])->name('customer.removeLoyaltyDiscount');
+    Route::post('/membership/update-points', [CustomerController::class, 'updatePoints'])->name('customer.updatePoints');
+
+    // ★★★ PEMESANAN SHUTTLE ★★★
+    Route::get('/customer/pesan', [CustomerController::class, 'showBooking'])->name('customer.pesan');
+    Route::post('/pesan-shuttle', [CustomerController::class, 'prosesPemesanan'])->name('customer.pesan.submit');
+    Route::post('/customer/pemesanan/proses', [CustomerController::class, 'prosesPemesanan'])->name('customer.pemesanan.proses');
+
+    // ★★★ PROMO ★★★
+    Route::get('/customer/promo/{id}', [CustomerController::class, 'showPromoDetail'])->name('customer.promo.detail');
+    Route::post('/apply-promo', [CustomerController::class, 'validatePromo'])->name('customer.apply-promo');
+    Route::post('/remove-promo', [CustomerController::class, 'removePromo'])->name('customer.remove-promo');
+    Route::get('/get-promos', [CustomerController::class, 'getPromos'])->name('customer.get-promos');
+
+    // ★★★ KURSI ★★★
+    Route::get('/customer/kursi', [CustomerController::class, 'showPemilihanKursi'])->name('customer.kursi');
+    Route::post('/customer/kursi/proses', [CustomerController::class, 'prosesPemilihanKursi'])->name('customer.kursi.proses');
+
+    // ★★★ PEMBAYARAN ★★★
+    Route::get('/customer/pembayaran/{kode_booking}', [PembayaranController::class, 'index'])->name('customer.pembayaran');
+    Route::post('/customer/pembayaran/pilih-metode/{kode_booking}', [PembayaranController::class, 'pilihMetode'])->name('customer.pembayaran.pilih_metode');
+    Route::get('/customer/pembayaran/simulasi/{kodePembayaran}/{status?}', [PembayaranController::class, 'simulasiPembayaran'])->name('customer.pembayaran.simulasi');
+    Route::get('/customer/pembayaran/cek-status/{kodePembayaran}', [PembayaranController::class, 'cekStatus'])->name('customer.pembayaran.cek_status');
+    Route::get('/customer/pembayaran/qr-code/{kodePembayaran}', [PembayaranController::class, 'generateQRCode'])->name('customer.pembayaran.qrcode');
+    Route::get('/customer/pembayaran/status/{kodePembayaran}', [PembayaranController::class, 'cekStatus'])->name('customer.pembayaran.status');
+
+    // ★★★ RIWAYAT ★★★
+    Route::get('/customer/riwayat', [CustomerController::class, 'showRiwayat'])->name('customer.riwayat');
+    Route::get('/customer/detail-pemesanan/{kode_booking}', [CustomerController::class, 'showDetailPemesanan'])->name('customer.detail_pemesanan');
+    Route::post('/customer/batalkan-pemesanan/{kode_booking}', [CustomerController::class, 'batalkanPemesanan'])->name('customer.batalkan_pemesanan');
+
+    // ★★★ E-TICKET ★★★
+    Route::get('/customer/e-ticket/{kode_booking}', [ETicketController::class, 'show'])->name('customer.e_ticket');
+    Route::get('/customer/e-ticket/{kode_booking}/download', [ETicketController::class, 'download'])->name('customer.e_ticket.download');
+    Route::get('/customer/e-ticket/{kode_booking}/qr', [ETicketController::class, 'qrCode'])->name('customer.e_ticket.qr');
+    Route::get('/customer/ticket', [ETicketController::class, 'showByQuery'])->name('customer.ticket.query');
+
+    // ★★★ KIRIM PAKET ★★★
+    Route::get('/customer/kirim-paket', function() {
+        return view('customer.kirim_paket');
+    })->name('customer.kirim-paket');
+>>>>>>>>> Temporary merge branch 2
+    Route::get('/customer/smartsend', function() {
+        return view('customer.smartsend');
+    })->name('customer.smartsend');
+
+    // Halaman pencarian shuttle - bisa diakses tamu
     Route::get('/cari-shuttle', [CustomerController::class, 'showSearch'])->name('customer.search');
     Route::post('/cari-shuttle', [CustomerController::class, 'search'])->name('customer.search.post');
-
-    // ★★★ ROUTE UNTUK FORM PENCARIAN (PERLU UNTUK route('customer.showSearch')) ★★★
-    // Halaman form pencarian dan menampilkan hasil
-    Route::get('/customer/search', [CustomerController::class, 'showSearch'])
-        ->name('customer.showSearch');
+    Route::get('/customer/search', [CustomerController::class, 'showSearch']);
     Route::post('/customer/search', [CustomerController::class, 'search']);
-
-    // Alias untuk kompatibilitas
-    Route::get('/search', [CustomerController::class, 'showSearch'])->name('customer.search.alt');
 
     // ★★★ CEK RESERVASI - BISA DIAKSES TANPA LOGIN ★★★
     Route::get('/customer/cek-reservasi', function() {
@@ -148,6 +283,39 @@ Route::get('/beranda', [CustomerController::class, 'beranda'])->name('customer.b
     // Route untuk hasil reservasi (bisa diakses tanpa login)
     Route::get('/customer/cek-reservasi/hasil/{kode}', [CekReservasiController::class, 'hasil'])
         ->name('customer.cek-reservasi.hasil');
+
+    // ★★★ SMARTSEND - KIRIM & CEK PAKET ★★★
+    // Bisa diakses tanpa login
+    Route::prefix('smartsend')->group(function () {
+        // Halaman utama SmartSend
+        Route::get('/', [CustomerController::class, 'smartsend'])->name('customer.smartsend');
+        
+        // API untuk SmartSend (gunakan method baru di CustomerController)
+        Route::post('/get-outlet-tujuan', [CustomerController::class, 'getOutletTujuanByRute'])
+            ->name('customer.smartsend.get-outlet-tujuan');
+        
+        Route::post('/kalkulator-harga', [CustomerController::class, 'kalkulatorHargaSmartSend'])
+            ->name('customer.smartsend.kalkulator-harga');
+        
+        // Cek status paket (AJAX)
+        Route::post('/cek-status', [CustomerController::class, 'cekStatusPaket'])
+            ->name('customer.cek-status-paket');
+        
+        // Halaman cek resi (form input)
+        Route::get('/cek-resi', [CustomerController::class, 'cekResi'])->name('customer.cek-resi');
+        
+        // Proses validasi resi
+        Route::post('/cek-resi', [CustomerController::class, 'prosesCekResi'])
+            ->name('customer.proses-cek-resi');
+        
+        // Halaman detail paket
+        Route::get('/detail-paket/{kode_resi}', [CustomerController::class, 'detailPaket'])
+            ->name('customer.detail-paket');
+            
+        // Tracking paket
+        Route::get('/tracking/{kode_resi}', [CustomerController::class, 'trackingPaket'])
+            ->name('customer.tracking-paket');
+    });
 
     // ★★★ AUTH ROUTES - HANYA UNTUK TAMU ★★★
     Route::middleware(['guest.customer'])->group(function () {
@@ -162,14 +330,26 @@ Route::get('/beranda', [CustomerController::class, 'beranda'])->name('customer.b
             ->name('login.google');
         Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
             ->name('login.google.callback');
+        
+        Route::middleware(['auth:web'])->group(function () {
+        Route::get('/beranda', [CustomerController::class, 'index'])->name('customer.beranda');
+    });
 
-        // Email verification & password reset handled by standalone routes below
 
-        // Simple web password reset routes (used by login views)
-        Route::get('/password/reset', function () {
-            return view('auth.passwords.email');
-        })->name('password.request');
+        // Password reset
+        Route::prefix('password')->group(function () {
+            Route::get('/forgot', [AuthController::class, 'showForgotForm'])->name('password.request');
+            Route::post('/email', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
+            Route::get('/token', [AuthController::class, 'showTokenForm'])->name('password.token');
+            Route::post('/token/verify', [AuthController::class, 'verifyToken'])->name('password.token.verify');
+            Route::get('/reset', [AuthController::class, 'showResetForm'])->name('password.reset');
+            Route::post('/reset', [AuthController::class, 'reset'])->name('password.update');
+        });
 
+        // Alias untuk kompatibilitas password reset
+        Route::get('/password/reset/{token}', function ($token) {
+            return redirect()->route('password.reset')->with('token', $token);
+        })->name('password.reset.with.token');
     });
 
     // ★★★ LOGOUT ★★★
@@ -178,12 +358,12 @@ Route::get('/beranda', [CustomerController::class, 'beranda'])->name('customer.b
         ->middleware('auth.customer');
 
     // ★★★ ROUTES YANG BUTUH LOGIN ★★★
-    Route::middleware(['auth:web'])->group(function () {
+Route::middleware(['auth:web'])->group(function () {
 
         // ============================================================
         // ★★★ AVATAR ROUTES - TAMBAHKAN DI SINI ★★★
         // ============================================================
-
+        
         // AVATAR UPLOAD ROUTE
         Route::post('/customer/avatar/upload', [CustomerController::class, 'uploadAvatar'])
             ->name('customer.avatar.upload');
@@ -191,7 +371,7 @@ Route::get('/beranda', [CustomerController::class, 'beranda'])->name('customer.b
         // AVATAR DELETE ROUTE
         Route::delete('/customer/avatar/delete', [CustomerController::class, 'deleteAvatar'])
             ->name('customer.avatar.delete');
-
+            
         // ============================================================
 
         // ★★★ PROFIL & DASHBOARD ★★★
@@ -199,18 +379,6 @@ Route::get('/beranda', [CustomerController::class, 'beranda'])->name('customer.b
         Route::get('/customer/profil', [CustomerController::class, 'profil'])->name('customer.profil');
         Route::get('/customer/profilcust', [CustomerController::class, 'profilDetail'])->name('customer.profilcust');
         Route::put('/customer/profilcust/update', [CustomerController::class, 'updateProfile'])->name('customer.profilcust.update');
-
-        // ★★★ CUSTOMER ROUTES DARI PROMPT ★★★
-        Route::middleware(['role:customer'])->prefix('customer')->name('customer.')->group(function () {
-            // Beranda customer
-            Route::get('/beranda-jadwal', [CustomerController::class, 'berandaCustomer'])->name('beranda.jadwal');
-
-            // Search jadwal driver
-            Route::get('/search-jadwal', [CustomerController::class, 'searchJadwalDriver'])->name('search.jadwal');
-
-            // Booking dari driver jadwal
-            Route::get('/booking-driver/{id_jadwal_driver}', [CustomerController::class, 'bookingFromDriver'])->name('booking.driver');
-        });
 
         // ★★★ MEMBERSHIP ★★★
         Route::get('/customer/membership', [CustomerController::class, 'membership'])->name('customer.membership');
@@ -229,11 +397,8 @@ Route::get('/beranda', [CustomerController::class, 'beranda'])->name('customer.b
         Route::post('/membership/update-points', [CustomerController::class, 'updatePoints'])->name('customer.updatePoints');
 
         // ★★★ PEMESANAN SHUTTLE ★★★
-        Route::get('/customer/pesan', [CustomerController::class, 'showBooking'])->name('customer.pesan.form');
+        Route::get('/customer/pesan', [CustomerController::class, 'showBooking'])->name('customer.pesan');
         Route::post('/pesan-shuttle', [CustomerController::class, 'prosesPemesanan'])->name('customer.pesan.submit');
-
-    // Route untuk booking dari driver_jadwals (id_jadwal_driver)
-    Route::get('/customer/pesan/{id_jadwal_driver}', [CustomerController::class, 'pesan'])->name('customer.pesan')->middleware('auth');
         Route::post('/customer/pemesanan/proses', [CustomerController::class, 'prosesPemesanan'])->name('customer.pemesanan.proses');
 
         // ★★★ PROMO ★★★
@@ -245,9 +410,6 @@ Route::get('/beranda', [CustomerController::class, 'beranda'])->name('customer.b
         // ★★★ KURSI ★★★
         Route::get('/customer/kursi', [CustomerController::class, 'showPemilihanKursi'])->name('customer.kursi');
         Route::post('/customer/kursi/proses', [CustomerController::class, 'prosesPemilihanKursi'])->name('customer.kursi.proses');
-        // AJAX endpoints to lock/unlock seats during selection
-        Route::post('/customer/kursi/lock', [KursiController::class, 'lockSeat'])->name('customer.kursi.lock');
-        Route::post('/customer/kursi/unlock', [KursiController::class, 'unlockSeat'])->name('customer.kursi.unlock');
 
         // ★★★ PEMBAYARAN ★★★
         Route::get('/customer/pembayaran/{kode_booking}', [PembayaranController::class, 'index'])->name('customer.pembayaran');
@@ -260,7 +422,6 @@ Route::get('/beranda', [CustomerController::class, 'beranda'])->name('customer.b
         // ★★★ RIWAYAT ★★★
         Route::get('/customer/riwayat', [CustomerController::class, 'showRiwayat'])->name('customer.riwayat');
         Route::get('/customer/detail-pemesanan/{kode_booking}', [CustomerController::class, 'showDetailPemesanan'])->name('customer.detail_pemesanan');
-        Route::post('/customer/detail-pemesanan/{kode_booking}/konfirmasi', [CustomerController::class, 'konfirmasiDetail'])->name('customer.detail_pemesanan.konfirmasi');
         Route::post('/customer/batalkan-pemesanan/{kode_booking}', [CustomerController::class, 'batalkanPemesanan'])->name('customer.batalkan_pemesanan');
 
         // ★★★ E-TICKET ★★★
@@ -273,361 +434,14 @@ Route::get('/beranda', [CustomerController::class, 'beranda'])->name('customer.b
         Route::get('/customer/kirim-paket', function() {
             return view('customer.kirim_paket');
         })->name('customer.kirim-paket');
+        Route::get('/customer/smartsend', function() {
+            return view('customer.smartsend');
+        })->name('customer.smartsend');
         Route::post('/cek-harga-paket', [CustomerController::class, 'cekHargaPaket'])->name('customer.cek-harga-paket');
         Route::post('/kirim-paket/proses', [CustomerController::class, 'prosesKirimPaket'])->name('customer.kirim-paket.proses');
     }); // ★★★ TUTUP ROUTES YANG BUTUH LOGIN ★★★
 
 }); // ★★★ TUTUP MIDDLEWARE GROUP UpdateAvatarSession ★★★
-
-// Alias route for default Laravel auth redirect
-// Some auth middleware redirect guests to route('login') —
-// map that to the customer login page used in this app.
-Route::get('/login', function() {
-    return redirect()->route('customer.login');
-})->name('login');
-
-// ★★★ ADMIN AUTH ROUTES ★★★
-Route::middleware(['guest:admin'])->prefix('admin')->group(function () {
-    Route::get('/login', [AdminController::class, 'showLogin'])->name('admin.login');
-    Route::post('/login', [AdminController::class, 'login'])->name('admin.login.post');
-});
-
-// ★★★ ADMIN ROUTES ★★★
-// Admin routes tidak perlu include UpdateAvatarSession karena pakai guard berbeda
-Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(function () {
-    // Apply role checking to all admin routes except logout
-    Route::middleware(['admin.role'])->group(function () {
-        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
-        Route::get('/kursi/peta/{jadwalId}', [KursiController::class, 'petaKursi'])
-            ->name('kursi.peta');
-
-        // Master Data Routes - Armada routes using Admin\ArmadaController
-        Route::get('/armada', [ArmadaController::class, 'index'])
-            ->middleware('permission:view_armada')
-            ->name('armada');
-        Route::get('/armada/create', [ArmadaController::class, 'create'])
-            ->middleware('permission:manage_armada')
-            ->name('armada.create');
-        Route::post('/armada', [ArmadaController::class, 'store'])
-            ->middleware('permission:manage_armada')
-            ->name('armada.store');
-        Route::get('/armada/{id}', [ArmadaController::class, 'show'])
-            ->middleware('permission:view_armada')
-            ->name('armada.show');
-        Route::get('/armada/{id}/edit', [ArmadaController::class, 'edit'])
-            ->middleware('permission:manage_armada')
-            ->name('armada.edit');
-        Route::put('/armada/{id}', [ArmadaController::class, 'update'])
-            ->middleware('permission:manage_armada')
-            ->name('armada.update');
-        Route::delete('/armada/{id}', [ArmadaController::class, 'destroy'])
-            ->middleware('permission:manage_armada')
-            ->name('armada.destroy');
-        Route::post('/armada/{id}/update-images', [ArmadaController::class, 'updateImages'])
-            ->middleware('permission:manage_armada')
-            ->name('armada.updateImages');
-        Route::get('/armada/{id}/get-images', [ArmadaController::class, 'getImages'])
-            ->middleware('permission:view_armada')
-            ->name('armada.getImages');
-
-        // ★★★ ROUTE JADWAL MANUAL ★★★
-        // Jadwal Routes
-        Route::get('/jadwal', [JadwalController::class, 'index'])->name('jadwal.index');
-        Route::get('/jadwal/create', [JadwalController::class, 'create'])->name('jadwal.create');
-        Route::get('/jadwal/drivers-by-rute', [JadwalController::class, 'getDriversByRute'])->name('jadwal.driversByRute');
-        Route::post('/jadwal', [JadwalController::class, 'store'])->name('jadwal.store');
-        Route::get('/jadwal/{id}/edit', [JadwalController::class, 'edit'])->name('jadwal.edit');
-        Route::put('/jadwal/{id}', [JadwalController::class, 'update'])->name('jadwal.update');
-        Route::delete('/jadwal/{id}', [JadwalController::class, 'destroy'])->name('jadwal.destroy');
-        Route::get('/jadwal/{id}/penumpang', [JadwalController::class, 'showPenumpang'])->name('jadwal.penumpang');
-
-        // ★★★ MASTER TARIF ROUTES ★★★
-        Route::get('/master-tarif', [MasterTarifController::class, 'index'])
-            ->name('master-tarif.index');
-        Route::get('/master-tarif/create', [MasterTarifController::class, 'create'])
-            ->name('master-tarif.create');
-        Route::post('/master-tarif', [MasterTarifController::class, 'store'])
-            ->name('master-tarif.store');
-        Route::get('/master-tarif/{id}', [MasterTarifController::class, 'show'])
-            ->name('master-tarif.show');
-        Route::get('/master-tarif/{id}/edit', [MasterTarifController::class, 'edit'])
-            ->name('master-tarif.edit');
-        Route::put('/master-tarif/{id}', [MasterTarifController::class, 'update'])
-            ->name('master-tarif.update');
-        Route::delete('/master-tarif/{id}', [MasterTarifController::class, 'destroy'])
-            ->name('master-tarif.destroy');
-        Route::post('/master-tarif/{id}/deactivate', [MasterTarifController::class, 'deactivate'])
-            ->name('master-tarif.deactivate');
-        Route::post('/master-tarif/{id}/activate', [MasterTarifController::class, 'activate'])
-            ->name('master-tarif.activate');
-        Route::get('/master-tarif/export/csv', [MasterTarifController::class, 'export'])
-            ->name('master-tarif.export');
-
-        Route::get('/pusat', [AdminController::class, 'pusat'])
-            ->middleware('permission:view_profile_perusahaan')
-            ->name('pusat');
-        Route::get('/cabangperusahaan', [AdminController::class, 'cabangPerusahaan'])
-            ->middleware(['permission:view_cabang', 'branch.access'])
-            ->name('cabangperusahaan');
-        Route::get('/outletperusahaan', [AdminController::class, 'outletPerusahaan'])
-            ->middleware(['permission:view_outlet', 'branch.access'])
-            ->name('outletperusahaan');
-        Route::get('/outletperusahaan/create', [AdminController::class, 'createOutlet'])
-            ->middleware(['permission:manage_outlet', 'branch.access'])
-            ->name('outletperusahaan.create');
-        Route::post('/outletperusahaan', [AdminController::class, 'storeOutlet'])
-            ->middleware(['permission:manage_outlet', 'branch.access'])
-            ->name('outletperusahaan.store');
-        Route::get('/outletperusahaan/{id}', [AdminController::class, 'showOutlet'])
-            ->middleware(['permission:view_outlet', 'branch.access'])
-            ->name('outletperusahaan.show');
-        Route::get('/outletperusahaan/{id}/edit', [AdminController::class, 'editOutlet'])
-            ->middleware(['permission:manage_outlet', 'branch.access'])
-            ->name('outletperusahaan.edit');
-        Route::put('/outletperusahaan/{id}', [AdminController::class, 'updateOutlet'])
-            ->middleware(['permission:manage_outlet', 'branch.access'])
-            ->name('outletperusahaan.update');
-        Route::delete('/outletperusahaan/{id}', [AdminController::class, 'destroyOutlet'])
-            ->middleware(['permission:manage_outlet', 'branch.access'])
-            ->name('outletperusahaan.destroy');
-        Route::get('/promo', [AdminController::class, 'promo'])
-            ->middleware('permission:view_promo')
-            ->name('promo');
-        Route::get('/promo/create', [AdminController::class, 'createPromo'])
-            ->middleware('permission:manage_promo')
-            ->name('promo.create');
-        Route::post('/promo', [AdminController::class, 'storePromo'])
-            ->middleware('permission:manage_promo')
-            ->name('promo.store');
-        Route::get('/promo/{id}', [AdminController::class, 'showPromo'])
-            ->middleware('permission:view_promo')
-            ->name('promo.show');
-        Route::get('/promo/{id}/edit', [AdminController::class, 'editPromo'])
-            ->middleware('permission:manage_promo')
-            ->name('promo.edit');
-        Route::put('/promo/{id}', [AdminController::class, 'updatePromo'])
-            ->middleware('permission:manage_promo')
-            ->name('promo.update');
-        Route::delete('/promo/{id}', [AdminController::class, 'destroyPromo'])
-            ->middleware('permission:manage_promo')
-            ->name('promo.destroy');
-        Route::get('/driver', [AdminController::class, 'driver'])
-            ->middleware('permission:view_driver')
-            ->name('driver');
-        Route::get('/pegawai', [AdminController::class, 'pegawai'])
-            ->middleware('permission:view_pegawai')
-            ->name('pegawai');
-        Route::get('/pegawai/create', [AdminController::class, 'createPegawai'])
-            ->middleware('permission:manage_pegawai')
-            ->name('pegawai.create');
-        Route::post('/pegawai', [AdminController::class, 'storePegawai'])
-            ->middleware('permission:manage_pegawai')
-            ->name('pegawai.store');
-        Route::get('/pegawai/{id}', [AdminController::class, 'showPegawai'])
-            ->middleware('permission:view_pegawai')
-            ->name('pegawai.show');
-        Route::get('/pegawai/{id}/edit', [AdminController::class, 'editPegawai'])
-            ->middleware('permission:manage_pegawai')
-            ->name('pegawai.edit');
-        Route::put('/pegawai/{id}', [AdminController::class, 'updatePegawai'])
-            ->middleware('permission:manage_pegawai')
-            ->name('pegawai.update');
-        Route::delete('/pegawai/{id}', [AdminController::class, 'destroyPegawai'])
-            ->middleware('permission:manage_pegawai')
-            ->name('pegawai.destroy');
-        Route::get('/pegawai/{id}/get-data', [AdminController::class, 'getPegawaiData'])
-            ->middleware('permission:view_pegawai')
-            ->name('pegawai.get-data');
-        // Rute Routes
-        Route::get('/rute', [RuteController::class, 'index'])
-            ->middleware('permission:view_rute')
-            ->name('rute.index');
-        Route::get('/rute/create', [RuteController::class, 'create'])
-            ->middleware('permission:manage_rute')
-            ->name('rute.create');
-        Route::post('/rute', [RuteController::class, 'store'])
-            ->middleware('permission:manage_rute')
-            ->name('rute.store');
-        Route::get('/rute/{id}', [RuteController::class, 'show'])
-            ->middleware('permission:view_rute')
-            ->name('rute.show');
-        Route::get('/rute/{id}/edit', [RuteController::class, 'edit'])
-            ->middleware('permission:manage_rute')
-            ->name('rute.edit');
-        Route::put('/rute/{id}', [RuteController::class, 'update'])
-            ->middleware('permission:manage_rute')
-            ->name('rute.update');
-        Route::delete('/rute/{id}', [RuteController::class, 'destroy'])
-            ->middleware('permission:manage_rute')
-            ->name('rute.destroy');
-
-        // Transaksi Routes
-        Route::get('/smartsend-transaksi', [AdminController::class, 'smartsendTransaksi'])
-            ->middleware('permission:view_smartsend_transaksi')
-            ->name('smartsend-transaksi');
-        Route::get('/perjalanan', [AdminController::class, 'perjalanan'])
-            ->middleware('permission:view_perjalanan_transaksi')
-            ->name('perjalanan');
-        Route::get('/tiket-perjalanan', [AdminController::class, 'tiketPerjalanan'])
-            ->middleware('permission:view_perjalanan_transaksi')
-            ->name('tiket-perjalanan');
-        Route::get('/armada-transaksi', [AdminController::class, 'armadaTransaksi'])
-            ->middleware('permission:view_armada_transaksi')
-            ->name('armada-transaksi');
-
-        // SmartSend Routes
-        Route::get('/smartsend-tiket', [AdminController::class, 'smartsendTiket'])
-            ->middleware('permission:view_smartsend_tiket')
-            ->name('smartsend-tiket');
-        Route::get('/smartsend-perjalanan', [AdminController::class, 'smartsendPerjalanan'])
-            ->middleware('permission:view_smartsend_perjalanan')
-            ->name('smartsend-perjalanan');
-        Route::get('/smartsend-armada', [AdminController::class, 'smartsendArmada'])
-            ->middleware('permission:view_smartsend_armada')
-            ->name('smartsend-armada');
-
-        // SmartRent Route
-        Route::get('/smartrent', [AdminController::class, 'smartrent'])
-            ->middleware('permission:view_smartrent')
-            ->name('smartrent');
-
-        // Laporan Route
-        Route::get('/laporan', [AdminController::class, 'laporan'])
-            ->middleware('permission:view_laporan')
-            ->name('laporan');
-
-        // Pengaturan Routes
-        Route::get('/user', [AdminController::class, 'user'])
-            ->middleware('permission:view_user')
-            ->name('user');
-        Route::post('/user', [AdminController::class, 'storeUser'])
-            ->middleware('permission:manage_user')
-            ->name('user.store');
-        Route::get('/menu', [AdminController::class, 'menu'])
-            ->middleware('permission:view_menu')
-            ->name('menu');
-
-        // Kontak Perusahaan Routes
-        Route::get('/kontakperusahaan', [KontakPerusahaanController::class, 'index'])
-            ->middleware('permission:view_kontak')
-            ->name('kontakperusahaan');
-        Route::put('/kontakperusahaan/{id}', [KontakPerusahaanController::class, 'update'])
-            ->middleware('permission:manage_kontak')
-            ->name('kontakperusahaan.update');
-
-        // Artikel Management Routes
-        Route::get('/artikel', [AdminController::class, 'artikel'])
-            ->middleware('permission:view_artikel')
-            ->name('artikel.index');
-        Route::get('/artikel/create', [AdminController::class, 'createArtikel'])
-            ->middleware('permission:manage_artikel')
-            ->name('artikel.create');
-        Route::post('/artikel', [AdminController::class, 'storeArtikel'])
-            ->middleware('permission:manage_artikel')
-            ->name('artikel.store');
-        Route::get('/artikel/{id}', [AdminController::class, 'showArtikel'])
-            ->middleware('permission:view_artikel')
-            ->name('artikel.show');
-        Route::get('/artikel/{id}/edit', [AdminController::class, 'editArtikel'])
-            ->middleware('permission:manage_artikel')
-            ->name('artikel.edit');
-        Route::put('/artikel/{id}', [AdminController::class, 'updateArtikel'])
-            ->middleware('permission:manage_artikel')
-            ->name('artikel.update');
-        Route::delete('/artikel/{id}', [AdminController::class, 'destroyArtikel'])
-            ->middleware('permission:manage_artikel')
-            ->name('artikel.destroy');
-
-        // ★★★ ADMIN PEMESANAN API ROUTES ★★★
-        Route::get('/api/jadwal', [AdminPemesananController::class, 'getJadwal'])
-            ->middleware('permission:view_perjalanan_transaksi')
-            ->name('api.jadwal');
-        Route::get('/api/promo/validate', [AdminPemesananController::class, 'validatePromo'])
-            ->middleware('permission:view_perjalanan_transaksi')
-            ->name('api.promo.validate');
-        Route::get('/api/jadwal/{id}/kursi', [AdminPemesananController::class, 'getTakenSeats'])
-            ->middleware('permission:view_perjalanan_transaksi')
-            ->name('api.jadwal.kursi');
-        Route::post('/api/pemesanan/create', [AdminPemesananController::class, 'createPemesanan'])
-            ->middleware('permission:manage_perjalanan_transaksi')
-            ->name('api.pemesanan.create');
-        // Admin booking page (admin flow mirroring customer flow)
-        Route::get('/transaksi/pemesanan-baru', [AdminPemesananController::class, 'showCreatePage'])
-            ->middleware('permission:manage_perjalanan_transaksi')
-            ->name('admin.pemesanan.create.page');
-        Route::delete('/api/pemesanan/{id}', [AdminPemesananController::class, 'deletePemesanan'])
-            ->middleware('permission:manage_perjalanan_transaksi')
-            ->name('api.pemesanan.delete');
-
-    }); // Close admin.role middleware group
-
-    // Logout Route (outside admin.role middleware)
-    Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
-}); // Close auth:admin middleware group
-
-// ★★★ DRIVER ROUTES ★★★
-Route::middleware(['auth:driver'])->prefix('driver')->name('driver.')->group(function () {
-    Route::get('/dashboard', [DriverController::class, 'dashboard'])->name('dashboard');
-    Route::post('/logout', [DriverController::class, 'logout'])->name('logout');
-
-    // Additional driver routes
-    Route::get('/jadwal', [DriverScheduleController::class, 'jadwal'])->name('jadwal');
-    Route::get('/laporan', [DriverController::class, 'laporan'])->name('laporan');
-    Route::get('/perjalanan', [DriverController::class, 'perjalanan'])->name('perjalanan');
-    Route::get('/profile', [DriverController::class, 'profile'])->name('profile');
-    Route::get('/profile/edit', [DriverController::class, 'profileEdit'])->name('profile.edit');
-    Route::post('/profile/update', [DriverController::class, 'updateProfile'])->name('profile.update');
-    Route::get('/pengaturan', [DriverController::class, 'pengaturan'])->name('pengaturan');
-    Route::post('/pengaturan/update-schedule-accept-mode', [DriverController::class, 'updateScheduleAcceptMode'])->name('pengaturan.update-schedule-accept-mode');
-    Route::get('/bantuan', [DriverController::class, 'bantuan'])->name('bantuan');
-
-    // ★★★ API ENDPOINT: Ambil data penumpang real-time untuk trip tertentu ★★★
-    Route::get('/api/passengers/{tripId}', [DriverController::class, 'getPassengersRealtime'])->name('api.passengers.realtime');
-
-    // ★★★ ROUTES DRIVER JADWAL (FROM PROMPT) - Menggunakan DriverJadwalController ★★★
-    Route::get('/dashboard', [DriverJadwalController::class, 'dashboard'])->name('dashboard');
-
-    // Jadwal tersedia dari admin
-    Route::get('/jadwal-tersedia', [DriverJadwalController::class, 'daftarJadwalTersedia'])
-        ->name('jadwal.tersedia');
-
-    // Ambil jadwal
-    Route::post('/ambil-jadwal/{idJadwal}', [DriverJadwalController::class, 'ambilJadwal'])
-        ->name('jadwal.ambil');
-
-    // Jadwal saya
-    Route::get('/jadwal-saya', [DriverJadwalController::class, 'jadwalSaya'])
-        ->name('jadwal.saya');
-
-    // Detail jadwal
-    Route::get('/jadwal/{idJadwalDriver}', [DriverJadwalController::class, 'detailJadwal'])
-        ->name('jadwal.detail');
-
-    // Update status
-    Route::put('/jadwal/{idJadwalDriver}/status', [DriverJadwalController::class, 'updateStatus'])
-        ->name('jadwal.update-status');
-
-    // Batalkan jadwal
-    Route::delete('/jadwal/{idJadwalDriver}/batalkan', [DriverJadwalController::class, 'batalkanJadwal'])
-        ->name('jadwal.batalkan');
-
-    // ★★★ ROUTE UNTUK BACKWARD COMPATIBILITY ★★★
-    Route::get('/jadwal', [DriverJadwalController::class, 'jadwalSaya'])->name('jadwal');
-    Route::get('/available-schedules', [DriverJadwalController::class, 'daftarJadwalTersedia'])->name('available-schedules');
-
-    // ★★★ DRIVER SCHEDULE ROUTES (DARI CODE ASLI) - Alternatif menggunakan DriverJadwalController ★★★
-    Route::get('/available-schedules', [DriverJadwalController::class, 'availableSchedules'])
-        ->name('available-schedules');
-
-    Route::post('/take-schedule/{jadwalId}', [DriverJadwalController::class, 'takeSchedule'])
-        ->name('schedule.take');
-
-    Route::get('/my-schedules', [DriverJadwalController::class, 'mySchedules'])
-        ->name('my-schedules');
-
-    Route::put('/schedule/{id}/status', [DriverJadwalController::class, 'updateStatus'])
-        ->name('schedule.update-status');
-});
 
 // ★★★ API ROUTES (UNTUK AJAX) ★★★
 Route::prefix('api')->group(function () {
@@ -653,14 +467,8 @@ Route::prefix('api')->group(function () {
     // Payment API
     Route::post('/payment/callback', [PembayaranController::class, 'webhook'])->name('api.payment.callback');
 
-    // Policy content API (terms / privacy) for AJAX modals
+    // Policy content API
     Route::get('/policy/{type}', [CustomerController::class, 'getPolicy'])->name('api.policy.get');
-
-    // Kalkulator Estimasi API
-    Route::post('/estimasi/get-outlet-tujuan', [KalkulatorEstimasiController::class, 'getOutletTujuan'])
-        ->name('api.estimasi.get-outlet-tujuan');
-    Route::post('/estimasi/hitung', [KalkulatorEstimasiController::class, 'hitungEstimasi'])
-        ->name('api.estimasi.hitung');
 
     // Promo routes
     Route::prefix('promo')->group(function () {
@@ -674,42 +482,135 @@ Route::prefix('api')->group(function () {
     Route::post('/validasi-kursi', [KursiController::class, 'validasiKursiAPI']);
     Route::get('/kursi-tersedia/{jadwalId}', [KursiController::class, 'getKursiTersediaAPI']);
     Route::post('/kursi-validate', [KursiController::class, 'validateSeatsAPI']);
+});
 
-    // Driver location API (driver updates location during trip)
-    Route::post('/driver/location', [\App\Http\Controllers\API\DriverLocationController::class, 'updateLocation'])
-        ->name('api.driver.location.update');
+// ★★★ ADMIN AUTH ROUTES ★★★
+Route::middleware(['guest:admin'])->prefix('admin')->group(function () {
+    Route::get('/login', [AdminController::class, 'showLogin'])->name('admin.login');
+    Route::post('/login', [AdminController::class, 'login'])->name('admin.login.post');
+});
 
-    // Start journey endpoint (driver clicks "Mulai Perjalanan")
-    Route::post('/driver/journey/start', [\App\Http\Controllers\API\DriverLocationController::class, 'startJourney'])
-        ->name('api.driver.journey.start');
+// ★★★ ADMIN ROUTES ★★★
+// Admin routes tidak perlu include UpdateAvatarSession karena pakai guard berbeda
+Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    Route::get('/kursi/peta/{jadwalId}', [KursiController::class, 'petaKursi'])
+        ->name('admin.kursi.peta');
 
-    // Get journey state for a trip (driver-only)
-    Route::get('/driver/journey/{tripId}/state', [\App\Http\Controllers\API\DriverLocationController::class, 'getJourneyState'])
-        ->name('api.driver.journey.state');
+    // Master Data Routes - GANTI ROUTE ARMADA (dari kode prompt)
+    // Master Data Armada - CRUD Routes (REVISI)
+    Route::get('/armada', [ArmadaController::class, 'index'])->name('admin.armada');
+    Route::get('/armada/create', [ArmadaController::class, 'create'])->name('admin.armada.create');
+    Route::post('/armada', [ArmadaController::class, 'store'])->name('admin.armada.store');
+    Route::get('/armada/{id}/edit', [ArmadaController::class, 'edit'])->name('admin.armada.edit');
+    Route::put('/armada/{id}', [ArmadaController::class, 'update'])->name('admin.armada.update');
+    Route::delete('/armada/{id}', [ArmadaController::class, 'destroy'])->name('admin.armada.destroy');
+    Route::post('/armada/{id}/update-images', [ArmadaController::class, 'updateImages'])
+        ->name('admin.armada.updateImages');
+    Route::get('/armada/{id}/get-images', [ArmadaController::class, 'getImages'])->name('admin.armada.getImages');
 
-    // Get complete trip details including stop_points (driver-only)
-    Route::get('/driver/trip/{tripId}/detail', [\App\Http\Controllers\API\DriverLocationController::class, 'getTripDetail'])
-        ->name('api.driver.trip.detail');
+    // Route CRUD Armada (dari kode prompt)
+    Route::prefix('armada')->name('admin.armada.')->group(function () {
+        Route::post('/store', [ArmadaController::class, 'store'])->name('store');
+        Route::get('/{id}/edit', [ArmadaController::class, 'edit'])->name('edit');
+        Route::post('/{id}/update', [ArmadaController::class, 'update'])->name('update');
+        Route::delete('/{id}/destroy', [ArmadaController::class, 'destroy'])->name('destroy');
+        Route::get('/{id}/detail', [ArmadaController::class, 'show'])->name('show');
+    });
+    
+    Route::get('/pusat', [AdminController::class, 'pusat'])->name('admin.pusat');
+    Route::get('/cabangperusahaan', [AdminController::class, 'cabangPerusahaan'])->name('admin.cabangperusahaan');
+<<<<<<<<< Temporary merge branch 1
+=========
+    Route::get('/outletperusahaan', [AdminController::class, 'outletPerusahaan'])->name('admin.outletperusahaan');
+    Route::get('/outletperusahaan/create', [AdminController::class, 'createOutlet'])->name('admin.outletperusahaan.create');
+    Route::post('/outletperusahaan', [AdminController::class, 'storeOutlet'])->name('admin.outletperusahaan.store');
+    Route::get('/outletperusahaan/{id}', [AdminController::class, 'showOutlet'])->name('admin.outletperusahaan.show');
+    Route::get('/outletperusahaan/{id}/edit', [AdminController::class, 'editOutlet'])->name('admin.outletperusahaan.edit');
+    Route::put('/outletperusahaan/{id}', [AdminController::class, 'updateOutlet'])->name('admin.outletperusahaan.update');
+    Route::delete('/outletperusahaan/{id}', [AdminController::class, 'destroyOutlet'])->name('admin.outletperusahaan.destroy');
+    Route::get('/promo', [AdminController::class, 'promo'])->name('admin.promo');
+    Route::get('/promo/create', [AdminController::class, 'createPromo'])->name('admin.promo.create');
+    Route::post('/promo', [AdminController::class, 'storePromo'])->name('admin.promo.store');
+    Route::get('/promo/{id}', [AdminController::class, 'showPromo'])->name('admin.promo.show');
+    Route::get('/promo/{id}/edit', [AdminController::class, 'editPromo'])->name('admin.promo.edit');
+    Route::put('/promo/{id}', [AdminController::class, 'updatePromo'])->name('admin.promo.update');
+    Route::delete('/promo/{id}', [AdminController::class, 'destroyPromo'])->name('admin.promo.destroy');
+    
+    // ★★★ ARTIKEL ROUTES UNTUK ADMIN ★★★
+    Route::prefix('artikel')->name('admin.artikel.')->group(function () {
+        Route::get('/', [AdminArtikelController::class, 'index'])->name('index');
+        Route::get('/create', [AdminArtikelController::class, 'create'])->name('create');
+        Route::post('/', [AdminArtikelController::class, 'store'])->name('store');
+        Route::get('/{id}', [AdminArtikelController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [AdminArtikelController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [AdminArtikelController::class, 'update'])->name('update');
+        Route::delete('/{id}', [AdminArtikelController::class, 'destroy'])->name('destroy');
+    });
+    
+    Route::get('/kontak', [AdminController::class, 'kontak'])->name('admin.kontak');
+    Route::get('/kontakperusahaan', [AdminController::class, 'kontakPerusahaan'])->name('admin.kontakperusahaan');
+    Route::put('/kontakperusahaan/{id}', [AdminController::class, 'updateKontakPerusahaan'])->name('admin.kontak.update');
 
-    // ★★★ Get passengers from admin jadwal penumpang data source ★★★
-    Route::get('/driver/trip/{tripId}/passengers-admin', [\App\Http\Controllers\API\DriverLocationController::class, 'getTripPassengersFromAdmin'])
-        ->name('api.driver.trip.passengers.admin');
+    // ★★★ ROUTE JADWAL ★★★
+    Route::prefix('jadwal')->group(function () {
+        Route::get('/', [JadwalController::class, 'index'])->name('admin.jadwal');
+        Route::get('/create', [JadwalController::class, 'create'])->name('admin.jadwal.create');
+        Route::post('/', [JadwalController::class, 'store'])->name('admin.jadwal.store');
+        Route::get('/{jadwal}', [JadwalController::class, 'show'])->name('admin.jadwal.show');
+        Route::get('/{jadwal}/edit', [JadwalController::class, 'edit'])->name('admin.jadwal.edit');
+        Route::put('/{jadwal}', [JadwalController::class, 'update'])->name('admin.jadwal.update');
+        Route::delete('/{jadwal}', [JadwalController::class, 'destroy'])->name('admin.jadwal.destroy');
+    });
 
-    Route::post('/driver/journey/start', [\App\Http\Controllers\API\DriverLocationController::class, 'startJourney'])
-        ->name('api.driver.journey.start');
+    // Rute CRUD
+    Route::prefix('rute')->group(function () {
+        Route::get('/', [AdminController::class, 'rute'])->name('admin.rute');
+        Route::get('/create', [AdminController::class, 'createRute'])->name('admin.rute.create');
+        Route::post('/', [AdminController::class, 'storeRute'])->name('admin.rute.store');
+        Route::get('/{id}/edit', [AdminController::class, 'editRute'])->name('admin.rute.edit');
+        Route::put('/{id}', [AdminController::class, 'updateRute'])->name('admin.rute.update');
+        Route::delete('/{id}', [AdminController::class, 'destroyRute'])->name('admin.rute.destroy');
+        Route::get('/{id}', [AdminController::class, 'showRute'])->name('admin.rute.show');
+    });
 
-    Route::post('/driver/trip/complete', [\App\Http\Controllers\API\DriverLocationController::class, 'completeTrip'])
-        ->name('api.driver.trip.complete');
+    // Armada CRUD Routes
+    Route::prefix('armada')->group(function () {
+        Route::get('/', [AdminController::class, 'armada'])->name('admin.armada');
+        Route::get('/create', [AdminController::class, 'createShuttle'])->name('admin.armada.create');
+        Route::post('/', [AdminController::class, 'storeShuttle'])->name('admin.armada.store');
+        Route::get('/{id}/edit', [AdminController::class, 'editShuttle'])->name('admin.armada.edit');
+        Route::put('/{id}', [AdminController::class, 'updateShuttle'])->name('admin.armada.update');
+        Route::delete('/{id}', [AdminController::class, 'destroyShuttle'])->name('admin.armada.destroy');
+        Route::get('/{id}', [AdminController::class, 'showShuttle'])->name('admin.armada.show');
+    });
 
-    Route::get('/driver/location/{driverId}/{tripId}/latest', [\App\Http\Controllers\API\DriverLocationController::class, 'getLatestLocation'])
-        ->name('api.driver.location.latest');
-
-    Route::get('/driver/location/{driverId}/{tripId}/all', [\App\Http\Controllers\API\DriverLocationController::class, 'getTripLocations'])
-        ->name('api.driver.location.trip.locations');
-
-    // Get active driver locations (for admin dashboard polling)
-    Route::get('/driver/locations/active', [\App\Http\Controllers\API\DriverLocationController::class, 'getActiveDriverLocations'])
-        ->name('api.driver.location.active');
+>>>>>>>>> Temporary merge branch 2
+    Route::get('/driver', [AdminController::class, 'driver'])->name('admin.driver');
+    Route::get('/pegawai', [AdminController::class, 'pegawai'])->name('admin.pegawai');
+    Route::get('/rute', [AdminController::class, 'rute'])->name('admin.rute');
+    
+    // Transaksi Routes
+    Route::get('/tiket-perjalanan', [AdminController::class, 'tiketPerjalanan'])->name('admin.tiket-perjalanan');
+    Route::get('/tiket-armada', [AdminController::class, 'tiketArmada'])->name('admin.tiket-armada');
+    
+    // SmartSend Routes
+    Route::get('/smartsend-tiket', [AdminController::class, 'smartsendTiket'])->name('admin.smartsend-tiket');
+    Route::get('/smartsend-perjalanan', [AdminController::class, 'smartsendPerjalanan'])->name('admin.smartsend-perjalanan');
+    Route::get('/smartsend-armada', [AdminController::class, 'smartsendArmada'])->name('admin.smartsend-armada');
+    
+    // SmartRent Route
+    Route::get('/smartrent', [AdminController::class, 'smartrent'])->name('admin.smartrent');
+    
+    // Laporan Route
+    Route::get('/laporan', [AdminController::class, 'laporan'])->name('admin.laporan');
+    
+    // Pengaturan Routes
+    Route::get('/user', [AdminController::class, 'user'])->name('admin.user');
+    Route::get('/menu', [AdminController::class, 'menu'])->name('admin.menu');
+    
+    // Logout Route
+    Route::post('/logout', [AdminController::class, 'logout'])->name('admin.logout');
 });
 
 // ★★★ ROUTE DEBUG (UNTUK TESTING) ★★★
@@ -788,6 +689,26 @@ Route::get('/paylabs/signature-test', function () {
     }
 })->name('paylabs.signature_test');
 
+// Test route: create payment (sends POST to Paylabs)
+Route::get('/paylabs/create-payment-test', function () {
+    try {
+        $service = new \App\Services\PaylabsService();
+        $result = $service->createPaymentTest();
+
+        return response()->json($result);
+    } catch (\Exception $e) {
+        \Log::error('Paylabs create-payment-test error', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+})->name('paylabs.create_payment_test');
+
 // Route untuk review
 Route::post('/customer/review', [CustomerController::class, 'storeReview'])->name('customer.review.store');
 
@@ -814,25 +735,19 @@ Route::prefix('api/promo')->group(function () {
 
 // Route untuk Profile Perusahaan Admin
 Route::prefix('admin')->middleware(['auth:admin'])->group(function () {
-    Route::get('/profile-perusahaan', [ProfilePerusahaanController::class, 'index'])
-        ->middleware('permission:manage_profile_perusahaan')
-        ->name('admin.profileperusahaan');
-    Route::post('/profile-perusahaan/update', [ProfilePerusahaanController::class, 'update'])
-        ->middleware('permission:manage_profile_perusahaan')
-        ->name('admin.profileperusahaan.update');
-    Route::post('/profile-perusahaan/layanan/{id}/update', [ProfilePerusahaanController::class, 'updateLayanan'])
-        ->middleware('permission:manage_profile_perusahaan')
-        ->name('admin.profileperusahaan.layanan.update');
-    Route::post('/profile-perusahaan/layanan/create', [ProfilePerusahaanController::class, 'createLayanan'])
-        ->middleware('permission:manage_profile_perusahaan')
-        ->name('admin.profileperusahaan.layanan.create');
-    Route::delete('/profile-perusahaan/layanan/{id}/delete', [ProfilePerusahaanController::class, 'deleteLayanan'])
-        ->middleware('permission:manage_profile_perusahaan')
-        ->name('admin.profileperusahaan.layanan.delete');
+    Route::get('/profile-perusahaan', [ProfilePerusahaanController::class, 'index'])->name('admin.profileperusahaan');
+    Route::post('/profile-perusahaan/update', [ProfilePerusahaanController::class, 'update'])->name('admin.profileperusahaan.update');
+    Route::post('/profile-perusahaan/layanan/{id}/update', [ProfilePerusahaanController::class, 'updateLayanan'])->name('admin.profileperusahaan.layanan.update');
+    Route::post('/profile-perusahaan/layanan/create', [ProfilePerusahaanController::class, 'createLayanan'])->name('admin.profileperusahaan.layanan.create');
+    Route::delete('/profile-perusahaan/layanan/{id}/delete', [ProfilePerusahaanController::class, 'deleteLayanan'])->name('admin.profileperusahaan.layanan.delete');
 });
 
 // Branch Management Routes
 Route::prefix('admin')->middleware(['auth:admin'])->group(function () {
+    // List branches with filters
+    Route::get('/cabangperusahaan', [AdminController::class, 'cabangPerusahaan'])
+        ->name('admin.cabangperusahaan');
+        
     // Branch CRUD
     Route::prefix('cabang')->group(function () {
         Route::get('/create', [AdminController::class, 'createBranch'])
@@ -867,10 +782,10 @@ Route::get('/test-storage-write', function() {
         // Test tulis file
         $testContent = 'Test ' . date('Y-m-d H:i:s');
         Storage::disk('public')->put('test.txt', $testContent);
-
+        
         // Test baca file
         $readContent = Storage::disk('public')->get('test.txt');
-
+        
         return "Storage WRITE test: SUCCESS<br>Content: " . $readContent;
     } catch (\Exception $e) {
         return "Storage WRITE test: FAILED<br>Error: " . $e->getMessage();
@@ -892,9 +807,22 @@ Route::middleware(['auth:admin'])->prefix('admin/shipments')->name('admin.shipme
     Route::get('/{id}/tracking', [CustomerController::class, 'getTimeline'])->name('tracking');
 });
 
-// ★★★ ADDITIONAL AUTH ROUTES (Alternative endpoints) ★★★
-// Note: Primary auth routes are defined in auth.php using password.email name
-// These routes are removed to avoid duplicate route names during caching
+// ★★★ AUTH ROUTES (FROM SECOND CODE) ★★★
+Route::post('/register', [RegisteredUserController::class, 'store'])
+    ->middleware('guest')
+    ->name('register');
+
+Route::post('/login', [AuthenticatedSessionController::class, 'store'])
+    ->middleware('guest')
+    ->name('login');
+
+Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
+    ->middleware('guest')
+    ->name('password.email');
+
+Route::post('/reset-password', [NewPasswordController::class, 'store'])
+    ->middleware('guest')
+    ->name('password.store');
 
 Route::get('/verify-email/{id}/{hash}', VerifyEmailController::class)
     ->middleware(['auth', 'signed', 'throttle:6,1'])
@@ -907,6 +835,27 @@ Route::post('/email/verification-notification', [EmailVerificationNotificationCo
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
+
+// ★★★ DRIVER AUTH ROUTES ★★★
+Route::middleware(['guest:driver'])->prefix('driver')->group(function () {
+    Route::get('/login', [DriverController::class, 'showLogin'])->name('driver.login');
+    Route::post('/login', [DriverController::class, 'login'])->name('driver.login.post');
+});
+
+// ★★★ DRIVER ROUTES ★★★
+Route::middleware(['auth:driver'])->prefix('driver')->group(function () {
+    Route::get('/dashboard', [DriverController::class, 'dashboard'])->name('driver.dashboard');
+    Route::post('/logout', [DriverController::class, 'logout'])->name('driver.logout');
+
+    // Additional driver routes
+    Route::get('/jadwal', [DriverController::class, 'jadwal'])->name('driver.jadwal');
+    Route::get('/laporan', [DriverController::class, 'laporan'])->name('driver.laporan');
+    Route::get('/perjalanan', [DriverController::class, 'perjalanan'])->name('driver.perjalanan');
+    Route::get('/profile', [DriverController::class, 'profile'])->name('driver.profile');
+    Route::get('/profile/edit', [DriverController::class, 'profileEdit'])->name('driver.profile.edit');
+    Route::get('/pengaturan', [DriverController::class, 'pengaturan'])->name('driver.pengaturan');
+    Route::get('/bantuan', [DriverController::class, 'bantuan'])->name('driver.bantuan');
+});
 
 // ★★★ PAYLABS TEST ROUTES (UNTUK DEVELOPMENT) ★★★
 Route::prefix('paylabs-test')->group(function () {
@@ -1010,7 +959,79 @@ Route::prefix('paylabs-test')->group(function () {
     });
 });
 
-// ★★★ PAYLABS DEBUG ROUTES ★★★
+// ★★★ DEBUG ROUTES ★★★
+Route::get('/debug/e-ticket/{kode_booking}', function($kode_booking) {
+    \Log::info('Debug e-ticket access', [
+        'kode_booking' => $kode_booking,
+        'route' => 'direct_access',
+        'time' => now()
+    ]);
+    return redirect()->route('customer.e_ticket', ['kode_booking' => $kode_booking]);
+})->name('debug.e_ticket');
+
+Route::get('/paylabs/signature-test', function () {
+    try {
+        $keyFile = config('paylabs.private_key_file');
+
+        $privateKeyContent = null;
+        if ($keyFile) {
+            $pathsToTry = [$keyFile, base_path($keyFile), storage_path($keyFile)];
+            foreach ($pathsToTry as $p) {
+                if ($p && file_exists($p)) {
+                    $privateKeyContent = file_get_contents($p);
+                    break;
+                }
+            }
+        }
+
+        if (empty($privateKeyContent)) {
+            throw new \Exception('Private key file not found. Check config("paylabs.private_key_file").');
+        }
+
+        config(['paylabs.private_key' => $privateKeyContent]);
+
+        $payload = [
+            'requestType' => 'createPayment',
+            'merchantId' => config('paylabs.mid'),
+            'merchantTradeNo' => 'TEST' . time(),
+            'amount' => 1000,
+            'currency' => 'IDR',
+        ];
+
+        ksort($payload);
+        $stringToSign = '';
+        foreach ($payload as $key => $value) {
+            if ($value !== null && $value !== '') {
+                $stringToSign .= $key . '=' . $value . '&';
+            }
+        }
+        $stringToSign = rtrim($stringToSign, '&');
+
+        $service = new \App\Services\PaylabsService();
+        $signatureBase64 = $service->generateSignature($payload);
+        $signatureRaw = base64_decode($signatureBase64);
+        $signatureLong = bin2hex($signatureRaw);
+
+        return response()->json([
+            'success' => true,
+            'signed_payload' => $stringToSign,
+            'signature_base64' => $signatureBase64,
+            'signature_raw_hex' => $signatureLong,
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Paylabs signature test error', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+})->name('paylabs.signature_test');
+
+// Test route: create payment (sends POST to Paylabs)
 Route::get('/paylabs/create-payment-test/{method?}', function ($method = 'qris') {
     try {
         $service = new \App\Services\PaylabsService();
@@ -1138,6 +1159,32 @@ Route::get('/test-payment-view/{kodePembayaran}', function($kodePembayaran) {
     ]);
 })->name('test.payment.view');
 
+// Route untuk kursi (separate namespace to avoid name collision)
+Route::prefix('kursi')->name('kursi.')->group(function () {
+    Route::get('/', [KursiController::class, 'index'])->name('index');
+    Route::post('/proses', [KursiController::class, 'prosesKursi'])->name('proses');
+    Route::get('/detail/{kode}', [KursiController::class, 'detailPesanan'])->name('detail_pesanan');
+    Route::post('/batalkan/{pemesananId}', [KursiController::class, 'batalkanKursi'])->name('batalkan');
+});
+
+// Route artikel - PERBAIKAN NAMA ROUTE (alternatif tanpa prefix)
+Route::get('/artikel', [ArtikelController::class, 'index'])->name('artikel.index');
+Route::get('/artikel/{slug}', [ArtikelController::class, 'show'])->name('artikel.show');
+Route::get('/artikel/kategori/{kategori}', [ArtikelController::class, 'kategori'])->name('artikel.kategori');
+
+// ★★★ DEBUG ROUTES TAMBAHAN ★★★
+Route::get('/test-storage-write', function() {
+    try {
+        $testContent = 'Test ' . date('Y-m-d H:i:s');
+        Storage::disk('public')->put('test.txt', $testContent);
+        $readContent = Storage::disk('public')->get('test.txt');
+
+        return "Storage WRITE test: SUCCESS<br>Content: " . $readContent;
+    } catch (\Exception $e) {
+        return "Storage WRITE test: FAILED<br>Error: " . $e->getMessage();
+    }
+});
+
 Route::get('/debug/master-harga', function() {
     try {
         $exists = Schema::hasTable('master_harga');
@@ -1158,114 +1205,32 @@ Route::get('/debug/master-harga', function() {
     }
 })->middleware('auth');
 
-// CSRF Token refresh route
-Route::get('/refresh-csrf', function () {
-    return response()->json([
-        'csrf_token' => csrf_token()
-    ]);
-})->middleware('web');
-
-// ★★★ SMART RENT ROUTES ★★★
-use App\Http\Controllers\Customer\SmartRentController;
-
-// SmartRent routes (accessible without login)
-Route::middleware(['web'])->prefix('smartrent')->name('smartrent.')->group(function () {
-    Route::get('/', [SmartRentController::class, 'index'])->name('index');
-
-    // Halaman booking dengan filter
-    Route::get('/booking', [SmartRentController::class, 'booking'])->name('booking');
-
-    // Halaman checkout/pesanan
-    Route::match(['get', 'post'], '/checkout', [SmartRentController::class, 'checkout'])->name('checkout');
-
-    // Halaman detail kendaraan
-    Route::get('/vehicle/{id}', [SmartRentController::class, 'vehicleDetail'])->name('vehicle.detail');
-
-    // Proses order langsung
-    Route::post('/order', [SmartRentController::class, 'order'])->name('order');
-
-    // Halaman pembayaran
-    Route::get('/payment', [SmartRentController::class, 'payment'])->name('payment');
-
-    // Proses pembayaran
-    Route::post('/process-payment', [SmartRentController::class, 'processPayment'])->name('process.payment');
-
-    // Halaman konfirmasi
-    Route::get('/confirmation', [SmartRentController::class, 'confirmation'])->name('confirmation');
-
-    // Form checkout (GET)
-    Route::get('/smartrent/checkout', [SmartRentController::class, 'showCheckoutForm'])->name('checkout.form');
-
-    // Proses checkout (POST)
-    Route::post('/smartrent/checkout/process', [SmartRentController::class, 'processCheckout'])->name('checkout.process');
-
-    // Halaman pembayaran (GET)
-    Route::get('/smartrent/payment', [SmartRentController::class, 'showPayment'])->name('payment.show');
-
-    // API Routes
-    Route::get('/api/vehicle/{id}', [SmartRentController::class, 'getVehicle']);
-    Route::post('/api/check-availability', [SmartRentController::class, 'checkAvailability']);
+<<<<<<<<< Temporary merge branch 1
+// Route untuk SmartSend
+Route::prefix('customer')->name('customer.')->group(function () {
+    // ... route lainnya ...
+    
+    // SmartSend routes
+    Route::get('/smartsend', [CustomerController::class, 'smartsend'])->name('smartsend');
+    
+    // API untuk dropdown outlet tujuan
+    Route::post('/smartsend/get-outlet-tujuan', [CustomerController::class, 'getOutletTujuanByRute'])
+        ->name('getOutletTujuanByRute');
+    
+    // API untuk kalkulator harga
+    Route::post('/smartsend/kalkulator-harga', [CustomerController::class, 'kalkulatorHargaSmartSend'])
+        ->name('smartsend.kalkulator-harga');
+    
+    // Cek resi
+    Route::get('/cek-resi', [CustomerController::class, 'cekResi'])->name('cek-resi');
+    Route::post('/proses-cek-resi', [CustomerController::class, 'prosesCekResi'])->name('proses-cek-resi');
+    Route::get('/detail-paket/{kode_resi}', [CustomerController::class, 'detailPaket'])->name('detail-paket');
+    
+    // API untuk cek status paket (AJAX)
+    Route::post('/cek-status-paket', [CustomerController::class, 'cekStatusPaket'])->name('cek-status-paket');
+=========
+// ★★★ ROUTE FALLBACK ★★★
+Route::fallback(function () {
+    return redirect()->route('customer.beranda');
+>>>>>>>>> Temporary merge branch 2
 });
-
-// SmartRent alias routes
-Route::get('/smartrent', [SmartRentController::class, 'index'])->name('customer.smartrent');
-// Test routes - untuk development/debugging saja
-if (app()->isLocal()) {
-    Route::get('/test-tarif-relationship', function () {
-        try {
-            $output = "<h1>Testing Rute and MasterTarif Many-to-Many Relationship</h1>";
-
-            // Test 1: Get all tarifs for a specific route
-            $output .= "<h2>Test 1: Get all tarifs for routes</h2>";
-            $rutes = \App\Models\Rute::limit(3)->get();
-            foreach ($rutes as $rute) {
-                $output .= "<p><strong>Route: " . $rute->nama_rute . "</strong><br>";
-                $tarifs = $rute->masterTarifs;
-                $output .= "Number of tarifs: " . $tarifs->count() . "<br>";
-                if ($tarifs->count() > 0) {
-                    $output .= "Tarifs: ";
-                    foreach ($tarifs as $tarif) {
-                        $output .= $tarif->nama_tarif . " (" . $tarif->kode_tarif . "), ";
-                    }
-                }
-                $output .= "</p>";
-            }
-
-            // Test 2: Get all routes for a specific tarif
-            $output .= "<h2>Test 2: Get all routes for tarifs</h2>";
-            $tarifs = \App\Models\MasterTarif::limit(3)->get();
-            foreach ($tarifs as $tarif) {
-                $output .= "<p><strong>Tarif: " . $tarif->nama_tarif . "</strong><br>";
-                $rutes = $tarif->rutes;
-                $output .= "Number of routes: " . $rutes->count() . "<br>";
-                if ($rutes->count() > 0) {
-                    $output .= "Routes: ";
-                    foreach ($rutes as $rute) {
-                        $output .= $rute->nama_rute . " (" . $rute->kode_rute . "), ";
-                    }
-                }
-                $output .= "</p>";
-            }
-
-            // Test 3: Check the pivot table
-            $output .= "<h2>Test 3: Pivot Table Data</h2>";
-            $pivotData = \Illuminate\Support\Facades\DB::table('rute_master_tarif')->get();
-            $output .= "Total records in pivot table: " . count($pivotData) . "<br>";
-            if (count($pivotData) > 0) {
-                $output .= "<table border='1' style='margin-top: 10px;'><tr><th>Rute ID</th><th>Tarif ID</th><th>Created At</th></tr>";
-                foreach ($pivotData->take(10) as $record) {
-                    $output .= "<tr><td>" . $record->rute_id . "</td><td>" . $record->master_tarif_id . "</td><td>" . $record->created_at . "</td></tr>";
-                }
-                $output .= "</table>";
-            }
-
-            $output .= "<h2>✓ All tests completed successfully!</h2>";
-            return $output;
-        } catch (Exception $e) {
-            return "<h1 style='color: red;'>ERROR</h1>" .
-                   "<p>Message: " . $e->getMessage() . "</p>" .
-                   "<p>File: " . $e->getFile() . ":" . $e->getLine() . "</p>" .
-                   "<pre>" . $e->getTraceAsString() . "</pre>";
-        }
-    })->name('test.tarif.relationship');
-}
