@@ -10,18 +10,67 @@
         --accent-color: #2E86AB;
         --background-color: #f5f7fa;
         --text-dark: #333333;
+        --primary-dark: #0d3559;
+        --primary-orange: #ff6a00;
+        --primary-orange-light: rgba(255, 106, 0, 0.1);
+        --gray-bg: #f5f7fa;
+        --gray-border: #e2e8f0;
+        --gray-text: #64748b;
+        --white: #ffffff;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+        --shadow-hover: 0 8px 24px rgba(0,0,0,0.12);
+        --radius-sm: 8px;
+        --radius-md: 14px;
+        --transition: all 0.3s ease;
     }
 
-    .top-profile {
-        text-align: right;
-        font-size: 15px;
-        margin-bottom: 20px;
-        color: #333;
-    }
 
     .dashboard-container {
-        max-width: 100%;
-        padding: 20px;
+            width: 100%;
+            padding: 1rem 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+    /* ===== HEADER SECTION (DIUBAH SESUAI BANTUAN) ===== */
+    .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+        position: relative;
+    }
+
+    .title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        margin: 0;
+        letter-spacing: -0.02em;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .title i {
+        color: var(--primary-orange);
+        font-size: 1.8rem;
+        animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+
+    .divider {
+        width: 100px;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary-orange), transparent);
+        margin: 0 0 1.5rem 0;
+        border-radius: 3px;
     }
 
     /* Stats Grid - 4 kolom sejajar */
@@ -30,25 +79,53 @@
         grid-template-columns: repeat(4, 1fr);
         gap: 1.5rem;
         margin-bottom: 2rem;
+        animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .stat-card {
         background: white;
         padding: 1.5rem;
         border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: var(--shadow-sm);
         text-align: center;
         border-left: 4px solid var(--secondary-color);
-        transition: transform 0.3s ease;
+        transition: var(--transition);
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
         min-height: 120px;
+        border: 1px solid var(--gray-border);
+        position: relative;
+        overflow: hidden;
     }
 
     .stat-card:hover {
         transform: translateY(-3px);
+        box-shadow: var(--shadow-hover);
+        border-color: var(--primary-orange);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--primary-orange);
+        opacity: 0.5;
     }
 
     .stat-number {
@@ -78,26 +155,55 @@
     .profile-card {
         background: white;
         border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: var(--shadow-sm);
         padding: 2rem;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
         height: 100%;
+        border: 1px solid var(--gray-border);
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+        animation: fadeIn 0.5s ease 0.1s both;
+    }
+
+    .profile-card:hover {
+        box-shadow: var(--shadow-hover);
+        border-color: var(--primary-orange);
+    }
+
+    .profile-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--primary-orange);
+        opacity: 0.5;
     }
 
     /* Map Card */
     .map-card {
         background: var(--secondary-color);
         border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: var(--shadow-sm);
         padding: 2rem;
         color: white;
         display: flex;
         flex-direction: column;
         height: 100%;
         justify-content: space-between;
+        border: 1px solid var(--gray-border);
+        transition: var(--transition);
+        animation: fadeIn 0.5s ease 0.2s both;
+    }
+
+    .map-card:hover {
+        box-shadow: var(--shadow-hover);
+        transform: translateY(-3px);
     }
 
     .map-card .card-header {
@@ -142,10 +248,31 @@
     .schedule-full-card {
         background: white;
         border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: var(--shadow-sm);
         padding: 2rem;
         grid-column: 1 / -1; /* Memanjang full width */
         margin-bottom: 1.5rem;
+        border: 1px solid var(--gray-border);
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+        animation: fadeIn 0.5s ease 0.3s both;
+    }
+
+    .schedule-full-card:hover {
+        box-shadow: var(--shadow-hover);
+        border-color: var(--primary-orange);
+    }
+
+    .schedule-full-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--primary-orange);
+        opacity: 0.5;
     }
 
     .schedule-full-card .card-header {
@@ -156,6 +283,33 @@
         text-align: center;
         border-bottom: 2px solid var(--secondary-color);
         padding-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        position: relative;
+    }
+
+    .schedule-full-card .card-header i {
+        color: var(--primary-orange);
+        font-size: 1.3rem;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    .schedule-full-card .card-header::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 2px;
+        background: var(--primary-orange);
     }
 
     /* REVISI: Schedule Table yang Lebih Besar */
@@ -301,8 +455,38 @@
     }
 
     @media (max-width: 768px) {
+        .header-section {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .title {
+            font-size: 1.5rem;
+        }
+
+        .title i {
+            font-size: 1.5rem;
+        }
+
+        .divider {
+            width: 80px;
+            margin-bottom: 1rem;
+        }
+
         .stats-grid {
             grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-card {
+            min-height: 100px;
+            padding: 1rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
         }
 
         .dashboard-container {
@@ -330,6 +514,10 @@
             padding: 1.5rem;
         }
 
+        .schedule-full-card .card-header {
+            font-size: 1.2rem;
+        }
+
         .schedule-table-full td {
             padding: 1rem;
             font-size: 0.9rem;
@@ -340,18 +528,25 @@
         }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 576px) {
+        .title {
+            font-size: 1.3rem;
+        }
+
+        .title i {
+            font-size: 1.3rem;
+        }
+
         .stats-grid {
             grid-template-columns: 1fr;
         }
 
         .stat-card {
-            min-height: 100px;
-            padding: 1rem;
+            min-height: 90px;
         }
 
         .stat-number {
-            font-size: 2rem;
+            font-size: 1.8rem;
         }
 
         .map-placeholder {
@@ -373,15 +568,41 @@
             width: 30%;
         }
     }
+
+    @media (max-width: 360px) {
+        .title {
+            font-size: 1.2rem;
+        }
+    }
+
+    /* Landscape mode */
+    @media screen and (max-width: 896px) and (orientation: landscape) {
+        .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    /* Tablet devices */
+    @media screen and (min-width: 769px) and (max-width: 1024px) {
+        .dashboard-container {
+            padding: 1.5rem;
+        }
+    }
 </style>
 @endpush
 
 @section('content')
-
-<h2>Dashboard Driver</h2>
-<hr>
-
 <div class="dashboard-container">
+    <!-- HEADER SECTION - DIUBAH SESUAI BANTUAN -->
+    <div class="header-section">
+        <h1 class="title">
+            <i class="fas fa-chart-bar"></i>
+            Dashboard Driver
+        </h1>
+    </div>
+
+    <div class="divider"></div>
+
     <!-- Stats row - 4 KOLOM SEJAJAR -->
     <div class="stats-grid">
         <div class="stat-card">
@@ -433,7 +654,10 @@
 
     <!-- REVISI: Jadwal Hari Ini Memanjang -->
     <div class="schedule-full-card">
-        <h3 class="card-header">Jadwal Hari Ini</h3>
+        <h3 class="card-header">
+            <i class="fas fa-calendar-alt"></i>
+            Jadwal Hari Ini
+        </h3>
         @if(isset($schedules) && count($schedules) > 0)
             <table class="schedule-table-full">
                 @foreach($schedules as $schedule)
@@ -497,6 +721,15 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Driver Dashboard loaded');
+
+        // Set active menu untuk halaman dashboard
+        const menuLinks = document.querySelectorAll('.menu-item');
+        menuLinks.forEach(link => {
+            link.classList.remove('menu-active');
+            if (link.id === 'dashboard-link') {
+                link.classList.add('menu-active');
+            }
+        });
 
         // Contoh interaksi dengan tombol
         const buttons = document.querySelectorAll('.btn');

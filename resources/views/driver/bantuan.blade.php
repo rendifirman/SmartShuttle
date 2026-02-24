@@ -1,314 +1,526 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bantuan - Smart Shuttle Driver</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
+@extends('layouts.app-driver')
+
+@section('title', 'Bantuan - Driver')
+
+@push('styles')
+<style>
+    /* ==========================================================================
+       BANTUAN & FAQ - SMART SHUTTLE DRIVER
+       Theme Match dengan Halaman Lainnya (#0d3559 & #ff6a00)
+       Optimized for Mobile
+       ========================================================================== */
+
+    :root {
+        --primary-dark: #0d3559;
+        --primary-orange: #ff6a00;
+        --primary-orange-light: rgba(255, 106, 0, 0.1);
+        --success-green: #10b981;
+        --gray-bg: #f5f7fa;
+        --gray-border: #e2e8f0;
+        --gray-text: #64748b;
+        --gray-dark: #334155;
+        --white: #ffffff;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+        --shadow-hover: 0 8px 24px rgba(0,0,0,0.12);
+        --radius-sm: 8px;
+        --radius-md: 14px;
+        --transition: all 0.3s ease;
+    }
+
+    /* ===== CONTENT AREA (karena layout sudah include sidebar) ===== */
+    .content-wrapper {
+        padding: 1.5rem;
+        background: var(--gray-bg);
+        min-height: calc(100vh - 60px);
+    }
+
+    /* ===== HEADER SECTION ===== */
+    .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+        position: relative;
+    }
+
+    .title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        margin: 0;
+        letter-spacing: -0.02em;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .title i {
+        color: var(--primary-orange);
+        font-size: 1.8rem;
+        animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+
+    .profile-box {
+        background: var(--white);
+        padding: 0.6rem 1.2rem;
+        border-radius: 30px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--primary-dark);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--gray-border);
+        transition: var(--transition);
+    }
+
+    .profile-box:hover {
+        border-color: var(--primary-orange);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .profile-box i {
+        color: var(--primary-orange);
+        font-size: 1rem;
+    }
+
+    .divider {
+        width: 100px;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary-orange), transparent);
+        margin: 0 0 1.5rem 0;
+        border-radius: 3px;
+    }
+
+    /* ===== CARD ===== */
+    .card {
+        background: var(--white);
+        border-radius: var(--radius-md);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--gray-border);
+        margin-bottom: 1.5rem;
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+        animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .card:hover {
+        box-shadow: var(--shadow-hover);
+        border-color: var(--primary-orange);
+    }
+
+    .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--primary-orange);
+        opacity: 0.5;
+    }
+
+    .card h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: var(--primary-dark);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        position: relative;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--gray-border);
+    }
+
+    .card h3 i {
+        color: var(--primary-orange);
+        font-size: 1.1rem;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    .card h3::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 60px;
+        height: 2px;
+        background: var(--primary-orange);
+    }
+
+    /* ===== FAQ SECTION ===== */
+    .faq-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .faq-item {
+        border-bottom: 1px solid var(--gray-border);
+        padding: 1.25rem 0;
+        transition: var(--transition);
+    }
+
+    .faq-item:first-child {
+        padding-top: 0;
+    }
+
+    .faq-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .faq-question {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--primary-dark);
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        transition: var(--transition);
+        padding: 0.25rem 0;
+    }
+
+    .faq-question:hover {
+        color: var(--primary-orange);
+    }
+
+    .faq-question span {
+        flex: 1;
+        line-height: 1.4;
+    }
+
+    .faq-toggle {
+        font-size: 1.1rem;
+        color: var(--primary-orange);
+        transition: transform 0.3s ease;
+        min-width: 24px;
+        text-align: center;
+    }
+
+    .faq-item.active .faq-toggle {
+        transform: rotate(45deg);
+    }
+
+    .faq-answer {
+        font-size: 0.9rem;
+        color: var(--gray-text);
+        line-height: 1.6;
+        display: none;
+        margin-top: 0.75rem;
+        padding-left: 0.5rem;
+        border-left: 2px solid var(--primary-orange-light);
+        animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .faq-item.active .faq-answer {
+        display: block;
+    }
+
+    /* ===== CONTACT SECTION ===== */
+    .contact-section {
+        background: linear-gradient(135deg, var(--primary-dark) 0%, #1a4d7a 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: var(--radius-md);
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        animation: fadeIn 0.5s ease 0.2s both;
+    }
+
+    .contact-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .contact-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .contact-title i {
+        color: var(--primary-orange);
+        animation: bounce 2s infinite;
+    }
+
+    .contact-text {
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+        opacity: 0.9;
+        position: relative;
+    }
+
+    .contact-info {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        flex-wrap: wrap;
+        position: relative;
+    }
+
+    .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.95rem;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.6rem 1.2rem;
+        border-radius: 40px;
+        transition: var(--transition);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .contact-item:hover {
+        background: rgba(255, 106, 0, 0.2);
+        transform: translateY(-2px);
+        border-color: var(--primary-orange);
+    }
+
+    .contact-item i {
+        font-size: 1.1rem;
+        color: var(--primary-orange);
+    }
+
+    /* ===== RESPONSIVE MOBILE ===== */
+    @media screen and (max-width: 768px) {
+        .content-wrapper {
+            padding: 1rem;
         }
 
-        body {
-            background: #f5f7fa;
-            margin: 0;
-            padding: 0;
-        }
-
-        /* ======== SIDEBAR ======== */
-        .sidebar {
-            width: 260px;
-            height: 100vh;
-            background: #0d3559;
-            color: white;
-            position: fixed;
-            top: 0;
-            left: 0;
-            padding: 25px;
-            box-sizing: border-box;
-            z-index: 1000;
-            overflow-y: auto;
-        }
-
-        .sidebar-title {
-            font-size: 22px;
-            font-weight: bold;
-            color: #ff6a00;
-            margin-bottom: 35px;
-            line-height: 1.3;
-        }
-
-        .menu-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 10px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            border-radius: 8px;
-            font-size: 16px;
-            text-decoration: none;
-            color: white;
-            transition: all 0.3s ease;
-        }
-
-        .menu-item:hover {
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .menu-active {
-            background: #ff6a00;
-            color: white;
-        }
-
-        .menu-icon {
-            width: 20px;
-            text-align: center;
-        }
-
-        /* ======== CONTENT ======== */
-        .content {
-            margin-left: 290px;
-            padding: 40px;
-            min-height: 100vh;
-            background: #f5f7fa;
-        }
-
-        .top-profile {
-            text-align: right;
-            font-size: 15px;
-            margin-bottom: 20px;
-            color: #333;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 8px;
-        }
-
-        /* ===== HEADER SECTION ===== */
         .header-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
         }
 
         .title {
-            font-size: 28px;
-            font-weight: 800;
-            color: #333;
+            font-size: 1.5rem;
+        }
+
+        .title i {
+            font-size: 1.5rem;
         }
 
         .profile-box {
-            background: white;
-            padding: 10px 18px;
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
-            box-shadow: 0px 2px 6px rgba(0,0,0,0.15);
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
         }
 
         .divider {
-            width: 100%;
-            height: 3px;
-            background: #E2E2E2;
-            margin: 0 0 25px 0;
+            width: 80px;
+            margin-bottom: 1rem;
         }
 
-        /* ===== CARD ===== */
         .card {
-            background: white;
-            border-radius: 14px;
-            padding: 25px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            margin-bottom: 25px;
+            padding: 1.25rem;
         }
 
-        /* ===== FAQ SECTION ===== */
-        .faq-section {
-            margin-bottom: 30px;
+        .card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 1.25rem;
         }
 
         .faq-item {
-            border-bottom: 1px solid #eee;
-            padding: 20px 0;
-        }
-
-        .faq-item:last-child {
-            border-bottom: none;
+            padding: 1rem 0;
         }
 
         .faq-question {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .faq-question:hover {
-            color: #ff6a00;
+            font-size: 0.95rem;
         }
 
         .faq-answer {
-            font-size: 16px;
-            color: #666;
-            line-height: 1.6;
-            display: none;
+            font-size: 0.85rem;
         }
 
-        .faq-toggle {
-            font-size: 20px;
-            color: #ff6a00;
-            transition: transform 0.3s ease;
-        }
-
-        .faq-item.active .faq-toggle {
-            transform: rotate(45deg);
-        }
-
-        /* ===== CONTACT SECTION ===== */
         .contact-section {
-            background: linear-gradient(135deg, #0d3559 0%, #1a4d7a 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 14px;
-            text-align: center;
+            padding: 1.5rem;
         }
 
         .contact-title {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .contact-title i {
+            font-size: 1.3rem;
         }
 
         .contact-text {
-            font-size: 16px;
-            margin-bottom: 25px;
-            opacity: 0.9;
+            font-size: 0.9rem;
+            margin-bottom: 1.25rem;
         }
 
         .contact-info {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 0.75rem;
         }
 
         .contact-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 16px;
+            width: 100%;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+    }
+
+    @media screen and (max-width: 576px) {
+        .content-wrapper {
+            padding: 0.75rem;
         }
 
-        .contact-item i {
-            font-size: 20px;
-            color: #ff6a00;
+        .title {
+            font-size: 1.3rem;
         }
 
-        /* Responsif */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 70px;
-                padding: 15px 10px;
-            }
-
-            .sidebar-title {
-                font-size: 14px;
-                margin-bottom: 25px;
-            }
-
-            .menu-item span {
-                display: none;
-            }
-
-            .menu-item {
-                justify-content: center;
-                padding: 15px 5px;
-            }
-
-            .content {
-                margin-left: 90px;
-                padding: 20px;
-            }
-
-            .contact-info {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .header-section {
-                flex-direction: column;
-                gap: 15px;
-                align-items: flex-start;
-            }
+        .title i {
+            font-size: 1.3rem;
         }
-    </style>
-</head>
-<body>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-    <div class="sidebar-title">SMART SHUTTLE DRIVER</div>
+        .card {
+            padding: 1rem;
+        }
 
-    <a href="{{ route('driver.profile') ?? '#' }}" class="menu-item" id="profile-link">
-        <div class="menu-icon"><i class="fas fa-user"></i></div>
-        <span>Profile Saya</span>
-    </a>
-    <a href="{{ route('driver.dashboard') ?? '#' }}" class="menu-item" id="dashboard-link">
-        <div class="menu-icon"><i class="fas fa-chart-bar"></i></div>
-        <span>Dashboard</span>
-    </a>
-    <a href="{{ route('driver.perjalanan') ?? '#' }}" class="menu-item" id="perjalanan-link">
-        <div class="menu-icon"><i class="fas fa-route"></i></div>
-        <span>Perjalanan</span>
-    </a>
-    <a href="{{ route('driver.jadwal') ?? '#' }}" class="menu-item" id="jadwal-link">
-        <div class="menu-icon"><i class="fas fa-calendar-alt"></i></div>
-        <span>Jadwal</span>
-    </a>
-    <a href="{{ route('driver.laporan') ?? '#' }}" class="menu-item" id="laporan-link">
-        <div class="menu-icon"><i class="fas fa-file-alt"></i></div>
-        <span>Laporan</span>
-    </a>
-    <a href="{{ route('driver.pengaturan') ?? '#' }}" class="menu-item" id="pengaturan-link">
-        <div class="menu-icon"><i class="fas fa-cog"></i></div>
-        <span>Pengaturan</span>
-    </a>
-    <a href="{{ route('driver.bantuan') ?? '#' }}" class="menu-item menu-active" id="bantuan-link">
-        <div class="menu-icon"><i class="fas fa-question-circle"></i></div>
-        <span>Bantuan</span>
-    </a>
-</div>
+        .card h3 {
+            font-size: 1rem;
+        }
 
-<!-- MAIN CONTENT -->
-<main class="content">
-    <!-- Top Profile untuk konten utama -->
-    <div class="top-profile">
-        <i class="fas fa-user-circle"></i>
-        <span>{{ auth()->guard('driver')->user()?->name ?? 'Driver' }}</span>
-    </div>
+        .faq-question {
+            font-size: 0.9rem;
+        }
 
+        .faq-answer {
+            font-size: 0.8rem;
+        }
+
+        .contact-title {
+            font-size: 1.2rem;
+        }
+
+        .contact-item {
+            font-size: 0.85rem;
+        }
+    }
+
+    @media screen and (max-width: 360px) {
+        .title {
+            font-size: 1.2rem;
+        }
+
+        .profile-box {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+        }
+
+        .faq-question {
+            font-size: 0.85rem;
+        }
+
+        .faq-toggle {
+            font-size: 1rem;
+            min-width: 20px;
+        }
+    }
+
+    /* Landscape mode */
+    @media screen and (max-width: 896px) and (orientation: landscape) {
+        .contact-info {
+            flex-direction: row;
+        }
+
+        .contact-item {
+            width: auto;
+        }
+    }
+
+    /* Tablet devices */
+    @media screen and (min-width: 769px) and (max-width: 1024px) {
+        .content-wrapper {
+            padding: 1.5rem;
+        }
+
+        .contact-info {
+            gap: 1.5rem;
+        }
+    }
+</style>
+@endpush
+
+@section('content')
+<div class="content-wrapper">
     <!-- HEADER SECTION -->
     <div class="header-section">
-        <h1 class="title">Bantuan & FAQ</h1>
+        <h1 class="title">
+            <i class="fas fa-headset"></i>
+            Bantuan & FAQ
+        </h1>
     </div>
 
     <div class="divider"></div>
 
     <!-- FAQ SECTION -->
     <div class="card faq-section">
-        <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #333;">Pertanyaan yang Sering Diajukan</h3>
+        <h3>
+            <i class="fas fa-question-circle"></i>
+            Pertanyaan yang Sering Diajukan
+        </h3>
 
         <div class="faq-item">
             <div class="faq-question" onclick="toggleFAQ(this)">
@@ -316,7 +528,7 @@
                 <i class="fas fa-plus faq-toggle"></i>
             </div>
             <div class="faq-answer">
-                Untuk login ke aplikasi driver Smart Shuttle, gunakan email dan password yang telah diberikan oleh admin. Pastikan koneksi internet stabil saat login.
+                Untuk login ke aplikasi driver Smart Shuttle, gunakan email dan password yang telah diberikan oleh admin. Pastikan koneksi internet stabil saat login. Jika lupa password, hubungi admin untuk reset password.
             </div>
         </div>
 
@@ -326,7 +538,7 @@
                 <i class="fas fa-plus faq-toggle"></i>
             </div>
             <div class="faq-answer">
-                Pada halaman Perjalanan, klik tombol "Update Lokasi" untuk mengirimkan posisi terkini kepada penumpang. Pastikan GPS perangkat Anda aktif.
+                Pada halaman <strong>Perjalanan</strong>, klik tombol "Update Lokasi" untuk mengirimkan posisi terkini kepada penumpang. Pastikan GPS perangkat Anda aktif dan izin lokasi diberikan untuk aplikasi.
             </div>
         </div>
 
@@ -336,7 +548,7 @@
                 <i class="fas fa-plus faq-toggle"></i>
             </div>
             <div class="faq-answer">
-                Segera hubungi admin melalui kontak yang tersedia atau gunakan fitur laporan di aplikasi untuk melaporkan masalah teknis shuttle.
+                Segera hubungi admin melalui kontak yang tersedia atau gunakan fitur laporan di aplikasi untuk melaporkan masalah teknis shuttle. Tim kami akan segera membantu menangani kendala yang terjadi.
             </div>
         </div>
 
@@ -346,7 +558,7 @@
                 <i class="fas fa-plus faq-toggle"></i>
             </div>
             <div class="faq-answer">
-                Kunjungi menu "Jadwal" di sidebar untuk melihat semua jadwal perjalanan yang telah ditugaskan kepada Anda.
+                Kunjungi menu <strong>Jadwal</strong> di sidebar untuk melihat semua jadwal perjalanan yang telah ditugaskan kepada Anda. Di sana Anda bisa melihat detail jadwal, rute, dan daftar penumpang.
             </div>
         </div>
 
@@ -356,7 +568,7 @@
                 <i class="fas fa-plus faq-toggle"></i>
             </div>
             <div class="faq-answer">
-                Akses menu "Laporan" untuk membuat dan mengirimkan laporan perjalanan harian. Pastikan semua data terisi dengan lengkap.
+                Akses menu <strong>Laporan</strong> untuk membuat dan mengirimkan laporan perjalanan harian. Pastikan semua data terisi dengan lengkap termasuk jumlah penumpang, paket, dan kendala yang dialami.
             </div>
         </div>
 
@@ -366,15 +578,28 @@
                 <i class="fas fa-plus faq-toggle"></i>
             </div>
             <div class="faq-answer">
-                Catat penumpang yang tidak hadir dalam laporan perjalanan dan informasikan kepada admin untuk tindak lanjut refund atau penjadwalan ulang.
+                Catat penumpang yang tidak hadir dalam laporan perjalanan dan informasikan kepada admin untuk tindak lanjut refund atau penjadwalan ulang. Tunggu konfirmasi dari admin sebelum melanjutkan perjalanan.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFAQ(this)">
+                <span>Bagaimana cara mengganti mode penerimaan jadwal?</span>
+                <i class="fas fa-plus faq-toggle"></i>
+            </div>
+            <div class="faq-answer">
+                Masuk ke menu <strong>Pengaturan</strong>, lalu pilih antara mode "Penerimaan Otomatis" atau "Konfirmasi Manual" sesuai preferensi Anda. Simpan perubahan untuk mengaktifkan mode yang dipilih.
             </div>
         </div>
     </div>
 
     <!-- CONTACT SECTION -->
     <div class="contact-section">
-        <h3 class="contact-title">Butuh Bantuan Lebih Lanjut?</h3>
-        <p class="contact-text">Hubungi tim support kami untuk mendapatkan bantuan langsung</p>
+        <h3 class="contact-title">
+            <i class="fas fa-phone-alt"></i>
+            Butuh Bantuan Lebih Lanjut?
+        </h3>
+        <p class="contact-text">Hubungi tim support kami untuk mendapatkan bantuan langsung 24/7</p>
 
         <div class="contact-info">
             <div class="contact-item">
@@ -390,62 +615,52 @@
                 <span>24/7 Support</span>
             </div>
         </div>
-    </div>
-</main>
 
+        <div style="margin-top: 1.5rem; font-size: 0.85rem; opacity: 0.8;">
+            <i class="fas fa-map-marker-alt me-1"></i> Jl. Soekarno Hatta No. 123, Bandung
+        </div>
+    </div>
+</div>
+@endsection
+
+@push('scripts')
 <script>
-    // Fungsi untuk mengatur status aktif pada menu sidebar
-    function setActiveMenu() {
+    document.addEventListener('DOMContentLoaded', function() {
+        'use strict';
+        console.log('Halaman Bantuan & FAQ siap.');
+
+        // Set active menu untuk halaman bantuan
         const menuLinks = document.querySelectorAll('.menu-item');
         menuLinks.forEach(link => {
             link.classList.remove('menu-active');
+            if (link.id === 'bantuan-link') {
+                link.classList.add('menu-active');
+            }
         });
-
-        const currentPath = window.location.pathname;
-        let activeLink = null;
-
-        if (currentPath.includes('dashboard')) {
-            activeLink = document.getElementById('dashboard-link');
-        } else if (currentPath.includes('perjalanan')) {
-            activeLink = document.getElementById('perjalanan-link');
-        } else if (currentPath.includes('jadwal')) {
-            activeLink = document.getElementById('jadwal-link');
-        } else if (currentPath.includes('profile')) {
-            activeLink = document.getElementById('profile-link');
-        } else if (currentPath.includes('laporan')) {
-            activeLink = document.getElementById('laporan-link');
-        } else if (currentPath.includes('pengaturan')) {
-            activeLink = document.getElementById('pengaturan-link');
-        } else if (currentPath.includes('bantuan')) {
-            activeLink = document.getElementById('bantuan-link');
-        }
-
-        if (!activeLink) {
-            activeLink = document.getElementById('dashboard-link');
-        }
-
-        if (activeLink) {
-            activeLink.classList.add('menu-active');
-        }
-    }
+    });
 
     // Fungsi untuk toggle FAQ
     function toggleFAQ(element) {
-        const faqItem = element.parentElement;
+        const faqItem = element.closest('.faq-item');
         const answer = faqItem.querySelector('.faq-answer');
         const toggle = element.querySelector('.faq-toggle');
 
-        if (answer.style.display === 'block') {
-            answer.style.display = 'none';
+        if (faqItem.classList.contains('active')) {
             faqItem.classList.remove('active');
+            answer.style.display = 'none';
         } else {
-            answer.style.display = 'block';
             faqItem.classList.add('active');
+            answer.style.display = 'block';
         }
     }
 
-    document.addEventListener('DOMContentLoaded', setActiveMenu);
+    // Buka FAQ pertama secara default
+    window.addEventListener('load', function() {
+        const firstFaq = document.querySelector('.faq-item');
+        if (firstFaq) {
+            const question = firstFaq.querySelector('.faq-question');
+            toggleFAQ(question);
+        }
+    });
 </script>
-
-</body>
-</html>
+@endpush
