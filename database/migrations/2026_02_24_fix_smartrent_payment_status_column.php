@@ -13,12 +13,24 @@ return new class extends Migration
     public function up(): void
     {
         // Change payment_status column from ENUM to STRING(50)
-        Schema::table('smartrent_transactions', function (Blueprint $table) {
-            // Drop the enum column and recreate as string
-            // For MySQL, we need to use raw SQL or drop/recreate
+        // Use DB driver detection to run the appropriate SQL for MySQL vs PostgreSQL
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'mysql') {
+            // MySQL: MODIFY COLUMN and position (AFTER) are supported
             DB::statement("ALTER TABLE smartrent_transactions MODIFY COLUMN payment_status VARCHAR(50) NOT NULL DEFAULT 'unpaid' AFTER paid_at");
-        });
-        
+        } elseif ($driver === 'pgsql') {
+            // PostgreSQL: change type to varchar, set default and not null. No column ordering support.
+            // If the column had a CHECK (enum) constraint, ALTER TYPE/ALTER COLUMN with USING will coerce values.
+            DB::statement("ALTER TABLE smartrent_transactions ALTER COLUMN payment_status TYPE VARCHAR(50) USING payment_status::text");
+            DB::statement("ALTER TABLE smartrent_transactions ALTER COLUMN payment_status SET DEFAULT 'unpaid'");
+            DB::statement("UPDATE smartrent_transactions SET payment_status = 'unpaid' WHERE payment_status IS NULL");
+            DB::statement("ALTER TABLE smartrent_transactions ALTER COLUMN payment_status SET NOT NULL");
+        } else {
+            // Fallback: try a generic ALTER that may work on other drivers
+            DB::statement("ALTER TABLE smartrent_transactions ALTER COLUMN payment_status TYPE VARCHAR(50)");
+        }
+
         // Standardize all existing payment status values
         $this->normalizePaymentStatuses();
     }

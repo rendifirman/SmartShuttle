@@ -630,11 +630,12 @@
                 $duration = \Carbon\Carbon::parse($item->start_date)->diffInDays(\Carbon\Carbon::parse($item->end_date));
                 $vehicleInfo = $item->vehicle_name . ' - ' . $serviceTypeLabel;
                 
+                // Use transaction model for payment status (single source of truth)
+                // No longer load payment from order->payment (deprecated)
+                
                 // Cek apakah bisa show e-ticket menggunakan method canShowETicket()
                 $canShowETicket = $item->canShowETicket();
-                
-                // Debug: tampilkan status asli untuk membantu troubleshooting (opsional, bisa dihapus setelah fix)
-                $debugInfo = 'Status: ' . $item->payment_status . ' | Is Paid: ' . ($item->is_paid ? 'Ya' : 'Tidak');
+                }
             @endphp
 
             <div class="order-item blue-bg" data-status="{{ $filterStatus }}">

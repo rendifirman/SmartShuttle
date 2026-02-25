@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\SmartRentTransaction;
+use App\Models\SmartRentOrder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -17,25 +18,89 @@ class SmartRentETicketController extends Controller
      */
     public function show($orderNumber)
     {
-        // Find transaction by order number and ensure it belongs to current user
+        Log::debug('SmartRent e-ticket show() called', ['order_number' => $orderNumber, 'user_id' => Auth::id()]);
+        
+        // STEP 1: Try to load from new orders/payments structure first
+        $order = SmartRentOrder::where('order_number', $orderNumber)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        Log::debug('Order lookup result', ['order_found' => $order ? 'yes' : 'no', 'order_id' => $order?->id]);
+        
+        $payment = $order ? $order->payment : null;
+        
+        Log::debug('Payment lookup result', [
+            'payment_found' => $payment ? 'yes' : 'no',
+            'payment_status' => $payment?->payment_status,
+            'order_status' => $order?->status
+        ]);
+
+        // STEP 2: Check if payment is confirmed (new structure)
+        if ($payment) {
+            $paymentStatus = strtolower($payment->payment_status);
+            $isPaymentConfirmed = in_array($paymentStatus, ['paid', 'lunas', 'settlement', 'success', 'confirmed']);
+            
+            Log::debug('Payment status check', [
+                'payment_status' => $payment->payment_status,
+                'payment_status_normalized' => $paymentStatus,
+                'is_confirmed' => $isPaymentConfirmed
+            ]);
+            
+            if ($isPaymentConfirmed) {
+                // Load transaction for price breakdown if available
+                $transaction = SmartRentTransaction::where('order_number', $orderNumber)
+                    ->where('user_id', Auth::id())
+                    ->first();
+                $priceBreakdown = $transaction ? $this->getPriceBreakdown($transaction) : null;
+                
+                Log::info('E-ticket loaded from order/payment structure', [
+                    'order_number' => $orderNumber,
+                    'order_id' => $order->id,
+                    'payment_id' => $payment->id
+                ]);
+                
+                return view('customer.smartrent-e-ticket', compact('order', 'payment', 'transaction', 'priceBreakdown'));
+            } else {
+                Log::warning('Payment not confirmed in new structure', [
+                    'order_number' => $orderNumber,
+                    'payment_status' => $payment->payment_status
+                ]);
+                return redirect()->route('smartrent.riwayat')
+                    ->with('error', 'Pembayaran Anda belum dikonfirmasi. Status: ' . ucfirst($payment->payment_status));
+            }
+        }
+
+        // STEP 3: Fallback to legacy transaction model
+        Log::debug('Falling back to legacy SmartRentTransaction structure');
         $transaction = SmartRentTransaction::where('order_number', $orderNumber)
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
         // Check if transaction is paid using is_paid accessor (supports: paid, settlement, success, completed)
         if (!$transaction->is_paid) {
+            Log::warning('Transaction not paid in legacy structure', [
+                'order_number' => $orderNumber,
+                'payment_status' => $transaction->payment_status,
+                'is_paid' => $transaction->is_paid
+            ]);
             return redirect()->route('smartrent.riwayat')
                 ->with('error', 'E-Ticket hanya tersedia untuk transaksi yang sudah dibayar dan dikonfirmasi.');
         }
 
         // Generate QR code if not exists
         if (!$transaction->qr_code || !$transaction->qr_path) {
+            Log::debug('Generating QR code for transaction');
             $this->generateQrCode($transaction);
             $transaction->refresh();
         }
 
         // Get price breakdown
         $priceBreakdown = $this->getPriceBreakdown($transaction);
+        
+        Log::info('E-ticket loaded from legacy transaction structure', [
+            'order_number' => $orderNumber,
+            'transaction_id' => $transaction->id
+        ]);
 
         return view('customer.smartrent-e-ticket', compact('transaction', 'priceBreakdown'));
     }

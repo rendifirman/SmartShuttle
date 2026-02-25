@@ -592,12 +592,6 @@
                 <span>Promo</span>
             </a>
             @endif
-            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_tarif'))
-            <a href="{{ route('admin.master-tarif.index') }}" class="submenu-item" id="tarif-link">
-                <i class="fas fa-money-bill-wave submenu-icon"></i>
-                <span>Tarif</span>
-            </a>
-            @endif
             @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_kontak'))
             <a href="{{ route('admin.kontakperusahaan') }}" class="submenu-item" id="kontak-link">
                 <i class="fas fa-address-book submenu-icon"></i>
@@ -636,7 +630,6 @@
             </a>
             @endif
             @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_jadwal'))
-            <!-- ★★★ PERBAIKAN DI SINI: Ubah route('admin.jadwal') menjadi route('admin.jadwal.index') ★★★ -->
             <a href="{{ route('admin.jadwal.index') }}" class="submenu-item" id="jadwal-link">
                 <i class="fas fa-calendar-alt submenu-icon"></i>
                 <span>Jadwal</span>
@@ -656,10 +649,10 @@
         </div>
 
         <div class="submenu" id="transaksi-submenu">
-            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_smartsend_transaksi'))
-            <a href="{{ route('admin.smartsend-transaksi') }}" class="submenu-item" id="smartsend-transaksi-link">
-                <i class="fas fa-shopping-cart submenu-icon"></i>
-                <span>Smartsend</span>
+            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_smartrent'))
+            <a href="{{ route('admin.smartrent.index') }}" class="submenu-item" id="smartrent-transaksi-link">
+                <i class="fas fa-car-side submenu-icon"></i>
+                <span>SmartRent</span>
             </a>
             @endif
             @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_perjalanan_transaksi'))
@@ -677,47 +670,16 @@
         </div>
         @endif
 
-        <!-- SmartSend (with submenu) -->
-        @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_smartsend'))
-        <div class="menu-item" id="smartsend-toggle">
-            <div class="menu-left">
-                <i class="fas fa-shipping-fast menu-icon"></i>
-                <span>SmartSend</span>
-            </div>
-            <i class="fas fa-chevron-down menu-arrow"></i>
-        </div>
-
-        <div class="submenu" id="smartsend-submenu">
-            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_smartsend_tiket'))
-            <a href="{{ route('admin.smartsend-tiket') }}" class="submenu-item" id="smartsend-tiket-link">
-                <i class="fas fa-ticket-alt submenu-icon"></i>
-                <span>Tiket</span>
-            </a>
-            @endif
-            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_smartsend_perjalanan'))
-            <a href="{{ route('admin.smartsend-perjalanan') }}" class="submenu-item" id="smartsend-perjalanan-link">
-                <i class="fas fa-route submenu-icon"></i>
-                <span>Perjalanan</span>
-            </a>
-            @endif
-            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_smartsend_armada'))
-            <a href="{{ route('admin.smartsend-armada') }}" class="submenu-item" id="smartsend-armada-link">
-                <i class="fas fa-bus submenu-icon"></i>
-                <span>Armada</span>
-            </a>
-            @endif
-        </div>
-        @endif
-
         <!-- SmartRent -->
         @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_smartrent'))
-        <a href="{{ route('admin.smartrent') }}" class="menu-item" id="smartrent-link">
+        <a href="{{ route('admin.smartrent.create') }}" class="menu-item" id="smartrent-link">
             <div class="menu-left">
                 <i class="fas fa-car menu-icon"></i>
                 <span>SmartRent</span>
             </div>
         </a>
         @endif
+
 
         <!-- Laporan -->
         @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_laporan'))
@@ -746,7 +708,6 @@
                 <span>User</span>
             </a>
             @endif
-
             @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_menu'))
             <a href="{{ route('admin.menu') }}" class="submenu-item" id="menu-link">
                 <i class="fas fa-bars submenu-icon"></i>
@@ -805,7 +766,6 @@
         'promo': { title: 'Master Data - Promo', icon: 'fas fa-tag' },
         'kontak': { title: 'Master Data - Kontak', icon: 'fas fa-address-book' },
         'artikel': { title: 'Master Data - Artikel', icon: 'fas fa-newspaper' },
-        'tarif': { title: 'Master Data - Tarif', icon: 'fas fa-money-bill-wave' },
         'armada': { title: 'Master Data - Armada', icon: 'fas fa-bus' },
         'driver': { title: 'Master Data - Driver', icon: 'fas fa-user-tie' },
         'pegawai': { title: 'Master Data - Pegawai', icon: 'fas fa-users' },
@@ -817,7 +777,11 @@
         'smartsend-tiket': { title: 'SmartSend - Tiket', icon: 'fas fa-ticket-alt' },
         'smartsend-perjalanan': { title: 'SmartSend - Perjalanan', icon: 'fas fa-route' },
         'smartsend-armada': { title: 'SmartSend - Armada', icon: 'fas fa-bus' },
-        'smartrent': { title: 'SmartRent', icon: 'fas fa-car' },
+        'smartrent-transaksi': { title: 'Transaksi - SmartRent', icon: 'fas fa-car' },
+        'smartrent-create': { title: 'SmartRent - Tambah Transaksi', icon: 'fas fa-plus' },
+        'smartrent-tiket': { title: 'SmartRent - Tiket', icon: 'fas fa-ticket-alt' },
+        'smartrent-perjalanan': { title: 'SmartRent - Perjalanan', icon: 'fas fa-route' },
+        'smartrent-armada': { title: 'SmartRent - Armada', icon: 'fas fa-bus' },
         'laporan': { title: 'Laporan', icon: 'fas fa-file-alt' },
         'user': { title: 'Pengaturan - User', icon: 'fas fa-user-cog' },
         'menu': { title: 'Pengaturan - Menu', icon: 'fas fa-bars' }
@@ -1012,7 +976,7 @@
         }
 
         // Transaksi - Smartsend (termasuk tiket-perjalanan untuk backward compatibility)
-        else if (currentPath.includes('smartsend-transaksi')) {
+        else if (currentPath.includes('smartsend-transaksi') || currentPath.includes('/smartsend')) {
             // Buka submenu transaksi
             const transaksiSubmenu = document.getElementById('transaksi-submenu');
             const transaksiArrow = document.getElementById('transaksi-toggle').querySelector('.menu-arrow');
@@ -1080,9 +1044,63 @@
         }
 
         // SmartRent
-        else if (currentPath.includes('smartrent')) {
-            document.getElementById('smartrent-link').classList.add('menu-active');
-            updatePageTitle('smartrent');
+        // SmartRent Transactions (under Transaksi submenu)
+        // SmartRent - Create (direct link)
+        else if (currentPath.includes('/smartrent/create')) {
+            // Mark main SmartRent link active
+            const smartrentMain = document.getElementById('smartrent-link');
+            if (smartrentMain) smartrentMain.classList.add('menu-active');
+            updatePageTitle('smartrent-create');
+        }
+
+        // SmartRent Transactions (under Transaksi submenu)
+        else if (currentPath.includes('/smartrent') && !currentPath.includes('smartrent-tiket') && !currentPath.includes('smartrent-perjalanan') && !currentPath.includes('smartrent-armada')) {
+            // Buka submenu transaksi
+            const transaksiSubmenu = document.getElementById('transaksi-submenu');
+            const transaksiArrow = document.getElementById('transaksi-toggle').querySelector('.menu-arrow');
+            if (transaksiSubmenu) transaksiSubmenu.classList.add('open');
+            if (transaksiArrow) transaksiArrow.classList.add('rotated');
+            
+            // Highlight SmartRent transksi
+            const smartrentLink = document.getElementById('smartrent-transaksi-link');
+            if (smartrentLink) smartrentLink.classList.add('active');
+            updatePageTitle('smartrent-transaksi');
+        }
+        // SmartRent Tiket
+        else if (currentPath.includes('smartrent-tiket')) {
+            const smartrentSubmenu = document.getElementById('smartrent-submenu');
+            const smartrentToggleEl = document.getElementById('smartrent-toggle');
+            const smartrentArrow = smartrentToggleEl ? smartrentToggleEl.querySelector('.menu-arrow') : null;
+            if (smartrentSubmenu) smartrentSubmenu.classList.add('open');
+            if (smartrentArrow) smartrentArrow.classList.add('rotated');
+            
+            const el = document.getElementById('smartrent-tiket-link');
+            if (el) el.classList.add('active');
+            updatePageTitle('smartrent-tiket');
+        }
+        // SmartRent Perjalanan
+        else if (currentPath.includes('smartrent-perjalanan')) {
+            const smartrentSubmenu = document.getElementById('smartrent-submenu');
+            const smartrentToggleEl = document.getElementById('smartrent-toggle');
+            const smartrentArrow = smartrentToggleEl ? smartrentToggleEl.querySelector('.menu-arrow') : null;
+            if (smartrentSubmenu) smartrentSubmenu.classList.add('open');
+            if (smartrentArrow) smartrentArrow.classList.add('rotated');
+            
+            const el = document.getElementById('smartrent-perjalanan-link');
+            if (el) el.classList.add('active');
+            updatePageTitle('smartrent-perjalanan');
+        }
+        // SmartRent Armada
+        else if (currentPath.includes('smartrent-armada')) {
+            const smartrentSubmenu = document.getElementById('smartrent-submenu');
+            const smartrentToggleEl = document.getElementById('smartrent-toggle');
+            const smartrentArrow = smartrentToggleEl ? smartrentToggleEl.querySelector('.menu-arrow') : null;
+            if (smartrentSubmenu) smartrentSubmenu.classList.add('open');
+            if (smartrentArrow) smartrentArrow.classList.add('rotated');
+            
+            const el = document.getElementById('smartrent-armada-link');
+            if (el) el.classList.add('active');
+            updatePageTitle('smartrent-armada');
         }
 
         // Laporan

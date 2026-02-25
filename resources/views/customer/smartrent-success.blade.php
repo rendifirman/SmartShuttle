@@ -388,16 +388,16 @@
 
             <div class="order-number-box">
                 <div class="order-number-label">Nomor Pesanan</div>
-                <div class="order-number-value">{{ $transaction->order_number ?? ($order_number ?? '-') }}</div>
+                <div class="order-number-value">{{ $order->order_number ?? $transaction->order_number ?? ($order_number ?? '-') }}</div>
                 
                 {{-- Tombol Lihat dan Download E-Ticket --}}
                 <div class="order-number-actions">
-                    <a href="{{ route('smartrent.e-ticket', ['orderNumber' => $transaction->order_number ?? $order_number]) }}" 
+                    <a href="{{ route('smartrent.e-ticket', ['orderNumber' => $order?->order_number ?? $transaction?->order_number ?? $order_number]) }}" 
                        class="btn-eticket view" 
-                       target="_blank">
+                       title="Buka halaman E-Ticket">
                         <i class="fas fa-ticket-alt"></i> Lihat E-Ticket
                     </a>
-                    <a href="{{ route('smartrent.e-ticket.download', ['orderNumber' => $transaction->order_number ?? $order_number]) }}" 
+                    <a href="{{ route('smartrent.e-ticket.download', ['orderNumber' => $order?->order_number ?? $transaction?->order_number ?? $order_number]) }}" 
                        class="btn-eticket download">
                         <i class="fas fa-download"></i> Download E-Ticket
                     </a>
@@ -407,7 +407,7 @@
             @if($transaction->invoice_number ?? false)
             <div style="text-align: center; margin-bottom: 24px;">
                 <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Nomor Invoice</div>
-                <div style="font-size: 16px; font-weight: 600; color: var(--dark);">{{ $transaction->invoice_number }}</div>
+                <div style="font-size: 16px; font-weight: 600; color: var(--dark);">{{ $order->invoice_number ?? $transaction->invoice_number }}</div>
             </div>
             @endif
         </div>
@@ -468,14 +468,17 @@
                     <div class="summary-row">
                         <span class="summary-label">Metode Pembayaran</span>
                         <span class="summary-value">
-                            @if($transaction->payment_method === 'qris')
+                            @php
+                                $pm = $transaction->payment_method ?? null;
+                            @endphp
+                            @if($pm === 'qris')
                                 QRIS
-                            @elseif($transaction->payment_method === 'bca_va')
+                            @elseif($pm === 'bca_va')
                                 BCA Virtual Account
-                            @elseif($transaction->payment_method === 'mandiri_va')
+                            @elseif($pm === 'mandiri_va')
                                 Mandiri Virtual Account
                             @else
-                                {{ ucfirst(str_replace('_', ' ', $transaction->payment_method ?? '-')) }}
+                                {{ ucfirst(str_replace('_', ' ', $pm ?? '-')) }}
                             @endif
                         </span>
                     </div>
@@ -486,13 +489,26 @@
                     <div class="summary-row">
                         <span class="summary-label">Status Pembayaran</span>
                         <span class="summary-value">
-                            @if($transaction->is_paid)
+                            @php
+                                // Use transaction as primary source of truth for payment status
+                                $isPaid = $transaction->is_paid ?? false;
+                                $label = $transaction->payment_status_label ?? 'Belum Dibayar';
+                                
+                                // Log status for debugging
+                                \Log::info('SmartRent Success - Payment Status Display', [
+                                    'order_number' => $transaction->order_number,
+                                    'payment_status' => $transaction->payment_status,
+                                    'is_paid' => $isPaid,
+                                    'label' => $label,
+                                ]);
+                            @endphp
+                            @if($isPaid)
                                 <span style="color: var(--success);">
-                                    <i class="fas fa-check-circle"></i> {{ $transaction->payment_status_label }}
+                                    <i class="fas fa-check-circle"></i> {{ $label }}
                                 </span>
                             @else
                                 <span style="color: #ef6c00;">
-                                    <i class="fas fa-clock"></i> {{ $transaction->payment_status_label }}
+                                    <i class="fas fa-clock"></i> {{ $label }}
                                 </span>
                             @endif
                         </span>

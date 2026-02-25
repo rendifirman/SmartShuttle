@@ -4,7 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Ticket SmartRent - {{ $transaction->order_number }}</title>
+    @php
+        // Normalize source object: prefer `order` (new structure) then `transaction` (legacy)
+        $source = $order ?? $transaction ?? null;
+        $payment = $payment ?? ($order->payment ?? null) ?? null;
+    @endphp
+    <title>E-Ticket SmartRent - {{ $source->order_number ?? '-' }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -661,7 +666,7 @@
                         <span>RENTAL KENDARAAN</span>
                     </h1>
                     <div class="ticket-type-badge">
-                        {{ $transaction->service_type === 'with_driver' ? 'Dengan Sopir' : 'Sewa Mandiri' }}
+                        {{ ($source->service_type ?? null) === 'with_driver' ? 'Dengan Sopir' : 'Sewa Mandiri' }}
                     </div>
                 </div>
 
@@ -672,7 +677,7 @@
 
                 <div class="order-number-section">
                     <span class="order-number-label">Nomor Pesanan</span>
-                    <span class="order-number-value">{{ $transaction->order_number }}</span>
+                    <span class="order-number-value">{{ $source->order_number ?? '-' }}</span>
                 </div>
             </div>
 
@@ -680,49 +685,53 @@
                 <div class="info-grid">
                     <div class="info-item">
                         <span class="info-label">Nomor Invoice</span>
-                        <span class="info-value">{{ $transaction->invoice_number ?? '-' }}</span>
+                        <span class="info-value">{{ $source->invoice_number ?? '-' }}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Tanggal Pemesanan</span>
-                        <span class="info-value">{{ $transaction->created_at->format('d M Y H:i') }}</span>
+                        <span class="info-value">{{ optional($source->created_at)->format('d M Y H:i') }}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Status Pembayaran</span>
                         <span class="info-value highlight">
-                            <i class="fas fa-{{ $transaction->is_paid ? 'check-circle' : 'clock' }}"></i> 
-                            {{ $transaction->payment_status_label }}
+                            @php
+                                $isPaid = $payment ? strtolower($payment->payment_status) === 'paid' : ($transaction->is_paid ?? false);
+                                $statusLabel = $payment ? ucfirst($payment->payment_status) : ($transaction->payment_status_label ?? '-');
+                            @endphp
+                            <i class="fas fa-{{ $isPaid ? 'check-circle' : 'clock' }}"></i>
+                            {{ $statusLabel }}
                         </span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Tanggal Pembayaran</span>
-                        <span class="info-value">{{ $transaction->paid_at ? $transaction->paid_at->format('d M Y H:i') : '-' }}</span>
+                        <span class="info-value">{{ $payment && $payment->paid_at ? $payment->paid_at->format('d M Y H:i') : (optional($transaction->paid_at)->format('d M Y H:i') ?? '-') }}</span>
                     </div>
                 </div>
 
                 <div class="vehicle-info-card">
-                    <div class="vehicle-name">
-                        {{ $transaction->vehicle_name }}
+                        <div class="vehicle-name">
+                        {{ $source->vehicle_name ?? '-' }}
                     </div>
                     <div class="vehicle-details">
                         <div class="vehicle-detail-item">
                             <i class="fas fa-tag"></i>
                             <div class="vehicle-detail-text">
                                 <span class="vehicle-detail-label">Layanan</span>
-                                <span class="vehicle-detail-value">{{ $transaction->service_type === 'with_driver' ? 'Dengan Sopir' : 'Sewa Mandiri' }}</span>
+                                <span class="vehicle-detail-value">{{ ($source->service_type ?? null) === 'with_driver' ? 'Dengan Sopir' : 'Sewa Mandiri' }}</span>
                             </div>
                         </div>
                         <div class="vehicle-detail-item">
                             <i class="fas fa-clock"></i>
                             <div class="vehicle-detail-text">
                                 <span class="vehicle-detail-label">Durasi</span>
-                                <span class="vehicle-detail-value">{{ $transaction->duration }} Hari</span>
+                                <span class="vehicle-detail-value">{{ $source->duration ?? '-' }} Hari</span>
                             </div>
                         </div>
                         <div class="vehicle-detail-item">
                             <i class="fas fa-map-marker-alt"></i>
                             <div class="vehicle-detail-text">
                                 <span class="vehicle-detail-label">Penjemputan</span>
-                                <span class="vehicle-detail-value">{{ $transaction->pickup_location ?? '-' }}</span>
+                                <span class="vehicle-detail-value">{{ $source->pickup_location ?? '-' }}</span>
                             </div>
                         </div>
                     </div>
@@ -732,11 +741,11 @@
                     <div class="period-date">
                         <div class="period-label">Mulai Sewa</div>
                         <div class="period-value">
-                            {{ $transaction->start_date ? $transaction->start_date->format('d M Y') : '-' }}
+                            {{ $source->start_date ? $source->start_date->format('d M Y') : '-' }}
                         </div>
-                        @if($transaction->start_time)
+                        @if(!empty($source->start_time))
                         <div class="period-time">
-                            {{ $transaction->start_time }}
+                            {{ $source->start_time }}
                         </div>
                         @endif
                     </div>
@@ -748,11 +757,11 @@
                     <div class="period-date">
                         <div class="period-label">Selesai Sewa</div>
                         <div class="period-value">
-                            {{ $transaction->end_date ? $transaction->end_date->format('d M Y') : '-' }}
+                            {{ $source->end_date ? $source->end_date->format('d M Y') : '-' }}
                         </div>
-                        @if($transaction->end_time)
+                        @if(!empty($source->end_time))
                         <div class="period-time">
-                            {{ $transaction->end_time }}
+                            {{ $source->end_time }}
                         </div>
                         @endif
                     </div>
@@ -761,20 +770,20 @@
                 <div class="info-grid" style="margin-top: 20px;">
                     <div class="info-item full-width">
                         <span class="info-label">Nama Pemesan</span>
-                        <span class="info-value">{{ $transaction->customer_name }}</span>
+                        <span class="info-value">{{ $source->customer_name ?? ($transaction->customer_name ?? '-') }}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Email</span>
-                        <span class="info-value">{{ $transaction->customer_email }}</span>
+                        <span class="info-value">{{ $source->customer_email ?? ($transaction->customer_email ?? '-') }}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Nomor Telepon</span>
-                        <span class="info-value">{{ $transaction->customer_phone }}</span>
+                        <span class="info-value">{{ $source->customer_phone ?? ($transaction->customer_phone ?? '-') }}</span>
                     </div>
-                    @if($transaction->customer_address)
+                    @if(!empty($source->customer_address) || !empty($transaction->customer_address))
                     <div class="info-item full-width">
                         <span class="info-label">Alamat</span>
-                        <span class="info-value">{{ $transaction->customer_address }}</span>
+                        <span class="info-value">{{ $source->customer_address ?? ($transaction->customer_address ?? '-') }}</span>
                     </div>
                     @endif
                 </div>
@@ -789,16 +798,21 @@
                     
                     <div class="price-row total">
                         <span class="price-label">TOTAL PEMBAYARAN</span>
-                        <span class="price-value">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</span>
+                        <span class="price-value">Rp {{ number_format($source->total_price ?? ($transaction->total_price ?? 0), 0, ',', '.') }}</span>
                     </div>
                 </div>
+                @php
+                    $payment = $payment ?? ($order->payment ?? null);
+                    $showQr = ($payment && strtolower($payment->payment_status) === 'paid') || ($transaction && ($transaction->is_paid ?? false));
+                    $qrPath = $payment->qr_path ?? ($transaction->qr_path ?? null);
+                @endphp
 
-                @if($transaction->is_paid)
+                @if($showQr)
                 <div class="qr-section">
                     <div class="qr-title">SCAN UNTUK VERIFIKASI</div>
                     <div class="qr-container">
-                        @if($transaction->qr_path)
-                        <img src="{{ asset($transaction->qr_path) }}" alt="QR Code" class="qr-image">
+                        @if($qrPath)
+                        <img src="{{ asset($qrPath) }}" alt="QR Code" class="qr-image">
                         @else
                         <div style="width: 200px; height: 200px; background: #eee; display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-qrcode" style="font-size: 50px; color: #999;"></i>
@@ -806,7 +820,7 @@
                         @endif
                     </div>
                     <div class="qr-code-text">
-                        {{ $transaction->order_number }}
+                        {{ $source->order_number ?? ($transaction->order_number ?? '-') }}
                     </div>
                 </div>
                 @else
@@ -831,10 +845,10 @@
                     </ul>
                 </div>
 
-                @if($transaction->notes)
+                @if(!empty($source->notes) || !empty($transaction->notes))
                 <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-top: 20px;">
                     <strong style="color: var(--dark);">Catatan:</strong>
-                    <p style="margin-top: 5px; color: #666;">{{ $transaction->notes }}</p>
+                    <p style="margin-top: 5px; color: #666;">{{ $source->notes ?? ($transaction->notes ?? '') }}</p>
                 </div>
                 @endif
 

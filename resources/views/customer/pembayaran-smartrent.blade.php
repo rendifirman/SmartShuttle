@@ -882,7 +882,7 @@
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Harga per hari</div>
-                    <div class="detail-value">Rp {{ isset($vehicle) && $vehicle ? number_format($vehicle['price'], 0, ',', '.') : '1.200.000' }}</div>
+                    <div class="detail-value">Rp {{ isset($vehiclePrice) && $vehiclePrice ? number_format($vehiclePrice, 0, ',', '.') : (isset($vehicle['price']) ? number_format($vehicle['price'], 0, ',', '.') : '-') }}</div>
                 </div>
             </div>
 
@@ -939,16 +939,24 @@
             <div class="price-box">
                 <div class="price-row">
                     <span>Harga Sewa / Hari</span>
-                    <span>Rp {{ isset($vehicle) && $vehicle ? number_format($vehicle['price'], 0, ',', '.') : '1.200.000' }}</span>
+                    <span>Rp {{ isset($vehiclePrice) && $vehiclePrice ? number_format($vehiclePrice, 0, ',', '.') : (isset($vehicle['price']) ? number_format($vehicle['price'], 0, ',', '.') : '-') }}</span>
                 </div>
                 <div class="price-row">
                     <span>Durasi Sewa</span>
                     <span>{{ isset($duration) ? $duration : 1 }} Hari</span>
                 </div>
-                @if((isset($service) && $service == 'with_driver') || (isset($customerData['service_type']) && $customerData['service_type'] == 'with_driver'))
+                <div class="price-row">
+                    <span>Subtotal Kendaraan</span>
+                    <span>Rp {{ isset($vehicleTotal) && $vehicleTotal ? number_format($vehicleTotal, 0, ',', '.') : '-' }}</span>
+                </div>
+                @if((isset($service) && $service == 'with_driver') || (isset($transaction) && $transaction->service_type == 'with_driver'))
                 <div class="price-row">
                     <span>Biaya Driver / Hari</span>
-                    <span>Rp 150.000</span>
+                    <span>Rp {{ isset($driverPrice) && $driverPrice ? number_format($driverPrice, 0, ',', '.') : '-' }}</span>
+                </div>
+                <div class="price-row">
+                    <span>Subtotal Driver</span>
+                    <span>Rp {{ isset($driverTotal) && $driverTotal ? number_format($driverTotal, 0, ',', '.') : '-' }}</span>
                 </div>
                 @endif
                 
@@ -956,7 +964,7 @@
 
                 <div class="total">
                     <span>Total Pembayaran</span>
-                    <span>Rp {{ isset($totalPrice) ? number_format($totalPrice, 0, ',', '.') : '1.350.000' }}</span>
+                    <span>Rp {{ isset($totalPrice) && $totalPrice ? number_format($totalPrice, 0, ',', '.') : '-' }}</span>
                 </div>
             </div>
         </div>
@@ -972,8 +980,8 @@
             <form action="{{ route('smartrent.payment.process') }}" method="POST" id="paymentForm">
                 @csrf
                 <input type="hidden" name="order_id" value="{{ isset($order_id) ? $order_id : '' }}">
-                <input type="hidden" name="order_number" value="{{ isset($order_number) ? $order_number : 'SR2026021230D448' }}">
-                <input type="hidden" name="total_price" value="{{ isset($totalPrice) ? $totalPrice : 1350000 }}">
+                <input type="hidden" name="order_number" value="{{ isset($order_number) ? $order_number : (isset($transaction) ? $transaction->order_number : '') }}">
+                <input type="hidden" name="total_price" value="{{ isset($totalPrice) && $totalPrice ? $totalPrice : (isset($transaction) ? $transaction->total_price : '') }}">
                 
                 @if(isset($vehicleId))
                     <input type="hidden" name="vehicle_id" value="{{ $vehicleId }}">
@@ -1077,7 +1085,7 @@
                         
                         <div class="payment-info-box">
                             <div class="info-label">Total Pembayaran</div>
-                            <div class="info-value">Rp {{ isset($totalPrice) ? number_format($totalPrice, 0, ',', '.') : '1.350.000' }}</div>
+                            <div class="info-value">Rp {{ isset($totalPrice) && $totalPrice ? number_format($totalPrice, 0, ',', '.') : '-' }}</div>
                         </div>
                         
                         <div class="instructions-box">
@@ -1108,7 +1116,7 @@
                         
                         <div class="payment-info-box">
                             <div class="info-label">Total Pembayaran</div>
-                            <div class="info-value">Rp {{ isset($totalPrice) ? number_format($totalPrice, 0, ',', '.') : '1.350.000' }}</div>
+                            <div class="info-value">Rp {{ isset($totalPrice) && $totalPrice ? number_format($totalPrice, 0, ',', '.') : '-' }}</div>
                         </div>
                         
                         <div class="instructions-box">

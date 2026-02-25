@@ -372,23 +372,28 @@
     use App\Models\MProfilePerusahaan;
     $profile = MProfilePerusahaan::first();
     
-    // Ambil data dari URL parameters (dari halaman booking)
-    $vehicle_id = request()->get('vehicle_id', 1);
-    $vehicle_name = request()->get('vehicle_name', 'Toyota Hiace Commuter');
-    $vehicle_image = request()->get('vehicle_image', asset('images/toyotahiace.png'));
-    $vehicle_price = request()->get('vehicle_price', 1200000);
-    $driver_price = request()->get('driver_price', 150000);
-    $service = request()->get('service', 'with-driver');
-    $duration = request()->get('duration', 1);
-    $rent_date = request()->get('rent_date', date('Y-m-d'));
+    // PERBAIKAN: Ambil data dari session (bukan URL parameters)
+    // Data sudah dikalkulasi dengan benar di controller
+    $checkout = $checkout ?? [];
     
-    // Hitung tanggal selesai
-    $end_date = date('Y-m-d', strtotime($rent_date . ' + ' . ($duration - 1) . ' days'));
+    // Gunakan data dari session dengan fallback ke nilai default (tidak boleh hardcoded)
+    $vehicle_id = $checkout['vehicle_id'] ?? null;
+    $vehicle_name = $checkout['vehicle_name'] ?? 'Kendaraan Tidak Ditemukan';
+    $vehicle_image = $checkout['vehicle_image'] ?? asset('images/default-vehicle.jpg');
+    $vehicle_price = $checkout['vehicle_price'] ?? null;
+    $driver_price = $checkout['driver_price_per_day'] ?? $checkout['driver_price'] ?? 0;
+    $service = str_replace('_', '-', $checkout['service_type'] ?? 'self-drive'); // convert 'with_driver' to 'with-driver'
+    $duration = $checkout['duration'] ?? 1;
+    $rent_date = $checkout['rent_date'] ?? date('Y-m-d');
     
-    // Hitung total harga
-    $vehicle_total = $vehicle_price * $duration;
-    $driver_total = ($service == 'with-driver') ? $driver_price * $duration : 0;
-    $total_price = $vehicle_total + $driver_total;
+    // Hitung tanggal selesai (menggunakan data dari session jika tersedia)
+    $end_date = $checkout['end_date'] ?? date('Y-m-d', strtotime($rent_date . ' + ' . ($duration - 1) . ' days'));
+    
+    // PENTING: Gunakan total harga dari session (sudah dikalkulasi dengan benar)
+    // Jangan menghitung ulang karena bisa berakibat perbedaan dengan database
+    $vehicle_total = $checkout['vehicle_total'] ?? ($vehicle_price ? $vehicle_price * $duration : 0);
+    $driver_total = $checkout['driver_total'] ?? 0;
+    $total_price = $checkout['total_price'] ?? 0;
     
     // Data lengkap untuk dikirim ke controller
     $checkoutData = [
@@ -398,14 +403,14 @@
         'vehicle_price' => $vehicle_price,
         'driver_price' => $driver_price,
         'service' => $service,
-        'service_text' => $service == 'with-driver' ? 'Dengan Sopir' : 'Lepas Kunci',
+        'service_text' => (str_contains($service, 'with-driver') || str_contains($service, 'with_driver')) ? 'Dengan Sopir' : 'Lepas Kunci',
         'duration' => $duration,
         'rent_date' => $rent_date,
         'end_date' => $end_date,
         'vehicle_total' => $vehicle_total,
         'driver_total' => $driver_total,
         'total_price' => $total_price,
-        'booking_code' => 'SR' . date('Ymd') . rand(100, 999)
+        'booking_code' => $checkout['booking_code'] ?? ('SR' . date('Ymd') . rand(100, 999))
     ];
 @endphp
 

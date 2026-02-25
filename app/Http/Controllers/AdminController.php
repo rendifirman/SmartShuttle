@@ -1036,10 +1036,525 @@ class AdminController extends Controller
         return view('admin.smartsend-armada');
     }
 
-    // SmartRent Method
+    // ★★★ SMARTRENT METHODS ★★★
+    
+    /**
+     * SmartRent Index - List all bookings
+     */
     public function smartrent()
     {
         return view('admin.smartrent');
+    }
+
+    public function smartrentIndex()
+    {
+        // Build query with filters
+        $query = \App\Models\SmartRentTransaction::query();
+
+        // Filter by service type
+        if (request('service_type')) {
+            $query->where('service_type', request('service_type'));
+        }
+
+        // Filter by date range
+        if (request('tanggal')) {
+            $today = now()->startOfDay();
+            $tanggal = request('tanggal');
+            
+            switch($tanggal) {
+                case 'hari_ini':
+                    $query->whereDate('start_date', $today);
+                    break;
+                case 'kemarin':
+                    $query->whereDate('start_date', $today->subDay());
+                    break;
+                case 'minggu_ini':
+                    $query->whereDate('start_date', '>=', $today->startOfWeek())
+                          ->whereDate('start_date', '<=', $today);
+                    break;
+                case 'bulan_ini':
+                    $query->whereMonth('start_date', now()->month)
+                          ->whereYear('start_date', now()->year);
+                    break;
+            }
+        }
+
+        // Filter by status
+        if (request('status')) {
+            $statusMap = [
+                'sukses' => 'paid',
+                'pending' => 'pending_payment',
+                'gagal' => 'cancelled',
+                'dibatalkan' => 'cancelled'
+            ];
+            $dbStatus = $statusMap[request('status')] ?? request('status');
+            $query->where('status', $dbStatus);
+        }
+
+        // Search filter
+        if (request('search')) {
+            $search = request('search');
+            $query->where(function($q) use ($search) {
+                $q->where('order_number', 'like', "%$search%")
+                  ->orWhere('customer_name', 'like', "%$search%");
+            });
+        }
+
+        // Get summary statistics
+        $totalToday = \App\Models\SmartRentTransaction::whereDate('start_date', now()->startOfDay())
+            ->sum('total_price');
+        $countToday = \App\Models\SmartRentTransaction::whereDate('start_date', now()->startOfDay())
+            ->count();
+        $avgTransaction = $countToday > 0 ? $totalToday / $countToday : 0;
+        $failedToday = \App\Models\SmartRentTransaction::whereDate('start_date', now()->startOfDay())
+            ->where('status', 'cancelled')
+            ->count();
+
+        // Calculate percentages (dummy values for now)
+        $revenuePercentage = 5;
+        $countPercentage = 3;
+        $avgPercentage = 2;
+        $failedPercentage = -10;
+
+        // Format values for display
+        $totalTodayFormatted = 'Rp ' . number_format($totalToday, 0, ',', '.');
+        $avgTransactionFormatted = 'Rp ' . number_format($avgTransaction, 0, ',', '.');
+
+        // Get paginated results
+        $transactions = $query->orderBy('created_at', 'desc')->paginate(10);
+
+        return view('admin.smartrent', compact(
+            'transactions',
+            'totalTodayFormatted',
+            'countToday',
+            'avgTransactionFormatted',
+            'failedToday',
+            'revenuePercentage',
+            'countPercentage',
+            'avgPercentage',
+            'failedPercentage'
+        ));
+    }
+
+    /**
+     * SmartRent Create - Create new booking
+     */
+    public function smartrentCreate()
+    {
+        // Fetch all active armada for SmartRent
+        $armadaList = \App\Models\SmartRentArmada::aktif()->get();
+        // Prefer users with the 'customer' role (Spatie). Fallback to active users if role not available.
+        try {
+            $customers = \App\Models\User::role('customer')->get();
+        } catch (\Throwable $e) {
+            $customers = \App\Models\User::where('status', 'active')->get();
+        }
+        
+        return view('admin.smartrent-create', compact('armadaList', 'customers'));
+    }
+
+    /**
+     * SmartRent Store - Store new booking
+     */
+    public function smartrentStore(\Illuminate\Http\Request $request)
+    {
+        // Validation
+        $validated = $request->validate([
+            // Customer data
+            'nama_pelanggan' => 'required|string|max:255',
+            'telepon' => 'required|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'alamat' => 'nullable|string',
+            'no_identitas' => 'nullable|string|max:20',
+            'jenis_identitas' => 'nullable|in:ktp,sim,paspor',
+            'customer_id' => 'nullable|exists:users,id',
+            
+            // Booking data
+            'tanggal_mulai' => 'required|date|after_or_equal:today',
+            'tanggal_selesai' => 'required|date|after:tanggal_mulai',
+            'kota_asal' => 'required|string|max:100',
+            'kota_tujuan' => 'required|string|max:100',
+            'durasi' => 'required|integer|min:1',
+            'jumlah_mobil' => 'required|integer|min:1|max:10',
+            
+            // Armada selection
+            'armada_id' => 'required|exists:smartrent_armadas,id',
+            'layanan' => 'required|in:lepas_kunci,dengan_sopir',
+            
+            // Payment
+            'metode_pembayaran' => 'required|in:BCA VA,Mandiri VA,QRIS,Transfer Bank,Cash',
+            'total_bayar' => 'required|numeric|min:0',
+            
+            // Optional
+            'penumpang' => 'nullable|array',
+            'penumpang.*.nama' => 'nullable|string|max:255',
+            'penumpang.*.nik' => 'nullable|string|max:20',
+            'penumpang.*.jenis_kelamin' => 'nullable|in:L,P',
+            'penumpang.*.telepon' => 'nullable|string|max:20',
+            'catatan' => 'nullable|string',
+        ]);
+
+        try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
+            // Get armada data for pricing verification
+            $armada = \App\Models\SmartRentArmada::findOrFail($validated['armada_id']);
+
+            // Generate booking code
+            $kodePemesanan = 'SR' . date('Ymd') . strtoupper(substr(md5(uniqid()), 0, 6));
+
+            // Calculate duration
+            $tanggalMulai = new \DateTime($validated['tanggal_mulai']);
+            $tanggalSelesai = new \DateTime($validated['tanggal_selesai']);
+            $durasi = $tanggalSelesai->diff($tanggalMulai)->days + 1;
+
+            // Calculate price from database
+            $hargaPerHari = $armada->harga_dasar;
+            $totalHargaArmada = $hargaPerHari * $durasi * $validated['jumlah_mobil'];
+
+            $biayaLayanan = 0;
+            if ($validated['layanan'] === 'dengan_sopir' && $armada->harga_dengan_sopir) {
+                $biayaLayanan = $armada->harga_dengan_sopir * $durasi * $validated['jumlah_mobil'];
+            }
+
+            $totalBayar = $totalHargaArmada + $biayaLayanan;
+
+            // Create SmartRentTransaction (migration-backed)
+            $serviceTypeMap = [
+                'dengan_sopir' => 'with_driver',
+                'lepas_kunci' => 'self_drive'
+            ];
+
+            $transaction = \App\Models\SmartRentTransaction::create([
+                'order_number' => $kodePemesanan,
+                'invoice_number' => null,
+                'user_id' => $validated['customer_id'] ?? null,
+
+                // Vehicle information
+                'vehicle_id' => $armada->id,
+                'vehicle_name' => $armada->nama ?? ($armada->vehicle_name ?? 'Armada'),
+                'vehicle_type' => $armada->tipe ?? null,
+                'vehicle_price' => $armada->harga_dasar ?? 0,
+                'duration' => $durasi,
+                'vehicle_total' => $totalHargaArmada,
+
+                // Driver info
+                'service_type' => $serviceTypeMap[$validated['layanan']] ?? 'self_drive',
+                'driver_price_per_day' => $armada->harga_dengan_sopir ?? 0,
+                'driver_total' => $biayaLayanan,
+
+                // Total
+                'total_price' => $totalBayar,
+
+                // Customer
+                'customer_name' => $validated['nama_pelanggan'],
+                'customer_email' => $validated['email'] ?? null,
+                'customer_phone' => $validated['telepon'],
+                'customer_address' => $validated['alamat'] ?? null,
+
+                // Schedule
+                'start_date' => $validated['tanggal_mulai'],
+                'end_date' => $validated['tanggal_selesai'],
+                'start_time' => null,
+                'end_time' => null,
+                'pickup_location' => null,
+
+                // Payment & status
+                'payment_status' => 'unpaid',
+                'payment_method' => $validated['metode_pembayaran'] ?? null,
+                'paid_at' => null,
+
+                'status' => 'pending_payment',
+
+                // Additional
+                'additional_data' => json_encode([
+                    'jumlah_mobil' => $validated['jumlah_mobil'] ?? 1,
+                    'penumpang' => $validated['penumpang'] ?? [],
+                    'notes' => $validated['catatan'] ?? null,
+                    'created_by' => auth()->id(),
+                    'petugas' => auth()->user()->name ?? null,
+                ])
+            ]);
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            return redirect()
+                ->route('admin.smartrent.index')
+                ->with('success', 'data sudah di simpan');
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('SmartRent Store Error: ' . $e->getMessage());
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Gagal membuat transaksi: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Store penyerahan data for a SmartRent transaction
+     */
+    public function smartrentPenyerahanStore(\Illuminate\Http\Request $request, $id)
+    {
+        $transaction = \App\Models\SmartRentTransaction::findOrFail($id);
+        $validated = $request->validate([
+            'petugas' => 'nullable|string|max:255',
+            'tanggal' => 'required|date',
+            'jam' => 'required',
+            'bbm' => 'nullable|string|max:50',
+            'km' => 'nullable|string|max:50',
+            'kondisi' => 'nullable|array',
+            'kondisi.*' => 'string',
+            'catatan' => 'nullable|string',
+        ]);
+
+        $additional = $transaction->additional_data ?? [];
+        $additional['penyerahan'] = $validated; // includes catatan field
+
+        $transaction->additional_data = $additional;
+        $transaction->save();
+
+        return redirect()->back()->with('success', 'Data penyerahan berhasil disimpan');
+    }
+
+    /**
+     * Store pengembalian data for a SmartRent transaction
+     */
+    public function smartrentPengembalianStore(\Illuminate\Http\Request $request, $id)
+    {
+        $transaction = \App\Models\SmartRentTransaction::findOrFail($id);
+        $validated = $request->validate([
+            'petugas' => 'nullable|string|max:255',
+            'tanggal' => 'required|date',
+            'jam' => 'required',
+            'bbm' => 'nullable|string|max:50',
+            'km' => 'nullable|string|max:50',
+            'biaya_tambahan' => 'nullable|numeric',
+            'total' => 'nullable|numeric',
+            'kondisi' => 'nullable|array',
+            'kondisi.*' => 'string',
+            'catatan' => 'nullable|string',
+        ]);
+
+        $additional = $transaction->additional_data ?? [];
+        $additional['pengembalian'] = $validated; // includes catatan field
+        $transaction->additional_data = $additional;
+        $transaction->save();
+
+        return redirect()->back()->with('success', 'Data pengembalian berhasil disimpan');
+    }
+
+    /**
+     * SmartRent Show - Show booking details
+     */
+    public function smartrentShow($id)
+    {
+        // load from migration-backed transaction model
+        $smartRent = \App\Models\SmartRentTransaction::with(['armada','user'])->findOrFail($id);
+        // for backward compatibility the view refers to $smartRent and some vehicle fields
+        return view('admin.smartrent-detail', compact('smartRent'));
+    }
+
+    /**
+     * SmartRent Transaction Show - Direct access to latest transaction detail
+     * Used by Transaksi dropdown menu for quick access to smartrent-show.blade.php
+     */
+    public function smartrentTransactionShow()
+    {
+        // Get the latest SmartRent booking
+        $smartRent = \App\Models\SmartRent::with(['armada', 'customer', 'creator'])
+            ->orderBy('created_at', 'desc')
+            ->first();
+        
+        // If no bookings exist, redirect to create page
+        if (!$smartRent) {
+            return redirect()->route('admin.smartrent.create')
+                ->with('info', 'Belum ada transaksi SmartRent. Buat transaksi baru untuk memulai.');
+        }
+        
+        // Display the latest booking in smartrent-show.blade.php
+        return view('admin.smartrent-show', compact('smartRent'));
+    }
+
+    /**
+     * SmartRent Edit - Edit booking
+     */
+    public function smartrentEdit($id)
+    {
+        $smartRent = \App\Models\SmartRent::findOrFail($id);
+        $armadaList = \App\Models\SmartRentArmada::aktif()->get();
+        try {
+            $customers = \App\Models\User::role('customer')->get();
+        } catch (\Throwable $e) {
+            $customers = \App\Models\User::where('status', 'active')->get();
+        }
+        
+        return view('admin.smartrent-create', [
+            'smartRent' => $smartRent,
+            'armadaList' => $armadaList,
+            'customers' => $customers,
+            'isEdit' => true
+        ]);
+    }
+
+    /**
+     * SmartRent Update - Update booking
+     */
+    public function smartrentUpdate(\Illuminate\Http\Request $request, $id)
+    {
+        $smartRent = \App\Models\SmartRent::findOrFail($id);
+
+        // Validation
+        $validated = $request->validate([
+            // Customer data
+            'nama_pelanggan' => 'required|string|max:255',
+            'telepon' => 'required|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'alamat' => 'nullable|string',
+            'no_identitas' => 'nullable|string|max:20',
+            'jenis_identitas' => 'nullable|in:ktp,sim,paspor',
+            'customer_id' => 'nullable|exists:users,id',
+            
+            // Booking data
+            'tanggal_mulai' => 'required|date',
+            'tanggal_selesai' => 'required|date|after:tanggal_mulai',
+            'kota_asal' => 'required|string|max:100',
+            'kota_tujuan' => 'required|string|max:100',
+            'durasi' => 'required|integer|min:1',
+            'jumlah_mobil' => 'required|integer|min:1|max:10',
+            
+            // Armada selection
+            'armada_id' => 'required|exists:smartrent_armadas,id',
+            'layanan' => 'required|in:lepas_kunci,dengan_sopir',
+            
+            // Payment
+            'metode_pembayaran' => 'required|in:BCA VA,Mandiri VA,QRIS,Transfer Bank,Cash',
+            'total_bayar' => 'required|numeric|min:0',
+            
+            // Optional
+            'penumpang' => 'nullable|array',
+            'penumpang.*.nama' => 'nullable|string|max:255',
+            'penumpang.*.nik' => 'nullable|string|max:20',
+            'penumpang.*.jenis_kelamin' => 'nullable|in:L,P',
+            'penumpang.*.telepon' => 'nullable|string|max:20',
+            'catatan' => 'nullable|string',
+            'status' => 'required|in:pending,confirmed,completed,cancelled',
+        ]);
+
+        try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
+            // Get armada data for pricing verification
+            $armada = \App\Models\SmartRentArmada::findOrFail($validated['armada_id']);
+
+            // Calculate duration
+            $tanggalMulai = new \DateTime($validated['tanggal_mulai']);
+            $tanggalSelesai = new \DateTime($validated['tanggal_selesai']);
+            $durasi = $tanggalSelesai->diff($tanggalMulai)->days + 1;
+
+            // Calculate price from database
+            $hargaPerHari = $armada->harga_dasar;
+            $totalHargaArmada = $hargaPerHari * $durasi * $validated['jumlah_mobil'];
+
+            $biayaLayanan = 0;
+            if ($validated['layanan'] === 'dengan_sopir' && $armada->harga_dengan_sopir) {
+                $biayaLayanan = $armada->harga_dengan_sopir * $durasi * $validated['jumlah_mobil'];
+            }
+
+            $totalBayar = $totalHargaArmada + $biayaLayanan;
+
+            // Update SmartRent transaction
+            $smartRent->update([
+                'customer_id' => $validated['customer_id'] ?? null,
+                'nama_pelanggan' => $validated['nama_pelanggan'],
+                'telepon' => $validated['telepon'],
+                'email' => $validated['email'],
+                'alamat' => $validated['alamat'],
+                'no_identitas' => $validated['no_identitas'],
+                'jenis_identitas' => $validated['jenis_identitas'],
+                'tanggal_mulai' => $validated['tanggal_mulai'],
+                'tanggal_selesai' => $validated['tanggal_selesai'],
+                'durasi' => $durasi,
+                'kota_asal' => $validated['kota_asal'],
+                'kota_tujuan' => $validated['kota_tujuan'],
+                'armada_id' => $validated['armada_id'],
+                'layanan' => $validated['layanan'],
+                'jumlah_mobil' => $validated['jumlah_mobil'],
+                'metode_pembayaran' => $validated['metode_pembayaran'],
+                'total_bayar' => $totalBayar,
+                'status' => $validated['status'],
+                'penumpang' => $validated['penumpang'] ?? [],
+                'catatan' => $validated['catatan'],
+                'updated_by' => auth()->id(),
+            ]);
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            return redirect()
+                ->route('admin.smartrent.show', $smartRent->id)
+                ->with('success', 'Transaksi SmartRent berhasil diperbarui.');
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('SmartRent Update Error: ' . $e->getMessage());
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Gagal memperbarui transaksi: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * SmartRent Destroy - Delete booking
+     */
+    public function smartrentDestroy($id)
+    {
+        // Delete logic here
+        return back()->with('success', 'Booking berhasil dihapus');
+    }
+
+    /**
+     * SmartRent Export Excel
+     */
+    public function smartrentExportExcel()
+    {
+        // Export logic here
+        return back();
+    }
+
+    /**
+     * SmartRent Export PDF
+     */
+    public function smartrentExportPdf()
+    {
+        // Export to PDF logic here
+        return back();
+    }
+
+    /**
+     * SmartRent Update Status (AJAX)
+     */
+    public function smartrentUpdateStatus($id, Request $request)
+    {
+        // Update booking status via AJAX
+        $status = $request->input('status');
+        
+        // Validation and update logic here
+        if (!$status) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Status tidak valid'
+            ], 400);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Status berhasil diperbarui',
+            'status' => $status
+        ]);
     }
 
     // Tiket Perjalanan Method

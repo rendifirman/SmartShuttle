@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\SmartRentArmada;
 
 class SmartRentTransaction extends Model
 {
@@ -82,6 +83,22 @@ class SmartRentTransaction extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Relation to rented armada (vehicle)
+     */
+    public function armada()
+    {
+        return $this->belongsTo(SmartRentArmada::class, 'vehicle_id');
+    }
+
+    /**
+     * Accessor for plate number retrieved from related armada
+     */
+    public function getVehiclePlateAttribute()
+    {
+        return $this->armada ? $this->armada->nomor_polisi : null;
     }
 
     /**

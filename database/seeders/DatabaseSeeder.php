@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             RuteSeeder::class,           // 6. Rute (butuh MLayanan)
             ShuttleSeeder::class,        // 7. Shuttle (butuh MLayanan)
             KursiSeeder::class,          // 8. Kursi (butuh Shuttle)
+            SmartRentArmadaSeeder::class, // 9. SmartRent Armada
             KebijakanPrivasiSeeder::class,
             SyaratKetentuanSeeder::class,
             MProfilePerusahaanSeeder::class,

@@ -119,6 +119,10 @@ class RoleSeeder extends Seeder
                 'view_smartsend_perjalanan',
                 'view_smartsend_armada',
 
+                // SmartRent - Limited access (NEW - allow cabang to view/manage smartrent)
+                'view_smartrent',
+                'manage_smartrent',
+
                 // Laporan - View only
                 'view_laporan',
             ],
@@ -152,6 +156,10 @@ class RoleSeeder extends Seeder
                 'manage_smartsend_perjalanan',
                 'view_smartsend_armada',
                 'manage_smartsend_armada',
+
+                // SmartRent - Full access for operations (NEW)
+                'view_smartrent',
+                'manage_smartrent',
 
                 // Laporan - View only
                 'view_laporan',

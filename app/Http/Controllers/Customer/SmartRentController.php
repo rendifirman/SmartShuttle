@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\MProfilePerusahaan;
 use App\Models\SmartRentTransaction;
+use App\Models\SmartRentOrder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
@@ -608,6 +609,41 @@ class SmartRentController extends Controller
                 'payment_status' => 'unpaid', // Status awal: unpaid
                 'status' => 'pending_payment',
             ]);
+            // Also insert into the new orders table to separate booking and payment data
+            try {
+                $order = SmartRentOrder::create([
+                    'order_number' => $orderNumber,
+                    'invoice_number' => 'INV-SR-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid()), 0, 8)),
+                    'user_id' => Auth::id(),
+                    'vehicle_id' => $checkout['vehicle_id'] ?? null,
+                    'vehicle_name' => $checkout['vehicle_name'] ?? null,
+                    'vehicle_type' => $checkout['vehicle_type'] ?? null,
+                    'vehicle_price' => (float) ($checkout['vehicle_price'] ?? 0),
+                    'duration' => $checkout['duration'] ?? 1,
+                    'vehicle_total' => (float) ($checkout['vehicle_total'] ?? 0),
+                    'service_type' => $checkout['service_type'] ?? 'self_drive',
+                    'driver_price_per_day' => (float) ($checkout['driver_price_per_day'] ?? 0),
+                    'driver_total' => (float) ($checkout['driver_total'] ?? 0),
+                    'total_price' => (float) ($checkout['total_price'] ?? 0),
+                    'customer_name' => $validated['full_name'],
+                    'customer_email' => $validated['email'],
+                    'customer_phone' => $validated['phone'],
+                    'customer_address' => $validated['address'],
+                    'start_date' => $validated['start_date'],
+                    'end_date' => $validated['end_date'],
+                    'start_time' => $validated['start_time'],
+                    'end_time' => $validated['end_time'],
+                    'pickup_location' => $validated['pickup_location'],
+                    'notes' => $validated['notes'] ?? null,
+                    'ktp_path' => $ktpPath,
+                    'sim_path' => $simPath,
+                    'other_document_path' => $otherPath,
+                    'status' => 'pending_payment',
+                ]);
+                session(['smartrent_order_id' => $order->id]);
+            } catch (\Exception $e) {
+                Log::warning('Failed to create SmartRentOrder mirror: ' . $e->getMessage());
+            }
             
             DB::commit();
             
@@ -652,6 +688,7 @@ class SmartRentController extends Controller
                 ->with('error', 'Data pemesanan tidak ditemukan. Silakan ulangi proses checkout.');
         }
 
+        // PERBAIKAN: Load dari database dengan verifikasi lengkap
         $transaction = SmartRentTransaction::where('order_number', $orderNumber)
             ->where('user_id', Auth::id())
             ->first();
@@ -661,14 +698,46 @@ class SmartRentController extends Controller
                 ->with('error', 'Data pemesanan tidak ditemukan.');
         }
 
+        // Prefer new orders/payments structure if available
+        $order = SmartRentOrder::where('order_number', $orderNumber)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        $payment = $order ? $order->payment : null;
+
         $profile = MProfilePerusahaan::first();
+
+        // PERBAIKAN: Pastikan semua nilai numerik diambil dari database, tidak ada fallback hardcoded
+        $totalPrice = $transaction->total_price; // Nilai asli dari database
+        $vehiclePrice = $transaction->vehicle_price; // Harga kendaraan per hari dari database
+        $vehicleTotal = $transaction->vehicle_total; // Total harga kendaraan (harga × hari) dari database
+        $driverPrice = $transaction->driver_price_per_day; // Harga sopir per hari dari database
+        $driverTotal = $transaction->driver_total; // Total harga sopir (harga × hari) dari database
+        $duration = $transaction->duration; // Durasi sewa dari database
+
+        Log::debug('SmartRent payment() method', [
+            'order_number' => $orderNumber,
+            'total_price' => $totalPrice,
+            'vehicle_price' => $vehiclePrice,
+            'vehicle_total' => $vehicleTotal,
+            'driver_price' => $driverPrice,
+            'driver_total' => $driverTotal,
+            'duration' => $duration
+        ]);
 
         return view('customer.pembayaran-smartrent', [
             'profile' => $profile,
             'transaction' => $transaction,
+            'order' => $order,
+            'payment' => $payment,
             'order_number' => $orderNumber,
             'order_id' => $transaction->id,
-            'totalPrice' => $transaction->total_price,
+            'totalPrice' => $totalPrice,
+            'vehiclePrice' => $vehiclePrice,
+            'vehicleTotal' => $vehicleTotal,
+            'driverPrice' => $driverPrice,
+            'driverTotal' => $driverTotal,
+            'duration' => $duration,
             'vehicle' => [
                 'id' => $transaction->vehicle_id,
                 'name' => $transaction->vehicle_name,
@@ -683,7 +752,6 @@ class SmartRentController extends Controller
                 'address' => $transaction->customer_address,
             ],
             'rentDate' => $transaction->start_date,
-            'duration' => $transaction->duration,
             'service' => $transaction->service_type,
         ]);
     }
@@ -772,29 +840,34 @@ class SmartRentController extends Controller
             $transaction->status = 'confirmed';
             Log::debug('Set status', ['value' => 'confirmed']);
             
-            // Step 6b: Save and verify
-            $saved = $transaction->save();
+            // Step 6b: Save transaction - Use raw update to ensure database write
+            $updateResult = DB::table('smartrent_transactions')
+                ->where('id', $transaction->id)
+                ->update([
+                    'payment_method' => $paymentMethod,
+                    'payment_status' => 'paid',
+                    'payment_proof_path' => $paymentProofPath,
+                    'paid_at' => now(),
+                    'status' => 'confirmed',
+                    'updated_at' => now(),
+                ]);
             
-            if (!$saved) {
-                throw new \Exception('Database save() returned false for transaction update');
+            if ($updateResult === 0) {
+                throw new \Exception('Failed to update transaction in database');
             }
-            Log::info('Transaction saved successfully', ['order_number' => $orderNumber, 'id' => $transaction->id]);
+            Log::info('Transaction updated directly in database', ['order_number' => $orderNumber, 'id' => $transaction->id]);
             
-            // Step 6c: Verify data was actually written to database
-            $verified = SmartRentTransaction::find($transaction->id);
-            if (!$verified) {
-                throw new \Exception('Failed to verify transaction in database');
-            }
-            
-            if ($verified->payment_status !== 'paid') {
+            // Step 6c: Reload transaction from database to verify
+            $transaction = SmartRentTransaction::find($transaction->id);
+            if (!$transaction || $transaction->payment_status !== 'paid') {
                 throw new \Exception(
                     "Payment status verification failed. Expected 'paid', got: " . 
-                    var_export($verified->payment_status, true)
+                    ($transaction ? $transaction->payment_status : 'transaction not found')
                 );
             }
             Log::info('Payment status verified in database', [
                 'order_number' => $orderNumber,
-                'payment_status' => $verified->payment_status
+                'payment_status' => $transaction->payment_status
             ]);
             
             // Step 6d: Generate QR Code
@@ -813,6 +886,36 @@ class SmartRentController extends Controller
             $transaction->refresh();
             Log::debug('Model refreshed from database', ['order_number' => $orderNumber]);
             
+            // Step 6f: Update smartrent_orders table if present to sync status
+            $order = SmartRentOrder::where('order_number', $orderNumber)->first();
+            if ($order) {
+                Log::debug('SmartRentOrder found, updating status', ['order_id' => $order->id]);
+
+                // Update order status to 'paid' - Use raw update for certainty
+                $orderUpdateResult = DB::table('smartrent_orders')
+                    ->where('id', $order->id)
+                    ->update([
+                        'status' => 'paid',
+                        'updated_at' => now(),
+                    ]);
+                if ($orderUpdateResult === 0) {
+                    throw new \Exception('Failed to save SmartRentOrder status update');
+                }
+                
+                // Verify order update
+                $verifiedOrder = SmartRentOrder::find($order->id);
+                if (!$verifiedOrder || $verifiedOrder->status !== 'paid') {
+                    throw new \Exception('SmartRentOrder status verification failed after update');
+                }
+                Log::info('SmartRentOrder status updated to paid', [
+                    'order_id' => $order->id,
+                    'status' => $verifiedOrder->status,
+                    'order_number' => $orderNumber
+                ]);
+            } else {
+                Log::info('SmartRentOrder not found, skipping order status update', ['order_number' => $orderNumber]);
+            }
+
             // Step 6f: Commit transaction
             DB::commit();
             Log::info('Database transaction committed', ['order_number' => $orderNumber]);
@@ -869,27 +972,64 @@ class SmartRentController extends Controller
                 ->with('error', 'Data pembayaran tidak ditemukan.');
         }
 
-        $transaction = SmartRentTransaction::where('order_number', $orderNumber)
+        // Step 1: Load transaction from database (always fresh, no caching)
+        // Use raw query to ensure absolutely fresh data
+        $rawTransaction = DB::table('smartrent_transactions')
+            ->where('order_number', $orderNumber)
             ->where('user_id', Auth::id())
             ->first();
-
-        if (!$transaction) {
+        
+        if (!$rawTransaction) {
+            Log::warning('Transaction not found on success page', ['order_number' => $orderNumber, 'user_id' => Auth::id()]);
             return redirect()->route('smartrent.index')
                 ->with('error', 'Data pesanan tidak ditemukan.');
         }
+        
+        // Reload as Eloquent model to get all accessors
+        $transaction = SmartRentTransaction::find($rawTransaction->id);
+        if (!$transaction) {
+            Log::warning('Transaction not found by ID on success page', ['id' => $rawTransaction->id, 'order_number' => $orderNumber]);
+            return redirect()->route('smartrent.index')
+                ->with('error', 'Data pesanan tidak ditemukan.');
+        }
+        
+        // Force refresh from database to bypass any in-memory cache
+        $transaction->refresh();
 
-        // Log untuk debugging
-        Log::info('SmartRent success page accessed', [
+        // Step 2: Load order (for reference only, do NOT load payment relationship)
+        $order = SmartRentOrder::where('order_number', $orderNumber)
+            ->where('user_id', Auth::id())
+            ->first();
+        
+        if ($order) {
+            $order->refresh();
+        }
+
+        // Step 3: Log current payment status for debugging
+        Log::info('SmartRent success page accessed - FRESH DATA LOADED', [
             'order_number' => $transaction->order_number,
-            'payment_status' => $transaction->payment_status,
-            'is_paid' => $transaction->is_paid,
-            'paid_at' => $transaction->paid_at
+            'transaction_id' => $transaction->id,
+            'transaction_payment_status' => $transaction->payment_status,
+            'transaction_is_paid' => $transaction->is_paid,
+            'transaction_paid_at' => $transaction->paid_at,
+            'has_order' => $order ? true : false,
+            'order_status' => $order ? $order->status : null,
+            'user_id' => Auth::id()
         ]);
 
-        // Use is_paid accessor to support multiple payment statuses
+        // Step 4: Generate QR code if not exists
         if ($transaction->is_paid && !$transaction->qr_code) {
-            $this->generateQrCodeForTransaction($transaction);
-            $transaction->refresh();
+            try {
+                $this->generateQrCodeForTransaction($transaction);
+                $transaction->refresh();
+                Log::debug('QR code generated on success page', ['order_number' => $orderNumber]);
+            } catch (\Exception $e) {
+                Log::warning('QR code generation failed on success page', [
+                    'order_number' => $orderNumber,
+                    'error' => $e->getMessage()
+                ]);
+                // Continue without QR - not mandatory for success page
+            }
         }
 
         $profile = MProfilePerusahaan::first();
@@ -897,6 +1037,7 @@ class SmartRentController extends Controller
         return view('customer.smartrent-success', [
             'profile' => $profile,
             'transaction' => $transaction,
+            'order' => $order,
             'order_number' => $transaction->order_number,
             'vehicle_name' => $transaction->vehicle_name,
             'rent_date' => $transaction->start_date,
@@ -1017,25 +1158,83 @@ class SmartRentController extends Controller
                 ->with('redirect_url', route('smartrent.e-ticket', $orderNumber));
         }
 
-        $transaction = SmartRentTransaction::where('order_number', $orderNumber)
+        // Step 1: Load transaction first (this is the authoritative source of payment status)
+        // Use raw query first to ensure fresh data
+        $rawTransaction = DB::table('smartrent_transactions')
+            ->where('order_number', $orderNumber)
             ->where('user_id', Auth::id())
-            ->firstOrFail();
+            ->first();
 
-        // Gunakan accessor is_paid untuk cek status pembayaran
+        if (!$rawTransaction) {
+            Log::warning('Transaction not found for e-ticket', ['order_number' => $orderNumber, 'user_id' => Auth::id()]);
+            return redirect()->route('smartrent.riwayat')
+                ->with('error', 'Data pesanan tidak ditemukan.');
+        }
+
+        // Load as Eloquent model to get accessors
+        $transaction = SmartRentTransaction::find($rawTransaction->id);
+        if (!$transaction) {
+            Log::warning('Transaction not found by ID for e-ticket', ['id' => $rawTransaction->id]);
+            return redirect()->route('smartrent.riwayat')
+                ->with('error', 'Data pesanan tidak ditemukan.');
+        }
+        
+        // Force refresh from database
+        $transaction->refresh();
+
+        // Step 2: Check if transaction is paid (primary check using transaction status)
+        Log::debug('E-Ticket access check', [
+            'order_number' => $orderNumber,
+            'payment_status' => $transaction->payment_status,
+            'is_paid' => $transaction->is_paid,
+            'payment_status_label' => $transaction->payment_status_label
+        ]);
+        
         if (!$transaction->is_paid) {
+            Log::info('E-Ticket DENIED - Transaction not paid', [
+                'order_number' => $orderNumber,
+                'payment_status' => $transaction->payment_status,
+                'is_paid' => $transaction->is_paid,
+                'user_id' => Auth::id()
+            ]);
             return redirect()->route('smartrent.riwayat')
                 ->with('error', 'E-Ticket hanya tersedia untuk transaksi yang sudah dibayar. Status saat ini: ' . $transaction->payment_status_label);
         }
 
+        // Step 3: Generate QR code if not exists
         if (!$transaction->qr_code || !$transaction->qr_path) {
-            $this->generateQrCodeForTransaction($transaction);
-            $transaction->refresh();
+            try {
+                $this->generateQrCodeForTransaction($transaction);
+                $transaction->refresh();
+                Log::debug('QR code generated for e-ticket', ['order_number' => $orderNumber]);
+            } catch (\Exception $e) {
+                Log::warning('QR code generation failed for e-ticket', [
+                    'order_number' => $orderNumber,
+                    'error' => $e->getMessage()
+                ]);
+                // Continue without QR code - it's not mandatory for displaying e-ticket
+            }
         }
 
+        // Step 4: Try to load order and payment for enhanced view (optional enhancement)
+        $order = SmartRentOrder::where('order_number', $orderNumber)
+            ->where('user_id', Auth::id())
+            ->first();
+        $payment = $order ? $order->payment : null;
+
+        // Step 5: Prepare price breakdown
         $priceBreakdown = $this->getPriceBreakdown($transaction);
         $profile = MProfilePerusahaan::first();
 
-        return view('customer.smartrent-e-ticket', compact('profile', 'transaction', 'priceBreakdown'));
+        Log::info('E-Ticket displayed successfully', [
+            'order_number' => $orderNumber,
+            'transaction_id' => $transaction->id,
+            'has_order' => $order ? true : false,
+            'has_payment' => $payment ? true : false
+        ]);
+
+        // Return view with transaction as primary source, order/payment as optional enhancements
+        return view('customer.smartrent-e-ticket', compact('profile', 'transaction', 'priceBreakdown', 'order', 'payment'));
     }
 
     /**
@@ -1049,10 +1248,37 @@ class SmartRentController extends Controller
                 ->with('redirect_url', route('smartrent.e-ticket.download', $orderNumber));
         }
 
-        $transaction = SmartRentTransaction::where('order_number', $orderNumber)
+        // Step 1: Load transaction fresh from database
+        $rawTransaction = DB::table('smartrent_transactions')
+            ->where('order_number', $orderNumber)
             ->where('user_id', Auth::id())
-            ->where('payment_status', 'paid')
-            ->firstOrFail();
+            ->first();
+
+        if (!$rawTransaction) {
+            Log::warning('Transaction not found for e-ticket download', ['order_number' => $orderNumber, 'user_id' => Auth::id()]);
+            return redirect()->route('smartrent.riwayat')
+                ->with('error', 'Data pesanan tidak ditemukan.');
+        }
+
+        $transaction = SmartRentTransaction::find($rawTransaction->id);
+        if (!$transaction) {
+            Log::warning('Transaction not found by ID for e-ticket download', ['id' => $rawTransaction->id]);
+            return redirect()->route('smartrent.riwayat')
+                ->with('error', 'Data pesanan tidak ditemukan.');
+        }
+
+        $transaction->refresh();
+
+        // Step 2: Check payment status
+        if (!$transaction->is_paid) {
+            Log::info('E-Ticket download DENIED - Transaction not paid', [
+                'order_number' => $orderNumber,
+                'payment_status' => $transaction->payment_status,
+                'is_paid' => $transaction->is_paid
+            ]);
+            return redirect()->route('smartrent.e-ticket', $orderNumber)
+                ->with('error', 'E-Ticket hanya tersedia untuk transaksi yang sudah dibayar. Status saat ini: ' . $transaction->payment_status_label);
+        }
 
         try {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('customer.smartrent-e-ticket-pdf', [
@@ -1147,6 +1373,59 @@ class SmartRentController extends Controller
             ], 401);
         }
 
+        // Prefer orders/payments
+        $order = SmartRentOrder::where('order_number', $orderNumber)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if ($order && $order->payment) {
+            $payment = $order->payment;
+
+            if (strtolower($payment->payment_status) !== 'paid') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'E-Ticket hanya tersedia untuk transaksi yang sudah dibayar'
+                ], 403);
+            }
+
+            $priceBreakdown = null;
+            $transaction = SmartRentTransaction::where('order_number', $orderNumber)->where('user_id', Auth::id())->first();
+            if ($transaction) {
+                $priceBreakdown = $this->getPriceBreakdown($transaction);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'order_number' => $order->order_number,
+                    'invoice_number' => $order->invoice_number,
+                    'customer_name' => $order->customer_name,
+                    'customer_email' => $order->customer_email,
+                    'customer_phone' => $order->customer_phone,
+                    'customer_address' => $order->customer_address,
+                    'vehicle_name' => $order->vehicle_name,
+                    'vehicle_type' => $order->vehicle_type,
+                    'service_type' => $order->service_type === 'with_driver' ? 'Dengan Sopir' : 'Sewa Mandiri',
+                    'duration' => $order->duration . ' Hari',
+                    'rental_period' => ($order->start_date ? $order->start_date->format('d M Y') : '-') . ' - ' . ($order->end_date ? $order->end_date->format('d M Y') : '-'),
+                    'start_date' => $order->start_date ? $order->start_date->format('d M Y') : '-',
+                    'end_date' => $order->end_date ? $order->end_date->format('d M Y') : '-',
+                    'start_time' => $order->start_time,
+                    'end_time' => $order->end_time,
+                    'pickup_location' => $order->pickup_location,
+                    'total_price' => 'Rp ' . number_format($order->total_price, 0, ',', '.'),
+                    'qr_url' => $payment->qr_path ? asset($payment->qr_path) : null,
+                    'paid_at' => $payment->paid_at ? $payment->paid_at->format('d M Y H:i') : '-',
+                    'status' => ucfirst($order->status),
+                    'payment_status' => ucfirst($payment->payment_status),
+                    'payment_status_raw' => $payment->payment_status,
+                    'is_paid' => strtolower($payment->payment_status) === 'paid',
+                    'price_breakdown' => $priceBreakdown
+                ]
+            ]);
+        }
+
+        // Fallback to legacy transaction model
         $transaction = SmartRentTransaction::where('order_number', $orderNumber)
             ->where('user_id', Auth::id())
             ->first();

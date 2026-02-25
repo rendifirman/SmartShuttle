@@ -30,6 +30,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Customer\SmartRentETicketController;
+use App\Http\Controllers\Customer\SmartRentController;
 
 // ★★★ IMPORT CONTROLLER YANG DIPERLUKAN ★★★
 use App\Http\Controllers\DriverJadwalController;
@@ -305,57 +306,78 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
             ->name('kursi.peta');
 
         // ============================================================
-        // ★★★ SMART RENT ROUTES - TAMBAHKAN DI SINI ★★★
+        // ★★★ SMART RENT ROUTES ★★★
         // ============================================================
+        // Backward-compatible alias: /admin/smartrent (without .index suffix)
+        Route::get('/smartrent', [AdminController::class, 'smartrentIndex'])
+            ->name('smartrent');
+        
+        // Direct access to SmartRent transaction show (displays latest booking detail)
+        Route::get('/smartrent-transaksi-show', [AdminController::class, 'smartrentTransactionShow'])
+            ->middleware('permission:view_smartrent')
+            ->name('smartrent.transaksi-show');
+
+        // Quick demo route: render the smartrent detail blade directly (used for sidebar quick link)
+        Route::get('/smartrent-detail-demo', function () {
+            return view('admin.smartrent-detail');
+        })->middleware('permission:view_smartrent')->name('smartrent.detail-demo');
+        
+        // Actual SmartRent routes group with all operations
         Route::prefix('smartrent')->name('smartrent.')->group(function () {
             // Index / List
             Route::get('/', [AdminController::class, 'smartrentIndex'])
-                ->middleware('permission:view_smartrent_transaksi')
+                ->middleware('permission:view_smartrent')
                 ->name('index');
             
-            // Create
+            // Create - Direct access to create form (main SmartRent entry point)
             Route::get('/create', [AdminController::class, 'smartrentCreate'])
-                ->middleware('permission:manage_smartrent_transaksi')
                 ->name('create');
+            // Allow any admin who can view SmartRent to submit the form
+            // (some roles may not have the "manage_smartrent" permission yet)
             Route::post('/', [AdminController::class, 'smartrentStore'])
-                ->middleware('permission:manage_smartrent_transaksi')
+                ->middleware('permission:view_smartrent')
                 ->name('store');
             
             // Show Detail
             Route::get('/{id}', [AdminController::class, 'smartrentShow'])
-                ->middleware('permission:view_smartrent_transaksi')
+                ->middleware('permission:view_smartrent')
                 ->name('show');
             
             // Edit
             Route::get('/{id}/edit', [AdminController::class, 'smartrentEdit'])
-                ->middleware('permission:manage_smartrent_transaksi')
+                ->middleware('permission:manage_smartrent')
                 ->name('edit');
             Route::put('/{id}', [AdminController::class, 'smartrentUpdate'])
-                ->middleware('permission:manage_smartrent_transaksi')
+                ->middleware('permission:manage_smartrent')
                 ->name('update');
             
             // Delete
             Route::delete('/{id}', [AdminController::class, 'smartrentDestroy'])
-                ->middleware('permission:manage_smartrent_transaksi')
+                ->middleware('permission:manage_smartrent')
                 ->name('destroy');
             
             // Export
             Route::get('/export/excel', [AdminController::class, 'smartrentExportExcel'])
-                ->middleware('permission:view_smartrent_transaksi')
+                ->middleware('permission:view_smartrent')
                 ->name('export.excel');
             Route::get('/export/pdf', [AdminController::class, 'smartrentExportPdf'])
-                ->middleware('permission:view_smartrent_transaksi')
+                ->middleware('permission:view_smartrent')
                 ->name('export.pdf');
             
             // AJAX Status Update
             Route::post('/{id}/update-status', [AdminController::class, 'smartrentUpdateStatus'])
-                ->middleware('permission:manage_smartrent_transaksi')
+                ->middleware('permission:manage_smartrent')
                 ->name('update-status');
+
+            // Penyerahan / Pengembalian (store handover/return data)
+            Route::post('/{id}/penyerahan', [AdminController::class, 'smartrentPenyerahanStore'])
+                ->middleware('permission:manage_smartrent')
+                ->name('penyerahan.store');
+
+            Route::post('/{id}/pengembalian', [AdminController::class, 'smartrentPengembalianStore'])
+                ->middleware('permission:manage_smartrent')
+                ->name('pengembalian.store');
         });
-        // Backward-compatible route name used in views: admin.smartrent
-        Route::get('/smartrent', [AdminController::class, 'smartrentIndex'])
-            ->middleware('permission:view_smartrent_transaksi')
-            ->name('smartrent');
         // ============================================================
 
         // Master Data Routes - Armada routes using Admin\ArmadaController
@@ -1114,8 +1136,7 @@ Route::get('/refresh-csrf', function () {
     ]);
 })->middleware('web');
 
-// ★★★ SMART RENT ROUTES ★★★
-use App\Http\Controllers\Customer\SmartRentController;
+// ★★★ SMART RENT CUSTOMER ROUTES ★★★
 
 // ★★★ ALIAS ROUTES untuk kompatibilitas ★★★
 Route::get('/smartrent-page', [SmartRentController::class, 'index'])->name('customer.smartrent');
