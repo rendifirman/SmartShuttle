@@ -795,6 +795,7 @@
     }
 </style>
 <!-- Font Awesome 5 -->
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 @endpush
 
@@ -971,39 +972,39 @@
 
             <form action="{{ route('smartrent.payment.process') }}" method="POST" id="paymentForm">
                 @csrf
-                <input type="hidden" name="order_id" value="{{ isset($order_id) ? $order_id : '' }}">
                 <input type="hidden" name="order_number" value="{{ isset($order_number) ? $order_number : 'SR2026021230D448' }}">
+                <input type="hidden" name="order_id" value="{{ isset($order_id) ? $order_id : '' }}">
                 <input type="hidden" name="total_price" value="{{ isset($totalPrice) ? $totalPrice : 1350000 }}">
                 
-                @if(isset($vehicleId))
-                    <input type="hidden" name="vehicle_id" value="{{ $vehicleId }}">
+                {{-- TAMBAHKAN SEMUA DATA YANG DIPERLUKAN UNTUK VALIDASI --}}
+                <input type="hidden" name="full_name" value="{{ isset($customerData['full_name']) ? $customerData['full_name'] : 'Customer' }}">
+                <input type="hidden" name="phone" value="{{ isset($customerData['phone']) ? $customerData['phone'] : '08123456789' }}">
+                <input type="hidden" name="email" value="{{ isset($customerData['email']) ? $customerData['email'] : 'customer@example.com' }}">
+                <input type="hidden" name="rent_date" value="{{ isset($rentDate) ? $rentDate : date('Y-m-d') }}">
+                <input type="hidden" name="duration" value="{{ isset($duration) ? $duration : 1 }}">
+                <input type="hidden" name="service_type" value="{{ (isset($service) && $service == 'self_drive') || (isset($customerData['service_type']) && $customerData['service_type'] == 'self_drive') ? 'self_drive' : 'with_driver' }}">
+                
+                {{-- Data tambahan untuk transaksi --}}
+                @if(isset($vehicle_id))
+                    <input type="hidden" name="vehicle_id" value="{{ $vehicle_id }}">
+                @elseif(isset($vehicle['id']))
+                    <input type="hidden" name="vehicle_id" value="{{ $vehicle['id'] }}">
                 @endif
-                @if(isset($vehicle))
-                    <input type="hidden" name="vehicle_name" value="{{ $vehicle['name'] ?? 'Toyota Hiace Commuter' }}">
+                
+                @if(isset($vehicle['name']))
+                    <input type="hidden" name="vehicle_name" value="{{ $vehicle['name'] }}">
                 @endif
-                @if(isset($customerData['full_name']))
-                    <input type="hidden" name="full_name" value="{{ $customerData['full_name'] }}">
+                
+                @if(isset($vehicle['price']))
+                    <input type="hidden" name="vehicle_price" value="{{ $vehicle['price'] }}">
                 @endif
-                @if(isset($customerData['phone']))
-                    <input type="hidden" name="phone" value="{{ $customerData['phone'] }}">
-                @endif
-                @if(isset($customerData['email']))
-                    <input type="hidden" name="email" value="{{ $customerData['email'] }}">
-                @endif
+                
                 @if(isset($customerData['pickup_address']))
                     <input type="hidden" name="pickup_address" value="{{ $customerData['pickup_address'] }}">
                 @endif
-                @if(isset($rentDate))
-                    <input type="hidden" name="rent_date" value="{{ $rentDate }}">
-                @endif
-                @if(isset($duration))
-                    <input type="hidden" name="duration" value="{{ $duration }}">
-                @endif
+                
                 @if(isset($customerData['city']))
                     <input type="hidden" name="city" value="{{ $customerData['city'] }}">
-                @endif
-                @if(isset($customerData['service_type']))
-                    <input type="hidden" name="service_type" value="{{ $customerData['service_type'] }}">
                 @endif
 
                 {{-- METODE PEMBAYARAN --}}
@@ -1134,8 +1135,6 @@
 </div>
 
 @push('scripts')
-// Di resources/views/payment/index.blade.php - bagian script
-
 <script>
     // Data Virtual Account untuk masing-masing bank
     const vaData = {
@@ -1165,7 +1164,9 @@
 
     // Fungsi copy VA Number
     window.copyVANumber = function(element) {
-        const vaNumber = document.getElementById('va-number').textContent;
+        const vaNumber = document.getElementById('va-number')?.textContent;
+        if (!vaNumber) return;
+        
         navigator.clipboard.writeText(vaNumber).then(() => {
             const originalHTML = element.innerHTML;
             element.innerHTML = '<i class="fas fa-check"></i> Tersalin!';
@@ -1176,7 +1177,6 @@
                 element.style.color = 'var(--primary)';
             }, 2000);
         }).catch(err => {
-            // Fallback untuk browser yang tidak support clipboard
             alert('Gagal menyalin. Silakan salin manual: ' + vaNumber);
         });
     };
@@ -1193,9 +1193,9 @@
         
         // Reset semua pilihan
         function resetPaymentDetail() {
-            paymentDetail.style.display = 'none';
-            qrisSection.style.display = 'none';
-            vaSection.style.display = 'none';
+            if (paymentDetail) paymentDetail.style.display = 'none';
+            if (qrisSection) qrisSection.style.display = 'none';
+            if (vaSection) vaSection.style.display = 'none';
             methodCards.forEach(card => {
                 card.classList.remove('selected');
             });
@@ -1208,22 +1208,24 @@
             const selectedCard = document.querySelector(`[data-method="${method}"]`);
             if (selectedCard) {
                 selectedCard.classList.add('selected');
-                paymentDetail.style.display = 'block';
+                if (paymentDetail) paymentDetail.style.display = 'block';
                 
                 if (method === 'qris') {
-                    qrisSection.style.display = 'block';
+                    if (qrisSection) qrisSection.style.display = 'block';
                 } else if (vaData[method]) {
-                    vaSection.style.display = 'block';
-                    vaTitle.textContent = vaData[method].title;
-                    vaNumber.textContent = vaData[method].number;
+                    if (vaSection) vaSection.style.display = 'block';
+                    if (vaTitle) vaTitle.textContent = vaData[method].title;
+                    if (vaNumber) vaNumber.textContent = vaData[method].number;
                     
                     // Update instruksi
-                    vaInstructions.innerHTML = '';
-                    vaData[method].instructions.forEach(instruction => {
-                        const li = document.createElement('li');
-                        li.textContent = instruction;
-                        vaInstructions.appendChild(li);
-                    });
+                    if (vaInstructions) {
+                        vaInstructions.innerHTML = '';
+                        vaData[method].instructions.forEach(instruction => {
+                            const li = document.createElement('li');
+                            li.textContent = instruction;
+                            vaInstructions.appendChild(li);
+                        });
+                    }
                 }
             }
         }
@@ -1233,7 +1235,7 @@
             card.addEventListener('click', function() {
                 const method = this.dataset.method;
                 const radio = this.querySelector('input[type="radio"]');
-                radio.checked = true;
+                if (radio) radio.checked = true;
                 showPaymentDetail(method);
             });
         });
@@ -1242,111 +1244,176 @@
         if (methodCards.length > 0) {
             const firstMethod = methodCards[0].dataset.method;
             const firstRadio = methodCards[0].querySelector('input[type="radio"]');
-            firstRadio.checked = true;
+            if (firstRadio) firstRadio.checked = true;
             showPaymentDetail(firstMethod);
         }
         
-        // HANDLER FORM SUBMIT - Redirect ke halaman success
-     // HANDLER FORM SUBMIT - Ganti dengan kode ini
-document.getElementById('paymentForm').addEventListener('submit', function(e) {
-    e.preventDefault(); // Mencegah form submit normal ke server
-    
-    const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
-    
-    if (!paymentMethod) {
-        alert('Silakan pilih metode pembayaran terlebih dahulu.');
-        return false;
-    }
-    
-    // Konfirmasi sebelum proses
-    if (!confirm('Apakah Anda yakin ingin mengkonfirmasi pembayaran?')) {
-        return false;
-    }
-    
-    // Tampilkan loading
-    const submitBtn = this.querySelector('button[type="submit"]');
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses pembayaran...';
-    submitBtn.disabled = true;
-    
-    // Ambil data dari form
-    const formData = new FormData(this);
-    
-    // Buat object data untuk dikirim via URL
-    const params = new URLSearchParams();
-    
-    // Data order - ambil dari form
-    for (let pair of formData.entries()) {
-        if (pair[1] && pair[1] !== '') {
-            params.append(pair[0], pair[1]);
-        }
-    }
-    
-    // Format tanggal pembayaran
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const year = now.getFullYear();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    
-    params.append('payment_time', `${day}/${month}/${year} ${hours}:${minutes} WIB`);
-    
-    // Hitung tanggal selesai sewa
-    const rentDate = params.get('rent_date') || new Date().toISOString().split('T')[0];
-    const duration = parseInt(params.get('duration') || '1');
-    const endDate = new Date(rentDate);
-    endDate.setDate(endDate.getDate() + duration);
-    
-    const endDay = String(endDate.getDate()).padStart(2, '0');
-    const endMonth = String(endDate.getMonth() + 1).padStart(2, '0');
-    const endYear = endDate.getFullYear();
-    
-    params.append('rent_date_end', `${endDay}-${endMonth}-${endYear}`);
-    
-    // CEK DATA sebelum redirect
-    console.log('Data yang akan dikirim:', Object.fromEntries(params));
-    
-    // Redirect ke halaman success
-    setTimeout(function() {
-        window.location.href = "{{ route('smartrent.payment-success') }}?" + params.toString();
-    }, 1500);
-});
-
-        // Countdown timer
-        function updateDeadlineTimer() {
-            const deadlineTimer = document.getElementById('deadline-timer');
-            if (!deadlineTimer) return;
+        // HANDLER FORM SUBMIT - PERBAIKAN DENGAN DEBUGGING
+        document.getElementById('paymentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
             
-            // Set deadline 1 jam dari sekarang
-            const now = new Date();
-            const deadline = new Date(now.getTime() + (60 * 60 * 1000));
+            const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
             
-            function timer() {
-                const currentTime = new Date().getTime();
-                const deadlineTime = deadline.getTime();
-                const distance = deadlineTime - currentTime;
-                
-                if (distance < 0) {
-                    deadlineTimer.innerHTML = 'Waktu habis';
-                    deadlineTimer.style.background = 'var(--danger-light)';
-                    deadlineTimer.style.color = 'var(--danger)';
-                    return;
-                }
-                
-                const hours = Math.floor(distance / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                
-                const timeString = `${deadline.getHours().toString().padStart(2,'0')}:${deadline.getMinutes().toString().padStart(2,'0')} WIB (sisa ${hours}j ${minutes}m ${seconds}d)`;
-                deadlineTimer.innerHTML = timeString;
+            if (!paymentMethod) {
+                alert('Silakan pilih metode pembayaran terlebih dahulu.');
+                return false;
             }
             
-            timer();
-            setInterval(timer, 1000);
+            if (!confirm('Apakah Anda yakin ingin mengkonfirmasi pembayaran?')) {
+                return false;
+            }
+            
+            // Tampilkan loading
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses pembayaran...';
+            submitBtn.disabled = true;
+            
+            // Ambil data dari form
+            const formData = new FormData(this);
+            
+            // CEK DATA SEBELUM DIKIRIM
+            console.log('=== DATA YANG AKAN DIKIRIM KE SERVER ===');
+            let requiredFields = ['order_number', 'payment_method', 'total_price', 'full_name', 'phone', 'email', 'rent_date', 'duration', 'service_type'];
+            let missingFields = [];
+            
+            for (let pair of formData.entries()) {
+                console.log(pair[0] + ': ' + pair[1]);
+            }
+            
+            // Cek field yang required
+            requiredFields.forEach(field => {
+                if (!formData.has(field) || !formData.get(field)) {
+                    missingFields.push(field);
+                    console.log('❌ FIELD MISSING: ' + field);
+                }
+            });
+            
+            if (missingFields.length > 0) {
+                alert('Data tidak lengkap: ' + missingFields.join(', ') + '\nSilakan refresh halaman dan coba lagi.');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                return;
+            }
+            
+            console.log('=======================================');
+            
+            fetch("{{ route('smartrent.payment.process') }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                // Cek apakah response berupa JSON
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
+                    // Jika bukan JSON, ambil teks untuk debugging
+                    return response.text().then(text => {
+                        console.log('Response text (bukan JSON):', text.substring(0, 500));
+                        throw new Error('Server mengembalikan HTML, bukan JSON. Status: ' + response.status);
+                    });
+                }
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                
+                if (data.success) {
+                    // Gunakan redirect_url dari server jika ada
+                    if (data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        // Fallback ke pembuatan URL manual
+                        const successUrl = "{{ route('smartrent.payment-success') }}" + 
+                            "?order_number=" + encodeURIComponent(formData.get('order_number')) +
+                            "&payment_method=" + encodeURIComponent(formData.get('payment_method')) +
+                            "&total_price=" + encodeURIComponent(formData.get('total_price'));
+                        window.location.href = successUrl;
+                    }
+                } else {
+                    let errorMessage = 'Error: ' + (data.message || 'Terjadi kesalahan');
+                    if (data.errors) {
+                        errorMessage += '\n\nDetail:';
+                        for (let field in data.errors) {
+                            errorMessage += '\n- ' + field + ': ' + data.errors[field].join(', ');
+                        }
+                    }
+                    alert(errorMessage);
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error detail:', error);
+                alert('Terjadi kesalahan: ' + error.message + '\n\nSilakan cek console browser (F12) untuk detail lebih lanjut.');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+    });
+
+    // Countdown timer
+    function updateDeadlineTimer() {
+        const deadlineTimer = document.getElementById('deadline-timer');
+        if (!deadlineTimer) return;
+        
+        // Ambil waktu deadline dari elemen atau set default 1 jam
+        let deadlineTime;
+        const deadlineText = deadlineTimer.textContent;
+        
+        if (deadlineText.includes(':')) {
+            const timeParts = deadlineText.split(':');
+            const now = new Date();
+            deadlineTime = new Date(now);
+            deadlineTime.setHours(parseInt(timeParts[0]), parseInt(timeParts[1]), 0);
+            
+            // Jika waktu sudah lewat, tambah 1 hari
+            if (deadlineTime < now) {
+                deadlineTime.setDate(deadlineTime.getDate() + 1);
+            }
+        } else {
+            // Default 1 jam dari sekarang
+            deadlineTime = new Date(Date.now() + 60 * 60 * 1000);
         }
         
+        function timer() {
+            const now = new Date().getTime();
+            const deadline = deadlineTime.getTime();
+            const distance = deadline - now;
+            
+            if (distance < 0) {
+                deadlineTimer.innerHTML = 'Waktu habis';
+                deadlineTimer.style.background = 'var(--danger-light)';
+                deadlineTimer.style.color = 'var(--danger)';
+                return;
+            }
+            
+            const hours = Math.floor(distance / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            
+            const timeString = `${deadlineTime.getHours().toString().padStart(2,'0')}:${deadlineTime.getMinutes().toString().padStart(2,'0')} WIB (sisa ${hours}j ${minutes}m ${seconds}d)`;
+            deadlineTimer.innerHTML = timeString;
+        }
+        
+        timer();
+        setInterval(timer, 1000);
+    }
+
+    // Panggil fungsi setelah DOM loaded
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateDeadlineTimer);
+    } else {
         updateDeadlineTimer();
-    });
+    }
 </script>
 @endpush
 @endsection

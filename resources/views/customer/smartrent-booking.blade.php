@@ -1229,6 +1229,7 @@ function updatePrices() {
     $('#summaryTotal').text(`Rp ${formatNumber(total)}`);
 }
 
+// ========== FUNGSI UTAMA YANG MENGIRIM DATA ==========
 function continueToPayment(event) {
     event.preventDefault();
     
@@ -1238,19 +1239,54 @@ function continueToPayment(event) {
         return false;
     }
     
-    // Buat parameter lengkap
+    // HITUNG HARGA DENGAN BENAR
+    const vehiclePricePerDay = parseInt(vehicle.price) || 0;
+    const driverPricePerDay = parseInt(vehicle.driver_price) || 150000;
+    const selectedDriverPricePerDay = selectedService === 'with-driver' ? driverPricePerDay : 0;
+    
+    // HITUNG TOTAL
+    const vehicleTotal = vehiclePricePerDay * duration;
+    const driverTotal = selectedDriverPricePerDay * duration;
+    const totalPrice = vehicleTotal + driverTotal;
+    
+    // LOG UNTUK DEBUG
+    console.log('=== DATA YANG DIKIRIM KE CHECKOUT ===');
+    console.log('Vehicle:', vehicle.name);
+    console.log('Vehicle Price Per Day:', vehiclePricePerDay);
+    console.log('Driver Price Per Day:', driverPricePerDay);
+    console.log('Selected Driver Price Per Day:', selectedDriverPricePerDay);
+    console.log('Service:', selectedService);
+    console.log('Duration:', duration);
+    console.log('Vehicle Total:', vehicleTotal);
+    console.log('Driver Total:', driverTotal);
+    console.log('Total Price:', totalPrice);
+    
+    // KIRIM SEMUA DATA VIA URL
     const params = new URLSearchParams({
+        // VEHICLE INFO
         vehicle_id: selectedVehicleId,
         vehicle_name: vehicle.name,
         vehicle_image: vehicle.image,
-        vehicle_price: vehicle.price,
-        driver_price: vehicle.driver_price || 150000,
-        service: selectedService,
+        
+        // HARGA PER HARI
+        vehicle_price_per_day: vehiclePricePerDay,
+        driver_price_per_day: driverPricePerDay,
+        selected_driver_price_per_day: selectedDriverPricePerDay,
+        
+        // SERVICE
+        service: selectedService, // 'with-driver' atau 'self-drive'
+        
+        // DURASI & TANGGAL
         duration: duration,
-        rent_date: rentDate
+        rent_date: rentDate,
+        
+        // TOTAL
+        vehicle_total: vehicleTotal,
+        driver_total: driverTotal,
+        total_price: totalPrice
     });
     
-    // Redirect ke halaman checkout dengan parameter
+    // REDIRECT KE CHECKOUT
     window.location.href = '{{ route("smartrent.checkout.booking") }}?' + params.toString();
     return false;
 }

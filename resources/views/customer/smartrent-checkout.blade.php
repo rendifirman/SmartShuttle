@@ -372,42 +372,95 @@
     use App\Models\MProfilePerusahaan;
     $profile = MProfilePerusahaan::first();
     
-    // Ambil data dari URL parameters (dari halaman booking)
-    $vehicle_id = request()->get('vehicle_id', 1);
-    $vehicle_name = request()->get('vehicle_name', 'Toyota Hiace Commuter');
-    $vehicle_image = request()->get('vehicle_image', asset('images/toyotahiace.png'));
-    $vehicle_price = request()->get('vehicle_price', 1200000);
-    $driver_price = request()->get('driver_price', 150000);
-    $service = request()->get('service', 'with-driver');
-    $duration = request()->get('duration', 1);
-    $rent_date = request()->get('rent_date', date('Y-m-d'));
+    // ===== PRIORITAS 1: AMBIL DARI SESSION =====
+    $checkout = session('smartrent_checkout');
     
-    // Hitung tanggal selesai
+    // ===== PRIORITAS 2: AMBIL DARI URL PARAMETERS =====
+    if (!$checkout) {
+        $checkout = [
+            'vehicle_id' => request()->get('vehicle_id', 1),
+            'vehicle_name' => request()->get('vehicle_name', 'Toyota Hiace Commuter'),
+            'vehicle_image' => request()->get('vehicle_image', asset('images/toyotahiace.png')),
+            'vehicle_price_per_day' => (int)request()->get('vehicle_price_per_day', 1200000),
+            'driver_price_per_day' => (int)request()->get('driver_price_per_day', 150000),
+            'selected_driver_price_per_day' => (int)request()->get('selected_driver_price_per_day', 
+                request()->get('service') == 'with-driver' ? 150000 : 0),
+            'service_type' => request()->get('service') == 'with-driver' ? 'with_driver' : 'self_drive',
+            'duration' => (int)request()->get('duration', 1),
+            'rent_date' => request()->get('rent_date', date('Y-m-d')),
+            'vehicle_total' => (int)request()->get('vehicle_total', 1200000),
+            'driver_total' => (int)request()->get('driver_total', 0),
+            'total_price' => (int)request()->get('total_price', 1200000),
+            'city' => request()->get('city', 'Jakarta'), // TAMBAHKAN INI
+        ];
+    }
+    
+    // ===== EKSTRAK DATA =====
+    $vehicle_id = $checkout['vehicle_id'];
+    $vehicle_name = $checkout['vehicle_name'];
+    $vehicle_image = $checkout['vehicle_image'];
+    $vehicle_price_per_day = (int)$checkout['vehicle_price_per_day'];
+    $driver_price_per_day = (int)($checkout['driver_price_per_day'] ?? 150000);
+    $selected_driver_price_per_day = (int)($checkout['selected_driver_price_per_day'] ?? 0);
+    $service_type = $checkout['service_type'] ?? 'self_drive';
+    $duration = (int)($checkout['duration'] ?? 1);
+    $rent_date = $checkout['rent_date'] ?? date('Y-m-d');
+    $vehicle_total = (int)($checkout['vehicle_total'] ?? 0);
+    $driver_total = (int)($checkout['driver_total'] ?? 0);
+    $total_price = (int)($checkout['total_price'] ?? 0);
+    $city = $checkout['city'] ?? 'Jakarta'; // TAMBAHKAN INI
+    
+    // ===== VALIDASI ULANG PERHITUNGAN =====
+    // Hitung ulang untuk memastikan konsistensi
+    $calculatedVehicleTotal = $vehicle_price_per_day * $duration;
+    $calculatedDriverTotal = $selected_driver_price_per_day * $duration;
+    $calculatedTotalPrice = $calculatedVehicleTotal + $calculatedDriverTotal;
+    
+    // Jika ada perbedaan, gunakan hasil perhitungan ulang
+    if ($vehicle_total != $calculatedVehicleTotal) {
+        $vehicle_total = $calculatedVehicleTotal;
+    }
+    
+    if ($driver_total != $calculatedDriverTotal) {
+        $driver_total = $calculatedDriverTotal;
+    }
+    
+    if ($total_price != $calculatedTotalPrice) {
+        $total_price = $calculatedTotalPrice;
+    }
+    
+    // ===== HITUNG TANGGAL SELESAI =====
     $end_date = date('Y-m-d', strtotime($rent_date . ' + ' . ($duration - 1) . ' days'));
     
-    // Hitung total harga
-    $vehicle_total = $vehicle_price * $duration;
-    $driver_total = ($service == 'with-driver') ? $driver_price * $duration : 0;
-    $total_price = $vehicle_total + $driver_total;
+    // ===== SERVICE TEXT =====
+    $service_text = $service_type == 'with_driver' ? 'Dengan Sopir' : 'Lepas Kunci';
     
-    // Data lengkap untuk dikirim ke controller
-    $checkoutData = [
-        'vehicle_id' => $vehicle_id,
-        'vehicle_name' => $vehicle_name,
-        'vehicle_image' => $vehicle_image,
-        'vehicle_price' => $vehicle_price,
-        'driver_price' => $driver_price,
-        'service' => $service,
-        'service_text' => $service == 'with-driver' ? 'Dengan Sopir' : 'Lepas Kunci',
-        'duration' => $duration,
-        'rent_date' => $rent_date,
-        'end_date' => $end_date,
-        'vehicle_total' => $vehicle_total,
-        'driver_total' => $driver_total,
-        'total_price' => $total_price,
-        'booking_code' => 'SR' . date('Ymd') . rand(100, 999)
-    ];
+    // ===== FORMAT UNTUK DISPLAY =====
+    $vehicle_price_display = 'Rp ' . number_format($vehicle_price_per_day, 0, ',', '.');
+    $driver_price_display = 'Rp ' . number_format($driver_price_per_day, 0, ',', '.');
+    $selected_driver_price_display = 'Rp ' . number_format($selected_driver_price_per_day, 0, ',', '.');
+    $vehicle_total_display = 'Rp ' . number_format($vehicle_total, 0, ',', '.');
+    $driver_total_display = 'Rp ' . number_format($driver_total, 0, ',', '.');
+    $total_price_display = 'Rp ' . number_format($total_price, 0, ',', '.');
+    
+    // ===== BOOKING CODE =====
+    $booking_code = 'SR' . date('Ymd') . rand(100, 999);
 @endphp
+
+<!-- Debug info (hidden) -->
+@if(app()->environment('local'))
+    <!-- Checkout Data: 
+         Vehicle: {{ $vehicle_name }},
+         Price/Day: {{ $vehicle_price_per_day }},
+         Driver/Day: {{ $selected_driver_price_per_day }},
+         Service: {{ $service_type }},
+         Duration: {{ $duration }},
+         Vehicle Total: {{ $vehicle_total }},
+         Driver Total: {{ $driver_total }},
+         Total: {{ $total_price }},
+         City: {{ $city }}
+    -->
+@endif
 
 <div class="checkout-container">
     <!-- Header -->
@@ -434,7 +487,7 @@
              onerror="this.onerror=null; this.src='{{ asset('images/default-vehicle.jpg') }}';">
         <div class="vehicle-summary-details">
             <h4 class="vehicle-summary-name">{{ $vehicle_name }}</h4>
-            <span class="vehicle-summary-type">{{ $service == 'with-driver' ? 'Dengan Sopir' : 'Lepas Kunci' }}</span>
+            <span class="vehicle-summary-type">{{ $service_text }}</span>
             <div class="vehicle-summary-specs">
                 <div class="vehicle-summary-spec">
                     <i class="fas fa-calendar-alt"></i>
@@ -448,48 +501,50 @@
         </div>
     </div>
 
-    <!-- Ringkasan Harga -->
-    <div class="order-summary">
-        <h3 style="font-size: 16px; font-weight: 600; color: var(--primary-color); margin-bottom: 15px;">
-            <i class="fas fa-file-invoice"></i> Ringkasan Harga
-        </h3>
-        
-        <div class="summary-item">
-            <span class="summary-label">Harga Sewa ({{ $duration }} Hari):</span>
-            <span class="summary-value">Rp {{ number_format($vehicle_total, 0, ',', '.') }}</span>
-        </div>
-        
-        @if($service == 'with-driver')
-        <div class="summary-item">
-            <span class="summary-label">Biaya Sopir ({{ $duration }} Hari):</span>
-            <span class="summary-value">Rp {{ number_format($driver_total, 0, ',', '.') }}</span>
-        </div>
-        @endif
-        
-        <div class="summary-total">
-            <span class="total-label">Total Pembayaran:</span>
-            <span class="total-value">Rp {{ number_format($total_price, 0, ',', '.') }}</span>
-        </div>
+  <!-- Ringkasan Harga -->
+<div class="order-summary">
+    <h3 style="font-size: 16px; font-weight: 600; color: var(--primary-color); margin-bottom: 15px;">
+        <i class="fas fa-file-invoice"></i> Ringkasan Harga
+    </h3>
+    
+    <div class="summary-item">
+        <span class="summary-label">Harga Sewa (Rp {{ number_format($vehicle_price_per_day, 0, ',', '.') }} x {{ $duration }} Hari):</span>
+        <span class="summary-value">Rp {{ number_format($vehicle_total, 0, ',', '.') }}</span>
     </div>
     
-    <!-- Form Checkout - PERBAIKAN: Menggunakan route smartrent.checkout.finalize -->
+    @if($service_type == 'with_driver' && $selected_driver_price_per_day > 0)
+    <div class="summary-item">
+        <span class="summary-label">Biaya Sopir (Rp {{ number_format($selected_driver_price_per_day, 0, ',', '.') }} x {{ $duration }} Hari):</span>
+        <span class="summary-value">Rp {{ number_format($driver_total, 0, ',', '.') }}</span>
+    </div>
+    @endif
+    
+    <div class="summary-total">
+        <span class="total-label">Total Pembayaran:</span>
+        <span class="total-value">Rp {{ number_format($total_price, 0, ',', '.') }}</span>
+    </div>
+</div>
+    
+    <!-- Form Checkout -->
     <form action="{{ route('smartrent.checkout.finalize') }}" method="POST" id="checkoutForm" enctype="multipart/form-data">
         @csrf
         
-        <!-- Hidden inputs untuk data booking -->
+        <!-- Hidden inputs untuk data booking - PASTIKAN SEMUA DATA TERKIRIM -->
         <input type="hidden" name="vehicle_id" value="{{ $vehicle_id }}">
         <input type="hidden" name="vehicle_name" value="{{ $vehicle_name }}">
         <input type="hidden" name="vehicle_image" value="{{ $vehicle_image }}">
-        <input type="hidden" name="vehicle_price" value="{{ $vehicle_price }}">
-        <input type="hidden" name="driver_price" value="{{ $driver_price }}">
-        <input type="hidden" name="service" value="{{ $service }}">
+        <input type="hidden" name="vehicle_price_per_day" value="{{ $vehicle_price_per_day }}">
+        <input type="hidden" name="driver_price_per_day" value="{{ $driver_price_per_day }}">
+        <input type="hidden" name="selected_driver_price_per_day" value="{{ $selected_driver_price_per_day }}">
+        <input type="hidden" name="service_type" value="{{ $service_type }}">
         <input type="hidden" name="duration" value="{{ $duration }}">
         <input type="hidden" name="rent_date" value="{{ $rent_date }}">
         <input type="hidden" name="end_date" value="{{ $end_date }}">
         <input type="hidden" name="vehicle_total" value="{{ $vehicle_total }}">
         <input type="hidden" name="driver_total" value="{{ $driver_total }}">
         <input type="hidden" name="total_price" value="{{ $total_price }}">
-        <input type="hidden" name="booking_code" value="{{ $checkoutData['booking_code'] }}">
+        <input type="hidden" name="booking_code" value="{{ $booking_code }}">
+        <input type="hidden" name="city" value="{{ $city }}"> <!-- TAMBAHKAN INI -->
         
         <!-- SECTION 1: DATA PEMESAN -->
         <div class="form-section">
@@ -731,7 +786,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (form) {
         form.addEventListener('submit', function(e) {
             const submitBtn = document.getElementById('submitBtn');
-            const originalText = submitBtn.innerHTML;
             
             // Validasi file upload
             const ktpFile = document.getElementById('ktp_file').files.length;
@@ -749,40 +803,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
             
-            // Validasi jam untuk sewa hari yang sama
-            const startTime = document.querySelector('input[name="start_time"]').value;
-            const endTime = document.querySelector('input[name="end_time"]').value;
-            
-            if (startTime && endTime && startTime >= endTime) {
-                e.preventDefault();
-                alert('Jam selesai harus setelah jam mulai');
-                return false;
-            }
-            
-            // Validasi lokasi
-            const pickupLocation = document.getElementById('pickupLocation').value;
-            if (!pickupLocation) {
-                e.preventDefault();
-                alert('Harap pilih lokasi penjemputan');
-                return false;
-            }
-            
-            // Validasi email
-            const email = document.querySelector('input[name="email"]').value;
-            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailPattern.test(email)) {
-                e.preventDefault();
-                alert('Format email tidak valid');
-                return false;
-            }
-            
-            // Validasi nomor telepon
-            const phone = document.querySelector('input[name="phone"]').value;
-            const phonePattern = /^[0-9]{10,13}$/;
-            if (!phonePattern.test(phone)) {
-                e.preventDefault();
-                alert('Nomor telepon harus 10-13 digit angka');
-                return false;
+            // Log data yang akan dikirim untuk debugging
+            const formData = new FormData(form);
+            console.log('Data dikirim ke server:');
+            for (let pair of formData.entries()) {
+                console.log(pair[0] + ': ' + pair[1]);
             }
             
             // Show loading

@@ -614,107 +614,110 @@
 
 <div class="order-history">
     @forelse($riwayat as $index => $item)
-        @if($item instanceof \App\Models\SmartRentTransaction)
-            {{-- SmartRent Rental Transaction Display --}}
-            @php
-                $isSmartRent = true;
-                
-                // Gunakan accessor dari model untuk mendapatkan status filter
-                $filterStatus = $item->filter_status; // 'lunas', 'menunggu', atau 'batal'
-                $statusLabel = $item->payment_status_label;
-                
-                $serviceTypeLabel = $item->service_type === 'with_driver' ? 'Dengan Sopir' : 'Sewa Mandiri';
-                $totalBayarFormatted = $item->formatted_total_price;
-                $formattedStartDate = \Carbon\Carbon::parse($item->start_date)->locale('id')->isoFormat('dddd, D MMMM YYYY');
-                $formattedEndDate = \Carbon\Carbon::parse($item->end_date)->locale('id')->isoFormat('D MMMM YYYY');
-                $duration = \Carbon\Carbon::parse($item->start_date)->diffInDays(\Carbon\Carbon::parse($item->end_date));
-                $vehicleInfo = $item->vehicle_name . ' - ' . $serviceTypeLabel;
-                
-                // Cek apakah bisa show e-ticket menggunakan method canShowETicket()
-                $canShowETicket = $item->canShowETicket();
-                
-                // Debug: tampilkan status asli untuk membantu troubleshooting (opsional, bisa dihapus setelah fix)
-                $debugInfo = 'Status: ' . $item->payment_status . ' | Is Paid: ' . ($item->is_paid ? 'Ya' : 'Tidak');
-            @endphp
+       @if($item instanceof \App\Models\SmartRentTransaction)
+    {{-- SmartRent Rental Transaction Display --}}
+    @php
+        $isSmartRent = true;
+        
+        // Gunakan accessor dari model
+        $filterStatus = $item->filter_status; // 'lunas', 'menunggu', atau 'batal'
+        $statusLabel = $item->payment_status_label;
+        
+        // CEK LANGSUNG apakah sudah lunas
+        $isPaid = $item->is_paid;
+        
+        $serviceTypeLabel = $item->service_type_label;
+        $totalBayarFormatted = $item->formatted_total_price;
+        $formattedStartDate = $item->start_date ? \Carbon\Carbon::parse($item->start_date)->locale('id')->isoFormat('dddd, D MMMM YYYY') : '-';
+        $formattedEndDate = $item->end_date ? \Carbon\Carbon::parse($item->end_date)->locale('id')->isoFormat('D MMMM YYYY') : '-';
+        $duration = $item->duration;
+        $vehicleInfo = $item->vehicle_name . ' - ' . $serviceTypeLabel;
+        
+        // Cek apakah bisa show e-ticket menggunakan method dari model
+        $canShowETicket = $item->canShowETicket();
+        
+        // Debug (opsional, hapus setelah fix)
+        $debugInfo = 'Status DB: ' . $item->payment_status . ' | Filter: ' . $filterStatus . ' | Is Paid: ' . ($isPaid ? 'Ya' : 'Tidak');
+    @endphp
 
-            <div class="order-item blue-bg" data-status="{{ $filterStatus }}">
-                <div class="order-header">
-                    <div class="order-info">
-                        <div class="route">🚗 {{ $vehicleInfo }}</div>
-                        <div class="date">{{ $formattedStartDate }}</div>
-                        <div class="time">{{ $formattedEndDate }} ({{ $duration }} hari)</div>
-                        <div class="passengers">📍 {{ $item->pickup_location ?? 'Lokasi Tidak Diketahui' }}</div>
-                        {{-- Debug info (hapus setelah fix) --}}
-                        {{-- <div style="font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 5px;">{{ $debugInfo }}</div> --}}
-                    </div>
+    <div class="order-item blue-bg" data-status="{{ $filterStatus }}">
+        <div class="order-header">
+            <div class="order-info">
+                <div class="route">🚗 {{ $vehicleInfo }}</div>
+                <div class="date">{{ $formattedStartDate }}</div>
+                <div class="time">{{ $formattedEndDate }} ({{ $duration }} hari)</div>
+                <div class="passengers">📍 {{ $item->pickup_location ?? 'Lokasi Tidak Diketahui' }}</div>
+                {{-- Debug info (hapus setelah fix) --}}
+                {{-- <div style="font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 5px;">{{ $debugInfo }}</div> --}}
+            </div>
 
-                    <div class="order-status">
-                        <div class="status {{ $filterStatus }}">
-                            {{ $statusLabel }}
-                        </div>
-
-                        <div class="button-qr-container">
-                            @if($canShowETicket)
-                                <!-- E-Ticket Button (hanya untuk yang sudah lunas) -->
-                                <a class="cek-tiket-btn" href="{{ route('smartrent.e-ticket', $item->order_number) }}" title="Lihat E-Ticket">
-                                    <i class="fas fa-ticket-alt"></i>
-                                    E-Ticket
-                                </a>
-                            @else
-                                <!-- Detail Button (untuk yang belum lunas - tetap bisa lihat detail) -->
-                                <a class="cek-tiket-btn" href="{{ route('smartrent.e-ticket', $item->order_number) }}" title="Lihat Detail">
-                                    <i class="fas fa-eye"></i>
-                                    Detail
-                                </a>
-                            @endif
-
-                            <!-- Show QR if paid and has qr_path -->
-                            @if($canShowETicket && $item->qr_path)
-                            <div class="qr-container qr-open-btn"
-                                 role="button"
-                                 tabindex="0"
-                                 data-booking="{{ $item->order_number }}"
-                                 data-qr="{{ asset($item->qr_path) }}"
-                                 title="Klik untuk melihat QR Code">
-                                <img src="{{ asset($item->qr_path) }}"
-                                     alt="QR Code {{ $item->order_number }}"
-                                     class="qr-thumbnail"
-                                     loading="lazy">
-                                <div class="qr-code">
-                                    {{ substr($item->order_number, -8) }}
-                                </div>
-                            </div>
-                            @endif
-                        </div>
-                    </div>
+            <div class="order-status">
+                <div class="status {{ $filterStatus }}">
+                    {{ $statusLabel }}
                 </div>
 
-                <div class="order-details">
-                    <div class="details-section" style="margin-top: 15px;">
-                        <div style="display: flex; flex-wrap: wrap; gap: 15px; font-size: 14px;">
-                            <div style="flex: 1; min-width: 200px;">
-                                <span style="color: rgba(255,255,255,0.7);">Pemesan:</span>
-                                <span style="color: white; margin-left: 8px;">{{ $item->customer_name ?? 'N/A' }}</span>
-                            </div>
-                            <div style="flex: 1; min-width: 200px;">
-                                <span style="color: rgba(255,255,255,0.7);">No. Pesanan:</span>
-                                <span style="color: white; margin-left: 8px;">{{ $item->order_number ?? 'N/A' }}</span>
-                            </div>
-                            <div style="flex: 1; min-width: 200px;">
-                                <span style="color: rgba(255,255,255,0.7);">Total:</span>
-                                <span style="color: #FF6B2C; font-weight: 700; margin-left: 8px;">{{ $totalBayarFormatted }}</span>
-                            </div>
-                            @if($item->payment_method)
-                            <div style="flex: 1; min-width: 200px;">
-                                <span style="color: rgba(255,255,255,0.7);">Metode:</span>
-                                <span style="color: white; margin-left: 8px;">{{ ucfirst(str_replace('_', ' ', $item->payment_method)) }}</span>
-                            </div>
-                            @endif
+                <div class="button-qr-container">
+                    @if($canShowETicket)
+                        <!-- E-Ticket Button (hanya untuk yang sudah lunas) -->
+                        <a class="cek-tiket-btn" href="{{ route('smartrent.e-ticket', $item->order_number) }}" title="Lihat E-Ticket">
+                            <i class="fas fa-ticket-alt"></i>
+                            E-Ticket
+                        </a>
+                    @else
+                        <!-- Detail Button (untuk yang belum lunas - tetap bisa lihat detail) -->
+                        <a class="cek-tiket-btn" href="{{ route('smartrent.e-ticket', $item->order_number) }}" title="Lihat Detail">
+                            <i class="fas fa-eye"></i>
+                            Detail
+                        </a>
+                    @endif
+
+                    <!-- Show QR if paid and has qr_path -->
+                    @if($canShowETicket && $item->qr_path)
+                    <div class="qr-container qr-open-btn"
+                         role="button"
+                         tabindex="0"
+                         data-booking="{{ $item->order_number }}"
+                         data-qr="{{ asset($item->qr_path) }}"
+                         title="Klik untuk melihat QR Code">
+                        <img src="{{ asset($item->qr_path) }}"
+                             alt="QR Code {{ $item->order_number }}"
+                             class="qr-thumbnail"
+                             loading="lazy">
+                        <div class="qr-code">
+                            {{ substr($item->order_number, -8) }}
                         </div>
                     </div>
+                    @endif
                 </div>
             </div>
-        @else
+        </div>
+
+        <div class="order-details">
+            <div class="details-section" style="margin-top: 15px;">
+                <div style="display: flex; flex-wrap: wrap; gap: 15px; font-size: 14px;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <span style="color: rgba(255,255,255,0.7);">Pemesan:</span>
+                        <span style="color: white; margin-left: 8px;">{{ $item->customer_name ?? 'N/A' }}</span>
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <span style="color: rgba(255,255,255,0.7);">No. Pesanan:</span>
+                        <span style="color: white; margin-left: 8px;">{{ $item->order_number ?? 'N/A' }}</span>
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <span style="color: rgba(255,255,255,0.7);">Total:</span>
+                        <span style="color: #FF6B2C; font-weight: 700; margin-left: 8px;">{{ $totalBayarFormatted }}</span>
+                    </div>
+                    @if($item->payment_method)
+                    <div style="flex: 1; min-width: 200px;">
+                        <span style="color: rgba(255,255,255,0.7);">Metode:</span>
+                        <span style="color: white; margin-left: 8px;">{{ ucfirst(str_replace('_', ' ', $item->payment_method)) }}</span>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+@else
             {{-- Regular Pemesanan (Shuttle) Display --}}
             @php
                 // Perbaiki penentuan status berdasarkan pembayaran

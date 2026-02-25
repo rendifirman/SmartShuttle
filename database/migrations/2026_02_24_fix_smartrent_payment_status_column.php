@@ -7,62 +7,44 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        // Change payment_status column from ENUM to STRING(50)
+        // Ubah kolom payment_status ke STRING di PostgreSQL
         Schema::table('smartrent_transactions', function (Blueprint $table) {
-            // Drop the enum column and recreate as string
-            // For MySQL, we need to use raw SQL or drop/recreate
-            DB::statement("ALTER TABLE smartrent_transactions MODIFY COLUMN payment_status VARCHAR(50) NOT NULL DEFAULT 'unpaid' AFTER paid_at");
+            DB::statement('ALTER TABLE smartrent_transactions ALTER COLUMN payment_status TYPE VARCHAR(50) USING payment_status::VARCHAR(50)');
+            DB::statement("ALTER TABLE smartrent_transactions ALTER COLUMN payment_status SET DEFAULT 'unpaid'");
         });
         
-        // Standardize all existing payment status values
+        // Normalisasi nilai
         $this->normalizePaymentStatuses();
     }
 
-    /**
-     * Normalize existing payment status values
-     */
     private function normalizePaymentStatuses()
     {
-        // Map old values to standardized values
-        $normalizations = [
-            // Paid statuses: settlement, success, completed, lunas → paid
-            ['old' => 'settlement', 'new' => 'paid'],
-            ['old' => 'success', 'new' => 'paid'],
-            ['old' => 'completed', 'new' => 'paid'],
-            ['old' => 'lunas', 'new' => 'paid'],
-            
-            // Pending statuses: pending, waiting, unpaid, menunggu, process → pending
-            ['old' => 'waiting', 'new' => 'pending'],
-            ['old' => 'menunggu', 'new' => 'pending'],
-            ['old' => 'process', 'new' => 'pending'],
-            
-            // Failed/Cancelled statuses: expired, failed, cancelled, batal, rejected → failed
-            ['old' => 'expired', 'new' => 'failed'],
-            ['old' => 'cancelled', 'new' => 'failed'],
-            ['old' => 'batal', 'new' => 'failed'],
-            ['old' => 'rejected', 'new' => 'failed'],
+        $updates = [
+            ['settlement', 'paid'],
+            ['success', 'paid'],
+            ['completed', 'paid'],
+            ['lunas', 'paid'],
+            ['waiting', 'pending'],
+            ['menunggu', 'pending'],
+            ['process', 'pending'],
+            ['expired', 'failed'],
+            ['cancelled', 'failed'],
+            ['batal', 'failed'],
+            ['rejected', 'failed'],
         ];
         
-        foreach ($normalizations as $map) {
+        foreach ($updates as [$old, $new]) {
             DB::table('smartrent_transactions')
-                ->where('payment_status', $map['old'])
-                ->update(['payment_status' => $map['new']]);
+                ->where('payment_status', $old)
+                ->update(['payment_status' => $new]);
         }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        // Revert to enum if needed - comment out if you want to keep string type
-        // Schema::table('smartrent_transactions', function (Blueprint $table) {
-        //     DB::statement("ALTER TABLE smartrent_transactions MODIFY COLUMN payment_status ENUM('unpaid', 'pending', 'paid', 'failed', 'cancelled') NOT NULL DEFAULT 'unpaid' AFTER paid_at");
-        // });
+        // Kembalikan ke ENUM jika diperlukan
+        // Atau biarkan saja sebagai string
     }
 };

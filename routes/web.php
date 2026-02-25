@@ -1159,6 +1159,7 @@ Route::prefix('smartrent')->name('smartrent.')->group(function () {
         Route::get('/api/e-ticket/{orderNumber}', [SmartRentController::class, 'getETicketData'])->name('e-ticket.api');
         Route::get('/confirmation', [SmartRentController::class, 'confirmation'])->name('confirmation');
     });
+    
 
     // ★★★ SMART RENT ROUTES ★★★
     // (Routes without auth requirements already moved above)

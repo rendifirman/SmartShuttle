@@ -105,8 +105,6 @@ class SmartRentTransaction extends Model
      */
     public function getPaymentStatusLabelAttribute()
     {
-        $paymentStatus = strtolower($this->payment_status);
-        
         $labels = [
             'unpaid' => 'Belum Dibayar',
             'pending' => 'Menunggu Pembayaran',
@@ -122,7 +120,7 @@ class SmartRentTransaction extends Model
             'batal' => 'Dibatalkan',
         ];
 
-        return $labels[$paymentStatus] ?? ucfirst($this->payment_status);
+        return $labels[strtolower($this->payment_status)] ?? ucfirst($this->payment_status);
     }
 
     /**
@@ -191,11 +189,11 @@ class SmartRentTransaction extends Model
 
     /**
      * Check if transaction is paid (supports multiple payment status values)
+     * Handles: 'paid', 'settlement', 'success', 'completed', 'lunas' (case insensitive)
      */
     public function getIsPaidAttribute()
     {
-        $paymentStatus = strtolower($this->payment_status);
-        return in_array($paymentStatus, self::PAID_STATUSES);
+        return in_array(strtolower($this->payment_status), self::PAID_STATUSES);
     }
 
     /**
@@ -203,8 +201,7 @@ class SmartRentTransaction extends Model
      */
     public function getIsPendingAttribute()
     {
-        $paymentStatus = strtolower($this->payment_status);
-        return in_array($paymentStatus, self::PENDING_STATUSES);
+        return in_array(strtolower($this->payment_status), self::PENDING_STATUSES);
     }
 
     /**
@@ -212,8 +209,7 @@ class SmartRentTransaction extends Model
      */
     public function getIsFailedAttribute()
     {
-        $paymentStatus = strtolower($this->payment_status);
-        return in_array($paymentStatus, self::FAILED_STATUSES);
+        return in_array(strtolower($this->payment_status), self::FAILED_STATUSES);
     }
 
     /**
