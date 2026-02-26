@@ -28,7 +28,414 @@ class AdminController extends Controller
 {
     public function dashboard()
     {
-        return view('admin.dashboard');
+        $user = Auth::guard('admin')->user();
+        $today = Carbon::today();
+
+        // Base query conditions
+        $paidStatuses = ['paid', 'berhasil', 'success'];
+
+        // Check if user is admin_cabang
+        if ($user->hasRole('admin_cabang') && $user->branch_id) {
+            // Get branch-related data
+            $branchId = $user->branch_id;
+
+            // Get journeys for today
+            $totalPerjalanan = Jadwal::whereDate('tanggal_keberangkatan', $today)
+                ->where('status', '!=', 'batal')
+                ->count();
+
+            // Get passengers count for today
+            $totalPenumpang = Pemesanan::whereHas('jadwal', function($q) use ($today) {
+                $q->whereDate('tanggal_keberangkatan', $today)
+                  ->where('status', '!=', 'batal');
+            })->whereIn('status', ['paid', 'completed', 'selesai'])->count();
+
+            // Get revenue for today
+            $totalPendapatan = Pembayaran::whereDate('created_at', $today)
+                ->whereIn('status', $paidStatuses)
+                ->sum('jumlah');
+
+            // Get today's schedules with details
+            $perjalananHariIni = Jadwal::whereDate('tanggal_keberangkatan', $today)
+                ->where('status', '!=', 'batal')
+                ->with(['rutes', 'shuttle', 'driver'])
+                ->orderBy('waktu_keberangkatan')
+                ->limit(10)
+                ->get();
+
+            // Get popular routes (last 30 days) - based on confirmed customer bookings
+            $rutePopuler = Pemesanan::select('jadwal_id', DB::raw('COUNT(*) as total'))
+                ->whereHas('jadwal.rutes', function($q) {
+                    // Just ensure the jadwal has routes
+                })
+                ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                ->groupBy('jadwal_id')
+                ->orderByDesc('total')
+                ->limit(5)
+                ->get()
+                ->map(function($item) {
+                    $jadwal = Jadwal::with(['rutes', 'rutes.layanan'])->find($item->jadwal_id);
+                    if ($jadwal && $jadwal->rutes->first()) {
+                        $rute = $jadwal->rutes->first();
+                        return [
+                            'nama' => $rute->kota_asal . ' → ' . $rute->kota_tujuan,
+                            'total' => $item->total
+                        ];
+                    }
+                    return null;
+                })
+                ->filter()
+                ->values();
+
+            // Get layanan IDs for chart data
+            $layananShuttle = MLayanan::where('kode_layanan', 'shuttle')->first();
+            $layananSend = MLayanan::where('kode_layanan', 'smartsend')->first();
+            $layananRent = MLayanan::where('kode_layanan', 'smartrent')->first();
+
+            $shuttleId = $layananShuttle->id_layanan ?? null;
+            $sendId = $layananSend->id_layanan ?? null;
+            $rentId = $layananRent->id_layanan ?? null;
+
+            // Chart data - last 7 days (ACTUAL revenue per layanan from Pemesanan)
+            $labels7 = [];
+            $values7Shuttle = [];
+            $values7Send = [];
+            $values7Rent = [];
+
+            for ($i = 6; $i >= 0; $i--) {
+                $d = $today->copy()->subDays($i);
+                $labels7[] = $d->format('d/M');
+
+                // Smart Shuttle - actual revenue from Pemesanan joined through jadwal->rutes->layanan
+                $values7Shuttle[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($shuttleId) {
+                        if ($shuttleId) {
+                            $q->where('layanan_id', $shuttleId);
+                        }
+                    })
+                    ->whereDate('created_at', $d)
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+
+                // SmartSend - actual revenue
+                $values7Send[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($sendId) {
+                        if ($sendId) {
+                            $q->where('layanan_id', $sendId);
+                        }
+                    })
+                    ->whereDate('created_at', $d)
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+
+                // SmartRent - actual revenue
+                $values7Rent[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($rentId) {
+                        if ($rentId) {
+                            $q->where('layanan_id', $rentId);
+                        }
+                    })
+                    ->whereDate('created_at', $d)
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+            }
+
+            // Chart data - last 4 weeks
+            $labelsWeek = [];
+            $valuesWeekShuttle = [];
+            $valuesWeekSend = [];
+            $valuesWeekRent = [];
+
+            for ($w = 3; $w >= 0; $w--) {
+                $weekStart = $today->copy()->subWeeks($w)->startOfWeek();
+                $weekEnd = $weekStart->copy()->endOfWeek();
+                $labelsWeek[] = 'Mg ' . ($w + 1);
+
+                // Smart Shuttle
+                $valuesWeekShuttle[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($shuttleId) {
+                        if ($shuttleId) {
+                            $q->where('layanan_id', $shuttleId);
+                        }
+                    })
+                    ->whereBetween('created_at', [$weekStart, $weekEnd])
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+
+                // SmartSend
+                $valuesWeekSend[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($sendId) {
+                        if ($sendId) {
+                            $q->where('layanan_id', $sendId);
+                        }
+                    })
+                    ->whereBetween('created_at', [$weekStart, $weekEnd])
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+
+                // SmartRent
+                $valuesWeekRent[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($rentId) {
+                        if ($rentId) {
+                            $q->where('layanan_id', $rentId);
+                        }
+                    })
+                    ->whereBetween('created_at', [$weekStart, $weekEnd])
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+            }
+
+            // Chart data - last 6 months
+            $labelsMonth = [];
+            $valuesMonthShuttle = [];
+            $valuesMonthSend = [];
+            $valuesMonthRent = [];
+
+            for ($m = 5; $m >= 0; $m--) {
+                $monthStart = $today->copy()->subMonths($m)->startOfMonth();
+                $monthEnd = $monthStart->copy()->endOfMonth();
+                $labelsMonth[] = $monthStart->format('M');
+
+                // Smart Shuttle
+                $valuesMonthShuttle[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($shuttleId) {
+                        if ($shuttleId) {
+                            $q->where('layanan_id', $shuttleId);
+                        }
+                    })
+                    ->whereBetween('created_at', [$monthStart, $monthEnd])
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+
+                // SmartSend
+                $valuesMonthSend[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($sendId) {
+                        if ($sendId) {
+                            $q->where('layanan_id', $sendId);
+                        }
+                    })
+                    ->whereBetween('created_at', [$monthStart, $monthEnd])
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+
+                // SmartRent
+                $valuesMonthRent[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($rentId) {
+                        if ($rentId) {
+                            $q->where('layanan_id', $rentId);
+                        }
+                    })
+                    ->whereBetween('created_at', [$monthStart, $monthEnd])
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+            }
+
+        } else {
+            // Admin Pusat - get all data
+            $totalPerjalanan = Jadwal::whereDate('tanggal_keberangkatan', $today)
+                ->where('status', '!=', 'batal')
+                ->count();
+
+            // Get passengers count for today
+            $totalPenumpang = Pemesanan::whereHas('jadwal', function($q) use ($today) {
+                $q->whereDate('tanggal_keberangkatan', $today)
+                  ->where('status', '!=', 'batal');
+            })->whereIn('status', ['paid', 'completed', 'selesai'])->count();
+
+            // Get revenue for today
+            $totalPendapatan = Pembayaran::whereDate('created_at', $today)
+                ->whereIn('status', $paidStatuses)
+                ->sum('jumlah');
+
+            // Get today's schedules with details
+            $perjalananHariIni = Jadwal::whereDate('tanggal_keberangkatan', $today)
+                ->where('status', '!=', 'batal')
+                ->with(['rutes', 'shuttle', 'driver'])
+                ->orderBy('waktu_keberangkatan')
+                ->limit(10)
+                ->get();
+
+            // Get popular routes (last 30 days) - based on confirmed customer bookings
+            $rutePopuler = Pemesanan::select('jadwal_id', DB::raw('COUNT(*) as total'))
+                ->whereHas('jadwal.rutes', function($q) {
+                    // Just ensure the jadwal has routes
+                })
+                ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                ->groupBy('jadwal_id')
+                ->orderByDesc('total')
+                ->limit(5)
+                ->get()
+                ->map(function($item) {
+                    $jadwal = Jadwal::with(['rutes', 'rutes.layanan'])->find($item->jadwal_id);
+                    if ($jadwal && $jadwal->rutes->first()) {
+                        $rute = $jadwal->rutes->first();
+                        return [
+                            'nama' => $rute->kota_asal . ' → ' . $rute->kota_tujuan,
+                            'total' => $item->total
+                        ];
+                    }
+                    return null;
+                })
+                ->filter()
+                ->values();
+
+            // Get layanan IDs for chart data
+            $layananShuttle = MLayanan::where('kode_layanan', 'shuttle')->first();
+            $layananSend = MLayanan::where('kode_layanan', 'smartsend')->first();
+            $layananRent = MLayanan::where('kode_layanan', 'smartrent')->first();
+
+            $shuttleId = $layananShuttle->id_layanan ?? null;
+            $sendId = $layananSend->id_layanan ?? null;
+            $rentId = $layananRent->id_layanan ?? null;
+
+            // Chart data - last 7 days (ACTUAL revenue per layanan from Pemesanan)
+            $labels7 = [];
+            $values7Shuttle = [];
+            $values7Send = [];
+            $values7Rent = [];
+
+            for ($i = 6; $i >= 0; $i--) {
+                $d = $today->copy()->subDays($i);
+                $labels7[] = $d->format('d/M');
+
+                // Smart Shuttle - actual revenue from Pemesanan joined through jadwal->rutes->layanan
+                $values7Shuttle[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($shuttleId) {
+                        if ($shuttleId) {
+                            $q->where('layanan_id', $shuttleId);
+                        }
+                    })
+                    ->whereDate('created_at', $d)
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+
+                // SmartSend - actual revenue
+                $values7Send[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($sendId) {
+                        if ($sendId) {
+                            $q->where('layanan_id', $sendId);
+                        }
+                    })
+                    ->whereDate('created_at', $d)
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+
+                // SmartRent - actual revenue
+                $values7Rent[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($rentId) {
+                        if ($rentId) {
+                            $q->where('layanan_id', $rentId);
+                        }
+                    })
+                    ->whereDate('created_at', $d)
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+            }
+
+            // Chart data - last 4 weeks
+            $labelsWeek = [];
+            $valuesWeekShuttle = [];
+            $valuesWeekSend = [];
+            $valuesWeekRent = [];
+
+            for ($w = 3; $w >= 0; $w--) {
+                $weekStart = $today->copy()->subWeeks($w)->startOfWeek();
+                $weekEnd = $weekStart->copy()->endOfWeek();
+                $labelsWeek[] = 'Mg ' . ($w + 1);
+
+                // Smart Shuttle
+                $valuesWeekShuttle[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($shuttleId) {
+                        if ($shuttleId) {
+                            $q->where('layanan_id', $shuttleId);
+                        }
+                    })
+                    ->whereBetween('created_at', [$weekStart, $weekEnd])
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+
+                // SmartSend
+                $valuesWeekSend[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($sendId) {
+                        if ($sendId) {
+                            $q->where('layanan_id', $sendId);
+                        }
+                    })
+                    ->whereBetween('created_at', [$weekStart, $weekEnd])
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+
+                // SmartRent
+                $valuesWeekRent[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($rentId) {
+                        if ($rentId) {
+                            $q->where('layanan_id', $rentId);
+                        }
+                    })
+                    ->whereBetween('created_at', [$weekStart, $weekEnd])
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+            }
+
+            // Chart data - last 6 months
+            $labelsMonth = [];
+            $valuesMonthShuttle = [];
+            $valuesMonthSend = [];
+            $valuesMonthRent = [];
+
+            for ($m = 5; $m >= 0; $m--) {
+                $monthStart = $today->copy()->subMonths($m)->startOfMonth();
+                $monthEnd = $monthStart->copy()->endOfMonth();
+                $labelsMonth[] = $monthStart->format('M');
+
+                // Smart Shuttle
+                $valuesMonthShuttle[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($shuttleId) {
+                        if ($shuttleId) {
+                            $q->where('layanan_id', $shuttleId);
+                        }
+                    })
+                    ->whereBetween('created_at', [$monthStart, $monthEnd])
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+
+                // SmartSend
+                $valuesMonthSend[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($sendId) {
+                        if ($sendId) {
+                            $q->where('layanan_id', $sendId);
+                        }
+                    })
+                    ->whereBetween('created_at', [$monthStart, $monthEnd])
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+
+                // SmartRent
+                $valuesMonthRent[] = (float) Pemesanan::whereHas('jadwal.rutes', function($q) use ($rentId) {
+                        if ($rentId) {
+                            $q->where('layanan_id', $rentId);
+                        }
+                    })
+                    ->whereBetween('created_at', [$monthStart, $monthEnd])
+                    ->whereIn('status', ['paid', 'completed', 'selesai', 'dibayar'])
+                    ->sum('total_bayar');
+            }
+        }
+
+        // Format currency
+        $formatRupiah = function($value) {
+            if ($value >= 1000000) {
+                return 'Rp ' . number_format($value / 1000000, 1) . ' jt';
+            }
+            if ($value >= 1000) {
+                return 'Rp ' . number_format($value / 1000, 0) . ' rb';
+            }
+            return 'Rp ' . number_format($value, 0, ',', '.');
+        };
+
+        return view('admin.dashboard', compact(
+            'totalPerjalanan',
+            'totalPenumpang',
+            'totalPendapatan',
+            'perjalananHariIni',
+            'rutePopuler',
+            'labels7',
+            'values7Shuttle',
+            'values7Send',
+            'values7Rent',
+            'labelsWeek',
+            'valuesWeekShuttle',
+            'valuesWeekSend',
+            'valuesWeekRent',
+            'labelsMonth',
+            'valuesMonthShuttle',
+            'valuesMonthSend',
+            'valuesMonthRent',
+            'formatRupiah'
+        ));
     }
 
     /**

@@ -285,6 +285,18 @@
     background: #8b5cf6;
 }
 
+/* EMPTY STATE */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6b7280;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 14px;
+}
+
 /* RESPONSIVE FOR TABLET */
 @media (min-width: 768px) {
     .dashboard {
@@ -442,17 +454,17 @@
     {{-- SUMMARY CARD --}}
     <div class="summary">
         <div class="summary-card">
-            <h3>3</h3>
+            <h3>{{ $totalPerjalanan ?? 0 }}</h3>
             <p>Total perjalanan hari ini</p>
         </div>
 
         <div class="summary-card">
-            <h3>21</h3>
+            <h3>{{ $totalPenumpang ?? 0 }}</h3>
             <p>Total penumpang hari ini</p>
         </div>
 
         <div class="summary-card">
-            <h3>Rp. 230.000</h3>
+            <h3>{{ $formatRupiah($totalPendapatan ?? 0) }}</h3>
             <p>Total pendapatan hari ini</p>
         </div>
     </div>
@@ -477,17 +489,17 @@
                 <div class="stat-item">
                     <div class="stat-color" style="background: #4da3ff;"></div>
                     <span class="stat-label">Smart Shuttle:</span>
-                    <span class="stat-value">Rp 8,4 juta</span>
+                    <span class="stat-value" id="stat-shuttle">Rp 0</span>
                 </div>
                 <div class="stat-item">
                     <div class="stat-color" style="background: #ff6a21;"></div>
                     <span class="stat-label">SmartSend:</span>
-                    <span class="stat-value">Rp 3,2 juta</span>
+                    <span class="stat-value" id="stat-send">Rp 0</span>
                 </div>
                 <div class="stat-item">
                     <div class="stat-color" style="background: #10b981;"></div>
                     <span class="stat-label">SmartRent:</span>
-                    <span class="stat-value">Rp 5,1 juta</span>
+                    <span class="stat-value" id="stat-rent">Rp 0</span>
                 </div>
             </div>
         </div>
@@ -495,28 +507,20 @@
         <div class="card highlight">
             <h4>Rute Terpopuler</h4>
 
+            @if($rutePopuler->count() > 0)
             <ul class="route-list">
+                @foreach($rutePopuler as $rute)
                 <li>
-                    <span>Jakarta → Bandung</span>
-                    <strong>125</strong>
+                    <span>{{ $rute['nama'] ?? 'Rute Tidak Diketahui' }}</span>
+                    <strong>{{ $rute['total'] ?? 0 }}</strong>
                 </li>
-                <li>
-                    <span>Bandung → Jakarta</span>
-                    <strong>87</strong>
-                </li>
-                <li>
-                    <span>Sukabumi → Jakarta</span>
-                    <strong>87</strong>
-                </li>
-                <li>
-                    <span>Jakarta → Sukabumi</span>
-                    <strong>65</strong>
-                </li>
-                <li>
-                    <span>Bandung → Surabaya</span>
-                    <strong>42</strong>
-                </li>
+                @endforeach
             </ul>
+            @else
+            <div class="empty-state">
+                <p>Belum ada data rute populer</p>
+            </div>
+            @endif
         </div>
     </div>
 
@@ -524,6 +528,7 @@
     <div class="card">
         <h4>Perjalanan Hari Ini</h4>
 
+        @if($perjalananHariIni->count() > 0)
         <div class="table-container">
             <table class="table">
                 <thead>
@@ -537,25 +542,40 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @foreach($perjalananHariIni as $jadwal)
                     <tr>
-                        <td>10:30</td>
-                        <td>Bandung → Jakarta</td>
-                        <td>S-002</td>
-                        <td>Budi Santoso</td>
-                        <td>8/12</td>
-                        <td><span class="badge in-progress">Dalam Perjalanan</span></td>
+                        <td>{{ $jadwal->waktu_keberangkatan ?? '-' }}</td>
+                        <td>
+                            @if($jadwal->rutes && $jadwal->rutes->count() > 0)
+                                {{ $jadwal->rutes->first()->kota_asal ?? '' }} → {{ $jadwal->rutes->first()->kota_tujuan ?? '' }}
+                            @else
+                                Rute Tidak Diketahui
+                            @endif
+                        </td>
+                        <td>{{ $jadwal->shuttle->plat_nomor ?? $jadwal->shuttle->nama_shuttle ?? '-' }}</td>
+                        <td>{{ $jadwal->driver->name ?? 'Belum Ditentukan' }}</td>
+                        <td>{{ ($jadwal->shuttle->kapasitas_kursi ?? $jadwal->shuttle->total_kursi ?? 0) - ($jadwal->kursi_tersedia ?? 0) }}/{{ $jadwal->shuttle->kapasitas_kursi ?? $jadwal->shuttle->total_kursi ?? 0 }}</td>
+                        <td>
+                            @if($jadwal->status == 'selesai' || $jadwal->status == 'completed')
+                                <span class="badge completed">Selesai</span>
+                            @elseif($jadwal->status == 'berangkat' || $jadwal->status == 'in_progress')
+                                <span class="badge in-progress">Dalam Perjalanan</span>
+                            @elseif($jadwal->status == 'tersedia' || $jadwal->status == 'available')
+                                <span class="badge scheduled">Tersedia</span>
+                            @else
+                                <span class="badge">{{ ucfirst($jadwal->status ?? 'Unknown') }}</span>
+                            @endif
+                        </td>
                     </tr>
-                    <tr>
-                        <td>13:00</td>
-                        <td>Sukabumi → Jakarta</td>
-                        <td>S-003</td>
-                        <td>Andi Wijaya</td>
-                        <td>12/12</td>
-                        <td><span class="badge completed">Selesai</span></td>
-                    </tr>
+                    @endforeach
                 </tbody>
             </table>
         </div>
+        @else
+        <div class="empty-state">
+            <p>Tidak ada perjalanan hari ini</p>
+        </div>
+        @endif
     </div>
 
 </div>
@@ -569,13 +589,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const isMobile = window.innerWidth < 768;
     const chartHeight = isMobile ? 220 : 250;
 
-    // Data untuk grafik harian
+    // Data untuk grafik harian (dari controller)
     const dailyData = {
-        labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+        labels: {!! json_encode($labels7 ?? ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']) !!},
         datasets: [
             {
                 label: 'Smart Shuttle',
-                data: [1200000, 1400000, 1100000, 1300000, 1600000, 2000000, 1800000],
+                data: {!! json_encode($values7Shuttle ?? [0,0,0,0,0,0,0]) !!},
                 backgroundColor: 'rgba(77, 163, 255, 0.1)',
                 borderColor: '#4da3ff',
                 borderWidth: 2,
@@ -584,7 +604,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             {
                 label: 'SmartSend',
-                data: [400000, 500000, 350000, 600000, 550000, 700000, 600000],
+                data: {!! json_encode($values7Send ?? [0,0,0,0,0,0,0]) !!},
                 backgroundColor: 'rgba(255, 106, 33, 0.1)',
                 borderColor: '#ff6a21',
                 borderWidth: 2,
@@ -593,7 +613,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             {
                 label: 'SmartRent',
-                data: [800000, 900000, 700000, 1100000, 1000000, 1200000, 1100000],
+                data: {!! json_encode($values7Rent ?? [0,0,0,0,0,0,0]) !!},
                 backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 borderColor: '#10b981',
                 borderWidth: 2,
@@ -605,11 +625,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Data untuk grafik mingguan
     const weeklyData = {
-        labels: ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'],
+        labels: {!! json_encode($labelsWeek ?? ['Mg 1', 'Mg 2', 'Mg 3', 'Mg 4']) !!},
         datasets: [
             {
                 label: 'Smart Shuttle',
-                data: [5200000, 5800000, 6100000, 6800000],
+                data: {!! json_encode($valuesWeekShuttle ?? [0,0,0,0]) !!},
                 backgroundColor: 'rgba(77, 163, 255, 0.1)',
                 borderColor: '#4da3ff',
                 borderWidth: 2,
@@ -618,7 +638,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             {
                 label: 'SmartSend',
-                data: [1800000, 2200000, 2400000, 2600000],
+                data: {!! json_encode($valuesWeekSend ?? [0,0,0,0]) !!},
                 backgroundColor: 'rgba(255, 106, 33, 0.1)',
                 borderColor: '#ff6a21',
                 borderWidth: 2,
@@ -627,7 +647,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             {
                 label: 'SmartRent',
-                data: [3200000, 3800000, 4100000, 4500000],
+                data: {!! json_encode($valuesWeekRent ?? [0,0,0,0]) !!},
                 backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 borderColor: '#10b981',
                 borderWidth: 2,
@@ -639,11 +659,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Data untuk grafik bulanan
     const monthlyData = {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
+        labels: {!! json_encode($labelsMonth ?? ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun']) !!},
         datasets: [
             {
                 label: 'Smart Shuttle',
-                data: [22000000, 24000000, 26000000, 28000000, 30000000, 32000000],
+                data: {!! json_encode($valuesMonthShuttle ?? [0,0,0,0,0,0]) !!},
                 backgroundColor: 'rgba(77, 163, 255, 0.1)',
                 borderColor: '#4da3ff',
                 borderWidth: 2,
@@ -652,7 +672,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             {
                 label: 'SmartSend',
-                data: [9000000, 10000000, 11000000, 12000000, 13000000, 14000000],
+                data: {!! json_encode($valuesMonthSend ?? [0,0,0,0,0,0]) !!},
                 backgroundColor: 'rgba(255, 106, 33, 0.1)',
                 borderColor: '#ff6a21',
                 borderWidth: 2,
@@ -661,7 +681,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             {
                 label: 'SmartRent',
-                data: [15000000, 17000000, 18000000, 19000000, 21000000, 23000000],
+                data: {!! json_encode($valuesMonthRent ?? [0,0,0,0,0,0]) !!},
                 backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 borderColor: '#10b981',
                 borderWidth: 2,
@@ -681,6 +701,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         return 'Rp ' + value.toString();
     };
+
+    // Calculate totals for stats
+    const calculateTotals = (data) => {
+        const shuttleTotal = data.datasets[0].data.reduce((a, b) => a + b, 0);
+        const sendTotal = data.datasets[1].data.reduce((a, b) => a + b, 0);
+        const rentTotal = data.datasets[2].data.reduce((a, b) => a + b, 0);
+
+        document.getElementById('stat-shuttle').textContent = formatCurrency(shuttleTotal);
+        document.getElementById('stat-send').textContent = formatCurrency(sendTotal);
+        document.getElementById('stat-rent').textContent = formatCurrency(rentTotal);
+    };
+
+    // Calculate initial totals
+    calculateTotals(dailyData);
 
     // Create chart
     let salesChart = new Chart(ctx, {
@@ -779,6 +813,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     salesChart.data = monthlyData;
                     break;
             }
+
+            // Calculate totals for the new data
+            calculateTotals(salesChart.data);
 
             // Update chart
             salesChart.update();
