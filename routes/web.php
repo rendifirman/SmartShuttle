@@ -468,6 +468,21 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/perjalanan', [AdminController::class, 'perjalanan'])
             ->middleware('permission:view_perjalanan_transaksi')
             ->name('perjalanan');
+        Route::get('/perjalanan/create', [AdminController::class, 'createPerjalanan'])
+            ->middleware('permission:manage_perjalanan_transaksi')
+            ->name('perjalanan.create');
+        Route::post('/perjalanan', [AdminController::class, 'storePerjalanan'])
+            ->middleware('permission:manage_perjalanan_transaksi')
+            ->name('perjalanan.store');
+        Route::get('/perjalanan/{id}/edit', [AdminController::class, 'editPerjalanan'])
+            ->middleware('permission:manage_perjalanan_transaksi')
+            ->name('perjalanan.edit');
+        Route::put('/perjalanan/{id}', [AdminController::class, 'updatePerjalanan'])
+            ->middleware('permission:manage_perjalanan_transaksi')
+            ->name('perjalanan.update');
+        Route::delete('/perjalanan/{id}', [AdminController::class, 'destroyPerjalanan'])
+            ->middleware('permission:manage_perjalanan_transaksi')
+            ->name('perjalanan.destroy');
         Route::get('/tiket-perjalanan', [AdminController::class, 'tiketPerjalanan'])
             ->middleware('permission:view_perjalanan_transaksi')
             ->name('tiket-perjalanan');

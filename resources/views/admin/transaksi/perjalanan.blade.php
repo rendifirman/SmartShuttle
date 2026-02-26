@@ -385,9 +385,9 @@
             <p style="color: #6c757d; margin-top: 5px; font-size: 14px;">Kelola dan lihat semua transaksi pemesanan tiket shuttle</p>
         </div>
         <div class="header-actions">
-                <a href="{{ route('admin.booking') }}" class="btn-admin-primary" style="text-decoration: none; display: inline-flex;">
+                <a href="{{ route('admin.perjalanan.create') }}" class="btn-admin-primary" style="text-decoration: none; display: inline-flex;">
                 <i class="fas fa-plus-circle"></i>
-                Pesan Untuk Customer
+                Tambah Pemesanan
             </a>
         </div>
     </div>
@@ -554,7 +554,7 @@
                             <p>Silakan klik tombol "Pesan Untuk Customer" untuk membuat pemesanan baru</p>
                         </div>
                     </td>
-                </tr>
+                </tr>resources/views/admin/transaksi/perjalanan.blade.php
                 @endforelse
             </tbody>
         </table>
@@ -971,21 +971,35 @@
         window.location.href = `/admin/transaksi/perjalanan/${kodeBooking}`;
     }
 
-    // Edit transaksi
+    // Edit transaksi - redirect to edit page
     function editTransaksi(id) {
-        window.location.href = `/admin/transaksi/perjalanan/${id}/edit`;
+        window.location.href = "{{ route('admin.perjalanan.edit', ['id' => ':id']) }}".replace(':id', id);
     }
 
-    // Delete transaksi
+    // Delete transaksi - redirect to delete route
     function deleteTransaksi(id) {
         if(confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
-            fetch(`/admin/api/pemesanan/${id}`, {
+            const url = "{{ route('admin.perjalanan.destroy', ['id' => ':id']) }}".replace(':id', id);
+            
+            fetch(url, {
                 method: 'DELETE',
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.indexOf('application/json') !== -1) {
+                    return response.json();
+                } else {
+                    if (response.redirected || response.status === 302 || response.status === 301) {
+                        window.location.href = response.url || "{{ route('admin.perjalanan') }}";
+                    }
+                    return { success: true, message: 'Transaksi berhasil dihapus' };
+                }
+            })
             .then(data => {
                 if(data.success) {
                     alert('Transaksi berhasil dihapus');
@@ -994,7 +1008,10 @@
                     alert('Error: ' + (data.message || 'Gagal menghapus transaksi'));
                 }
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan. Silakan coba lagi.');
+            });
         }
     }
 

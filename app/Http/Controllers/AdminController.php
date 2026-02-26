@@ -1396,6 +1396,225 @@ class AdminController extends Controller
         ]);
     }
 
+    /**
+     * Show create form for new booking
+     */
+    public function createPerjalanan()
+    {
+        $rutes = Rute::all();
+        $customers = User::whereHas('roles', function($q) {
+            $q->where('name', 'customer');
+        })->get();
+
+        return view('admin.transaksi.perjalanan-create', [
+            'rutes' => $rutes,
+            'customers' => $customers,
+        ]);
+    }
+
+    /**
+     * Store new booking
+     */
+    public function storePerjalanan(Request $request)
+    {
+        $request->validate([
+            'nama_pemesan' => 'required|string|max:255',
+            'telepon_pemesan' => 'required|string|max:20',
+            'email_pemesan' => 'required|email',
+            'customer_id' => 'nullable|exists:users,id',
+            'rute_id' => 'required|exists:rutes,id',
+            'tanggal_keberangkatan' => 'required|date',
+            'jadwal_id' => 'required|exists:jadwals,id',
+            'jumlah_penumpang' => 'required|integer|min:1|max:10',
+            'kode_promo' => 'nullable|string',
+            'catatan' => 'nullable|string',
+        ]);
+
+        // Get jadwal and calculate price
+        $jadwal = Jadwal::with('rutes')->findOrFail($request->jadwal_id);
+        $hargaPerKursi = $jadwal->harga_total ?? 0;
+        $totalHarga = $hargaPerKursi * $request->jumlah_penumpang;
+
+        // Generate kode booking
+        $kodeBooking = 'BK' . strtoupper(Str::random(8));
+
+        // Create pemesanan
+        $pemesanan = Pemesanan::create([
+            'kode_booking' => $kodeBooking,
+            'customer_id' => $request->customer_id,
+            'nama_pemesan' => $request->nama_pemesan,
+            'telepon_pemesan' => $request->telepon_pemesan,
+            'email_pemesan' => $request->email_pemesan,
+            'jadwal_id' => $request->jadwal_id,
+            'jumlah_penumpang' => $request->jumlah_penumpang,
+            'harga_total' => $totalHarga,
+            'total_bayar' => $totalHarga,
+            'status' => 'menunggu_pembayaran',
+            'kode_promo' => $request->kode_promo,
+            'catatan' => $request->catatan,
+        ]);
+
+        // Create detail passengers
+        if ($request->has('penumpang')) {
+            foreach ($request->penumpang as $index => $penumpangData) {
+                DetailPenumpang::create([
+                    'pemesanan_id' => $pemesanan->id,
+                    'nama_lengkap' => $penumpangData['nama_lengkap'],
+                    'nik' => $penumpangData['nik'],
+                    'jenis_kelamin' => $penumpangData['jenis_kelamin'],
+                    'telepon' => $penumpangData['telepon'] ?? null,
+                    'email' => $penumpangData['email'] ?? null,
+                ]);
+            }
+        }
+
+        return redirect()->route('admin.perjalanan')->with('success', 'Pemesanan berhasil dibuat dengan kode: ' . $kodeBooking);
+    }
+
+    /**
+     * Show edit form for existing booking
+     */
+    public function editPerjalanan($id)
+    {
+        $pemesanan = Pemesanan::with([
+            'jadwal.shuttle',
+            'jadwal.rutes',
+            'detailPenumpang',
+            'user'
+        ])->findOrFail($id);
+
+        $rutes = Rute::all();
+        $customers = User::whereHas('roles', function($q) {
+            $q->where('name', 'customer');
+        })->get();
+
+        // Get available jadwals using the many-to-many relationship
+        $jadwals = [];
+        $selectedRuteId = null;
+        
+        if ($pemesanan->jadwal && $pemesanan->jadwal->rutes->isNotEmpty()) {
+            // Get the first rute from the jadwal's rutes relationship
+            $rute = $pemesanan->jadwal->rutes->first();
+            $selectedRuteId = $rute ? $rute->id : null;
+            
+            if ($rute) {
+                $jadwals = Jadwal::whereHas('rutes', function($query) use ($rute) {
+                    $query->where('rutes.id', $rute->id);
+                })
+                ->whereDate('tanggal_keberangkatan', $pemesanan->jadwal->tanggal_keberangkatan)
+                ->get();
+            }
+        }
+
+        // Get promo if kode_promo exists
+        $promo = null;
+        if ($pemesanan->kode_promo) {
+            $promo = Promo::where('kode_promo', $pemesanan->kode_promo)->first();
+        }
+
+        return view('admin.transaksi.perjalanan-edit', [
+            'pemesanan' => $pemesanan,
+            'rutes' => $rutes,
+            'customers' => $customers,
+            'jadwals' => $jadwals,
+            'selectedRuteId' => $selectedRuteId,
+            'promo' => $promo,
+        ]);
+    }
+
+    /**
+     * Update existing booking
+     */
+    public function updatePerjalanan(Request $request, $id)
+    {
+        $pemesanan = Pemesanan::findOrFail($id);
+
+        $request->validate([
+            'nama_pemesan' => 'required|string|max:255',
+            'telepon_pemesan' => 'required|string|max:20',
+            'email_pemesan' => 'required|email',
+            'jadwal_id' => 'required|exists:jadwals,id',
+            'jumlah_penumpang' => 'required|integer|min:1|max:10',
+            'kode_promo' => 'nullable|string',
+            'catatan' => 'nullable|string',
+            'status' => 'nullable|in:menunggu_pembayaran,menunggu_konfirmasi,diproses,dibayar,selesai,dibatalkan',
+        ]);
+
+        // Get jadwal and recalculate price if jadwal changed
+        $jadwal = Jadwal::findOrFail($request->jadwal_id);
+        $hargaPerKursi = $jadwal->harga_total ?? 0;
+        $totalHarga = $hargaPerKursi * $request->jumlah_penumpang;
+
+        // Update pemesanan
+        $pemesanan->update([
+            'nama_pemesan' => $request->nama_pemesan,
+            'telepon_pemesan' => $request->telepon_pemesan,
+            'email_pemesan' => $request->email_pemesan,
+            'jadwal_id' => $request->jadwal_id,
+            'jumlah_penumpang' => $request->jumlah_penumpang,
+            'harga_total' => $totalHarga,
+            'total_bayar' => $totalHarga,
+            'kode_promo' => $request->kode_promo,
+            'catatan' => $request->catatan,
+            'status' => $request->status ?? $pemesanan->status,
+        ]);
+
+        // Update detail passengers if provided
+        if ($request->has('penumpang')) {
+            // Delete old passengers
+            $pemesanan->detailPenumpang()->delete();
+            
+            // Create new passengers
+            foreach ($request->penumpang as $index => $penumpangData) {
+                DetailPenumpang::create([
+                    'pemesanan_id' => $pemesanan->id,
+                    'nama_lengkap' => $penumpangData['nama_lengkap'],
+                    'nik' => $penumpangData['nik'],
+                    'jenis_kelamin' => $penumpangData['jenis_kelamin'],
+                    'telepon' => $penumpangData['telepon'] ?? null,
+                    'email' => $penumpangData['email'] ?? null,
+                ]);
+            }
+        }
+
+        return redirect()->route('admin.perjalanan')->with('success', 'Pemesanan berhasil diperbarui.');
+    }
+
+    /**
+     * Delete booking
+     */
+    public function destroyPerjalanan($id)
+    {
+        try {
+            $pemesanan = Pemesanan::findOrFail($id);
+
+            // Delete related detail passengers
+            $pemesanan->detailPenumpang()->delete();
+
+            // Delete the pemesanan
+            $pemesanan->delete();
+
+            // Check if request is AJAX
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pemesanan berhasil dihapus'
+                ]);
+            }
+
+            return redirect()->route('admin.perjalanan')->with('success', 'Pemesanan berhasil dihapus.');
+        } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menghapus pemesanan: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->route('admin.perjalanan')->with('error', 'Gagal menghapus pemesanan.');
+        }
+    }
+
     public function armadaTransaksi()
     {
         return view('admin.transaksi.armada');

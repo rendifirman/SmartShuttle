@@ -617,12 +617,6 @@
                 <span>Armada</span>
             </a>
             @endif
-            @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_driver'))
-            <a href="{{ route('admin.driver') }}" class="submenu-item" id="driver-link">
-                <i class="fas fa-user-tie submenu-icon"></i>
-                <span>Driver</span>
-            </a>
-            @endif
             @if(Auth::guard('admin')->user() && Auth::guard('admin')->user()->hasPermissionTo('view_pegawai'))
             <a href="{{ route('admin.pegawai') }}" class="submenu-item" id="pegawai-link">
                 <i class="fas fa-users submenu-icon"></i>
@@ -807,7 +801,6 @@
         'artikel': { title: 'Master Data - Artikel', icon: 'fas fa-newspaper' },
         'tarif': { title: 'Master Data - Tarif', icon: 'fas fa-money-bill-wave' },
         'armada': { title: 'Master Data - Armada', icon: 'fas fa-bus' },
-        'driver': { title: 'Master Data - Driver', icon: 'fas fa-user-tie' },
         'pegawai': { title: 'Master Data - Pegawai', icon: 'fas fa-users' },
         'rute': { title: 'Master Data - Rute', icon: 'fas fa-route' },
         'jadwal': { title: 'Master Data - Jadwal', icon: 'fas fa-calendar-alt' },
@@ -969,16 +962,6 @@
 
             document.getElementById('armada-link').classList.add('active');
             updatePageTitle('armada');
-        }
-        else if (currentPath.includes('driver')) {
-            // Buka submenu master data
-            const masterDataSubmenu = document.getElementById('master-data-submenu');
-            const masterDataArrow = document.getElementById('master-data-toggle').querySelector('.menu-arrow');
-            masterDataSubmenu.classList.add('open');
-            masterDataArrow.classList.add('rotated');
-
-            document.getElementById('driver-link').classList.add('active');
-            updatePageTitle('driver');
         }
         else if (currentPath.includes('pegawai')) {
             // Buka submenu master data
