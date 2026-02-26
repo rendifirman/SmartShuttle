@@ -1376,7 +1376,12 @@ function processPayment() {
     successModal.classList.remove('hidden');
 
     setTimeout(() => {
-        fetch(`{{ route('customer.pembayaran.simulasi', ['kodePembayaran' => $pembayaran->kode_pembayaran]) }}`)
+        fetch(`{{ route('customer.pembayaran.simulasi', ['kodePembayaran' => $pembayaran->kode_pembayaran]) }}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -1386,7 +1391,16 @@ function processPayment() {
             .then(data => {
                 if (data.success) {
                     successModal.querySelector('h3').textContent = 'Pembayaran Berhasil!';
-                    successModal.querySelector('p').textContent = 'Selamat! Pembayaran Anda telah berhasil diproses. Tiket Anda sudah aktif.';
+                    let msg = 'Selamat! Pembayaran Anda telah berhasil diproses. Tiket Anda sudah aktif.';
+                    if (data.payment_data) {
+                        if (data.payment_data.qr_code) {
+                            msg += '<br><img src="' + data.payment_data.qr_code + '" alt="QR Code" style="max-width:200px;margin-top:8px;">';
+                        }
+                        if (data.payment_data.virtual_account) {
+                            msg += '<br>Virtual Account: ' + data.payment_data.virtual_account;
+                        }
+                    }
+                    successModal.querySelector('p').innerHTML = msg;
 
                     if (data.points_added) {
                         setTimeout(() => {

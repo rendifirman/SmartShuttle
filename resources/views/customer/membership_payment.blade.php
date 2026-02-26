@@ -693,6 +693,12 @@
                     .then(data => {
                         if (data.success) {
                             successMessage.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
+                            // log paylabs response for debugging
+                            console.log('Paylabs simulation response:', data.paylabs);
+                            // optionally display paylabs details in a toast
+                            if (data.paylabs) {
+                                showToast('Paylabs: ' + (data.paylabs.errCodeDes || JSON.stringify(data.paylabs)), 'success');
+                            }
                             successMessage.classList.add('show');
 
                             // Redirect after success

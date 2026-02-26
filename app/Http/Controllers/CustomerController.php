@@ -4061,47 +4061,64 @@ public function showSearch(Request $request)
                 throw new \Exception('Transaksi tidak valid atau sudah kadaluarsa.');
             }
 
-            // Simulate successful payment
+            $paylabs = app(\App\Services\PaylabsService::class);
+
+            $mapping = [
+                'qris' => 'QRIS',
+                'bca_va' => 'VA_BCA',
+                'mandiri_va' => 'VA_MANDIRI',
+                'bni_va' => 'VA_BNI',
+                'bri_va' => 'VA_BRI',
+                'permata_va' => 'VA_PERMATA',
+            ];
+
+            $channel = $mapping[$request->payment_method] ?? null;
+            if (!$channel) {
+                throw new \Exception('Metode pembayaran tidak didukung untuk Paylabs: ' . $request->payment_method);
+            }
+
+            $body = [
+                'merchantTradeNo' => $payment->transaction_id,
+                'amount' => number_format((float) $payment->total_amount, 2, '.', ''),
+                'productName' => 'Membership Fee',
+                'notifyUrl' => config('paylabs.callback_url') ?? url('/api/payment/callback-v23'),
+                'payer' => $user->name,
+            ];
+
+            if ($channel === 'QRIS') {
+                $apiResult = $paylabs->qrisCreateV23($body);
+            } else {
+                $body['paymentType'] = $channel;
+                $apiResult = $paylabs->vaCreateV23($body);
+            }
+
+            if (!($apiResult['success'] ?? false) || (($apiResult['http_status'] ?? 0) !== 200)) {
+                $err = $apiResult['response']['errCodeDes'] ?? ($apiResult['error'] ?? 'Unknown Paylabs error');
+                throw new \Exception('Paylabs create order failed: ' . $err);
+            }
+
+            $resp = $apiResult['response'];
+
+            // Update membership payment with real Paylabs response and set to pending
             $payment->update([
                 'payment_method' => $request->payment_method,
-                'payment_status' => 'success',
-                'paid_at' => now(),
-                // Add simulated Paylabs data
-                'paylabs_transaction_id' => 'SIM-' . time() . '-' . strtoupper(substr(md5(uniqid()), 0, 8)),
-                'qr_code' => 'SIM-QR-' . time(),
-                'qris_url' => 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=SIMULATED',
-                'no_virtual_account' => $request->payment_method === 'bca_va' ? '8888123456789012' : null,
-            ]);
-
-            // Activate membership
-            $user->update([
-                'membership_status' => 'active',
-                'membership_start_date' => now(),
-                'membership_end_date' => now()->addMonths(12),
-                'membership_fee' => $payment->total_amount,
-                'membership_payment_method' => $request->payment_method,
-                'membership_payment_status' => 'success',
-                'membership_transaction_id' => $payment->transaction_id,
-                'membership_level' => 'Bronze',
-                'member_point' => 0,
-                'loyalty_point' => 0,
-            ]);
-
-            // Update session
-            session()->put('user', [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'avatar' => $user->avatar_url,
-                'membership_status' => 'active',
-                'membership_level' => 'Bronze',
+                'payment_status' => 'pending',
+                'paid_at' => null,
+                'paylabs_transaction_id' => $resp['platformTradeNo'] ?? ($resp['platform_trade_no'] ?? null),
+                'qr_code' => $resp['qrCode'] ?? null,
+                'qris_url' => $resp['qrisUrl'] ?? null,
+                'no_virtual_account' => $resp['vaNumber'] ?? $resp['vaCode'] ?? null,
+                'paylabs_response' => json_encode($resp),
+                'paylabs_raw_response' => json_encode($apiResult),
             ]);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Simulasi pembayaran berhasil! Membership telah diaktifkan.'
+                'message' => 'Order Paylabs berhasil dibuat.',
+                'paylabs' => $resp,
+                'payment' => $payment
             ]);
 
         } catch (\Exception $e) {

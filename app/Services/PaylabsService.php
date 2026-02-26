@@ -75,8 +75,8 @@ class PaylabsService
             'productName' => $body['productName'] ?? 'Smart Shuttle Ticket',
         ], $body);
 
-        // Remove null storeId to avoid confusing Paylabs API
-        if (empty($payload['storeId'])) {
+        // Remove storeId unless it meets Paylabs length requirement (6-32)
+        if (!isset($payload['storeId']) || strlen(trim((string)$payload['storeId'])) < 6 || strlen(trim((string)$payload['storeId'])) > 32) {
             unset($payload['storeId']);
         }
 
@@ -136,8 +136,8 @@ class PaylabsService
             'payer' => $body['payer'] ?? 'Customer',
         ], $body);
 
-        // Remove null storeId to avoid confusing Paylabs API
-        if (empty($payload['storeId'])) {
+        // Remove storeId unless it meets Paylabs length requirement (6-32)
+        if (!isset($payload['storeId']) || strlen(trim((string)$payload['storeId'])) < 6 || strlen(trim((string)$payload['storeId'])) > 32) {
             unset($payload['storeId']);
         }
 
@@ -235,6 +235,11 @@ class PaylabsService
                 'productInfo' => $productInfo
             ];
 
+            // detach storeId when it's not within Paylabs required length (6-32)
+            if (!isset($requestData['storeId']) || strlen(trim((string)$requestData['storeId'])) < 6 || strlen(trim((string)$requestData['storeId'])) > 32) {
+                unset($requestData['storeId']);
+            }
+
             // Tambahkan expire time jika ada waktu kadaluarsa
             if ($payment->waktu_kadaluarsa) {
                 $expireSeconds = Carbon::now()->diffInSeconds($payment->waktu_kadaluarsa);
@@ -287,7 +292,37 @@ class PaylabsService
 
             $responseData = json_decode($responseBody, true);
 
-            // Process response
+            // If Paylabs indicates duplicate merchantTradeNo, retry once with a new merchantTradeNo
+            if (isset($responseData['errCode']) && $responseData['errCode'] === 'duplicateMerchantTradeNo') {
+                Log::warning('PAYLABS duplicateMerchantTradeNo detected, retrying create with new merchantTradeNo', ['merchantTradeNo' => $payment->kode_pembayaran, 'request_id' => $requestId]);
+
+                // Create a safe unique merchantTradeNo by appending a short random suffix
+                $newMerchantTradeNo = $payment->kode_pembayaran . '-' . strtoupper(Str::random(6));
+                $requestData['merchantTradeNo'] = $newMerchantTradeNo;
+
+                // regenerate timestamp/signature for retry
+                $retryTimestamp = $this->generatePaylabsTimestamp();
+                $retrySignature = $this->generateSignatureV23($requestData, $retryTimestamp, '/payment/v2.3/qris/create');
+                $retryEndpoint = rtrim($this->baseUrl, '/') . '/payment/v2.3/qris/create';
+
+                $retryResponse = Http::timeout(30)
+                    ->withHeaders([
+                        'Content-Type' => 'application/json;charset=utf-8',
+                        'Accept' => 'application/json',
+                        'X-TIMESTAMP' => $retryTimestamp,
+                        'X-SIGNATURE' => $retrySignature,
+                        'X-PARTNER-ID' => $this->mid,
+                        'X-REQUEST-ID' => $requestId,
+                    ])
+                    ->post($retryEndpoint, $requestData);
+
+                $retryBody = (string) $retryResponse->body();
+                $retryData = json_decode($retryBody, true);
+
+                return $this->processQRISResponse($payment, $retryData, $requestId);
+            }
+
+            // Normal processing
             return $this->processQRISResponse($payment, $responseData, $requestId);
 
         } catch (\Exception $e) {
@@ -350,8 +385,8 @@ class PaylabsService
                 'payer' => $payment->pemesanan->nama_pemesan ?? 'Customer',
             ];
 
-            // Remove null storeId
-            if (empty($requestData['storeId'])) {
+            // Remove storeId unless it meets Paylabs length requirement (6-32)
+            if (!isset($requestData['storeId']) || strlen(trim((string)$requestData['storeId'])) < 6 || strlen(trim((string)$requestData['storeId'])) > 32) {
                 unset($requestData['storeId']);
             }
 
@@ -370,9 +405,20 @@ class PaylabsService
 
             // Periksa hasil request
             if (!$apiResult['success'] || $apiResult['http_status'] !== 200) {
-                // Jika tidak sukses, lempar exception dengan pesan dari response
-                $errorMsg = $apiResult['response']['errCodeDes'] ?? 'Unknown error from Paylabs';
-                throw new \Exception("Paylabs Error: " . $errorMsg);
+                // Handle duplicate merchantTradeNo by retrying with a new merchantTradeNo once
+                $resp = $apiResult['response'] ?? [];
+                if (isset($resp['errCode']) && $resp['errCode'] === 'duplicateMerchantTradeNo') {
+                    Log::warning('PAYLABS duplicateMerchantTradeNo on VA create, retrying with new merchantTradeNo', ['merchantTradeNo' => $payment->kode_pembayaran]);
+                    $newMerchant = $payment->kode_pembayaran . '-' . strtoupper(Str::random(6));
+                    $requestData['merchantTradeNo'] = $newMerchant;
+                    $apiResult = $this->requestV23('/payment/v2.3/va/create', $requestData, $this->generateRequestId());
+                }
+
+                if (!$apiResult['success'] || $apiResult['http_status'] !== 200) {
+                    // Jika tidak sukses, lempar exception dengan pesan dari response
+                    $errorMsg = $apiResult['response']['errCodeDes'] ?? ($apiResult['error'] ?? 'Unknown error from Paylabs');
+                    throw new \Exception("Paylabs Error: " . $errorMsg);
+                }
             }
 
             // Process response

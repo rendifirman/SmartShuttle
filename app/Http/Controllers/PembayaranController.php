@@ -613,7 +613,7 @@ class PembayaranController extends Controller
      * Simulasi pembayaran dengan response asli dari Paylabs (untuk testing)
      * Sekarang menggunakan callback yang sama dengan membership untuk konsistensi
      */
-    public function simulasiPembayaran($kodePembayaran, $status = 'berhasil')
+    public function simulasiPembayaran(\Illuminate\Http\Request $request, $kodePembayaran, $status = 'berhasil')
     {
         DB::beginTransaction();
 
@@ -727,8 +727,7 @@ class PembayaranController extends Controller
                 'forced_success' => $status === 'berhasil'
             ]);
 
-            // Return view for web route instead of JSON
-            return view('customer.pembayaran-simulasi', [
+            $responsePayload = [
                 'success' => true,
                 'message' => 'Simulasi pembayaran berhasil! Response asli Paylabs diterima.',
                 'pembayaran' => $pembayaran,
@@ -744,11 +743,17 @@ class PembayaranController extends Controller
                     'simulation' => true,
                     'real_paylabs_response' => true,
                     'status_forced' => $status === 'berhasil',
-                    'points_added' => ($status === 'berhasil' && $user) ? 100 : 0,
-                    'loyalty_points_added' => ($status === 'berhasil' && $user) ? $this->calculateLoyaltyPoints($user->membership_level) : 0,
-                    'membership_level' => $user ? $user->membership_level : null
+                    'points_added' => ($status === 'berhasil' && isset($user)) ? 100 : 0,
+                    'loyalty_points_added' => ($status === 'berhasil' && isset($user)) ? $this->calculateLoyaltyPoints($user->membership_level) : 0,
+                    'membership_level' => isset($user) ? $user->membership_level : null
                 ]
-            ]);
+            ];
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json($responsePayload);
+            }
+
+            return view('customer.pembayaran-simulasi', $responsePayload);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -758,13 +763,18 @@ class PembayaranController extends Controller
                 'error' => $e->getMessage()
             ]);
 
-            // Return error view for web route
-            return view('customer.pembayaran-simulasi', [
+            $errorPayload = [
                 'success' => false,
                 'message' => 'Gagal membuat pembayaran dengan Paylabs: ' . $e->getMessage(),
                 'pembayaran' => $pembayaran ?? null,
                 'payment_data' => null
-            ]);
+            ];
+
+            if (isset($request) && ($request->wantsJson() || $request->ajax())) {
+                return response()->json($errorPayload, 500);
+            }
+
+            return view('customer.pembayaran-simulasi', $errorPayload);
         }
     }
 }
