@@ -20,6 +20,9 @@ use App\Models\Pemesanan;
 use App\Models\Jadwal;
 use App\Models\DetailPenumpang;
 use App\Models\Transaksi;
+use App\Models\Pembayaran;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class AdminController extends Controller
 {
@@ -1342,10 +1345,54 @@ class AdminController extends Controller
             $q->where('name', 'customer');
         })->get();
 
+        // Financial summary: totals and charts
+        // Consider payments with status indicating successful payment
+        $paidStatuses = ['paid', 'berhasil', 'success'];
+
+        $totalRevenue = Pembayaran::whereNotNull('waktu_pembayaran')
+            ->whereIn('status', $paidStatuses)
+            ->sum('jumlah');
+
+        $paidCount = Pembayaran::whereNotNull('waktu_pembayaran')
+            ->whereIn('status', $paidStatuses)
+            ->count();
+
+        // Last 7 days revenue
+        $labels7 = [];
+        $values7 = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $d = Carbon::today()->subDays($i);
+            $labels7[] = $d->format('M d');
+            $values7[] = (float) Pembayaran::whereDate('waktu_pembayaran', $d)
+                ->whereIn('status', $paidStatuses)
+                ->sum('jumlah');
+        }
+
+        // Last 6 months revenue
+        $monthLabels = [];
+        $monthValues = [];
+        for ($m = 5; $m >= 0; $m--) {
+            $d = Carbon::now()->subMonths($m)->startOfMonth();
+            $monthLabels[] = $d->format('M Y');
+            $monthValues[] = (float) Pembayaran::whereBetween('waktu_pembayaran', [$d, $d->copy()->endOfMonth()])
+                ->whereIn('status', $paidStatuses)
+                ->sum('jumlah');
+        }
+
+        $financeSummary = [
+            'totalRevenue' => (float) $totalRevenue,
+            'paidCount' => (int) $paidCount,
+            'labels7' => $labels7,
+            'values7' => $values7,
+            'monthLabels' => $monthLabels,
+            'monthValues' => $monthValues,
+        ];
+
         return view('admin.transaksi.perjalanan', [
             'pemesanan' => $pemesanan,
             'rutes' => $rutes,
-            'customers' => $customers
+            'customers' => $customers,
+            'financeSummary' => $financeSummary,
         ]);
     }
 
@@ -1726,6 +1773,9 @@ class AdminController extends Controller
     public function logout(Request $request)
     {
         try {
+            // Clear admin booking session
+            session()->forget(['admin_booking_session', 'admin_id', 'admin_name', 'admin_email', 'admin_role']);
+
             Auth::guard('admin')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();

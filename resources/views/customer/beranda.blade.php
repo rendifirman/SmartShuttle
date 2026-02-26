@@ -2468,6 +2468,7 @@
         overflow-x: hidden;
     }
 
+
     img, video, iframe {
         max-width: 100%;
         height: auto;
@@ -2483,7 +2484,7 @@
     use App\Models\DriverJadwal;
     use App\Models\Rute;
     use Carbon\Carbon;
-    
+
     $profile = MProfilePerusahaan::first();
 
     // Data user dari session
@@ -2520,7 +2521,7 @@
     $tujuanParam = request()->get('tujuan', '');
     $tanggalParam = request()->get('tanggal', date('Y-m-d'));
     $penumpangParam = request()->get('penumpang', 1);
-    
+
     // Data jadwal untuk Available Schedules (ambil 4 jadwal terdekat)
     $jadwals = DriverJadwal::with(['jadwal.rutes', 'driver'])
         ->where('status', 'aktif')
@@ -2671,6 +2672,8 @@
     $activeService = request()->get('service', 'shuttle');
 @endphp
 
+
+
 <!-- Hero Section -->
 <div class="hero-section" style="background-image:url('{{ asset('images/bg.png') }}');">
     <div class="hero-content">
@@ -2753,11 +2756,11 @@
                     </select>
                 </div>
                 <div class="search-field">
-                    <input type="date" class="search-input" name="tanggal" 
+                    <input type="date" class="search-input" name="tanggal"
                            value="{{ $tanggalParam }}" min="{{ date('Y-m-d') }}">
                 </div>
                 <div class="search-field">
-                    <input type="number" class="search-input" name="penumpang" 
+                    <input type="number" class="search-input" name="penumpang"
                            value="{{ $penumpangParam }}" min="1" max="10" placeholder="Penumpang">
                 </div>
                 <div class="search-btn-container">
@@ -2777,7 +2780,7 @@
 <section class="available-schedules">
     <div class="container">
         <h2><i class="fas fa-calendar-alt"></i> Jadwal Tersedia</h2>
-        
+
         @if($jadwals->count() > 0)
         <div class="schedules-grid">
             @foreach($jadwals as $jadwal)
@@ -2798,30 +2801,30 @@
                 $jamTiba = \Carbon\Carbon::parse($jadwal->waktu_kedatangan)->format('H:i');
                 $tanggal = \Carbon\Carbon::parse($jadwal->tanggal)->translatedFormat('d F Y');
             @endphp
-            
+
             <div class="schedule-card">
                 <div class="route">
                     {{ $detail['kota_asal'] ?? 'N/A' }} → {{ $detail['kota_tujuan'] ?? 'N/A' }}
                 </div>
-                
+
                 <div class="schedule-details">
                     <p><i class="far fa-clock"></i> {{ $jamBerangkat }} - {{ $jamTiba }}</p>
                     <p><i class="far fa-calendar"></i> {{ $tanggal }}</p>
-                    
+
                     @if($rute)
                     <p><i class="fas fa-route"></i> {{ $rute->nama_rute ?? 'Rute' }}</p>
                     @endif
-                    
+
                     @php $shuttle = $jadwal->shuttle ?? null; @endphp
                     @if($shuttle)
                     <p><i class="fas fa-bus"></i> {{ $shuttle->nama_shuttle ?? ($jadwal->armada ?? 'Armada') }}</p>
                     @endif
-                    
+
                     @if($jadwal->driver)
                     <p><i class="fas fa-user"></i> {{ $jadwal->driver->nama_driver ?? 'Driver' }}</p>
                     @endif
                 </div>
-                
+
                 <a href="{{ route('customer.showSearch', [
                     'asal' => $detail['kota_asal'] ?? '',
                     'tujuan' => $detail['kota_tujuan'] ?? '',

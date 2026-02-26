@@ -1163,6 +1163,60 @@
         .promo-conditions .fa-times-circle {
             color: #dc3545;
         }
+
+        /* Styles untuk admin booking */
+        .admin-booking-indicator {
+            background: linear-gradient(135deg, #FF581E 0%, #ff7b4d 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(255, 88, 30, 0.3);
+        }
+
+        .admin-booking-indicator i {
+            font-size: 18px;
+        }
+
+        .btn-back-to-admin {
+            background: linear-gradient(135deg, #00215E 0%, #1a3d7c 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-back-to-admin:hover {
+            background: linear-gradient(135deg, #001a47 0%, #132d5f 100%);
+            color: white;
+            text-decoration: none;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 33, 94, 0.3);
+        }
+
+        .btn-back-to-admin i {
+            font-size: 16px;
+        }
+
+        .admin-action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
     </style>
 @endpush
 
@@ -1179,6 +1233,20 @@
         @if(session('success'))
             <div class="alert alert-success">
                 <i class="fas fa-check-circle"></i> {{ session('success') }}
+            </div>
+        @endif
+
+        <!-- Admin Booking Indicator & Back Button -->
+        @if(session('admin_booking_session') && session('admin_id'))
+            <div class="admin-action-bar">
+                <div class="admin-booking-indicator">
+                    <i class="fas fa-user-tie"></i>
+                    <span>Admin Mode: {{ session('admin_name') }} sedang melakukan pemesanan untuk Customer</span>
+                </div>
+                <a href="{{ route('admin.back') }}" class="btn-back-to-admin">
+                    <i class="fas fa-arrow-left"></i>
+                    Kembali ke Admin
+                </a>
             </div>
         @endif
 

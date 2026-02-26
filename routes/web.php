@@ -558,6 +558,14 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::delete('/api/pemesanan/{id}', [AdminPemesananController::class, 'deletePemesanan'])
             ->middleware('permission:manage_perjalanan_transaksi')
             ->name('api.pemesanan.delete');
+        // Admin booking - redirect to customer pesan with admin session
+        Route::get('/admin-booking', [AdminPemesananController::class, 'adminBooking'])
+            ->middleware('permission:manage_perjalanan_transaksi')
+            ->name('booking');
+        // Back to admin from customer pesan
+        Route::get('/back-to-admin', [AdminPemesananController::class, 'backToAdmin'])
+            ->middleware('permission:manage_perjalanan_transaksi')
+            ->name('back');
 
     }); // Close admin.role middleware group
 
@@ -1269,3 +1277,18 @@ if (app()->isLocal()) {
         }
     })->name('test.tarif.relationship');
 }
+
+// Temporary debug route to inspect session and auth guard states (remove when done)
+Route::get('/debug-session', function () {
+    return response()->json([
+        'session_all' => session()->all(),
+        'session_id' => session()->getId(),
+        'auth_default_check' => auth()->check(),
+        'auth_web_check' => auth('web')->check(),
+        'auth_admin_check' => auth('admin')->check(),
+        'auth_user' => auth()->user(),
+        'auth_web_user' => auth('web')->user(),
+        'auth_admin_user' => auth('admin')->user(),
+        'session_cookie' => request()->cookie(config('session.cookie')),
+    ]);
+});

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Models\Pemesanan;
@@ -363,5 +364,87 @@ class AdminPemesananController extends Controller
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Redirect admin ke customer pesan dengan session admin
+     */
+    public function adminBooking(Request $request)
+    {
+        try {
+            $admin = auth('admin')->user();
+
+            // store flag untuk UI indicator
+            session([
+                'admin_booking_session' => true,
+                'admin_id' => $admin->id,
+                'admin_name' => $admin->name,
+                'admin_email' => $admin->email,
+                'admin_role' => $admin->getRoleNames()->first(),
+            ]);
+
+            // perform a customer login explicitly on the web guard so middleware('auth') sees it
+            Auth::guard('web')->login($admin);
+
+            // mirror payload that login() normally stores in session
+            session()->put('user', [
+                'id' => $admin->id,
+                'name' => $admin->name,
+                'email' => $admin->email,
+                'phone' => $admin->phone,
+                'avatar' => $admin->avatar_url ?? null,
+                'membership_status' => $admin->membership_status ?? 'non_member',
+                'membership_level' => $admin->membership_level ?? null,
+            ]);
+            session()->save();
+
+            Log::info('Admin starting booking flow (logged in as customer)', [
+                'admin_id' => $admin->id,
+                'admin_name' => $admin->name,
+                'admin_role' => $admin->getRoleNames()->first(),
+            ]);
+
+            // redirect ke beranda customer setelah login
+            return redirect()->route('customer.beranda')
+                ->with('admin_booking', true)
+                ->with('admin_name', $admin->name);
+
+        } catch (\Exception $e) {
+            Log::error('Error in admin booking redirect: ' . $e->getMessage());
+            return back()->withErrors(['message' => 'Terjadi kesalahan: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Kembali ke halaman admin transaksi dari customer pesan
+     */
+    public function backToAdmin()
+    {
+        // preserve admin identity: grab admin id before clearing session
+        $adminId = session('admin_id');
+
+        // clear admin booking session flags (but do not log out admin guard)
+        session()->forget(['admin_booking_session', 'admin_id', 'admin_name', 'admin_email', 'admin_role']);
+
+        // logout only the web/customer guard and clear the customer session payload
+        try {
+            Auth::guard('web')->logout();
+        } catch (\Exception $e) {
+            Log::warning('Logout web guard failed: ' . $e->getMessage());
+        }
+        session()->forget('user');
+
+        // ensure admin guard is still authenticated; if not, re-login admin guard using stored id
+        if ($adminId && !auth('admin')->check()) {
+            try {
+                Auth::guard('admin')->loginUsingId($adminId);
+            } catch (\Exception $e) {
+                Log::warning('Re-login admin guard failed: ' . $e->getMessage());
+            }
+        }
+
+        // redirect back to the admin transaksi perjalanan page
+        return redirect()->route('admin.perjalanan')
+            ->with('success', 'Anda kembali ke halaman admin');
     }
 }

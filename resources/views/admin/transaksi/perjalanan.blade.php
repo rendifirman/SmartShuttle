@@ -219,6 +219,26 @@
         color: #6c757d;
     }
 
+    /* Finance cards */
+    .finance-cards {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+    }
+
+    .finance-card {
+        background: white;
+        padding: 16px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        min-width: 220px;
+        flex: 1 1 220px;
+    }
+
+    .finance-card h3 { margin: 0; font-size: 20px; color: #00215E; }
+    .finance-card p { margin: 6px 0 0; color: #6c757d; font-weight: 600; }
+
     .empty-state i {
         font-size: 48px;
         margin-bottom: 20px;
@@ -365,10 +385,10 @@
             <p style="color: #6c757d; margin-top: 5px; font-size: 14px;">Kelola dan lihat semua transaksi pemesanan tiket shuttle</p>
         </div>
         <div class="header-actions">
-                <button class="btn-admin-primary" onclick="openNewBookingModal()">
+                <a href="{{ route('admin.booking') }}" class="btn-admin-primary" style="text-decoration: none; display: inline-flex;">
                 <i class="fas fa-plus-circle"></i>
                 Pesan Untuk Customer
-            </button>
+            </a>
         </div>
     </div>
 
@@ -377,6 +397,36 @@
     <div class="alert-admin alert-success">
         <i class="fas fa-check-circle"></i>
         <div>{{ session('success') }}</div>
+    </div>
+    @endif
+
+    <!-- Finance Summary -->
+    @php $fs = $financeSummary ?? null; @endphp
+    @if($fs)
+    <div class="finance-cards">
+        <div class="finance-card">
+            <h3>Rp {{ number_format($fs['totalRevenue'] ?? 0, 0, ',', '.') }}</h3>
+            <p>Total Pendapatan (sudah dibayar)</p>
+        </div>
+        <div class="finance-card">
+            <h3>{{ $fs['paidCount'] ?? 0 }}</h3>
+            <p>Transaksi Berhasil (count)</p>
+        </div>
+        <div class="finance-card">
+            <h3>{{ number_format(array_sum($fs['values7'] ?? []), 0, ',', '.') }}</h3>
+            <p>Pendapatan 7 Hari Terakhir</p>
+        </div>
+    </div>
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px;">
+        <div style="flex:1 1 420px; background:white; padding:12px; border-radius:8px;">
+            <h4 style="margin:0 0 8px;">Pendapatan - 7 Hari</h4>
+            <canvas id="chart7days" height="120"></canvas>
+        </div>
+        <div style="flex:1 1 420px; background:white; padding:12px; border-radius:8px;">
+            <h4 style="margin:0 0 8px;">Pendapatan - 6 Bulan</h4>
+            <canvas id="chart6months" height="120"></canvas>
+        </div>
     </div>
     @endif
 
@@ -995,5 +1045,59 @@
         });
     });
 </script>
+
+@if(isset($financeSummary))
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    (function(){
+        const fs = @json($financeSummary);
+
+        // 7-day chart
+        const ctx7 = document.getElementById('chart7days');
+        if(ctx7 && fs.labels7) {
+            new Chart(ctx7.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: fs.labels7,
+                    datasets: [{
+                        label: 'Pendapatan (IDR)',
+                        data: fs.values7,
+                        borderColor: '#FF581E',
+                        backgroundColor: 'rgba(255,88,30,0.12)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: { beginAtZero: true }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // 6-month chart
+        const ctx6 = document.getElementById('chart6months');
+        if(ctx6 && fs.monthLabels) {
+            new Chart(ctx6.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: fs.monthLabels,
+                    datasets: [{
+                        label: 'Pendapatan (IDR)',
+                        data: fs.monthValues,
+                        backgroundColor: '#00215E'
+                    }]
+                },
+                options: {
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+    })();
+</script>
+@endif
 
 @endsection

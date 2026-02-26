@@ -173,6 +173,36 @@
         width: 100%;
     }
 
+    /* admin booking menu styles */
+    .admin-menu-link {
+        color: #FF581E;
+        font-weight: 600;
+    }
+
+    /* dropdown-specific styles */
+    .admin-dropdown-link {
+        color: #FF581E;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+    }
+
+    .admin-menu-indicator {
+        color: #FF581E;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 12px;
+    }
+    .dropdown-divider {
+        height: 1px;
+        margin: 4px 0;
+        background: #e5e5e5;
+    }
+
     .nav-auth {
         display: flex;
         justify-content: flex-end;
@@ -923,6 +953,7 @@
                        </a>
                     </li>
 
+
                 <li><a href="{{ route('customer.smartrent') }}"
                             class="{{ $currentRoute == 'customer.smartrent' || str_contains($currentPath, 'smartrent') ? 'active' : '' }}">
                             Sewa Armada
@@ -1016,6 +1047,16 @@
                                 <i class="fas fa-history"></i>
                                 Riwayat
                             </a>
+                            @if(session('admin_booking_session') && session('admin_id'))
+                                <div class="dropdown-divider"></div>
+                                <span class="admin-menu-indicator">
+                                    <i class="fas fa-user-tie"></i>
+                                    Admin Mode: {{ session('admin_name') }}
+                                </span>
+                                <a href="{{ route('admin.back') }}" class="admin-dropdown-link">
+                                    <i class="fas fa-arrow-left"></i> Kembali Admin
+                                </a>
+                            @endif
                             <form action="{{ route('customer.logout') }}" method="POST">
                                 @csrf
                                 <button type="submit">
