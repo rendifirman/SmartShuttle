@@ -567,9 +567,15 @@
                 </div>
 
                 <div style="display: flex; gap: 12px; margin-top: 24px;">
-                    <button type="button" class="btn-pay" id="simulateButton" style="flex: 1; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-                        <span>Simulasi Bayar</span>
-                    </button>
+                    <div style="display:flex;flex-direction:column;gap:8px;flex:1;">
+                        <label style="font-size:13px;color:#374151;display:flex;align-items:center;gap:8px;">
+                            <input type="checkbox" id="forceSuccess" style="width:16px;height:16px;" />
+                            Tandai berhasil langsung (testing)
+                        </label>
+                        <button type="button" class="btn-pay" id="simulateButton" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                            <span>Simulasi Bayar</span>
+                        </button>
+                    </div>
 
                     <button type="submit" class="btn-pay" id="payButton" style="flex: 1;">
                         <span id="buttonText">Bayar & Aktifkan Membership</span>
@@ -679,6 +685,11 @@
                     const formData = new FormData();
                     formData.append('transaction_id', transactionId.value);
                     formData.append('payment_method', selectedMethod.value);
+                    // include force success flag if checked (testing only)
+                    const forceCheckbox = document.getElementById('forceSuccess');
+                    if (forceCheckbox && forceCheckbox.checked) {
+                        formData.append('force_success', '1');
+                    }
                     formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
                     // Make AJAX request
@@ -786,6 +797,36 @@
                 }, 5000);
             @endif
         });
-    </script>
-</body>
-</html>
+
+                // helper toast function used elsewhere in this page
+                function showToast(message, type = 'success') {
+                    // simple inline-styled toast without relying on Tailwind
+                    const colors = {
+                        success: '#4CAF50',
+                        warning: '#FF9800',
+                        error: '#F44336'
+                    };
+                    const icons = {
+                        success: 'check-circle',
+                        warning: 'exclamation-triangle',
+                        error: 'times-circle'
+                    };
+
+                    const toast = document.createElement('div');
+                    toast.style.position = 'fixed';
+                    toast.style.top = '20px';
+                    toast.style.right = '20px';
+                    toast.style.padding = '12px 18px';
+                    toast.style.borderRadius = '8px';
+                    toast.style.backgroundColor = colors[type] || colors.success;
+                    toast.style.color = '#fff';
+                    toast.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+                    toast.style.zIndex = 10000;
+                    toast.innerHTML = `<i class="fas fa-${icons[type] || icons.success}" style="margin-right:8px"></i>${message}`;
+                    document.body.appendChild(toast);
+
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 3000);
+                }
+            </script>

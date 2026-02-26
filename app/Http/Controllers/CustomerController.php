@@ -4114,6 +4114,29 @@ public function showSearch(Request $request)
 
             DB::commit();
 
+            // If caller requested an immediate force-success (testing), mark payment as paid
+            if ($request->boolean('force_success', false)) {
+                try {
+                    // mark payment as successful
+                    $payment->update([
+                        'payment_status' => 'success',
+                        'paid_at' => Carbon::now(),
+                    ]);
+
+                    // activate membership for the user (basic activation)
+                    $user->update([
+                        'membership_status' => 'active',
+                        'membership_start_date' => Carbon::now(),
+                        'membership_end_date' => Carbon::now()->addMonths(12),
+                        'membership_level' => 'Bronze',
+                    ]);
+
+                    Log::info('Membership simulate: forced success, membership activated', ['user_id' => $user->id, 'transaction' => $payment->transaction_id]);
+                } catch (\Exception $ex) {
+                    Log::error('Failed to force-activate membership after simulate: ' . $ex->getMessage());
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Order Paylabs berhasil dibuat.',

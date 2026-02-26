@@ -90,8 +90,8 @@
         color: white;
     }
 
-    .back-btn-side i { 
-        font-size: 14px; 
+    .back-btn-side i {
+        font-size: 14px;
     }
 
     /* Konten utama di kanan */
@@ -142,8 +142,9 @@
         break-inside: avoid;
     }
 
-    /* PRINT SPECIFIC STYLES */
+    /* PRINT SPECIFIC STYLES (tetap sama) */
     @media print {
+        /* ... semua aturan print tetap seperti aslinya, tidak diubah ... */
         * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -380,80 +381,80 @@
         }
     }
 
-    /* Styling tiket */
-    .ticket-logo { 
-        width: 82px; 
-        display: block; 
-        margin: 0 auto 10px; 
+    /* Styling tiket (non-print) */
+    .ticket-logo {
+        width: 82px;
+        display: block;
+        margin: 0 auto 10px;
     }
-    
-    h1.ticket-title { 
-        margin: 0; 
-        text-align: center; 
-        font-size: 22px; 
-        color: var(--primary); 
-        font-weight: 800; 
-        letter-spacing: 0.5px; 
+
+    h1.ticket-title {
+        margin: 0;
+        text-align: center;
+        font-size: 22px;
+        color: var(--primary);
+        font-weight: 800;
+        letter-spacing: 0.5px;
     }
-    
-    .ticket-id { 
-        text-align: center; 
-        font-size: 16px; 
-        font-weight: 700; 
-        color: var(--accent); 
-        margin-top: 8px; 
+
+    .ticket-id {
+        text-align: center;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-top: 8px;
     }
-    
-    .dashed-divider { 
-        border-top: 2px dashed #ddd; 
-        margin: 15px 0; 
+
+    .dashed-divider {
+        border-top: 2px dashed #ddd;
+        margin: 15px 0;
     }
-    
-    .qr-wrap { 
-        text-align: center; 
-        margin: 15px 0; 
+
+    .qr-wrap {
+        text-align: center;
+        margin: 15px 0;
     }
-    
-    .qr-wrap img { 
-        width: 180px; 
-        height: 180px; 
-        object-fit: cover; 
-        background: white; 
-        padding: 12px; 
-        border-radius: 12px; 
-        display: inline-block; 
-        border: 2px solid #eee; 
+
+    .qr-wrap img {
+        width: 180px;
+        height: 180px;
+        object-fit: cover;
+        background: white;
+        padding: 12px;
+        border-radius: 12px;
+        display: inline-block;
+        border: 2px solid #eee;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-    
-    .kode-pemesanan { 
-        text-align: center; 
-        margin-top: 10px; 
-        font-weight: 700; 
-        color: var(--accent); 
-        font-size: 14px; 
+
+    .kode-pemesanan {
+        text-align: center;
+        margin-top: 10px;
+        font-weight: 700;
+        color: var(--accent);
+        font-size: 14px;
     }
-    
+
     /* Route row dengan tanda panah di tengah */
-    .route-row { 
-        display: flex; 
-        justify-content: space-between; 
-        align-items: center; 
-        margin-top: 15px; 
+    .route-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 15px;
         gap: 10px;
         position: relative;
     }
-    
-    .route-city { 
+
+    .route-city {
         flex: 1;
-        font-weight: 800; 
-        font-size: 18px; 
-        color: var(--primary); 
-        text-transform: uppercase; 
+        font-weight: 800;
+        font-size: 18px;
+        color: var(--primary);
+        text-transform: uppercase;
         letter-spacing: 1px;
         text-align: center;
     }
-    
+
     /* Tanda panah di tengah */
     .route-arrow {
         color: var(--accent);
@@ -462,44 +463,44 @@
         flex-shrink: 0;
         margin: 0 5px;
     }
-    
-    .subinfo { 
-        color: var(--muted); 
-        font-size: 13px; 
-        margin-top: 8px; 
-        text-align: center; 
+
+    .subinfo {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 8px;
+        text-align: center;
         font-weight: 600;
     }
-    
-    .info-columns { 
-        display: flex; 
-        justify-content: space-between; 
-        gap: 15px; 
-        margin-top: 15px; 
+
+    .info-columns {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        margin-top: 15px;
     }
-    
-    .info-col { 
-        width: 48%; 
+
+    .info-col {
+        width: 48%;
     }
-    
-    .label { 
-        font-size: 14px; 
-        color: #666; 
+
+    .label {
+        font-size: 14px;
+        color: #666;
         font-weight: 600;
     }
-    
-    .value { 
-        margin-top: 8px; 
-        font-size: 15px; 
-        font-weight: 800; 
-        color: #102a43; 
+
+    .value {
+        margin-top: 8px;
+        font-size: 15px;
+        font-weight: 800;
+        color: #102a43;
     }
-    
-    .section-title { 
-        margin-top: 15px; 
-        font-size: 16px; 
-        font-weight: 800; 
-        color: var(--primary); 
+
+    .section-title {
+        margin-top: 15px;
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--primary);
         letter-spacing: 0.5px;
     }
 
@@ -511,7 +512,7 @@
         flex-wrap: nowrap;
         align-items: flex-start;
     }
-    
+
     .data-row .left {
         min-width: 100px;
         max-width: 35%;
@@ -520,7 +521,7 @@
         font-size: 14px;
         flex-shrink: 0;
     }
-    
+
     .data-row .right {
         flex: 1;
         color: #222;
@@ -531,21 +532,21 @@
         margin-left: 5px;
     }
 
-    ul.instructions { 
-        margin: 10px 0 0 20px; 
-        color: #444; 
-        font-size: 14px; 
-        padding: 0; 
+    ul.instructions {
+        margin: 10px 0 0 20px;
+        color: #444;
+        font-size: 14px;
+        padding: 0;
     }
-    
-    ul.instructions li { 
-        margin-bottom: 8px; 
+
+    ul.instructions li {
+        margin-bottom: 8px;
         line-height: 1.5;
     }
-    
-    .total-box { 
-        text-align: center; 
-        margin-top: 15px; 
+
+    .total-box {
+        text-align: center;
+        margin-top: 15px;
         padding: 15px;
         background: #f8f9fa;
         border-radius: 12px;
@@ -553,23 +554,23 @@
     }
 
     /* Action buttons - MOBILE OPTIMIZED */
-    .actions { 
-        display: flex; 
-        gap: 12px; 
-        justify-content: center; 
-        margin-top: auto; 
+    .actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-top: auto;
         padding-top: 20px;
         border-top: 1px solid #e9ecef;
         flex-wrap: wrap;
     }
-    
-    .btn { 
-        padding: 12px 20px; 
-        border-radius: 10px; 
-        border: none; 
-        cursor: pointer; 
-        font-weight: 700; 
-        font-size: 14px; 
+
+    .btn {
+        padding: 12px 20px;
+        border-radius: 10px;
+        border: none;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 14px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -579,35 +580,36 @@
         flex: 1;
         min-height: 48px;
         touch-action: manipulation;
+        text-decoration: none;
     }
-    
-    .btn-print { 
-        background: var(--primary); 
-        color: #fff; 
+
+    .btn-print {
+        background: var(--primary);
+        color: #fff;
     }
-    
+
     .btn-print:hover {
         background: #00338a;
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(0, 33, 94, 0.3);
     }
-    
-    .btn-download { 
-        background: #10b981; 
-        color: #fff; 
+
+    .btn-download {
+        background: #10b981;
+        color: #fff;
     }
-    
+
     .btn-download:hover {
         background: #0da271;
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
     }
-    
-    .btn-share { 
-        background: #8b5cf6; 
-        color: #fff; 
+
+    .btn-share {
+        background: #8b5cf6;
+        color: #fff;
     }
-    
+
     .btn-share:hover {
         background: #7c3aed;
         transform: translateY(-2px);
@@ -654,7 +656,7 @@
         .tickets-wrapper {
             gap: 20px;
         }
-        
+
         .ticket-card {
             max-width: 420px;
         }
@@ -667,7 +669,7 @@
             gap: 20px;
             padding: 20px 15px;
         }
-        
+
         .ticket-sidebar {
             position: static;
             margin-top: 0;
@@ -679,43 +681,43 @@
             padding: 0 0 15px 0;
             border-bottom: 1px solid rgba(0, 33, 94, 0.1);
         }
-        
+
         .back-btn-side {
             width: auto;
             min-width: 180px;
             margin: 0;
             justify-content: center;
         }
-        
+
         .ticket-main-content {
             order: 2;
         }
-        
+
         .tickets-wrapper {
             flex-direction: column;
             align-items: center;
             gap: 20px;
         }
-        
+
         .ticket-card {
             max-width: 500px;
             width: 100%;
             padding: 20px;
         }
-        
+
         .header-title {
             font-size: 24px;
         }
-        
+
         .qr-wrap img {
             width: 160px;
             height: 160px;
         }
-        
+
         .route-city {
             font-size: 17px;
         }
-        
+
         .route-arrow {
             font-size: 18px;
         }
@@ -726,31 +728,31 @@
         .e-ticket-container {
             padding: 15px;
         }
-        
+
         .ticket-header {
             margin-bottom: 20px;
         }
-        
+
         .header-title {
             font-size: 22px;
         }
-        
+
         .ticket-card {
             padding: 18px;
             min-height: auto;
         }
-        
+
         .qr-wrap img {
             width: 150px;
             height: 150px;
         }
-        
+
         /* Data row mobile fix */
         .data-row {
             margin-top: 8px;
             flex-wrap: wrap;
         }
-        
+
         .data-row .left {
             width: 100%;
             max-width: 100%;
@@ -759,7 +761,7 @@
             margin-bottom: 2px;
             color: #555;
         }
-        
+
         .data-row .right {
             width: 100%;
             font-size: 14px;
@@ -768,54 +770,54 @@
             border-left: 2px solid #e9ecef;
             color: #222;
         }
-        
+
         /* Tombol action mobile */
-        .actions { 
+        .actions {
             flex-direction: row;
             gap: 8px;
             padding-top: 16px;
             margin-top: 16px;
         }
-        
-        .btn { 
-            padding: 12px 10px; 
-            font-size: 13px; 
+
+        .btn {
+            padding: 12px 10px;
+            font-size: 13px;
             min-width: 0;
             flex: 1 1 calc(33.333% - 8px);
             max-width: calc(33.333% - 8px);
             min-height: 44px;
             border-radius: 8px;
         }
-        
+
         .btn i {
             font-size: 14px;
             margin-bottom: 2px;
         }
-        
+
         .btn span {
             display: block;
             font-size: 12px;
             line-height: 1.2;
         }
-        
+
         .route-city {
             font-size: 16px;
         }
-        
+
         .route-arrow {
             font-size: 16px;
         }
-        
+
         /* Info columns mobile */
         .info-columns {
             flex-direction: column;
             gap: 12px;
         }
-        
+
         .info-col {
             width: 100%;
         }
-        
+
         .print-all-btn {
             padding: 14px 25px;
             font-size: 15px;
@@ -828,84 +830,84 @@
         .ticket-header {
             margin-bottom: 15px;
         }
-        
+
         .header-title {
             font-size: 20px;
         }
-        
+
         .back-btn-side {
             padding: 10px 16px;
             font-size: 14px;
             min-width: 160px;
         }
-        
+
         .ticket-card {
             padding: 16px;
             border-radius: 16px;
         }
-        
+
         .qr-wrap img {
             width: 140px;
             height: 140px;
         }
-        
+
         .ticket-title {
             font-size: 20px;
         }
-        
+
         .kode-pemesanan {
             font-size: 13px;
         }
-        
+
         /* Data row sangat kecil */
         .data-row .left {
             font-size: 12px;
         }
-        
+
         .data-row .right {
             font-size: 13px;
             padding-left: 8px;
         }
-        
+
         /* Tombol untuk screen sangat kecil */
-        .actions { 
+        .actions {
             gap: 6px;
         }
-        
-        .btn { 
-            padding: 10px 8px; 
-            font-size: 12px; 
+
+        .btn {
+            padding: 10px 8px;
+            font-size: 12px;
             flex: 1 1 calc(33.333% - 6px);
             max-width: calc(33.333% - 6px);
             min-height: 42px;
         }
-        
+
         .btn i {
             font-size: 13px;
             margin-bottom: 1px;
         }
-        
+
         .btn span {
             font-size: 11px;
         }
-        
+
         .route-city {
             font-size: 15px;
             letter-spacing: 0.5px;
         }
-        
+
         .route-arrow {
             font-size: 15px;
         }
-        
+
         .value {
             font-size: 14px;
         }
-        
+
         .section-title {
             font-size: 15px;
         }
-        
+
         .print-all-btn {
             padding: 12px 20px;
             font-size: 14px;
@@ -918,86 +920,86 @@
         .ticket-header {
             margin-bottom: 12px;
         }
-        
+
         .header-title {
             font-size: 18px;
         }
-        
+
         .back-btn-side {
             padding: 8px 14px;
             font-size: 13px;
             min-width: 140px;
         }
-        
+
         .ticket-card {
             padding: 14px;
             border-radius: 14px;
         }
-        
+
         .qr-wrap img {
             width: 130px;
             height: 130px;
             padding: 10px;
         }
-        
+
         .ticket-title {
             font-size: 18px;
         }
-        
+
         .ticket-id {
             font-size: 14px;
         }
-        
+
         .kode-pemesanan {
             font-size: 12px;
         }
-        
+
         .data-row .left {
             font-size: 11px;
         }
-        
+
         .data-row .right {
             font-size: 12px;
             padding-left: 6px;
         }
-        
-        .actions { 
+
+        .actions {
             gap: 5px;
         }
-        
-        .btn { 
-            padding: 9px 6px; 
-            font-size: 11px; 
+
+        .btn {
+            padding: 9px 6px;
+            font-size: 11px;
             flex: 1 1 calc(33.333% - 5px);
             max-width: calc(33.333% - 5px);
             min-height: 40px;
         }
-        
+
         .btn i {
             font-size: 12px;
         }
-        
+
         .btn span {
             font-size: 10px;
         }
-        
+
         .route-city {
             font-size: 14px;
         }
-        
+
         .route-arrow {
             font-size: 14px;
             margin: 0 3px;
         }
-        
+
         .subinfo {
             font-size: 12px;
         }
-        
+
         .value {
             font-size: 13px;
         }
-        
+
         .print-all-btn {
             padding: 10px 16px;
             font-size: 13px;
@@ -1007,12 +1009,12 @@
 
     /* Untuk tablet landscape atau layar sedang (768-992px) */
     @media (min-width: 769px) and (max-width: 992px) {
-        .btn { 
-            padding: 12px 14px; 
-            font-size: 13px; 
+        .btn {
+            padding: 12px 14px;
+            font-size: 13px;
             min-width: 100px;
         }
-        
+
         .data-row .left {
             min-width: 120px;
         }
@@ -1178,12 +1180,10 @@
     <!-- Tombol kembali di samping kiri -->
     <div class="ticket-sidebar">
         <a class="back-btn-side" href="{{ route('customer.riwayat') }}">
-            <i class="fa fa-arrow-left" aria-hidden="true"></i> 
+            <i class="fa fa-arrow-left" aria-hidden="true"></i>
             <span>Kembali</span>
         </a>
     </div>
-</div>
-
 
     <!-- Konten utama di kanan -->
     <div class="ticket-main-content">
@@ -1299,7 +1299,7 @@
                             <li>Silakan scan QR Code saat Anda sudah tiba di lokasi.</li>
                         </ul>
 
-                        @if($total_bayar)
+                        @if($total_bayar ?? false)
                             <div class="total-box" aria-label="Total pembayaran">
                                 <div style="font-size:12px;color:#666;margin-top:8px;">Total Pembayaran</div>
                                 <div style="font-weight:800;font-size:16px;color:var(--primary);margin-top:6px;">{{ $total_bayar }}</div>
@@ -1311,17 +1311,17 @@
 
                         <div class="actions" role="toolbar" aria-label="Aksi tiket">
                             <button class="btn btn-print" type="button" onclick="printOptimizedTicket({{ $loop->iteration }})" aria-label="Cetak tiket (Ctrl+P)">
-                                <i class="fa fa-print" aria-hidden="true"></i> 
+                                <i class="fa fa-print" aria-hidden="true"></i>
                                 <span>Cetak</span>
                             </button>
 
-                            <a class="btn btn-download" href="{{ route('customer.e_ticket.download', ['kode_booking' => $ticketKode]) }}" aria-label="Download PDF tiket (Ctrl+S)">
-                                <i class="fa fa-download" aria-hidden="true"></i> 
+                            <a class="btn btn-download" href="{{ route('customer.e_ticket.download', ['kode_booking' => $pemesanan->kode_booking]) }}" aria-label="Download PDF tiket (Ctrl+S)" download target="_blank" rel="noopener">
+                                <i class="fa fa-download" aria-hidden="true"></i>
                                 <span>Download</span>
                             </a>
 
-                            <button class="btn btn-share" type="button" onclick="shareTicket({{ $loop->iteration }})" aria-label="Bagikan tiket">
-                                <i class="fa fa-share-alt" aria-hidden="true"></i> 
+                            <button class="btn btn-share" onclick="shareTicket({{ $loop->iteration }})" aria-label="Bagikan tiket">
+                                <i class="fa fa-share-alt" aria-hidden="true"></i>
                                 <span>Bagikan</span>
                             </button>
                         </div>
@@ -1331,7 +1331,7 @@
                 <!-- Tombol Cetak Semua Tiket -->
                 @if($pemesanan->detailPenumpang->count() > 1)
                     <button class="print-all-btn" onclick="printAllOptimizedTickets()">
-                        <i class="fa fa-print" aria-hidden="true"></i> 
+                        <i class="fa fa-print" aria-hidden="true"></i>
                         <span>Cetak Semua Tiket ({{ $pemesanan->detailPenumpang->count() }})</span>
                     </button>
                 @endif
@@ -1434,7 +1434,7 @@
                         <li>Silakan scan QR Code saat Anda sudah tiba di lokasi.</li>
                     </ul>
 
-                    @if($total_bayar)
+                    @if($total_bayar ?? false)
                         <div class="total-box" aria-label="Total pembayaran">
                             <div style="font-size:12px;color:#666;margin-top:12px;">Total Pembayaran</div>
                             <div style="font-weight:800;font-size:16px;color:var(--primary);margin-top:6px;">{{ $total_bayar }}</div>
@@ -1446,17 +1446,17 @@
 
                     <div class="actions" role="toolbar" aria-label="Aksi tiket">
                         <button class="btn btn-print" type="button" onclick="printOptimizedTicket()" aria-label="Cetak tiket (Ctrl+P)">
-                            <i class="fa fa-print" aria-hidden="true"></i> 
+                            <i class="fa fa-print" aria-hidden="true"></i>
                             <span>Cetak</span>
                         </button>
 
-                        <a class="btn btn-download" href="{{ route('customer.e_ticket.download', ['kode_booking' => $ticketKode]) }}" aria-label="Download PDF tiket (Ctrl+S)">
-                            <i class="fa fa-download" aria-hidden="true"></i> 
+                        <a class="btn btn-download" href="{{ route('customer.e_ticket.download', ['kode_booking' => $pemesanan->kode_booking]) }}" aria-label="Download PDF tiket (Ctrl+S)" download target="_blank" rel="noopener">
+                            <i class="fa fa-download" aria-hidden="true"></i>
                             <span>Download</span>
                         </a>
 
-                        <button class="btn btn-share" type="button" onclick="shareTicket()" aria-label="Bagikan tiket">
-                            <i class="fa fa-share-alt" aria-hidden="true"></i> 
+                        <button class="btn btn-share" onclick="shareTicket()" aria-label="Bagikan tiket">
+                            <i class="fa fa-share-alt" aria-hidden="true"></i>
                             <span>Bagikan</span>
                         </button>
                     </div>
@@ -1555,10 +1555,10 @@
 
     // Fungsi untuk share ticket (mobile friendly)
     function shareTicket(ticketNumber = null) {
-        const ticketCode = ticketNumber ? 
-            `Tiket ${ticketNumber} - ${document.querySelectorAll('.ticket-card')[ticketNumber - 1]?.querySelector('.ticket-id')?.textContent || 'Smart Shuttle'}` : 
+        const ticketCode = ticketNumber ?
+            `Tiket ${ticketNumber} - ${document.querySelectorAll('.ticket-card')[ticketNumber - 1]?.querySelector('.ticket-id')?.textContent || 'Smart Shuttle'}` :
             'Tiket Smart Shuttle';
-        
+
         const shareData = {
             title: 'E-Ticket Smart Shuttle',
             text: ticketCode,
@@ -1602,7 +1602,9 @@
         if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
             e.preventDefault();
             const link = document.querySelector('.btn-download');
-            if (link) window.location.href = link.href;
+            if (link) {
+                window.open(link.href, '_blank');
+            }
         }
     });
 
