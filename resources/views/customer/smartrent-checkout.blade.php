@@ -391,9 +391,29 @@
             'vehicle_total' => (int)request()->get('vehicle_total', 1200000),
             'driver_total' => (int)request()->get('driver_total', 0),
             'total_price' => (int)request()->get('total_price', 1200000),
-            'city' => request()->get('city', 'Jakarta'), // TAMBAHKAN INI
+            'city' => request()->get('city', 'Jakarta'),
         ];
     }
+    
+    // ===== VALIDASI ARRAY CHECKOUT - PASTIKAN SEMUA KEY ADA =====
+    $defaultCheckout = [
+        'vehicle_id' => 1,
+        'vehicle_name' => 'Toyota Hiace Commuter',
+        'vehicle_image' => asset('images/toyotahiace.png'),
+        'vehicle_price_per_day' => 1200000,
+        'driver_price_per_day' => 150000,
+        'selected_driver_price_per_day' => 0,
+        'service_type' => 'self_drive',
+        'duration' => 1,
+        'rent_date' => date('Y-m-d'),
+        'vehicle_total' => 1200000,
+        'driver_total' => 0,
+        'total_price' => 1200000,
+        'city' => 'Jakarta',
+    ];
+    
+    // Merge array checkout dengan default,以防 missing keys
+    $checkout = array_merge($defaultCheckout, $checkout ?: []);
     
     // ===== EKSTRAK DATA =====
     $vehicle_id = $checkout['vehicle_id'];
@@ -408,10 +428,9 @@
     $vehicle_total = (int)($checkout['vehicle_total'] ?? 0);
     $driver_total = (int)($checkout['driver_total'] ?? 0);
     $total_price = (int)($checkout['total_price'] ?? 0);
-    $city = $checkout['city'] ?? 'Jakarta'; // TAMBAHKAN INI
+    $city = $checkout['city'] ?? 'Jakarta';
     
     // ===== VALIDASI ULANG PERHITUNGAN =====
-    // Hitung ulang untuk memastikan konsistensi
     $calculatedVehicleTotal = $vehicle_price_per_day * $duration;
     $calculatedDriverTotal = $selected_driver_price_per_day * $duration;
     $calculatedTotalPrice = $calculatedVehicleTotal + $calculatedDriverTotal;
@@ -445,6 +464,8 @@
     
     // ===== BOOKING CODE =====
     $booking_code = 'SR' . date('Ymd') . rand(100, 999);
+    
+    // ===== CITY SUDAH DIAMBIL DI ATAS =====
 @endphp
 
 <!-- Debug info (hidden) -->

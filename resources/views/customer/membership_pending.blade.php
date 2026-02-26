@@ -20,8 +20,9 @@
     <!-- SIDEBAR -->
     <div class="sidebar">
         <!-- LOGO YANG BISA DIKLIK UNTUK KE HALAMAN BERANDA -->
+        @php $logoPath = $masterKontak->logo ?? null; @endphp
         <div class="logo" onclick="location.href='{{ route('customer.beranda') }}'">
-            SMART SHUTTLE
+            <img src="{{ $logoPath ? asset('storage/'.$logoPath) : asset('/images/smartshuttlelogo.png') }}" alt="{{ $masterKontak->nama_perusahaan ?? 'Smart Shuttle' }}" class="logo-image">
         </div>
 
         <ul class="menu">

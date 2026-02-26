@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\MProfilePerusahaan;
+use App\Models\MMasterKontak;
 use App\Models\MLayanan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class ProfilePerusahaanController extends Controller
@@ -51,6 +53,21 @@ class ProfilePerusahaanController extends Controller
                 'created_by' => 'system'
             ]);
             $profile->save(); // Simpan ke database
+        }
+
+        // juga gabungkan data dari master kontak jika ada
+        $kontak = MMasterKontak::where('status', 'active')->first();
+        if ($kontak) {
+            // override beberapa field agar terlihat seragam
+            $profile->nama_perusahaan = $kontak->nama_perusahaan ?? $profile->nama_perusahaan;
+            $profile->deskripsi_singkat = $kontak->deskripsi_singkat ?? $profile->deskripsi_singkat;
+            $profile->alamat_kantor_pusat = $kontak->alamat_kantor_pusat ?? $profile->alamat_kantor_pusat;
+            $profile->telepon = $kontak->telepon_utama ?? $profile->telepon;
+            $profile->email = $kontak->email_utama ?? $profile->email;
+            // sync logo path as well so admin form sees current contact logo
+            if (isset($kontak->logo)) {
+                $profile->logo_perusahaan = $kontak->logo;
+            }
         }
 
         // Ambil data layanan
@@ -117,6 +134,20 @@ class ProfilePerusahaanController extends Controller
                 $profile->created_by = auth()->guard('admin')->user()->id ?? 'admin';
             }
 
+            // Handle removals before filling
+            if ($request->has('remove_logo')) {
+                if ($profile->logo_perusahaan && Storage::exists('public/' . $profile->logo_perusahaan)) {
+                    Storage::delete('public/' . $profile->logo_perusahaan);
+                }
+                $profile->logo_perusahaan = null;
+            }
+            if ($request->has('remove_office')) {
+                if ($profile->background_website && Storage::exists('public/' . $profile->background_website)) {
+                    Storage::delete('public/' . $profile->background_website);
+                }
+                $profile->background_website = null;
+            }
+
             // Update data dasar
             $profile->fill([
                 'nama_perusahaan' => $request->nama_perusahaan,
@@ -152,14 +183,15 @@ class ProfilePerusahaanController extends Controller
                 $filename = 'logo-' . time() . '.' . $file->getClientOriginalExtension();
 
                 // Delete old logo if exists
-                if ($profile->logo_perusahaan && Storage::exists('public/' . $profile->logo_perusahaan)) {
-                    Storage::delete('public/' . $profile->logo_perusahaan);
+                if ($profile->logo_perusahaan && Storage::disk('public')->exists($profile->logo_perusahaan)) {
+                    Storage::disk('public')->delete($profile->logo_perusahaan);
                 }
 
-                $path = $file->storeAs('public/profile', $filename);
-                $profile->logo_perusahaan = 'profile/' . $filename;
+                // Store directly in public disk root with no subdirectory
+                $file->storeAs('', $filename, 'public');
+                $profile->logo_perusahaan = $filename;
 
-                Log::info('Logo uploaded:', ['path' => $path, 'filename' => $filename]);
+                Log::info('Logo uploaded:', ['filename' => $filename]);
             }
 
             // Handle upload background website
@@ -168,14 +200,15 @@ class ProfilePerusahaanController extends Controller
                 $filename = 'background-' . time() . '.' . $file->getClientOriginalExtension();
 
                 // Delete old background if exists
-                if ($profile->background_website && Storage::exists('public/' . $profile->background_website)) {
-                    Storage::delete('public/' . $profile->background_website);
+                if ($profile->background_website && Storage::disk('public')->exists($profile->background_website)) {
+                    Storage::disk('public')->delete($profile->background_website);
                 }
 
-                $path = $file->storeAs('public/profile', $filename);
-                $profile->background_website = 'profile/' . $filename;
+                // Store directly in public disk root with no subdirectory
+                $file->storeAs('', $filename, 'public');
+                $profile->background_website = $filename;
 
-                Log::info('Background uploaded:', ['path' => $path, 'filename' => $filename]);
+                Log::info('Background uploaded:', ['filename' => $filename]);
             }
 
             // Handle upload struktur organisasi
@@ -198,6 +231,34 @@ class ProfilePerusahaanController extends Controller
             $profile->save();
 
             Log::info('Profile saved successfully:', ['id' => $profile->id_profile]);
+
+            // ===== SYNC DATA KE MMasterKontak UNTUK CUSTOMER VIEW =====
+            // Ambil atau buat record di m_master_kontak
+            $masterKontak = MMasterKontak::where('status', 'active')->first();
+            if (!$masterKontak) {
+                $masterKontak = new MMasterKontak();
+            }
+
+            // Sync data dari MProfilePerusahaan ke MMasterKontak
+            // hanya field yang ada di kedua tabel
+            $masterKontak->fill([
+                'nama_perusahaan' => $profile->nama_perusahaan,
+                'deskripsi_singkat' => $profile->deskripsi_singkat,
+                'alamat_kantor_pusat' => $profile->alamat_kantor_pusat,
+                'email_utama' => $profile->email,
+                'telepon_utama' => $profile->telepon,
+                'logo' => $profile->logo_perusahaan,
+                'link_kebijakan_privasi' => $profile->link_kebijakan_privasi,
+                'link_syarat_ketentuan' => $profile->link_syarat_ketentuan,
+                'status' => 'active'
+            ]);
+            $masterKontak->save();
+
+            Log::info('Master kontak synced successfully:', ['id' => $masterKontak->id]);
+
+            // Clear cache sehingga data terbaru dimuat dari database
+            Cache::forget('kontak_perusahaan');
+            Log::info('Cache cleared for kontak_perusahaan');
 
             if ($request->expectsJson()) {
                 $data = $profile->toArray();

@@ -794,7 +794,22 @@
       <!-- Logo di kiri atas -->
       <div class="absolute top-4 left-4 lg:top-6 lg:left-6 flex items-center space-x-3">
         <div class="w-20 h-20 lg:w-20 lg:h-20 flex items-center justify-center">
-          <img src="/images/smartshuttlelogo.png" alt="Smart Shuttle" class="w-full h-full object-contain">
+          @php
+              $logoPath = $masterKontak->logo ?? null;
+              if ($logoPath) {
+                  // Support both old nested paths and new flat paths
+                  if (Str::contains($logoPath, '/')) {
+                      // Old format with subdirectory
+                      $logoUrl = asset('storage/' . $logoPath);
+                  } else {
+                      // New format - just filename in storage root
+                      $logoUrl = asset('storage/' . $logoPath);
+                  }
+              } else {
+                  $logoUrl = asset('/images/smartshuttlelogo.png');
+              }
+          @endphp
+          <img src="{{ $logoUrl }}" alt="{{ $masterKontak->nama_perusahaan ?? 'Smart Shuttle' }}" class="w-full h-full object-contain">
         </div>
       </div>
       <!-- Content -->

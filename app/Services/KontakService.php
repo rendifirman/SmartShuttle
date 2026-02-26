@@ -47,6 +47,32 @@ class KontakService
                 $kontak = MMasterKontak::create($dbData);
             }
 
+            // ---- sync back to profile perusahaan so admin profile and contact stay in sync ----
+            try {
+                $profile = \App\Models\MProfilePerusahaan::first();
+                if (!$profile) {
+                    $profile = new \App\Models\MProfilePerusahaan();
+                    $profile->created_by = Auth::id() ?? 'admin';
+                }
+
+                $profile->fill([
+                    'nama_perusahaan' => $dbData['nama_perusahaan'] ?? $profile->nama_perusahaan,
+                    'deskripsi_singkat' => $dbData['deskripsi_singkat'] ?? $profile->deskripsi_singkat,
+                    'alamat_kantor_pusat' => $dbData['alamat_kantor_pusat'] ?? $profile->alamat_kantor_pusat,
+                    'telepon' => $dbData['telepon_utama'] ?? $profile->telepon,
+                    'email' => $dbData['email_utama'] ?? $profile->email,
+                    'link_kebijakan_privasi' => $dbData['link_kebijakan_privasi'] ?? $profile->link_kebijakan_privasi,
+                    'link_syarat_ketentuan' => $dbData['link_syarat_ketentuan'] ?? $profile->link_syarat_ketentuan,
+                    'updated_by' => Auth::id() ?? 'admin',
+                ]);
+                $profile->save();
+                // clear cache in case profile data is cached elsewhere
+                Cache::forget('profile_perusahaan_data');
+            } catch (\Exception $e) {
+                // log and continue; contact save must not fail
+                \Log::warning('Failed syncing kontak to profile: ' . $e->getMessage());
+            }
+
             // Prepare data for JSON file
             $dataToSave = [
                 'kontak' => $data,

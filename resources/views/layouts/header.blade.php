@@ -888,7 +888,23 @@
             </button>
 
             <div class="nav-brand">
-                <img src="{{ asset('/images/smartshuttlelogo.png') }}" alt="Smart Shuttle">
+                @php
+                    $logoPath = $masterKontak->logo ?? null;
+                    if ($logoPath) {
+                        // Support both old nested paths and new flat paths
+                        if (Str::contains($logoPath, '/')) {
+                            // Old format with subdirectory
+                            $logoUrl = asset('storage/' . $logoPath);
+                        } else {
+                            // New format - just filename in storage root
+                            $logoUrl = asset('storage/' . $logoPath);
+                        }
+                    } else {
+                        $logoUrl = asset('/images/smartshuttlelogo.png');
+                    }
+                @endphp
+                <img src="{{ $logoUrl }}"
+                     alt="{{ $masterKontak->nama_perusahaan ?? 'Smart Shuttle' }}">
             </div>
 
             <!-- NAV MENU (Tampil di desktop, disembunyikan di mobile) -->

@@ -1158,6 +1158,12 @@ Route::prefix('smartrent')->name('smartrent.')->group(function () {
         Route::get('/e-ticket/{orderNumber}/print', [SmartRentController::class, 'printETicket'])->name('e-ticket.print');
         Route::get('/api/e-ticket/{orderNumber}', [SmartRentController::class, 'getETicketData'])->name('e-ticket.api');
         Route::get('/confirmation', [SmartRentController::class, 'confirmation'])->name('confirmation');
+
+        // Admin Routes
+Route::prefix('admin')->name('admin.')->middleware(['auth:admin'])->group(function () {
+    Route::get('/profile-perusahaan', [ProfilePerusahaanController::class, 'index'])->name('profileperusahaan');
+    Route::post('/profile-perusahaan/update', [ProfilePerusahaanController::class, 'update'])->name('profileperusahaan.update'); // PASTIKAN INI POST
+});
     });
     
 

@@ -867,6 +867,9 @@
     <div id="inputTab" class="tab-content">
         <form id="profileForm" enctype="multipart/form-data">
             @csrf
+            <!-- flags to indicate deletion of existing files -->
+            <input type="hidden" id="removeLogo" name="remove_logo" value="0">
+            <input type="hidden" id="removeOffice" name="remove_office" value="0">
         <div class="profile">
             {{-- Informasi Perusahaan --}}
             <div class="card">
@@ -1530,6 +1533,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (input) input.value = '';
+
+        // mark removal flags so backend can clear stored file
+        if (inputId === 'logoUpload') {
+            document.getElementById('removeLogo').value = '1';
+        } else if (inputId === 'officeUpload') {
+            document.getElementById('removeOffice').value = '1';
+        }
     }
 
     // Service management
@@ -1721,7 +1731,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.location.reload();
                 }, 1500);
             } else {
-                throw new Error(data.message || 'Gagal menyimpan data');
+                // if server provided detailed errors, show them
+                if (data.errors) {
+                    const messages = Object.values(data.errors)
+                        .flat()
+                        .join('\n');
+                    showNotification(messages, 'error', 8000);
+                    console.error('Server validation errors:', data.errors);
+                } else {
+                    showNotification(data.message || 'Gagal menyimpan data', 'error');
+                }
+                return; // abort further processing
             }
         } catch (error) {
             console.error('Error:', error);
@@ -1741,7 +1761,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Fungsi validasi form
+    // Fungsi validasi form – hanya persyaratan yang divalidasi oleh controller
+    // controller meminta: nama_perusahaan, deskripsi_singkat, alamat_kantor_pusat,
+    // telepon, email, visi, misi. Semua field lain bersifat nullable.
     function validateForm() {
         const requiredFields = [
             { id: 'namaPerusahaan', name: 'Nama Perusahaan' },
@@ -1750,11 +1772,8 @@ document.addEventListener('DOMContentLoaded', function() {
             { id: 'telepon', name: 'Telepon' },
             { id: 'email', name: 'Email' },
             { id: 'visi', name: 'Visi' },
-            { id: 'misi', name: 'Misi' },
-            { id: 'npwp', name: 'NPWP' },
-            { id: 'tanggalBerdiri', name: 'Tanggal Berdiri' },
-            { id: 'penanggungJawab', name: 'Penanggung Jawab Utama' },
-            { id: 'namaPendiri', name: 'Nama Pendiri' }
+            { id: 'misi', name: 'Misi' }
+            // NPWP, tanggalBerdiri, penanggungJawab, namaPendiri tidak wajib
         ];
 
         for (const field of requiredFields) {
@@ -1766,6 +1785,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // tambahan validasi telepon (maks 20 karakter)
+        const teleponVal = document.getElementById('telepon').value.trim();
+        if (teleponVal.length > 20) {
+            showNotification('Telepon tidak boleh lebih dari 20 karakter', 'error');
+            document.getElementById('telepon').focus();
+            return false;
+        }
+
         // Validasi email
         const email = document.getElementById('email').value;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1773,6 +1800,29 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification('Format email tidak valid', 'error');
             document.getElementById('email').focus();
             return false;
+        }
+
+        // Validasi website apabila diisi
+        const website = document.getElementById('website').value.trim();
+        if (website) {
+            try {
+                new URL(website);
+            } catch (_) {
+                showNotification('Website harus berupa URL yang valid', 'error');
+                document.getElementById('website').focus();
+                return false;
+            }
+        }
+
+        // tanggal berdiri format yyyy-mm-dd atau kosong
+        const tgl = document.getElementById('tanggalBerdiri').value.trim();
+        if (tgl) {
+            const parsed = Date.parse(tgl);
+            if (isNaN(parsed)) {
+                showNotification('Tanggal berdiri tidak valid (format YYYY-MM-DD)', 'error');
+                document.getElementById('tanggalBerdiri').focus();
+                return false;
+            }
         }
 
         return true;
@@ -1833,6 +1883,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Foto kantor terlalu besar. Maksimal 2MB');
             }
             formData.append('background_website', officeInput.files[0]);
+        }
+
+        // include removal flags if set
+        if (document.getElementById('removeLogo').value === '1') {
+            formData.append('remove_logo', '1');
+        }
+        if (document.getElementById('removeOffice').value === '1') {
+            formData.append('remove_office', '1');
         }
 
         const structureInput = document.getElementById('structureUpload');
@@ -2304,11 +2362,33 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // ====== LOAD EXISTING PREVIEWS ======
+    function loadExistingPreviews() {
+        // Load logo preview
+        @if($profile && $profile->logo_perusahaan)
+            const logoPreview = document.getElementById('logoPreview');
+            const logoImg = logoPreview.querySelector('img');
+            let logoPath = '{{ $profile->logo_perusahaan }}';
+            // All paths now use asset('storage/' + path)
+            logoImg.src = '{{ asset('storage') }}/' + logoPath;
+            logoPreview.style.display = 'block';
+        @endif
+
+        // Load office/background preview
+        @if($profile && $profile->background_website)
+            const officePreview = document.getElementById('officePreview');
+            const officeImg = officePreview.querySelector('img');
+            officeImg.src = '{{ asset('storage/' . $profile->background_website) }}';
+            officePreview.style.display = 'block';
+        @endif
+    }
+
     // ====== INITIALIZATION ======
     function init() {
         setupFileUploads();
         setupCollapseExpand();
         setupServiceCardHover();
+        loadExistingPreviews();
 
         // Load saved data if exists
         const savedData = localStorage.getItem('profile_perusahaan_data');

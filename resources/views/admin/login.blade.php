@@ -589,9 +589,21 @@
         <!-- LEFT SIDE - Hanya ditampilkan di desktop -->
         <div class="hidden md:w-1/2 md:flex flex-col justify-center px-8 lg:px-16 relative left-overlay">
             <!-- Logo di kiri atas -->
+            @php
+                $logoPath = $masterKontak->logo ?? null;
+                if ($logoPath) {
+                    if (Str::contains($logoPath, '/')) {
+                        $logoUrl = asset('storage/' . $logoPath);
+                    } else {
+                        $logoUrl = asset('storage/' . $logoPath);
+                    }
+                } else {
+                    $logoUrl = asset('/images/smartshuttlelogo.png');
+                }
+            @endphp
             <div class="absolute top-4 left-4 lg:top-6 lg:left-6 flex items-center space-x-3">
                 <div class="w-20 h-20 lg:w-20 lg:h-20 flex items-center justify-center">
-                    <img src="/images/smartshuttlelogo.png" alt="Smart Shuttle" class="w-full h-full object-contain">
+                    <img src="{{ $logoUrl }}" alt="{{ $masterKontak->nama_perusahaan ?? 'Smart Shuttle' }}" class="w-full h-full object-contain">
                 </div>
                 <div class="admin-desktop-badge text-sm">Admin Portal</div>
             </div>

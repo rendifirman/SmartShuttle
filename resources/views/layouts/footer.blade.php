@@ -190,6 +190,24 @@
     margin: 0 auto;
 }
 
+/* Footer Logo Section */
+.footer-logo-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 40px;
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-logo {
+    max-height: 80px;
+    max-width: 200px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
 .footer-main {
     display: flex;
     justify-content: space-between;
@@ -324,6 +342,16 @@
 @media (max-width: 768px) {
     .site-footer {
         padding: 40px 20px 20px;
+    }
+
+    .footer-logo-section {
+        margin-bottom: 30px;
+        padding: 15px 0;
+    }
+
+    .footer-logo {
+        max-height: 60px;
+        max-width: 150px;
     }
 
     .footer-main {

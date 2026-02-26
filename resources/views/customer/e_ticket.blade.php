@@ -1206,15 +1206,21 @@
                     @endphp
 
                     <main class="ticket-card" role="article" aria-labelledby="ticket-title-{{ $loop->iteration }}">
-                        @if(file_exists(public_path('images/smartshuttlelogo.png')))
-                            <img src="{{ asset('images/smartshuttlelogo.png') }}" alt="Smart Shuttle" class="ticket-logo" />
-                        @else
-                            <div style="text-align:center;font-weight:800;color:var(--primary);margin-bottom:6px;font-size:24px;">SMART SHUTTLE</div>
-                        @endif
+                        @php
+                            $logoPath = $masterKontak->logo ?? null;
+                            if ($logoPath) {
+                                if (Str::contains($logoPath, '/')) {
+                                    $logoUrl = asset('storage/' . $logoPath);
+                                } else {
+                                    $logoUrl = asset('storage/' . $logoPath);
+                                }
+                            } else {
+                                $logoUrl = asset('images/smartshuttlelogo.png');
+                            }
+                        @endphp
+                        <img src="{{ $logoUrl }}" alt="{{ $masterKontak->nama_perusahaan ?? 'Smart Shuttle' }}" class="ticket-logo" />
 
                         <h1 id="ticket-title-{{ $loop->iteration }}" class="ticket-title">E-TICKET</h1>
-
-                        <div class="dashed-divider" aria-hidden="true"></div>
 
                         <div class="qr-wrap" role="img" aria-label="QR Code Check-in (penumpang {{ $loop->iteration }})">
                             <img src="{{ $qr_src }}" alt="QR Code untuk check-in (kode: {{ $ticketKode }})" loading="lazy"
@@ -1344,11 +1350,19 @@
                 @endphp
 
                 <main class="ticket-card" role="article" aria-labelledby="ticket-title">
-                    @if(file_exists(public_path('images/smartshuttlelogo.png')))
-                        <img src="{{ asset('images/smartshuttlelogo.png') }}" alt="Smart Shuttle" class="ticket-logo" />
-                    @else
-                        <div style="text-align:center;font-weight:800;color:var(--primary);margin-bottom:6px;font-size:24px;">SMART SHUTTLE</div>
-                    @endif
+                    @php
+                        $logoPath = $masterKontak->logo ?? null;
+                        if ($logoPath) {
+                            if (Str::contains($logoPath, '/')) {
+                                $logoUrl = asset('storage/' . $logoPath);
+                            } else {
+                                $logoUrl = asset('storage/' . $logoPath);
+                            }
+                        } else {
+                            $logoUrl = asset('images/smartshuttlelogo.png');
+                        }
+                    @endphp
+                    <img src="{{ $logoUrl }}" alt="{{ $masterKontak->nama_perusahaan ?? 'Smart Shuttle' }}" class="ticket-logo" />
 
                     <h1 id="ticket-title" class="ticket-title">E-TICKET</h1>
                     <div class="ticket-id" aria-hidden="true">{{ $ticketKode }}</div>

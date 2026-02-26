@@ -21,6 +21,7 @@ class MMasterKontak extends Model
         'telepon_utama',
         'telepon_dukungan',
         'alamat_kantor_pusat',
+        'logo',
         'facebook_url',
         'instagram_url',
         'twitter_url',
