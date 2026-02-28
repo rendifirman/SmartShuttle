@@ -60,7 +60,7 @@
     }
 
     .nav-brand img {
-        height: 30px;
+        height: 50px;
         width: auto;
         max-width: 100%;
     }
@@ -498,7 +498,7 @@
         }
 
         .nav-brand img {
-            height: 28px;
+            height: 44px;
         }
 
         /* SEMBUNYIKAN NAV MENU DI MOBILE */
@@ -816,7 +816,7 @@
         }
 
         .nav-brand img {
-            height: 26px;
+            height: 36px;
         }
 
         .mobile-sidebar {
